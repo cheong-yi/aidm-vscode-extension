@@ -10,6 +10,8 @@ export class StatusBarManagerImpl implements StatusBarManager {
   private statusBarItem: vscode.StatusBarItem;
   private mcpClient: MCPClient;
   private currentStatus: ConnectionStatus = ConnectionStatus.Disconnected;
+  private healthCheckInterval?: NodeJS.Timeout;
+  private initialHealthCheckTimeout?: NodeJS.Timeout;
 
   constructor(mcpClient: MCPClient) {
     this.mcpClient = mcpClient;
@@ -105,14 +107,17 @@ export class StatusBarManagerImpl implements StatusBarManager {
    */
   private startHealthCheck(): void {
     // Check connection every 30 seconds
-    setInterval(async () => {
+    this.healthCheckInterval = setInterval(async () => {
       if (this.currentStatus !== ConnectionStatus.Connecting) {
         await this.checkConnection();
       }
     }, 30000);
 
     // Initial connection check
-    setTimeout(() => this.checkConnection(), 1000);
+    this.initialHealthCheckTimeout = setTimeout(
+      () => this.checkConnection(),
+      1000
+    );
   }
 
   /**
@@ -190,6 +195,12 @@ export class StatusBarManagerImpl implements StatusBarManager {
    * Dispose of resources
    */
   dispose(): void {
+    if (this.healthCheckInterval) {
+      clearInterval(this.healthCheckInterval);
+    }
+    if (this.initialHealthCheckTimeout) {
+      clearTimeout(this.initialHealthCheckTimeout);
+    }
     this.statusBarItem.dispose();
   }
 }

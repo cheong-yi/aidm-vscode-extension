@@ -45,7 +45,7 @@
   - Write integration tests for MCP tool functionality
   - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5_
 
-- [-] 6. Build VSCode extension with hover provider
+- [x] 6. Build VSCode extension with hover provider
 
   - Create VSCode extension entry point with activation events for TypeScript only
   - Implement BusinessContextHoverProvider for TypeScript files
@@ -54,7 +54,7 @@
   - Handle hover provider errors gracefully with fallback messaging
   - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5_
 
-- [ ] 7. Add status bar integration and connection monitoring
+- [x] 7. Add status bar integration and connection monitoring
 
   - Implement StatusBarManager with basic connection status indicators
   - Create simple health check functionality for MCP server connectivity
@@ -63,7 +63,7 @@
   - Write tests for connection monitoring and status updates
   - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5_
 
-- [ ] 8. Integrate extension with MCP server process management
+- [-] 8. Integrate extension with MCP server process management
 
   - Implement MCP server spawning and lifecycle management from VSCode extension
   - Add process cleanup and error recovery for server crashes
