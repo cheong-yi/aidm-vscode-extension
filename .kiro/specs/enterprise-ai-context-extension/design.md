@@ -38,8 +38,9 @@ graph TB
     subgraph "Local MCP Server Process"
         MCP[MCP Server]
         CTX[Context Manager]
+        SRC[CompositeContextService]
         MOCK[Mock Data Layer]
-        CACHE[Cache Layer]
+        MCACHE[Mock Cache (.aidm/mock-cache.json)]
     end
 
     subgraph "External Systems (Future)"
@@ -54,12 +55,13 @@ graph TB
     SB --> EXT
 
     MCP --> CTX
-    CTX --> MOCK
-    CTX --> CACHE
+    CTX --> SRC
+    SRC --> MCACHE
+    SRC --> MOCK
 
-    CTX -.-> NEO : Future Integration
-    CTX -.-> JIRA : Future Integration
-    CTX -.-> GIT : Future Integration
+    SRC -.-> NEO : Future Integration
+    SRC -.-> JIRA : Future Integration
+    SRC -.-> GIT : Future Integration
 
     subgraph "AI Assistants"
         AI1[RooCode]
@@ -301,6 +303,10 @@ interface ToolCallRequest extends JSONRPCRequest {
 ```
 
 ## AI Assistant Integration Patterns
+
+### Remote MCP Reference (MVP Mock)
+
+Remote MCP (mock) base URL for future seeding and remote queries: [aidm-vscode-extension-remote-mcp.vercel.app](https://aidm-vscode-extension-remote-mcp.vercel.app/). The homepage advertises health and MCP tool endpoints and runs in production on Vercel.
 
 ### RooCode Dual-Context Architecture
 

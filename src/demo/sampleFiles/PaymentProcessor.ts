@@ -1,10 +1,5 @@
 /**
  * Payment Processor - Secure payment processing with PCI DSS compliance
- *
- * Business Context:
- * - Implements REQ-002: Payment Processing Integration
- * - Supports REQ-004: Data Encryption Compliance
- * - Complies with PCI DSS and fraud detection requirements
  */
 
 import {
@@ -34,12 +29,6 @@ export class PaymentProcessor {
 
   /**
    * Process payment with comprehensive security and compliance
-   *
-   * Business Requirements:
-   * - REQ-002: Support multiple payment methods (credit cards, ACH, wire transfers, digital wallets)
-   * - REQ-004: Encrypt payment data using AES-256
-   * - REQ-002: Implement fraud detection and PCI DSS compliance
-   * - REQ-007: Maintain audit trail for all transactions
    */
   async processPayment(
     paymentMethod: PaymentMethod,

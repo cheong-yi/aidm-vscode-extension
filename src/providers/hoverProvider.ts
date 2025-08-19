@@ -104,6 +104,14 @@ export class BusinessContextHover
     markdown.isTrusted = true;
     markdown.supportHtml = true;
 
+    // Extension source header with provenance
+    const source = this.getContextSource(context);
+    markdown.appendMarkdown(
+      `<small><strong>AiDM Extension</strong> ${
+        source ? `(${source})` : ""
+      }</small>\n\n`
+    );
+
     // Get current hover configuration
     const hoverConfig = demoConfig.getHoverConfiguration();
 
@@ -346,6 +354,11 @@ export class BusinessContextHover
    */
   private createNoContextHover(): vscode.Hover {
     const markdown = new vscode.MarkdownString();
+    markdown.isTrusted = true;
+    markdown.supportHtml = true;
+    markdown.appendMarkdown(
+      "<small><strong>AiDM Extension</strong> (Generated)</small>\n\n"
+    );
     markdown.appendMarkdown("## 🏢 Business Context\n\n");
     markdown.appendMarkdown(
       "ℹ️ No business context available for this code location.\n\n"
@@ -362,6 +375,11 @@ export class BusinessContextHover
    */
   private createErrorHover(error: any): vscode.Hover {
     const markdown = new vscode.MarkdownString();
+    markdown.isTrusted = true;
+    markdown.supportHtml = true;
+    markdown.appendMarkdown(
+      "<small><strong>AiDM Extension</strong> (Error)</small>\n\n"
+    );
     markdown.appendMarkdown("## 🏢 Business Context\n\n");
 
     if (error.code === ErrorCode.CONNECTION_FAILED) {
@@ -519,5 +537,27 @@ export class BusinessContextHover
     } else {
       return "Just now";
     }
+  }
+
+  /**
+   * Determine the source of the business context for provenance labeling
+   */
+  private getContextSource(context: BusinessContext): string | null {
+    // For now, we'll use a simple heuristic based on context properties
+    // In the future, this will come from the composite service
+    if (context.requirements && context.requirements.length > 0) {
+      const req = context.requirements[0];
+      // Check if this looks like mock cache data (has specific patterns)
+      if (req.id && req.id.startsWith("REQ-") && req.createdDate) {
+        return "Local Cache";
+      }
+      // Check if this looks like generated mock data
+      if (req.description && req.description.includes("Mock data provider")) {
+        return "Generated";
+      }
+      // Default to Local Cache for now
+      return "Local Cache";
+    }
+    return null;
   }
 }

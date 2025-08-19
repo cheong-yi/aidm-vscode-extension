@@ -105,3 +105,27 @@ The Enterprise AI Context VSCode Extension is an innovative solution that bridge
 3. WHEN RooCode generates code suggestions THEN they SHALL incorporate available business context and delivery patterns
 4. WHEN multiple AI queries occur simultaneously THEN the hybrid architecture SHALL handle both local and future remote requests efficiently
 5. IF remote delivery intelligence is unavailable THEN RooCode SHALL still receive rich local context for immediate development needs
+
+### Requirement 9 (New) – Pluggable Context Sources and Priority
+
+**User Story:** As a developer and AI assistant, I want the local MCP to aggregate context from multiple sources in a defined priority so that the most accurate and deterministic context is used first.
+
+#### Acceptance Criteria
+
+1. WHEN a context request arrives THEN the system SHALL query sources in the configured order (default: mockCache → remote → generated)
+2. WHEN a higher-priority source returns a result THEN the system SHALL NOT query lower-priority sources
+3. WHEN no source returns a result THEN the system SHALL return a well-formed empty context
+4. WHEN configuration changes THEN the new priority SHALL take effect without code changes
+5. WHEN provenance is available THEN the hover SHALL indicate the source in the UI in a non-intrusive way
+
+### Requirement 10 (New) – Background Seeding and Sync
+
+**User Story:** As a system maintainer, I want the local MCP to be able to seed and periodically sync the local cache from a remote MCP so that developers get fast, offline-friendly context while reducing load on remote APIs.
+
+#### Acceptance Criteria
+
+1. WHEN `seed_from_remote` is invoked with target paths THEN the system SHALL fetch and persist context to `.aidm/mock-cache.json`
+2. WHEN daily sync is configured THEN the system SHALL refresh cached entries without blocking hover requests
+3. WHEN remote is unavailable THEN the system SHALL skip sync and retain existing cache
+4. WHEN sensitive fields are detected in seeded data THEN basic PII redaction SHALL be applied per local policy (e.g., Singapore PDPA)
+5. WHEN OAuth credentials expire THEN the system SHALL surface an actionable error and avoid partial writes

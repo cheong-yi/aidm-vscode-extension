@@ -9,6 +9,7 @@ import * as path from "path";
 import { SimpleMCPServer } from "./SimpleMCPServer";
 import { ContextManager } from "./ContextManager";
 import { MockDataProvider } from "../mock/MockDataProvider";
+import { MockCache } from "./MockCache";
 import { ConnectionStatus, ErrorCode, ErrorResponse } from "../types/extension";
 
 export interface ProcessManagerConfig {
@@ -70,8 +71,14 @@ export class ProcessManager {
         errorRate: 0, // No errors in production mode
       });
 
-      // Initialize context manager
-      const contextManager = new ContextManager(mockDataProvider);
+      // Initialize mock cache persisted under workspace
+      const workspaceRoot =
+        vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || process.cwd();
+      const mockCache = new MockCache(workspaceRoot);
+      mockCache.load();
+
+      // Initialize context manager with mock cache
+      const contextManager = new ContextManager(mockDataProvider, mockCache);
 
       // Create server instance
       this.server = new SimpleMCPServer(this.config.port, contextManager);
@@ -136,6 +143,18 @@ export class ProcessManager {
       if (this.server) {
         await this.server.stop();
         this.server = null;
+      }
+
+      // Persist mock cache on shutdown
+      try {
+        const workspaceRoot =
+          vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || process.cwd();
+        const cache = new MockCache(workspaceRoot);
+        cache.load();
+        cache.save();
+      } catch (e) {
+        // eslint-disable-next-line no-console
+        console.error("Failed to persist mock cache on shutdown:", e);
       }
 
       // Kill process if it exists

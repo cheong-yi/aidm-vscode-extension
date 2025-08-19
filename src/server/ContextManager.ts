@@ -14,6 +14,7 @@ import {
 } from "../security/AuditLogger";
 import { ErrorHandler, ErrorContext } from "../utils/ErrorHandler";
 import { DegradedModeManager } from "../utils/DegradedModeManager";
+import { MockCache } from "./MockCache";
 
 interface CacheEntry {
   data: BusinessContext;
@@ -29,9 +30,11 @@ export class ContextManager implements IContextManager {
   private errorHandler: ErrorHandler;
   private degradedModeManager: DegradedModeManager;
   private cleanupInterval: NodeJS.Timeout | null = null;
+  private mockCache?: MockCache;
 
-  constructor(mockDataProvider: MockDataProvider) {
+  constructor(mockDataProvider: MockDataProvider, mockCache?: MockCache) {
     this.mockDataProvider = mockDataProvider;
+    this.mockCache = mockCache;
     this.auditLogger = new AuditLogger({
       enabled: true,
       logLevel: AuditSeverity.LOW,
@@ -245,6 +248,18 @@ export class ContextManager implements IContextManager {
     );
 
     try {
+      // 1) Check explicit mock cache first (line-aware)
+      if (this.mockCache) {
+        const cachedFromMock = this.mockCache.get(
+          codeLocation.filePath,
+          codeLocation.startLine
+        );
+        if (cachedFromMock) {
+          await tracker.finish(AuditOutcome.SUCCESS);
+          return cachedFromMock;
+        }
+      }
+
       // Check cache first
       const cachedEntry = this.cache.get(cacheKey);
       if (cachedEntry && this.isCacheValid(cachedEntry)) {
@@ -259,7 +274,7 @@ export class ContextManager implements IContextManager {
         return cachedEntry.data;
       }
 
-      // Get context from mock data provider
+      // 2) Fallback to mock data provider mapping
       const contexts = await this.mockDataProvider.getContextForFile(
         codeLocation.filePath
       );
@@ -267,7 +282,7 @@ export class ContextManager implements IContextManager {
       // Find the most relevant context for the specific location
       const relevantContext = this.findRelevantContext(contexts, codeLocation);
 
-      // Cache the result
+      // Cache the result (in-memory)
       try {
         this.cache.set(cacheKey, {
           data: relevantContext,
@@ -294,6 +309,27 @@ export class ContextManager implements IContextManager {
       this.degradedModeManager.updateServiceHealth("dataProvider", false);
       throw error;
     }
+  }
+
+  /**
+   * Admin: upsert explicit mock cache entry
+   */
+  upsertMockCache(
+    filePath: string,
+    startLine: number,
+    endLine: number,
+    context: BusinessContext
+  ): void {
+    if (!this.mockCache) return;
+    this.mockCache.upsert(filePath, startLine, endLine, context);
+  }
+
+  /**
+   * Admin: clear mock cache (optionally by path substring)
+   */
+  clearMockCache(pattern?: string): void {
+    if (!this.mockCache) return;
+    this.mockCache.clear(pattern);
   }
 
   /**

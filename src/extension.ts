@@ -22,6 +22,77 @@ export async function activate(
   console.log(`🚀 ${EXTENSION_CONFIG.displayName} activation started!`);
   vscode.window.showInformationMessage(EXTENSION_CONFIG.activationMessage);
 
+  // Force register a simple command immediately for testing
+  const forceTestCommand = vscode.commands.registerCommand(
+    "aidm-vscode-extension.forceTest",
+    () => {
+      vscode.window.showInformationMessage("✅ Force test command works!");
+    }
+  );
+  context.subscriptions.push(forceTestCommand);
+
+  // Register startup command that's always available
+  const startupCommand = vscode.commands.registerCommand(
+    "aidm-vscode-extension.startup",
+    () => {
+      vscode.window.showInformationMessage(
+        "🚀 Extension startup command works!"
+      );
+    }
+  );
+  context.subscriptions.push(startupCommand);
+
+  // Register debug command to show extension status
+  const debugCommand = vscode.commands.registerCommand(
+    "aidm-vscode-extension.debug",
+    () => {
+      const status = {
+        extensionActive: true,
+        commandsRegistered: [
+          "aidm-vscode-extension.forceTest",
+          "aidm-vscode-extension.startup",
+          "aidm-vscode-extension.hello",
+          "aidm-vscode-extension.debug",
+        ],
+        timestamp: new Date().toISOString(),
+      };
+
+      vscode.window.showInformationMessage(
+        `🔍 Debug: Extension active, ${status.commandsRegistered.length} commands registered`
+      );
+
+      // Show detailed info in output channel
+      const outputChannel = vscode.window.createOutputChannel("AiDM Debug");
+      outputChannel.show();
+      outputChannel.appendLine("=== AiDM Extension Debug Info ===");
+      outputChannel.appendLine(JSON.stringify(status, null, 2));
+    }
+  );
+  context.subscriptions.push(debugCommand);
+
+  // Register version command to show current version
+  const versionCommand = vscode.commands.registerCommand(
+    "aidm-vscode-extension.version",
+    () => {
+      const packageJson = require("../package.json");
+      const version = packageJson.version;
+      const versionNotes = packageJson._versionNotes || "No version notes available";
+      
+      vscode.window.showInformationMessage(
+        `📦 AiDM Extension v${version}`
+      );
+      
+      // Show version details in output channel
+      const outputChannel = vscode.window.createOutputChannel("AiDM Version");
+      outputChannel.show();
+      outputChannel.appendLine("=== AiDM Extension Version Info ===");
+      outputChannel.appendLine(`Version: ${version}`);
+      outputChannel.appendLine(`Notes: ${versionNotes}`);
+      outputChannel.appendLine(`Build Date: ${new Date().toISOString()}`);
+    }
+  );
+  context.subscriptions.push(versionCommand);
+
   try {
     // Get configuration
     const config = vscode.workspace.getConfiguration(
@@ -225,6 +296,54 @@ export async function activate(
       }
     );
 
+    // Register seed hover context command
+    const seedHoverContextCommand = vscode.commands.registerCommand(
+      getCommandId("seedHoverContext"),
+      async () => {
+        try {
+          const editor = vscode.window.activeTextEditor;
+          if (!editor) {
+            vscode.window.showWarningMessage("No active text editor");
+            return;
+          }
+
+          const document = editor.document;
+          const selection = editor.selection;
+
+          // Get the current file path and line range
+          const filePath = document.fileName;
+          const startLine = selection.start.line + 1; // Convert to 1-based
+          const endLine = selection.end.line + 1;
+
+          // Call the seed_from_remote tool via MCP
+          const result = await mcpClient.callTool("seed_from_remote", {
+            paths: [`${filePath}:${startLine}-${endLine}`],
+          });
+
+          vscode.window.showInformationMessage(
+            `Hover context seeding initiated for ${filePath}:${startLine}-${endLine}`
+          );
+
+          // Show output in a new output channel
+          const outputChannel = vscode.window.createOutputChannel("AiDM Seed");
+          outputChannel.show();
+          outputChannel.appendLine(
+            `Seeding hover context for: ${filePath}:${startLine}-${endLine}`
+          );
+          if (result && result.content && result.content[0]) {
+            outputChannel.appendLine(result.content[0].text);
+          }
+        } catch (error) {
+          vscode.window.showErrorMessage(
+            `Failed to seed hover context: ${
+              error instanceof Error ? error.message : String(error)
+            }`
+          );
+          console.error("Seed hover context error:", error);
+        }
+      }
+    );
+
     // Register configuration change handler
     const configChangeDisposable = vscode.workspace.onDidChangeConfiguration(
       async (event) => {
@@ -288,6 +407,7 @@ export async function activate(
       testActivationCommand,
       helloCommand,
       configurationCommand,
+      seedHoverContextCommand,
       configChangeDisposable,
       statusBarManager,
       {

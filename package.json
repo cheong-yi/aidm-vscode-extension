@@ -2,7 +2,8 @@
   "name": "aidm-vscode-extension",
   "displayName": "AiDM VSCode Extension",
   "description": "Bridge business requirements and code implementation with AI-powered context for enterprise development",
-  "version": "0.1.0",
+  "version": "0.2.1",
+  "_versionNotes": "Auto-packaged version 0.2.1 - 2025-08-19",
   "publisher": "aidm-team",
   "author": {
     "name": "AiDM Team"
@@ -40,6 +41,17 @@
     "onLanguage:typescript",
     "onCommand:aidm-vscode-extension.showStatus",
     "onCommand:aidm-vscode-extension.runRooCodeDemo",
+    "onCommand:aidm-vscode-extension.restartServer",
+    "onCommand:aidm-vscode-extension.connectRemoteMCP",
+    "onCommand:aidm-vscode-extension.showDemoPanel",
+    "onCommand:aidm-vscode-extension.testActivation",
+    "onCommand:aidm-vscode-extension.openConfiguration",
+    "onCommand:aidm-vscode-extension.hello",
+    "onCommand:aidm-vscode-extension.seedHoverContext",
+    "onCommand:aidm-vscode-extension.forceTest",
+    "onCommand:aidm-vscode-extension.startup",
+    "onCommand:aidm-vscode-extension.debug",
+    "onCommand:aidm-vscode-extension.version",
     "onStartupFinished"
   ],
   "icon": "resources/icon.png",
@@ -83,6 +95,31 @@
       {
         "command": "aidm-vscode-extension.openConfiguration",
         "title": "Open Configuration Panel",
+        "category": "AiDM"
+      },
+      {
+        "command": "aidm-vscode-extension.seedHoverContext",
+        "title": "Seed Hover Context for Selection",
+        "category": "AiDM"
+      },
+      {
+        "command": "aidm-vscode-extension.forceTest",
+        "title": "Force Test Command",
+        "category": "AiDM"
+      },
+      {
+        "command": "aidm-vscode-extension.startup",
+        "title": "Startup Test",
+        "category": "AiDM"
+      },
+      {
+        "command": "aidm-vscode-extension.debug",
+        "title": "Debug Extension Status",
+        "category": "AiDM"
+      },
+      {
+        "command": "aidm-vscode-extension.version",
+        "title": "Show Extension Version",
         "category": "AiDM"
       },
       {
@@ -203,29 +240,11 @@
     }
   },
   "scripts": {
-    "vscode:prepublish": "npm run compile && npm run lint",
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
-    "pretest": "npm run compile && npm run lint",
-    "lint": "eslint src --ext ts",
-    "lint:fix": "eslint src --ext ts --fix",
     "test": "jest",
-    "test:ci": "jest --coverage --passWithNoTests --silent --testPathIgnorePatterns=errorHandler.test.ts,errorRecovery.test.ts,demoScenarios.e2e.test.ts,userWorkflows.e2e.test.ts,extension.test.ts,MockDataProvider.test.ts,rooCodeHybridIntegration.test.ts,SimpleMCPServer.integration.test.ts,MCPTools.integration.test.ts,processManager.test.ts,rooCodeIntegration.test.ts,errorHandlingIntegration.test.ts,auditLogging.test.ts,degradedMode.test.ts,ContextManager.test.ts,errorHandling.test.ts",
-    "test:watch": "jest --watch",
-    "demo": "npm run compile && node out/demo/runDemo.js",
-    "demo:verbose": "npm run compile && node out/demo/runDemo.js --verbose",
-    "demo:scenarios": "npm run compile && node out/demo/runDemo.js --scenarios",
-    "test:integration": "jest --testPathPattern=integration",
-    "test:roocode": "jest --testPathPattern=rooCodeIntegration",
-    "package": "vsce package",
-    "publish": "vsce publish",
-    "validate": "npm run compile && npm run lint && npm run test:ci",
-    "validate:deployment": "node scripts/validate-deployment.js",
-    "clean": "rimraf out coverage && del /q *.vsix 2>nul || echo No .vsix files to delete",
-    "prebuild": "npm run clean",
-    "build": "npm run validate && npm run package",
-    "prepackage": "npm run validate:deployment",
-    "install-extension": "node install-extension.js"
+    "lint": "eslint src --ext ts",
+    "package": "node package-extension.js"
   },
   "devDependencies": {
     "@types/jest": "^29.5.14",

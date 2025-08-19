@@ -1,10 +1,5 @@
 /**
  * User Service - Core user management functionality
- *
- * Business Context:
- * - Implements REQ-001: User Authentication System
- * - Supports REQ-007: Audit Trail System
- * - Complies with GDPR and SOX requirements
  */
 
 import { User, UserProfile, AuthenticationResult } from "../../models/User";
@@ -22,11 +17,6 @@ export class UserService {
 
   /**
    * Authenticate user with multi-factor support
-   *
-   * Business Requirements:
-   * - REQ-001: Support OAuth 2.0, SAML, and biometric authentication
-   * - REQ-004: Encrypt sensitive data in transit and at rest
-   * - REQ-007: Log all authentication attempts for audit
    */
   async authenticateUser(
     username: string,
@@ -122,11 +112,6 @@ export class UserService {
 
   /**
    * Create new user account with compliance validation
-   *
-   * Business Requirements:
-   * - REQ-001: Secure user registration process
-   * - REQ-004: Encrypt PII data at rest
-   * - REQ-007: Audit all user creation events
    */
   async createUser(userData: Partial<User>): Promise<User> {
     // Validate required fields
@@ -172,11 +157,6 @@ export class UserService {
 
   /**
    * Update user profile with data protection compliance
-   *
-   * Business Requirements:
-   * - REQ-004: Maintain data encryption for sensitive fields
-   * - REQ-007: Log all profile changes for audit
-   * - GDPR: Support data subject rights
    */
   async updateUserProfile(
     userId: string,

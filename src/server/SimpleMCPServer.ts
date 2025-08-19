@@ -275,6 +275,9 @@ export class SimpleMCPServer {
           "get_business_context",
           "get_requirement_details",
           "get_code_context",
+          "mock_cache_upsert",
+          "mock_cache_clear",
+          "seed_from_remote",
         ].includes(name)
       ) {
         return this.createErrorResponse(
@@ -313,6 +316,15 @@ export class SimpleMCPServer {
           // Legacy support - redirect to get_business_context
           return await this.handleGetBusinessContext(request, args);
 
+        case "mock_cache_upsert":
+          return await this.handleMockCacheUpsert(request, args);
+
+        case "mock_cache_clear":
+          return await this.handleMockCacheClear(request, args);
+
+        case "seed_from_remote":
+          return await this.handleSeedFromRemote(request, args);
+
         default:
           // This should not be reached since we check tool existence earlier
           return this.createErrorResponse(
@@ -338,6 +350,137 @@ export class SimpleMCPServer {
         },
         id: request.id,
       };
+    }
+  }
+
+  /**
+   * Admin: Upsert explicit mock cache entry
+   */
+  private async handleMockCacheUpsert(
+    request: ToolCallRequest,
+    args: any
+  ): Promise<ToolCallResponse> {
+    if (
+      !args ||
+      typeof args.filePath !== "string" ||
+      typeof args.startLine !== "number" ||
+      typeof args.endLine !== "number" ||
+      !args.context
+    ) {
+      return this.createErrorResponse(
+        request.id,
+        -32602,
+        "Invalid arguments for mock_cache_upsert"
+      ) as ToolCallResponse;
+    }
+
+    try {
+      // Context manager is typed via interface; cast to access admin helpers
+      (this.contextManager as any).upsertMockCache(
+        args.filePath,
+        args.startLine,
+        args.endLine,
+        args.context
+      );
+      return {
+        jsonrpc: "2.0",
+        result: {
+          content: [
+            {
+              type: "text",
+              text: "Mock cache upserted successfully",
+            },
+          ],
+        },
+        id: request.id,
+      };
+    } catch (error) {
+      return this.createErrorResponse(
+        request.id,
+        -32000,
+        `Failed to upsert mock cache: ${
+          error instanceof Error ? error.message : String(error)
+        }`
+      ) as ToolCallResponse;
+    }
+  }
+
+  /**
+   * Admin: Clear mock cache
+   */
+  private async handleMockCacheClear(
+    request: ToolCallRequest,
+    args: any
+  ): Promise<ToolCallResponse> {
+    try {
+      (this.contextManager as any).clearMockCache(args?.pattern);
+      return {
+        jsonrpc: "2.0",
+        result: {
+          content: [
+            {
+              type: "text",
+              text: "Mock cache cleared",
+            },
+          ],
+        },
+        id: request.id,
+      };
+    } catch (error) {
+      return this.createErrorResponse(
+        request.id,
+        -32000,
+        `Failed to clear mock cache: ${
+          error instanceof Error ? error.message : String(error)
+        }`
+      ) as ToolCallResponse;
+    }
+  }
+
+  /**
+   * Admin: Seed mock cache from remote MCP server
+   */
+  private async handleSeedFromRemote(
+    request: ToolCallRequest,
+    args: any
+  ): Promise<ToolCallResponse> {
+    if (!args || !Array.isArray(args.paths) || args.paths.length === 0) {
+      return this.createErrorResponse(
+        request.id,
+        -32602,
+        "Invalid arguments for seed_from_remote: paths array is required"
+      ) as ToolCallResponse;
+    }
+
+    try {
+      // TODO: Implement actual remote MCP fetching
+      // For now, return a placeholder response indicating the feature is stubbed
+      const paths = args.paths as string[];
+
+      return {
+        jsonrpc: "2.0",
+        result: {
+          content: [
+            {
+              type: "text",
+              text: `Seed from remote MCP is stubbed. Would seed ${
+                paths.length
+              } paths:\n${paths.join(
+                "\n"
+              )}\n\nThis tool will:\n1. Connect to remote MCP using OAuth\n2. Fetch business context for each path\n3. Apply PII redaction per local policy\n4. Persist to .aidm/mock-cache.json\n5. Return summary of seeded entries`,
+            },
+          ],
+        },
+        id: request.id,
+      };
+    } catch (error) {
+      return this.createErrorResponse(
+        request.id,
+        -32000,
+        `Failed to seed from remote: ${
+          error instanceof Error ? error.message : String(error)
+        }`
+      ) as ToolCallResponse;
     }
   }
 

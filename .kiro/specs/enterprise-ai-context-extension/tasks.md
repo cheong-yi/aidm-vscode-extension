@@ -126,3 +126,46 @@
   - Implement proper error boundaries and recovery strategies
   - Write tests for error scenarios and recovery behavior
   - _Requirements: 5.1, 5.2, 5.3, 5.5_
+
+---
+
+## Upcoming Work (Post-MVP)
+
+- [ ] 14. Introduce pluggable context sources and composite service
+
+  - Define `IContextSource` interface and `CompositeContextService`
+  - Implement sources: `MockCacheSource`, `RemoteMCPSource` (OAuth), `GeneratedMockSource`
+  - Add configuration: `aidmVscodeExtension.context.sourcePriority` and `context.cache.ttlMs`
+  - Wire composite into `ContextManager` and provenance tagging for hover
+  - _Requirements: 9.1–9.5_
+
+- [ ] 15. Seeding and background sync from Remote MCP
+
+  - Add server tool `seed_from_remote(paths: string[], options?)`
+  - Implement background daily sync job with retry and backoff
+  - Add PII redaction step for seeded data (configurable policy)
+  - Respect `aidmVscodeExtension.remote.*` settings (URL, OAuth token)
+  - _Requirements: 10.1–10.5_
+
+- [ ] 16. Optional cache-miss hydration (feature flag)
+
+  - Add setting `aidmVscodeExtension.context.enableCacheMissFetch`
+  - On cache miss, optionally fetch from remote and persist
+  - Telemetry and rate limiting to protect remote APIs
+  - _Requirements: 9.1, 10.2, 10.3_
+
+- [ ] 17. Admin tools expansion
+
+  - Add `set_source_priority`, `set_cache_policy` server tools
+
+- [ ] 18. VS Code commands for developer convenience
+
+  - "AiDM: Seed hover context for selection" → upserts current file/selection into mock cache
+  - "AiDM: Clear mock cache for file" → removes entries for active file
+  - _Requirements: 9.4, 10.1_
+
+- [ ] 19. Documentation updates and examples
+
+  - Document provenance labels and configuration examples
+  - Provide RooCode snippets for calling `mock_cache_upsert` and `seed_from_remote`
+  - Link to remote MCP mock base URL and endpoints

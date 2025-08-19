@@ -1,10 +1,5 @@
 /**
  * Dashboard Analytics - Real-time analytics and predictive insights
- *
- * Business Context:
- * - Implements REQ-005: Customer Dashboard
- * - Supports REQ-010: Machine Learning Pipeline
- * - Provides real-time analytics with WCAG 2.1 AA accessibility
  */
 
 import {
@@ -34,12 +29,6 @@ export class DashboardAnalytics {
 
   /**
    * Generate comprehensive dashboard analytics
-   *
-   * Business Requirements:
-   * - REQ-005: Real-time analytics and transaction history
-   * - REQ-010: Predictive insights using ML pipeline
-   * - REQ-003: Response time under 200ms for 95th percentile
-   * - REQ-005: WCAG 2.1 AA accessibility compliance
    */
   async generateDashboardAnalytics(
     userId: string,
@@ -141,11 +130,6 @@ export class DashboardAnalytics {
 
   /**
    * Generate real-time user metrics with accessibility features
-   *
-   * Business Requirements:
-   * - REQ-005: Mobile-responsive and accessible design
-   * - REQ-003: High-performance data visualization
-   * - REQ-007: Audit all data access for compliance
    */
   async generateUserMetrics(userId: string): Promise<UserMetrics> {
     // Log metrics access for audit
@@ -217,11 +201,6 @@ export class DashboardAnalytics {
 
   /**
    * Generate predictive insights using ML pipeline
-   *
-   * Business Requirements:
-   * - REQ-010: ML pipeline for predictive analytics
-   * - REQ-010: Sub-100ms inference latency
-   * - REQ-005: Recommendation engine integration
    */
   async generatePredictiveInsights(
     userId: string

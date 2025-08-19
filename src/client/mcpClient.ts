@@ -198,7 +198,8 @@ export class MCPClient {
    * Load remote configuration from VS Code settings
    */
   private loadRemoteConfig(): void {
-    const config = vscode.workspace.getConfiguration("enterpriseAiContext");
+    // Use the extension namespace for settings
+    const config = vscode.workspace.getConfiguration("aidmVscodeExtension");
     this.remoteConfig = {
       url: config.get<string>("remote.mcpServerUrl", ""),
       apiKey: config.get<string>("remote.apiKey", ""),
