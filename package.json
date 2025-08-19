@@ -1,0 +1,76 @@
+{
+  "name": "enterprise-ai-context",
+  "displayName": "Enterprise AI Context",
+  "description": "Bridge business requirements and code implementation",
+  "version": "0.1.0",
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onLanguage:typescript"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "enterprise-ai-context.showStatus",
+        "title": "Show Connection Status"
+      }
+    ],
+    "configuration": {
+      "title": "Enterprise AI Context",
+      "properties": {
+        "enterpriseAiContext.mcpServer.port": {
+          "type": "number",
+          "default": 3000,
+          "description": "Port for MCP server"
+        },
+        "enterpriseAiContext.mcpServer.timeout": {
+          "type": "number",
+          "default": 5000,
+          "description": "Request timeout in milliseconds"
+        },
+        "enterpriseAiContext.mock.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable mock data mode"
+        },
+        "enterpriseAiContext.mock.dataSize": {
+          "type": "string",
+          "enum": [
+            "small",
+            "medium",
+            "large"
+          ],
+          "default": "medium",
+          "description": "Size of mock data set"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile && npm run lint",
+    "lint": "eslint src --ext ts",
+    "test": "jest"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.14",
+    "@types/node": "16.x",
+    "@types/vscode": "^1.80.0",
+    "@typescript-eslint/eslint-plugin": "^6.4.1",
+    "@typescript-eslint/parser": "^6.4.1",
+    "eslint": "^8.47.0",
+    "jest": "^29.5.0",
+    "ts-jest": "^29.1.0",
+    "typescript": "^5.1.6"
+  },
+  "dependencies": {
+    "axios": "^1.5.0"
+  }
+}
