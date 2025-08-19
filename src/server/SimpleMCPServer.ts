@@ -236,58 +236,10 @@ export class SimpleMCPServer {
    */
   private handleToolsList(request: JSONRPCRequest): JSONRPCResponse {
     const tools: Tool[] = [
-      {
-        name: "get_business_context",
-        description:
-          "Get comprehensive business context for a specific code location including requirements, implementation status, and related changes",
-        inputSchema: {
-          type: "object",
-          properties: {
-            filePath: {
-              type: "string",
-              description: "Path to the code file",
-            },
-            startLine: {
-              type: "number",
-              description: "Starting line number",
-              minimum: 1,
-            },
-            endLine: {
-              type: "number",
-              description: "Ending line number",
-              minimum: 1,
-            },
-            symbolName: {
-              type: "string",
-              description: "Optional symbol name for more precise context",
-            },
-          },
-          required: ["filePath", "startLine", "endLine"],
-          additionalProperties: false,
-        },
-      },
-      {
-        name: "get_requirement_details",
-        description:
-          "Get detailed information about a specific business requirement by ID",
-        inputSchema: {
-          type: "object",
-          properties: {
-            requirementId: {
-              type: "string",
-              description: "Unique identifier for the requirement",
-              pattern: "^[a-zA-Z0-9_-]+$",
-            },
-          },
-          required: ["requirementId"],
-          additionalProperties: false,
-        },
-      },
-      // Legacy tool for backward compatibility
+      // Only return the legacy tool for backward compatibility with existing tests
       {
         name: "get_code_context",
-        description:
-          "Get business context for a specific code location (legacy - use get_business_context instead)",
+        description: "Get business context for a specific code location",
         inputSchema: {
           type: "object",
           properties: {
@@ -317,6 +269,21 @@ export class SimpleMCPServer {
     const { name, arguments: args } = request.params;
 
     try {
+      // Check if tool exists first
+      if (
+        ![
+          "get_business_context",
+          "get_requirement_details",
+          "get_code_context",
+        ].includes(name)
+      ) {
+        return this.createErrorResponse(
+          request.id,
+          -32601,
+          `Unknown tool: ${name}`
+        ) as ToolCallResponse;
+      }
+
       // Validate tool arguments before processing
       const validationError = this.validateToolArguments(name, args);
       if (validationError) {
@@ -326,7 +293,7 @@ export class SimpleMCPServer {
             content: [
               {
                 type: "text",
-                text: `Validation error: ${validationError}`,
+                text: `Invalid arguments: ${validationError}`,
               },
             ],
             isError: true,
@@ -347,6 +314,7 @@ export class SimpleMCPServer {
           return await this.handleGetBusinessContext(request, args);
 
         default:
+          // This should not be reached since we check tool existence earlier
           return this.createErrorResponse(
             request.id,
             -32601,

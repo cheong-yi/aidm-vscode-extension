@@ -51,6 +51,14 @@ export class MCPClient {
 
       return response.data;
     } catch (error) {
+      // If it's already an Error with our expected message format, re-throw it
+      if (
+        error instanceof Error &&
+        error.message.includes("MCP Server Error:")
+      ) {
+        throw error;
+      }
+
       if (axios.isAxiosError(error)) {
         if (error.code === "ECONNREFUSED") {
           throw this.createErrorResponse(

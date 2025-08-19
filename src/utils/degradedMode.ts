@@ -486,13 +486,17 @@ export class DegradedModeManager {
       const message = `Enterprise AI Context: Service degraded to ${DegradedModeLevel[newLevel]} mode. ${reason}`;
 
       if (newLevel >= DegradedModeLevel.MINIMAL) {
-        vscode.window
-          .showErrorMessage(message, "Show Details")
-          .then((selection) => {
+        const messagePromise = vscode.window.showErrorMessage(
+          message,
+          "Show Details"
+        );
+        if (messagePromise && typeof messagePromise.then === "function") {
+          messagePromise.then((selection) => {
             if (selection === "Show Details") {
               this.showDegradedModeDetails();
             }
           });
+        }
       } else {
         vscode.window.showWarningMessage(message);
       }

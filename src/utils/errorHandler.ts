@@ -364,21 +364,30 @@ export class ErrorHandler {
     const userMessage = this.getUserFriendlyMessage(error, context);
 
     if (this.isRecoverableError(error)) {
-      vscode.window
-        .showWarningMessage(userMessage, "Retry", "Show Details")
-        .then((selection) => {
+      const messagePromise = vscode.window.showWarningMessage(
+        userMessage,
+        "Retry",
+        "Show Details"
+      );
+      if (messagePromise && typeof messagePromise.then === "function") {
+        messagePromise.then((selection) => {
           if (selection === "Show Details") {
             this.showErrorDetails(error, context);
           }
         });
+      }
     } else {
-      vscode.window
-        .showErrorMessage(userMessage, "Show Details")
-        .then((selection) => {
+      const messagePromise = vscode.window.showErrorMessage(
+        userMessage,
+        "Show Details"
+      );
+      if (messagePromise && typeof messagePromise.then === "function") {
+        messagePromise.then((selection) => {
           if (selection === "Show Details") {
             this.showErrorDetails(error, context);
           }
         });
+      }
     }
   }
 

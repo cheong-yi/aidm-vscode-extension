@@ -273,7 +273,7 @@ describe("SimpleMCPServer Integration Tests", () => {
 
       // Should contain business context information or no context message
       expect(
-        content.includes("Business Context:") ||
+        content.includes("Business Context for") ||
           content.includes("No business context available")
       ).toBe(true);
     });
