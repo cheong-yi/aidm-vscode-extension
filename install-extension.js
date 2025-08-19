@@ -23,15 +23,15 @@ try {
   console.log("\n2️⃣ Installing dependencies...");
   execSync("npm install", { stdio: "inherit" });
 
-  // Step 3: Compile TypeScript
-  console.log("\n3️⃣ Compiling TypeScript...");
+  // Step 3: Compile with Webpack
+  console.log("\n3️⃣ Compiling with Webpack...");
   execSync("npm run compile", { stdio: "inherit" });
 
-  // Step 4: Check if out directory exists
+  // Step 4: Check if dist directory exists
   console.log("\n4️⃣ Checking compilation output...");
-  if (!fs.existsSync("./out/extension.js")) {
+  if (!fs.existsSync("./dist/extension.js")) {
     throw new Error(
-      "Compilation failed - extension.js not found in out directory"
+      "Compilation failed - extension.js not found in dist directory"
     );
   }
   console.log("   ✅ extension.js found");

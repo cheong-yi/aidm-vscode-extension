@@ -65,13 +65,13 @@ if (fs.existsSync(versionHistoryPath)) {
   console.log('✅ Updated VERSION_HISTORY.md');
 }
 
-// Compile TypeScript
-console.log('\n🔨 Compiling TypeScript...');
+// Compile with Webpack
+console.log('\n🔨 Compiling with Webpack...');
 try {
   execSync('npm run compile', { stdio: 'inherit' });
-  console.log('✅ TypeScript compilation successful');
+  console.log('✅ Webpack compilation successful');
 } catch (error) {
-  console.error('❌ TypeScript compilation failed');
+  console.error('❌ Webpack compilation failed');
   process.exit(1);
 }
 

@@ -6,6 +6,7 @@ src/**
 # Build artifacts
 tsconfig.json
 tsconfig.tsbuildinfo
+out/**
 
 # Test files
 **/__tests__/**
