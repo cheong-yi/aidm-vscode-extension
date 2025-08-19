@@ -1,487 +1,514 @@
 /**
- * Enhanced Error Handling System
- * Provides error boundaries, recovery strategies, and fallback mechanisms
+ * Comprehensive Error Handling System
+ * Centralized error handling with recovery strategies and audit logging
  */
 
-import * as vscode from "vscode";
-import { Logger, LoggerFactory } from "./logger";
-import { auditTrail, AuditAction, AuditEventType } from "./auditTrail";
+import {
+  AuditLogger,
+  AuditSeverity,
+  AuditOutcome,
+  AuditCategory,
+} from "../security/AuditLogger";
 import { ErrorCode, ErrorResponse } from "../types/extension";
 
 export interface ErrorContext {
-  component: string;
   operation: string;
-  requestId?: string;
+  component: string;
   userId?: string;
+  sessionId?: string;
+  requestId?: string;
   metadata?: Record<string, any>;
 }
 
-export interface RecoveryStrategy {
-  name: string;
-  canRecover: (error: Error, context: ErrorContext) => boolean;
-  recover: (error: Error, context: ErrorContext) => Promise<any>;
-  maxAttempts: number;
-}
-
-export interface FallbackData {
-  type: "cached" | "mock" | "empty";
-  data: any;
-  timestamp: Date;
-  source: string;
-}
-
-export interface ErrorBoundaryConfig {
+export interface ErrorRecoveryStrategy {
+  canRecover(error: Error, context: ErrorContext): boolean;
+  recover(error: Error, context: ErrorContext): Promise<any>;
   maxRetries: number;
   retryDelay: number;
-  enableFallbacks: boolean;
-  enableRecovery: boolean;
-  notifyUser: boolean;
 }
 
-/**
- * Enhanced error handler with recovery strategies and fallbacks
- */
-export class ErrorHandler {
-  private logger: Logger;
-  private recoveryStrategies: RecoveryStrategy[] = [];
-  private fallbackCache = new Map<string, FallbackData>();
-  private config: ErrorBoundaryConfig;
+export interface ErrorHandlerConfig {
+  enableRecovery: boolean;
+  enableAuditLogging: boolean;
+  maxRetryAttempts: number;
+  defaultRetryDelay: number;
+  circuitBreakerThreshold: number;
+  circuitBreakerTimeout: number;
+}
 
-  constructor(component: string, config: Partial<ErrorBoundaryConfig> = {}) {
-    this.logger = LoggerFactory.getLogger(`ErrorHandler:${component}`);
+export class ErrorHandler {
+  private auditLogger: AuditLogger;
+  private config: ErrorHandlerConfig;
+  private recoveryStrategies: Map<string, ErrorRecoveryStrategy> = new Map();
+  private circuitBreakers: Map<string, CircuitBreaker> = new Map();
+  private errorCounts: Map<string, number> = new Map();
+
+  constructor(auditLogger: AuditLogger, config?: Partial<ErrorHandlerConfig>) {
+    this.auditLogger = auditLogger;
     this.config = {
-      maxRetries: 3,
-      retryDelay: 1000,
-      enableFallbacks: true,
       enableRecovery: true,
-      notifyUser: true,
+      enableAuditLogging: true,
+      maxRetryAttempts: 3,
+      defaultRetryDelay: 1000,
+      circuitBreakerThreshold: 5,
+      circuitBreakerTimeout: 30000,
       ...config,
     };
 
-    this.initializeDefaultStrategies();
+    this.initializeDefaultRecoveryStrategies();
   }
 
   /**
-   * Handle an error with recovery and fallback strategies
+   * Handle error with comprehensive logging and recovery
    */
-  async handleError<T>(
-    error: Error,
+  async handleError(
+    error: Error | string,
     context: ErrorContext,
-    fallbackFn?: () => Promise<T> | T
-  ): Promise<T | null> {
-    const startTime = Date.now();
+    options?: {
+      enableRecovery?: boolean;
+      maxRetries?: number;
+      retryDelay?: number;
+    }
+  ): Promise<ErrorResponse> {
+    const errorObj = typeof error === "string" ? new Error(error) : error;
+    const errorCode = this.classifyError(errorObj);
+    const requestId = context.requestId || this.generateRequestId();
 
-    // Log the error
-    this.logger.error(
-      `Error in ${context.component}.${context.operation}`,
-      error,
-      context.metadata,
-      context.requestId
+    // Log error to audit system
+    if (this.config.enableAuditLogging) {
+      await this.auditLogger.logError(
+        `${context.component}.${context.operation}`,
+        errorObj,
+        {
+          ...context.metadata,
+          errorCode,
+          component: context.component,
+          operation: context.operation,
+          userId: context.userId,
+          sessionId: context.sessionId,
+        },
+        this.getErrorSeverity(errorCode)
+      );
+    }
+
+    // Check circuit breaker
+    const circuitBreakerKey = `${context.component}.${context.operation}`;
+    const circuitBreaker = this.getCircuitBreaker(circuitBreakerKey);
+
+    if (circuitBreaker.isOpen()) {
+      return this.createErrorResponse(
+        ErrorCode.INTERNAL_ERROR,
+        "Service temporarily unavailable due to repeated failures",
+        requestId,
+        { circuitBreakerOpen: true }
+      );
+    }
+
+    // Attempt recovery if enabled
+    if (this.config.enableRecovery && options?.enableRecovery !== false) {
+      try {
+        const recoveryResult = await this.attemptRecovery(
+          errorObj,
+          context,
+          options
+        );
+        if (recoveryResult.success) {
+          // Log successful recovery
+          await this.auditLogger.logEvent({
+            action: `${context.component}.${context.operation}.recovery_success`,
+            category: AuditCategory.SYSTEM_EVENT,
+            severity: AuditSeverity.MEDIUM,
+            outcome: AuditOutcome.SUCCESS,
+            metadata: {
+              originalError: errorObj.message,
+              recoveryStrategy: recoveryResult.strategy,
+              attempts: recoveryResult.attempts,
+            },
+          });
+
+          return recoveryResult.result;
+        }
+      } catch (recoveryError) {
+        // Log recovery failure
+        await this.auditLogger.logError(
+          `${context.component}.${context.operation}.recovery_failed`,
+          recoveryError instanceof Error
+            ? recoveryError
+            : new Error(String(recoveryError)),
+          {
+            originalError: errorObj.message,
+            ...context.metadata,
+          },
+          AuditSeverity.HIGH
+        );
+      }
+    }
+
+    // Record failure for circuit breaker
+    circuitBreaker.recordFailure();
+
+    // Create error response
+    const errorResponse = this.createErrorResponse(
+      errorCode,
+      this.sanitizeErrorMessage(errorObj.message),
+      requestId,
+      {
+        component: context.component,
+        operation: context.operation,
+        recoverable: this.isRecoverable(errorObj, context),
+      }
     );
 
-    // Record audit event
-    auditTrail.recordError(
-      this.mapOperationToAuditAction(context.operation),
-      context.component,
-      error,
-      {
-        userId: context.userId,
-        requestId: context.requestId,
-        metadata: context.metadata,
-      }
+    return errorResponse;
+  }
+
+  /**
+   * Handle async operation with automatic error handling
+   */
+  async executeWithErrorHandling<T>(
+    operation: () => Promise<T>,
+    context: ErrorContext,
+    options?: {
+      enableRecovery?: boolean;
+      maxRetries?: number;
+      retryDelay?: number;
+      fallbackValue?: T;
+    }
+  ): Promise<T> {
+    const tracker = this.auditLogger.createPerformanceTracker(
+      `${context.component}.${context.operation}`
     );
 
     try {
-      // Try recovery strategies if enabled
-      if (this.config.enableRecovery) {
-        const recoveryResult = await this.attemptRecovery(error, context);
-        if (recoveryResult !== null) {
-          const duration = Date.now() - startTime;
-          this.logger.info(
-            `Recovery successful for ${context.component}.${context.operation}`,
-            { duration, strategy: recoveryResult.strategy },
-            context.requestId
-          );
-          return recoveryResult.data;
-        }
-      }
+      const result = await operation();
+      await tracker.finish(AuditOutcome.SUCCESS);
+      return result;
+    } catch (error) {
+      await tracker.finish(AuditOutcome.FAILURE);
 
-      // Try fallback mechanisms if enabled
-      if (this.config.enableFallbacks) {
-        const fallbackResult = await this.attemptFallback(context, fallbackFn);
-        if (fallbackResult !== null) {
-          const duration = Date.now() - startTime;
-          this.logger.info(
-            `Fallback successful for ${context.component}.${context.operation}`,
-            { duration, fallbackType: fallbackResult.type },
-            context.requestId
-          );
-          return fallbackResult.data;
-        }
-      }
-
-      // Notify user if configured
-      if (this.config.notifyUser) {
-        this.notifyUser(error, context);
-      }
-
-      return null;
-    } catch (handlingError) {
-      this.logger.error(
-        `Error handling failed for ${context.component}.${context.operation}`,
-        handlingError instanceof Error
-          ? handlingError
-          : new Error(String(handlingError)),
-        { originalError: error.message },
-        context.requestId
+      const errorResponse = await this.handleError(
+        error instanceof Error ? error : new Error(String(error)),
+        context,
+        options
       );
-      return null;
+
+      // Return fallback value if provided
+      if (options?.fallbackValue !== undefined) {
+        await this.auditLogger.logEvent({
+          action: `${context.component}.${context.operation}.fallback_used`,
+          category: AuditCategory.SYSTEM_EVENT,
+          severity: AuditSeverity.MEDIUM,
+          outcome: AuditOutcome.PARTIAL,
+          metadata: {
+            originalError: errorResponse.message,
+            fallbackProvided: true,
+          },
+        });
+        return options.fallbackValue;
+      }
+
+      throw new Error(errorResponse.message);
     }
   }
 
   /**
-   * Execute an operation with error boundary protection
+   * Register custom recovery strategy
    */
-  async withErrorBoundary<T>(
-    operation: () => Promise<T>,
+  registerRecoveryStrategy(
+    name: string,
+    strategy: ErrorRecoveryStrategy
+  ): void {
+    this.recoveryStrategies.set(name, strategy);
+  }
+
+  /**
+   * Get error statistics
+   */
+  getErrorStats(): {
+    totalErrors: number;
+    errorsByComponent: Record<string, number>;
+    circuitBreakerStatus: Record<string, { isOpen: boolean; failures: number }>;
+  } {
+    const errorsByComponent: Record<string, number> = {};
+    for (const [key, count] of this.errorCounts.entries()) {
+      errorsByComponent[key] = count;
+    }
+
+    const circuitBreakerStatus: Record<
+      string,
+      { isOpen: boolean; failures: number }
+    > = {};
+    for (const [key, breaker] of this.circuitBreakers.entries()) {
+      circuitBreakerStatus[key] = {
+        isOpen: breaker.isOpen(),
+        failures: breaker.getFailureCount(),
+      };
+    }
+
+    return {
+      totalErrors: Array.from(this.errorCounts.values()).reduce(
+        (sum, count) => sum + count,
+        0
+      ),
+      errorsByComponent,
+      circuitBreakerStatus,
+    };
+  }
+
+  /**
+   * Reset error statistics and circuit breakers
+   */
+  reset(): void {
+    this.errorCounts.clear();
+    this.circuitBreakers.clear();
+  }
+
+  /**
+   * Classify error into appropriate error code
+   */
+  private classifyError(error: Error): ErrorCode {
+    const message = error.message.toLowerCase();
+
+    if (message.includes("timeout") || message.includes("timed out")) {
+      return ErrorCode.TIMEOUT;
+    }
+    if (
+      message.includes("connection") ||
+      message.includes("network") ||
+      message.includes("econnrefused")
+    ) {
+      return ErrorCode.CONNECTION_FAILED;
+    }
+    if (message.includes("not found") || message.includes("404")) {
+      return ErrorCode.DATA_NOT_FOUND;
+    }
+    if (
+      message.includes("invalid") ||
+      message.includes("bad request") ||
+      message.includes("400")
+    ) {
+      return ErrorCode.INVALID_REQUEST;
+    }
+
+    return ErrorCode.INTERNAL_ERROR;
+  }
+
+  /**
+   * Get error severity based on error code
+   */
+  private getErrorSeverity(errorCode: ErrorCode): AuditSeverity {
+    switch (errorCode) {
+      case ErrorCode.CONNECTION_FAILED:
+      case ErrorCode.TIMEOUT:
+        return AuditSeverity.HIGH;
+      case ErrorCode.INTERNAL_ERROR:
+        return AuditSeverity.CRITICAL;
+      case ErrorCode.DATA_NOT_FOUND:
+        return AuditSeverity.MEDIUM;
+      case ErrorCode.INVALID_REQUEST:
+        return AuditSeverity.LOW;
+      default:
+        return AuditSeverity.MEDIUM;
+    }
+  }
+
+  /**
+   * Attempt error recovery using registered strategies
+   */
+  private async attemptRecovery(
+    error: Error,
     context: ErrorContext,
-    fallbackFn?: () => Promise<T> | T
-  ): Promise<T | null> {
-    let lastError: Error | null = null;
+    options?: { maxRetries?: number; retryDelay?: number }
+  ): Promise<{
+    success: boolean;
+    result?: any;
+    strategy?: string;
+    attempts: number;
+  }> {
+    const maxRetries = options?.maxRetries || this.config.maxRetryAttempts;
+    const retryDelay = options?.retryDelay || this.config.defaultRetryDelay;
 
-    for (let attempt = 1; attempt <= this.config.maxRetries; attempt++) {
-      try {
-        const result = await operation();
+    // Try each recovery strategy
+    for (const [strategyName, strategy] of this.recoveryStrategies.entries()) {
+      if (strategy.canRecover(error, context)) {
+        let attempts = 0;
+        const maxStrategyRetries = Math.min(maxRetries, strategy.maxRetries);
 
-        // Record successful operation
-        auditTrail.recordEvent(
-          AuditEventType.SYSTEM_EVENT,
-          this.mapOperationToAuditAction(context.operation),
-          context.component,
-          {
-            userId: context.userId,
-            requestId: context.requestId,
-            metadata: { ...context.metadata, attempt },
-            success: true,
+        while (attempts < maxStrategyRetries) {
+          attempts++;
+          try {
+            const result = await strategy.recover(error, context);
+            return { success: true, result, strategy: strategyName, attempts };
+          } catch (recoveryError) {
+            if (attempts < maxStrategyRetries) {
+              await this.delay(
+                Math.min(retryDelay * attempts, strategy.retryDelay)
+              );
+            }
           }
-        );
-
-        return result;
-      } catch (error) {
-        lastError = error instanceof Error ? error : new Error(String(error));
-
-        this.logger.warn(
-          `Operation failed (attempt ${attempt}/${this.config.maxRetries})`,
-          { ...context.metadata, attempt },
-          context.requestId
-        );
-
-        // Wait before retry (except on last attempt)
-        if (attempt < this.config.maxRetries) {
-          await this.delay(this.config.retryDelay * attempt);
         }
       }
     }
 
-    // All retries failed, handle the error
-    return this.handleError(lastError!, context, fallbackFn);
+    return { success: false, attempts: 0 };
   }
 
   /**
-   * Add a custom recovery strategy
+   * Check if error is recoverable
    */
-  addRecoveryStrategy(strategy: RecoveryStrategy): void {
-    this.recoveryStrategies.push(strategy);
-    this.logger.debug(`Added recovery strategy: ${strategy.name}`);
-  }
-
-  /**
-   * Cache fallback data for later use
-   */
-  cacheFallbackData(key: string, data: any, source: string): void {
-    this.fallbackCache.set(key, {
-      type: "cached",
-      data,
-      timestamp: new Date(),
-      source,
-    });
-  }
-
-  /**
-   * Get cached fallback data
-   */
-  getCachedFallbackData(
-    key: string,
-    maxAge: number = 300000
-  ): FallbackData | null {
-    const cached = this.fallbackCache.get(key);
-    if (!cached) return null;
-
-    const age = Date.now() - cached.timestamp.getTime();
-    if (age > maxAge) {
-      this.fallbackCache.delete(key);
-      return null;
+  private isRecoverable(error: Error, context: ErrorContext): boolean {
+    for (const strategy of this.recoveryStrategies.values()) {
+      if (strategy.canRecover(error, context)) {
+        return true;
+      }
     }
-
-    return cached;
+    return false;
   }
 
   /**
-   * Create a standardized error response
+   * Get or create circuit breaker for operation
    */
-  createErrorResponse(
+  private getCircuitBreaker(key: string): CircuitBreaker {
+    if (!this.circuitBreakers.has(key)) {
+      this.circuitBreakers.set(
+        key,
+        new CircuitBreaker(
+          this.config.circuitBreakerThreshold,
+          this.config.circuitBreakerTimeout
+        )
+      );
+    }
+    return this.circuitBreakers.get(key)!;
+  }
+
+  /**
+   * Create standardized error response
+   */
+  private createErrorResponse(
     code: ErrorCode,
     message: string,
-    details?: any,
-    requestId?: string
+    requestId: string,
+    details?: any
   ): ErrorResponse {
     return {
       code,
       message,
       details,
       timestamp: new Date(),
-      requestId: requestId || this.generateRequestId(),
+      requestId,
     };
   }
 
   /**
-   * Check if an error is recoverable
+   * Sanitize error message to remove sensitive information
    */
-  isRecoverableError(error: Error): boolean {
-    // Network errors are often recoverable
-    if (
-      error.message.includes("ECONNREFUSED") ||
-      error.message.includes("ECONNABORTED") ||
-      error.message.includes("timeout")
-    ) {
-      return true;
-    }
-
-    // Server errors might be recoverable
-    if (
-      error.message.includes("500") ||
-      error.message.includes("502") ||
-      error.message.includes("503")
-    ) {
-      return true;
-    }
-
-    return false;
+  private sanitizeErrorMessage(message: string): string {
+    // Remove file paths, tokens, and other sensitive data
+    return message
+      .replace(/\/[^\s]+\//g, ".../") // Remove absolute paths
+      .replace(/token[=:\s]+[^\s]+/gi, "token=[REDACTED]") // Remove tokens
+      .replace(/key[=:\s]+[^\s]+/gi, "key=[REDACTED]") // Remove keys
+      .replace(/password[=:\s]+[^\s]+/gi, "password=[REDACTED]"); // Remove passwords
   }
 
-  private async attemptRecovery(
-    error: Error,
-    context: ErrorContext
-  ): Promise<{ data: any; strategy: string } | null> {
-    for (const strategy of this.recoveryStrategies) {
-      if (strategy.canRecover(error, context)) {
-        try {
-          this.logger.debug(
-            `Attempting recovery with strategy: ${strategy.name}`,
-            undefined,
-            context.requestId
-          );
-
-          const data = await strategy.recover(error, context);
-          return { data, strategy: strategy.name };
-        } catch (recoveryError) {
-          this.logger.warn(
-            `Recovery strategy ${strategy.name} failed`,
-            undefined,
-            context.requestId
-          );
-        }
-      }
-    }
-    return null;
+  /**
+   * Generate unique request ID
+   */
+  private generateRequestId(): string {
+    return `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   }
 
-  private async attemptFallback<T>(
-    context: ErrorContext,
-    fallbackFn?: () => Promise<T> | T
-  ): Promise<{ data: T; type: string } | null> {
-    // Try custom fallback function first
-    if (fallbackFn) {
-      try {
-        const data = await fallbackFn();
-        return { data, type: "custom" };
-      } catch (fallbackError) {
-        this.logger.warn(
-          "Custom fallback failed",
-          undefined,
-          context.requestId
-        );
-      }
-    }
-
-    // Try cached data
-    const cacheKey = `${context.component}.${context.operation}`;
-    const cached = this.getCachedFallbackData(cacheKey);
-    if (cached) {
-      return { data: cached.data, type: "cached" };
-    }
-
-    // Try mock data for specific operations
-    if (
-      context.operation.includes("context") ||
-      context.operation.includes("requirement")
-    ) {
-      const mockData = this.generateMockFallbackData(context.operation);
-      if (mockData) {
-        return { data: mockData, type: "mock" };
-      }
-    }
-
-    return null;
-  }
-
-  private generateMockFallbackData(operation: string): any {
-    if (operation.includes("context")) {
-      return {
-        requirements: [],
-        implementationStatus: "unknown",
-        relatedChanges: [],
-        lastUpdated: new Date(),
-        source: "fallback",
-        message: "Service temporarily unavailable. Showing fallback data.",
-      };
-    }
-
-    if (operation.includes("requirement")) {
-      return {
-        id: "fallback-req",
-        title: "Service Unavailable",
-        description: "Unable to retrieve requirement details at this time.",
-        status: "unknown",
-        source: "fallback",
-      };
-    }
-
-    return null;
-  }
-
-  private notifyUser(error: Error, context: ErrorContext): void {
-    const userMessage = this.getUserFriendlyMessage(error, context);
-
-    if (this.isRecoverableError(error)) {
-      const messagePromise = vscode.window.showWarningMessage(
-        userMessage,
-        "Retry",
-        "Show Details"
-      );
-      if (messagePromise && typeof messagePromise.then === "function") {
-        messagePromise.then((selection) => {
-          if (selection === "Show Details") {
-            this.showErrorDetails(error, context);
-          }
-        });
-      }
-    } else {
-      const messagePromise = vscode.window.showErrorMessage(
-        userMessage,
-        "Show Details"
-      );
-      if (messagePromise && typeof messagePromise.then === "function") {
-        messagePromise.then((selection) => {
-          if (selection === "Show Details") {
-            this.showErrorDetails(error, context);
-          }
-        });
-      }
-    }
-  }
-
-  private getUserFriendlyMessage(error: Error, context: ErrorContext): string {
-    if (error.message.includes("ECONNREFUSED")) {
-      return "Unable to connect to the context service. Please check if the service is running.";
-    }
-
-    if (error.message.includes("timeout")) {
-      return "The request timed out. The service may be experiencing high load.";
-    }
-
-    if (error.message.includes("404")) {
-      return "The requested information was not found.";
-    }
-
-    return `An error occurred in ${context.component}: ${error.message}`;
-  }
-
-  private showErrorDetails(error: Error, context: ErrorContext): void {
-    const details = {
-      component: context.component,
-      operation: context.operation,
-      error: error.message,
-      timestamp: new Date().toISOString(),
-      requestId: context.requestId,
-    };
-
-    vscode.window.showInformationMessage("Error Details", {
-      modal: true,
-      detail: JSON.stringify(details, null, 2),
-    });
-  }
-
-  private initializeDefaultStrategies(): void {
+  /**
+   * Initialize default recovery strategies
+   */
+  private initializeDefaultRecoveryStrategies(): void {
     // Connection retry strategy
-    this.addRecoveryStrategy({
-      name: "connection-retry",
-      canRecover: (error) => error.message.includes("ECONNREFUSED"),
+    this.registerRecoveryStrategy("connection_retry", {
+      canRecover: (error) => error.message.toLowerCase().includes("connection"),
       recover: async (error, context) => {
-        await this.delay(2000);
-        throw error; // Let the retry mechanism handle it
+        // Simulate connection retry
+        await this.delay(1000);
+        throw error; // Would implement actual reconnection logic
       },
-      maxAttempts: 3,
+      maxRetries: 3,
+      retryDelay: 2000,
     });
 
     // Timeout retry strategy
-    this.addRecoveryStrategy({
-      name: "timeout-retry",
-      canRecover: (error) => error.message.includes("timeout"),
+    this.registerRecoveryStrategy("timeout_retry", {
+      canRecover: (error) => error.message.toLowerCase().includes("timeout"),
       recover: async (error, context) => {
-        await this.delay(1000);
-        throw error; // Let the retry mechanism handle it
+        // Simulate timeout retry with longer timeout
+        await this.delay(500);
+        throw error; // Would implement actual retry with extended timeout
       },
-      maxAttempts: 2,
+      maxRetries: 2,
+      retryDelay: 3000,
+    });
+
+    // Cache fallback strategy
+    this.registerRecoveryStrategy("cache_fallback", {
+      canRecover: (error, context) =>
+        context.operation.includes("get") && !error.message.includes("cache"),
+      recover: async (error, context) => {
+        // Would implement cache fallback logic
+        throw error;
+      },
+      maxRetries: 1,
+      retryDelay: 100,
     });
   }
 
-  private mapOperationToAuditAction(operation: string): AuditAction {
-    if (operation.includes("hover")) return AuditAction.HOVER_REQUEST;
-    if (operation.includes("search")) return AuditAction.SEARCH_REQUEST;
-    if (operation.includes("context")) return AuditAction.CONTEXT_RETRIEVAL;
-    if (operation.includes("requirement"))
-      return AuditAction.REQUIREMENT_ACCESS;
-    if (operation.includes("status")) return AuditAction.STATUS_CHECK;
-    return AuditAction.REQUEST_FAILED;
-  }
-
+  /**
+   * Utility delay function
+   */
   private delay(ms: number): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, ms));
-  }
-
-  private generateRequestId(): string {
-    return `req_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
   }
 }
 
 /**
- * Global error handler factory
+ * Circuit Breaker implementation for preventing cascading failures
  */
-export class ErrorHandlerFactory {
-  private static handlers = new Map<string, ErrorHandler>();
+class CircuitBreaker {
+  private failures: number = 0;
+  private lastFailureTime: number = 0;
+  private state: "closed" | "open" | "half-open" = "closed";
 
-  static getHandler(
-    component: string,
-    config?: Partial<ErrorBoundaryConfig>
-  ): ErrorHandler {
-    if (!this.handlers.has(component)) {
-      this.handlers.set(component, new ErrorHandler(component, config));
+  constructor(private threshold: number, private timeout: number) {}
+
+  isOpen(): boolean {
+    if (this.state === "open") {
+      if (Date.now() - this.lastFailureTime > this.timeout) {
+        this.state = "half-open";
+        return false;
+      }
+      return true;
     }
-    return this.handlers.get(component)!;
+    return false;
   }
 
-  static clearHandlers(): void {
-    this.handlers.clear();
+  recordSuccess(): void {
+    this.failures = 0;
+    this.state = "closed";
+  }
+
+  recordFailure(): void {
+    this.failures++;
+    this.lastFailureTime = Date.now();
+
+    if (this.failures >= this.threshold) {
+      this.state = "open";
+    }
+  }
+
+  getFailureCount(): number {
+    return this.failures;
+  }
+
+  reset(): void {
+    this.failures = 0;
+    this.lastFailureTime = 0;
+    this.state = "closed";
   }
 }

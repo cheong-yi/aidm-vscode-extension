@@ -66,6 +66,56 @@
           "type": "boolean",
           "default": true,
           "description": "Use realistic enterprise patterns in mock data"
+        },
+        "enterpriseAiContext.demo.scenarioComplexity": {
+          "type": "string",
+          "enum": [
+            "basic",
+            "intermediate",
+            "advanced"
+          ],
+          "default": "intermediate",
+          "description": "Complexity level of demo scenarios"
+        },
+        "enterpriseAiContext.demo.includeComplianceData": {
+          "type": "boolean",
+          "default": true,
+          "description": "Include compliance and regulatory data in demos"
+        },
+        "enterpriseAiContext.demo.industryVertical": {
+          "type": "string",
+          "enum": [
+            "financial-services",
+            "healthcare",
+            "retail",
+            "manufacturing",
+            "technology",
+            "generic"
+          ],
+          "default": "financial-services",
+          "description": "Industry vertical for specialized demo data"
+        },
+        "enterpriseAiContext.ui.hoverPopupTheme": {
+          "type": "string",
+          "enum": [
+            "default",
+            "compact",
+            "detailed"
+          ],
+          "default": "detailed",
+          "description": "Hover popup display theme"
+        },
+        "enterpriseAiContext.ui.showProgressBars": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show progress bars in hover popups"
+        },
+        "enterpriseAiContext.ui.maxRequirementsShown": {
+          "type": "number",
+          "default": 3,
+          "minimum": 1,
+          "maximum": 10,
+          "description": "Maximum number of requirements to show in hover popup"
         }
       }
     }
@@ -76,7 +126,12 @@
     "watch": "tsc -watch -p ./",
     "pretest": "npm run compile && npm run lint",
     "lint": "eslint src --ext ts",
-    "test": "jest"
+    "test": "jest",
+    "demo": "npm run compile && node out/demo/runDemo.js",
+    "demo:verbose": "npm run compile && node out/demo/runDemo.js --verbose",
+    "demo:scenarios": "npm run compile && node out/demo/runDemo.js --scenarios",
+    "test:integration": "jest --testPathPattern=integration",
+    "test:roocode": "jest --testPathPattern=rooCodeIntegration"
   },
   "devDependencies": {
     "@types/jest": "^29.5.14",

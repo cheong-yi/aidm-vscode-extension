@@ -12,13 +12,28 @@ import {
   MCPCommunication,
 } from "../types/jsonrpc";
 import { ErrorCode, ErrorResponse } from "../types/extension";
+import {
+  AuditLogger,
+  AuditSeverity,
+  AuditOutcome,
+  AuditCategory,
+} from "../security/AuditLogger";
+import { ErrorHandler, ErrorContext } from "../utils/ErrorHandler";
 
 export class MCPClient {
   private httpClient: AxiosInstance;
   private config: MCPCommunication;
   private requestId: number = 1;
+  private auditLogger: AuditLogger;
+  private errorHandler: ErrorHandler;
 
   constructor(port: number = 3000, timeout: number = 5000) {
+    this.auditLogger = new AuditLogger({
+      enabled: true,
+      logLevel: AuditSeverity.LOW,
+      enablePerformanceTracking: true,
+    });
+    this.errorHandler = new ErrorHandler(this.auditLogger);
     this.config = {
       endpoint: `http://localhost:${port}/rpc`,
       method: "POST",
@@ -102,19 +117,46 @@ export class MCPClient {
   }
 
   /**
-   * Get business context for a code location
+   * Get business context for a code location with error handling
    */
   async getBusinessContext(filePath: string, line: number): Promise<any> {
-    return this.callTool("get_business_context", {
-      filePath,
-      line,
-    });
+    const context: ErrorContext = {
+      operation: "getBusinessContext",
+      component: "MCPClient",
+      requestId: this.generateRequestId(),
+      metadata: { filePath, line },
+    };
+
+    await this.auditLogger.logUserInteraction(
+      "business_context_requested",
+      context.metadata
+    );
+
+    return await this.errorHandler.executeWithErrorHandling(
+      async () => {
+        return await this.callTool("get_business_context", {
+          filePath,
+          line,
+        });
+      },
+      context,
+      {
+        enableRecovery: true,
+        maxRetries: 2,
+      }
+    );
   }
 
   /**
-   * Test server connectivity
+   * Test server connectivity with audit logging
    */
   async ping(): Promise<boolean> {
+    const context: ErrorContext = {
+      operation: "ping",
+      component: "MCPClient",
+      requestId: this.generateRequestId(),
+    };
+
     try {
       const request: JSONRPCRequest = {
         jsonrpc: "2.0",
@@ -123,8 +165,23 @@ export class MCPClient {
       };
 
       await this.sendRequest(request);
+
+      await this.auditLogger.logEvent({
+        action: "mcp_server_ping_success",
+        category: AuditCategory.SYSTEM_EVENT,
+        severity: AuditSeverity.LOW,
+        outcome: AuditOutcome.SUCCESS,
+        metadata: { endpoint: this.config.endpoint },
+      });
+
       return true;
     } catch (error) {
+      await this.auditLogger.logError(
+        "mcp_server_ping_failed",
+        error instanceof Error ? error : new Error(String(error)),
+        { endpoint: this.config.endpoint },
+        AuditSeverity.MEDIUM
+      );
       return false;
     }
   }
@@ -155,5 +212,45 @@ export class MCPClient {
       timestamp: new Date(),
       requestId: this.requestId.toString(),
     };
+  }
+
+  /**
+   * Generate unique request ID
+   */
+  private generateRequestId(): string {
+    return `mcp_req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  }
+
+  /**
+   * Get client health status
+   */
+  getHealthStatus(): {
+    isHealthy: boolean;
+    endpoint: string;
+    errorStats: any;
+  } {
+    return {
+      isHealthy: true, // Would implement actual health check
+      endpoint: this.config.endpoint,
+      errorStats: this.errorHandler.getErrorStats(),
+    };
+  }
+
+  /**
+   * Shutdown client gracefully
+   */
+  async shutdown(): Promise<void> {
+    try {
+      await this.auditLogger.shutdown();
+
+      await this.auditLogger.logEvent({
+        action: "mcp_client_shutdown",
+        category: AuditCategory.SYSTEM_EVENT,
+        severity: AuditSeverity.LOW,
+        outcome: AuditOutcome.SUCCESS,
+      });
+    } catch (error) {
+      console.error("Error during MCP client shutdown:", error);
+    }
   }
 }

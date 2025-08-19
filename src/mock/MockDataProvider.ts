@@ -23,6 +23,15 @@ export interface MockConfiguration {
   responseDelay: number;
   errorRate: number;
   enterprisePatterns: boolean;
+  scenarioComplexity: "basic" | "intermediate" | "advanced";
+  includeComplianceData: boolean;
+  industryVertical:
+    | "financial-services"
+    | "healthcare"
+    | "retail"
+    | "manufacturing"
+    | "technology"
+    | "generic";
 }
 
 export class MockDataProvider {
@@ -37,6 +46,9 @@ export class MockDataProvider {
       responseDelay: 100,
       errorRate: 0,
       enterprisePatterns: true,
+      scenarioComplexity: "intermediate",
+      includeComplianceData: true,
+      industryVertical: "financial-services",
       ...config,
     };
 
@@ -131,71 +143,323 @@ export class MockDataProvider {
   }
 
   private generateRequirement(index: number): Requirement {
-    const requirementTemplates = [
-      {
-        title: "User Authentication System",
-        description:
-          "Implement secure user authentication with multi-factor support",
-        type: RequirementType.FUNCTIONAL,
-        tags: ["security", "authentication", "user-management"],
-      },
-      {
-        title: "Payment Processing Integration",
-        description:
-          "Integrate with external payment gateway for transaction processing",
-        type: RequirementType.FUNCTIONAL,
-        tags: ["payment", "integration", "financial"],
-      },
-      {
-        title: "Performance Optimization",
-        description: "System must respond to user requests within 200ms",
-        type: RequirementType.NON_FUNCTIONAL,
-        tags: ["performance", "optimization", "response-time"],
-      },
-      {
-        title: "Data Encryption Compliance",
-        description:
-          "All sensitive data must be encrypted at rest and in transit",
-        type: RequirementType.TECHNICAL,
-        tags: ["security", "encryption", "compliance"],
-      },
-      {
-        title: "Customer Dashboard",
-        description:
-          "Provide customers with a comprehensive dashboard for account management",
-        type: RequirementType.BUSINESS,
-        tags: ["dashboard", "customer", "ui"],
-      },
-    ];
+    // Get industry-specific and complexity-specific templates
+    const requirementTemplates = this.getRequirementTemplates();
 
     const template = requirementTemplates[index % requirementTemplates.length];
     const priorities = Object.values(Priority);
     const statuses = Object.values(RequirementStatus);
 
+    // Add compliance tags if enabled
+    const tags = [...template.tags];
+    if (this.config.includeComplianceData) {
+      tags.push(...this.getComplianceTags(template.type));
+    }
+
+    // Add industry-specific tags
+    tags.push(...this.getIndustryTags());
+
     return {
       id: `REQ-${String(index).padStart(3, "0")}`,
       title: `${template.title} ${index > 5 ? `(${index})` : ""}`,
-      description: template.description,
+      description: this.enhanceDescription(template.description),
       type: template.type,
       priority: priorities[Math.floor(Math.random() * priorities.length)],
       status: statuses[Math.floor(Math.random() * statuses.length)],
       stakeholders: this.generateStakeholders(),
       createdDate: this.generateRandomDate(-90, -30),
       lastModified: this.generateRandomDate(-30, 0),
-      tags: template.tags,
+      tags: [...new Set(tags)], // Remove duplicates
     };
+  }
+
+  private getRequirementTemplates() {
+    const baseTemplates = [
+      {
+        title: "User Authentication System",
+        description:
+          "Implement secure user authentication with multi-factor support including OAuth 2.0, SAML, and biometric authentication. Must support enterprise SSO integration and comply with SOX requirements.",
+        type: RequirementType.FUNCTIONAL,
+        tags: [
+          "security",
+          "authentication",
+          "user-management",
+          "sso",
+          "compliance",
+        ],
+      },
+      {
+        title: "Payment Processing Integration",
+        description:
+          "Integrate with external payment gateway for transaction processing. Support multiple payment methods including credit cards, ACH, wire transfers, and digital wallets. Must handle PCI DSS compliance and fraud detection.",
+        type: RequirementType.FUNCTIONAL,
+        tags: [
+          "payment",
+          "integration",
+          "financial",
+          "pci-dss",
+          "fraud-detection",
+        ],
+      },
+      {
+        title: "Performance Optimization",
+        description:
+          "System must respond to user requests within 200ms for 95th percentile. Implement caching strategies, database optimization, and CDN integration. Support horizontal scaling for peak loads.",
+        type: RequirementType.NON_FUNCTIONAL,
+        tags: [
+          "performance",
+          "optimization",
+          "response-time",
+          "caching",
+          "scaling",
+        ],
+      },
+      {
+        title: "Data Encryption Compliance",
+        description:
+          "All sensitive data must be encrypted at rest using AES-256 and in transit using TLS 1.3. Implement key rotation policies and maintain audit logs for compliance with GDPR and HIPAA.",
+        type: RequirementType.TECHNICAL,
+        tags: ["security", "encryption", "compliance", "gdpr", "hipaa"],
+      },
+      {
+        title: "Customer Dashboard",
+        description:
+          "Provide customers with a comprehensive dashboard for account management including real-time analytics, transaction history, and predictive insights. Must be accessible (WCAG 2.1 AA) and mobile-responsive.",
+        type: RequirementType.BUSINESS,
+        tags: ["dashboard", "customer", "ui", "analytics", "accessibility"],
+      },
+    ];
+
+    // Add complexity-specific templates
+    if (this.config.scenarioComplexity === "advanced") {
+      baseTemplates.push(...this.getAdvancedRequirementTemplates());
+    } else if (this.config.scenarioComplexity === "intermediate") {
+      baseTemplates.push(...this.getIntermediateRequirementTemplates());
+    }
+
+    // Add industry-specific templates
+    baseTemplates.push(...this.getIndustrySpecificTemplates());
+
+    return baseTemplates;
+  }
+
+  private getAdvancedRequirementTemplates() {
+    return [
+      {
+        title: "Machine Learning Pipeline",
+        description:
+          "Build ML pipeline for predictive analytics and recommendation engine. Support model training, A/B testing, and automated deployment. Must handle real-time inference with sub-100ms latency.",
+        type: RequirementType.BUSINESS,
+        tags: [
+          "machine-learning",
+          "analytics",
+          "recommendations",
+          "pipeline",
+          "inference",
+        ],
+      },
+      {
+        title: "Microservices Architecture",
+        description:
+          "Transition monolithic application to microservices architecture. Implement service mesh, API gateway, and distributed tracing. Support independent deployment and scaling of services.",
+        type: RequirementType.TECHNICAL,
+        tags: [
+          "microservices",
+          "architecture",
+          "service-mesh",
+          "api-gateway",
+          "distributed",
+        ],
+      },
+    ];
+  }
+
+  private getIntermediateRequirementTemplates() {
+    return [
+      {
+        title: "API Rate Limiting",
+        description:
+          "Implement intelligent rate limiting for public APIs with tiered access levels. Support burst capacity and graceful degradation. Include monitoring and alerting for abuse detection.",
+        type: RequirementType.TECHNICAL,
+        tags: ["api", "rate-limiting", "monitoring", "security", "performance"],
+      },
+      {
+        title: "Audit Trail System",
+        description:
+          "Comprehensive audit logging for all user actions and system events. Must support tamper-proof logs, real-time monitoring, and compliance reporting for SOX, GDPR, and industry regulations.",
+        type: RequirementType.FUNCTIONAL,
+        tags: ["audit", "logging", "compliance", "monitoring", "security"],
+      },
+    ];
+  }
+
+  private getIndustrySpecificTemplates() {
+    switch (this.config.industryVertical) {
+      case "healthcare":
+        return [
+          {
+            title: "HIPAA Compliance Framework",
+            description:
+              "Implement comprehensive HIPAA compliance including PHI protection, access controls, and audit logging.",
+            type: RequirementType.TECHNICAL,
+            tags: ["hipaa", "phi", "healthcare", "compliance", "privacy"],
+          },
+          {
+            title: "Patient Data Management",
+            description:
+              "Secure patient data management system with role-based access and consent management.",
+            type: RequirementType.FUNCTIONAL,
+            tags: [
+              "patient-data",
+              "healthcare",
+              "consent",
+              "privacy",
+              "security",
+            ],
+          },
+        ];
+      case "retail":
+        return [
+          {
+            title: "Inventory Management System",
+            description:
+              "Real-time inventory tracking with automated reordering and demand forecasting.",
+            type: RequirementType.BUSINESS,
+            tags: [
+              "inventory",
+              "retail",
+              "forecasting",
+              "automation",
+              "supply-chain",
+            ],
+          },
+          {
+            title: "Customer Loyalty Program",
+            description:
+              "Comprehensive loyalty program with points, rewards, and personalized offers.",
+            type: RequirementType.BUSINESS,
+            tags: [
+              "loyalty",
+              "retail",
+              "rewards",
+              "personalization",
+              "customer-engagement",
+            ],
+          },
+        ];
+      case "manufacturing":
+        return [
+          {
+            title: "IoT Sensor Integration",
+            description:
+              "Integration with IoT sensors for real-time equipment monitoring and predictive maintenance.",
+            type: RequirementType.TECHNICAL,
+            tags: [
+              "iot",
+              "manufacturing",
+              "sensors",
+              "monitoring",
+              "predictive-maintenance",
+            ],
+          },
+          {
+            title: "Supply Chain Optimization",
+            description:
+              "Optimize supply chain operations with real-time tracking and automated procurement.",
+            type: RequirementType.BUSINESS,
+            tags: [
+              "supply-chain",
+              "manufacturing",
+              "optimization",
+              "procurement",
+              "tracking",
+            ],
+          },
+        ];
+      default:
+        return [];
+    }
+  }
+
+  private getComplianceTags(requirementType: RequirementType): string[] {
+    const complianceTags = [];
+
+    if (this.config.industryVertical === "financial-services") {
+      complianceTags.push("sox", "pci-dss", "basel-iii");
+    } else if (this.config.industryVertical === "healthcare") {
+      complianceTags.push("hipaa", "hitech", "fda");
+    }
+
+    // Add general compliance tags
+    complianceTags.push("gdpr", "ccpa", "iso-27001");
+
+    return complianceTags;
+  }
+
+  private getIndustryTags(): string[] {
+    return [this.config.industryVertical];
+  }
+
+  private enhanceDescription(baseDescription: string): string {
+    if (this.config.scenarioComplexity === "basic") {
+      return baseDescription;
+    }
+
+    // Add complexity-specific enhancements
+    const enhancements = [];
+
+    if (this.config.includeComplianceData) {
+      enhancements.push(
+        "Must comply with industry regulations and maintain comprehensive audit trails."
+      );
+    }
+
+    if (this.config.scenarioComplexity === "advanced") {
+      enhancements.push(
+        "Implementation should follow enterprise architecture patterns and support high availability."
+      );
+    }
+
+    return enhancements.length > 0
+      ? `${baseDescription} ${enhancements.join(" ")}`
+      : baseDescription;
   }
 
   private generateCodeMappings(count: number): void {
     const sampleFiles = [
       "src/auth/AuthService.ts",
+      "src/auth/SSOProvider.ts",
+      "src/auth/BiometricAuth.ts",
       "src/payment/PaymentProcessor.ts",
+      "src/payment/FraudDetection.ts",
+      "src/payment/PCICompliance.ts",
       "src/user/UserController.ts",
+      "src/user/UserProfileService.ts",
       "src/dashboard/DashboardComponent.ts",
+      "src/dashboard/AnalyticsWidget.ts",
+      "src/dashboard/RealtimeUpdates.ts",
       "src/security/EncryptionUtil.ts",
+      "src/security/KeyRotationService.ts",
+      "src/security/AuditLogger.ts",
       "src/api/ApiController.ts",
+      "src/api/RateLimiter.ts",
+      "src/api/ApiGateway.ts",
       "src/models/User.ts",
+      "src/models/Transaction.ts",
+      "src/models/AuditEvent.ts",
       "src/services/NotificationService.ts",
+      "src/services/EmailService.ts",
+      "src/services/SMSService.ts",
+      "src/migration/DataMigrator.ts",
+      "src/migration/ValidationService.ts",
+      "src/ml/RecommendationEngine.ts",
+      "src/ml/ModelTrainer.ts",
+      "src/ml/InferenceService.ts",
+      "src/microservices/ServiceMesh.ts",
+      "src/microservices/ServiceDiscovery.ts",
+      "src/support/TicketManager.ts",
+      "src/support/KnowledgeBase.ts",
+      "src/support/LiveChat.ts",
     ];
 
     const requirements = Array.from(this.requirements.keys());
@@ -271,14 +535,26 @@ export class MockDataProvider {
 
   private generateChangeDescription(): string {
     const descriptions = [
-      "Updated authentication logic to support OAuth 2.0",
-      "Fixed payment processing timeout issue",
-      "Refactored user validation methods",
-      "Added encryption for sensitive data fields",
-      "Improved dashboard loading performance",
-      "Updated API endpoints for better error handling",
-      "Added unit tests for core functionality",
-      "Updated documentation for new features",
+      "Updated authentication logic to support OAuth 2.0 and SAML integration",
+      "Fixed payment processing timeout issue affecting high-volume transactions",
+      "Refactored user validation methods to improve performance by 40%",
+      "Added AES-256 encryption for sensitive data fields with key rotation",
+      "Improved dashboard loading performance through intelligent caching",
+      "Updated API endpoints for better error handling and rate limiting",
+      "Added comprehensive unit tests achieving 95% code coverage",
+      "Updated documentation for new microservices architecture",
+      "Implemented fraud detection algorithms reducing false positives by 60%",
+      "Added real-time notification system with delivery guarantees",
+      "Optimized database queries reducing response time from 500ms to 150ms",
+      "Integrated machine learning pipeline for predictive analytics",
+      "Added GDPR compliance features including data anonymization",
+      "Implemented distributed tracing for microservices debugging",
+      "Added automated security scanning to CI/CD pipeline",
+      "Refactored legacy code to support horizontal scaling",
+      "Added comprehensive audit logging for SOX compliance",
+      "Implemented A/B testing framework for feature rollouts",
+      "Added support for multi-tenant architecture",
+      "Optimized memory usage reducing server costs by 30%",
     ];
 
     return descriptions[Math.floor(Math.random() * descriptions.length)];
@@ -293,6 +569,19 @@ export class MockDataProvider {
       "Business Analyst",
       "UX Designer",
       "DevOps Engineer",
+      "Chief Technology Officer",
+      "Compliance Officer",
+      "Data Protection Officer",
+      "Enterprise Architect",
+      "Site Reliability Engineer",
+      "Customer Success Manager",
+      "Legal Counsel",
+      "Risk Management Team",
+      "Infrastructure Team",
+      "Data Science Team",
+      "Customer Support Lead",
+      "Finance Team",
+      "Audit Team",
     ];
 
     const count = Math.floor(Math.random() * 3) + 1;

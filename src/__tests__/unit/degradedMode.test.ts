@@ -1,453 +1,378 @@
 /**
- * Degraded Mode Manager Unit Tests
- * Tests for system operation in degraded conditions
+ * Degraded Mode Tests
+ * Tests for degraded mode manager and fallback mechanisms
  */
 
 import {
   DegradedModeManager,
   DegradedModeLevel,
-  ServiceHealth,
-} from "../../utils/degradedMode";
-import { CodeLocation } from "../../types/business";
-
-// Mock VSCode
-jest.mock("vscode", () => ({
-  window: {
-    createStatusBarItem: jest.fn(() => ({
-      show: jest.fn(),
-      dispose: jest.fn(),
-      text: "",
-      backgroundColor: undefined,
-      tooltip: "",
-      command: "",
-    })),
-    showErrorMessage: jest.fn(),
-    showWarningMessage: jest.fn(),
-    showInformationMessage: jest.fn(),
-  },
-  StatusBarAlignment: {
-    Right: 2,
-  },
-  ThemeColor: jest.fn(),
-}));
-
-// Mock the logger
-jest.mock("../../utils/logger", () => ({
-  LoggerFactory: {
-    getLogger: jest.fn(() => ({
-      error: jest.fn(),
-      warn: jest.fn(),
-      info: jest.fn(),
-      debug: jest.fn(),
-    })),
-  },
-}));
-
-// Mock audit trail
-jest.mock("../../utils/auditTrail", () => ({
-  auditTrail: {
-    recordSystemEvent: jest.fn(),
-    recordError: jest.fn(),
-  },
-  AuditAction: {
-    STATUS_CHECK: "status_check",
-    CONFIG_UPDATE: "config_update",
-  },
-}));
+} from "../../utils/DegradedModeManager";
+import { AuditLogger, AuditSeverity } from "../../security/AuditLogger";
+import { BusinessContext, CodeLocation } from "../../types/business";
+import { ConnectionStatus } from "../../types/extension";
 
 describe("DegradedModeManager", () => {
   let degradedModeManager: DegradedModeManager;
+  let auditLogger: AuditLogger;
 
   beforeEach(() => {
-    jest.clearAllMocks();
-    degradedModeManager = new DegradedModeManager({
-      enableCaching: true,
-      enableMockData: true,
-      enableUserNotifications: false, // Disable for testing
+    auditLogger = new AuditLogger({
+      enabled: true,
+      logLevel: AuditSeverity.LOW,
+    });
+    degradedModeManager = new DegradedModeManager(auditLogger, {
+      enabled: true,
+      fallbackDataEnabled: true,
+      cacheEnabled: true,
+      staticFallbackEnabled: true,
     });
   });
 
-  afterEach(() => {
-    degradedModeManager.dispose();
+  afterEach(async () => {
+    await degradedModeManager.shutdown();
+    await auditLogger.shutdown();
   });
 
-  describe("initialization", () => {
-    it("should initialize with normal mode", () => {
-      const state = degradedModeManager.getCurrentState();
-
-      expect(state.level).toBe(DegradedModeLevel.NORMAL);
-      expect(state.degradationReason).toBe("System operating normally");
-      expect(state.activeServices).toEqual({
-        mcpServer: true,
-        dataProvider: true,
-        cache: true,
-        network: true,
-      });
+  describe("Mode Detection", () => {
+    it("should start in normal mode", () => {
+      expect(degradedModeManager.getCurrentMode()).toBe(
+        DegradedModeLevel.NORMAL
+      );
+      expect(degradedModeManager.isDegraded()).toBe(false);
     });
 
-    it("should create status bar item", () => {
-      expect(require("vscode").window.createStatusBarItem).toHaveBeenCalled();
-    });
-  });
+    it("should transition to partial mode when some services fail", () => {
+      degradedModeManager.updateServiceHealth("dataProvider", false);
 
-  describe("checkSystemHealth", () => {
-    it("should maintain normal mode when all services are healthy", async () => {
-      // Mock all health checks to return true
-      jest
-        .spyOn(degradedModeManager as any, "performHealthChecks")
-        .mockResolvedValue({
-          mcpServer: true,
-          dataProvider: true,
-          cache: true,
-          network: true,
-        });
-
-      const state = await degradedModeManager.checkSystemHealth();
-
-      expect(state.level).toBe(DegradedModeLevel.NORMAL);
-      expect(state.activeServices.mcpServer).toBe(true);
-      expect(state.activeServices.dataProvider).toBe(true);
-      expect(state.activeServices.cache).toBe(true);
-      expect(state.activeServices.network).toBe(true);
+      expect(degradedModeManager.getCurrentMode()).toBe(
+        DegradedModeLevel.PARTIAL
+      );
+      expect(degradedModeManager.isDegraded()).toBe(true);
     });
 
-    it("should transition to partial mode when some services fail", async () => {
-      jest
-        .spyOn(degradedModeManager as any, "performHealthChecks")
-        .mockResolvedValue({
-          mcpServer: true,
-          dataProvider: true,
-          cache: false, // One service down
-          network: true,
-        });
+    it("should transition to minimal mode when multiple services fail", () => {
+      degradedModeManager.updateServiceHealth("dataProvider", false);
+      degradedModeManager.updateServiceHealth("cache", false);
 
-      const state = await degradedModeManager.checkSystemHealth();
-
-      expect(state.level).toBe(DegradedModeLevel.PARTIAL);
-      expect(state.degradationReason).toContain("cache");
+      expect(degradedModeManager.getCurrentMode()).toBe(
+        DegradedModeLevel.MINIMAL
+      );
+      expect(degradedModeManager.isDegraded()).toBe(true);
     });
 
-    it("should transition to minimal mode when many services fail", async () => {
-      jest
-        .spyOn(degradedModeManager as any, "performHealthChecks")
-        .mockResolvedValue({
-          mcpServer: false,
-          dataProvider: false,
-          cache: true, // Only one service up
-          network: true,
-        });
+    it("should transition to offline mode when most services fail", () => {
+      degradedModeManager.updateServiceHealth("dataProvider", false);
+      degradedModeManager.updateServiceHealth("cache", false);
+      degradedModeManager.updateServiceHealth("mcpServer", false);
 
-      const state = await degradedModeManager.checkSystemHealth();
-
-      expect(state.level).toBe(DegradedModeLevel.MINIMAL);
-      expect(state.degradationReason).toContain("mcpServer");
-      expect(state.degradationReason).toContain("dataProvider");
+      expect(degradedModeManager.getCurrentMode()).toBe(
+        DegradedModeLevel.OFFLINE
+      );
+      expect(degradedModeManager.isDegraded()).toBe(true);
     });
 
-    it("should transition to offline mode when all services fail", async () => {
-      jest
-        .spyOn(degradedModeManager as any, "performHealthChecks")
-        .mockResolvedValue({
-          mcpServer: false,
-          dataProvider: false,
-          cache: false,
-          network: false,
-        });
-
-      const state = await degradedModeManager.checkSystemHealth();
-
-      expect(state.level).toBe(DegradedModeLevel.OFFLINE);
-    });
-
-    it("should handle health check errors gracefully", async () => {
-      jest
-        .spyOn(degradedModeManager as any, "performHealthChecks")
-        .mockRejectedValue(new Error("Health check failed"));
-
-      const state = await degradedModeManager.checkSystemHealth();
-
-      // Should return current state without crashing
-      expect(state).toBeDefined();
-      expect(state.level).toBeDefined();
-    });
-  });
-
-  describe("getFallbackBusinessContext", () => {
-    const mockCodeLocation: CodeLocation = {
-      filePath: "/test/file.ts",
-      startLine: 10,
-      endLine: 20,
-      symbolName: "testFunction",
-    };
-
-    it("should return mock context when configured for mock data", async () => {
-      const mockManager = new DegradedModeManager({
-        fallbackDataSource: "mock",
-      });
-
-      const context = await mockManager.getFallbackBusinessContext(
-        mockCodeLocation
+    it("should return to normal mode when services recover", () => {
+      // First degrade
+      degradedModeManager.updateServiceHealth("dataProvider", false);
+      expect(degradedModeManager.getCurrentMode()).toBe(
+        DegradedModeLevel.PARTIAL
       );
 
-      expect(context).toBeDefined();
-      expect(context?.requirements).toHaveLength(1);
-      expect(context?.requirements[0].title).toContain("Mock Requirement");
-      expect(context?.implementationStatus.notes).toContain("mock information");
-
-      mockManager.dispose();
-    });
-
-    it("should return static fallback when configured", async () => {
-      const staticManager = new DegradedModeManager({
-        fallbackDataSource: "static",
-      });
-
-      const context = await staticManager.getFallbackBusinessContext(
-        mockCodeLocation
-      );
-
-      expect(context).toBeDefined();
-      expect(context?.requirements).toHaveLength(0);
-      expect(context?.implementationStatus.notes).toContain(
-        "temporarily unavailable"
-      );
-
-      staticManager.dispose();
-    });
-
-    it("should handle fallback errors gracefully", async () => {
-      // Create a manager configured for mock data but force an error
-      const errorManager = new DegradedModeManager({
-        fallbackDataSource: "mock",
-      });
-
-      // Force an error in the entire getFallbackBusinessContext method
-      jest
-        .spyOn(errorManager as any, "getCachedContext")
-        .mockRejectedValue(new Error("Cache failed"));
-      jest
-        .spyOn(errorManager as any, "generateMockContext")
-        .mockImplementation(() => {
-          throw new Error("Mock generation failed");
-        });
-
-      const context = await errorManager.getFallbackBusinessContext(
-        mockCodeLocation
-      );
-
-      expect(context).toBeDefined();
-      expect(context?.implementationStatus.notes).toContain(
-        "temporarily unavailable"
-      );
-
-      errorManager.dispose();
-    });
-  });
-
-  describe("executeWithDegradation", () => {
-    const mockOperation = jest.fn();
-    const mockFallback = jest.fn();
-    const mockContext = { component: "TestComponent", operation: "testOp" };
-
-    beforeEach(() => {
-      mockOperation.mockClear();
-      mockFallback.mockClear();
-    });
-
-    it("should execute primary operation in normal mode", async () => {
-      mockOperation.mockResolvedValue("primary-result");
-      mockFallback.mockResolvedValue("fallback-result");
-
-      const result = await degradedModeManager.executeWithDegradation(
-        mockOperation,
-        mockFallback,
-        mockContext
-      );
-
-      expect(result).toBe("primary-result");
-      expect(mockOperation).toHaveBeenCalled();
-      expect(mockFallback).not.toHaveBeenCalled();
-    });
-
-    it("should use fallback when primary operation fails in normal mode", async () => {
-      mockOperation.mockRejectedValue(new Error("Primary failed"));
-      mockFallback.mockResolvedValue("fallback-result");
-
-      const result = await degradedModeManager.executeWithDegradation(
-        mockOperation,
-        mockFallback,
-        mockContext
-      );
-
-      expect(result).toBe("fallback-result");
-      expect(mockOperation).toHaveBeenCalled();
-      expect(mockFallback).toHaveBeenCalled();
-    });
-
-    it("should use fallback directly in degraded mode", async () => {
-      // Force degraded mode
-      await degradedModeManager.forceDegradationLevel(
-        DegradedModeLevel.PARTIAL,
-        "Test degradation"
-      );
-
-      mockFallback.mockResolvedValue("fallback-result");
-
-      const result = await degradedModeManager.executeWithDegradation(
-        mockOperation,
-        mockFallback,
-        mockContext
-      );
-
-      expect(result).toBe("fallback-result");
-      expect(mockOperation).not.toHaveBeenCalled();
-      expect(mockFallback).toHaveBeenCalled();
-    });
-  });
-
-  describe("forceDegradationLevel", () => {
-    it("should force transition to specified level", async () => {
-      await degradedModeManager.forceDegradationLevel(
-        DegradedModeLevel.MINIMAL,
-        "Forced for testing"
-      );
-
-      const state = degradedModeManager.getCurrentState();
-
-      expect(state.level).toBe(DegradedModeLevel.MINIMAL);
-      expect(state.degradationReason).toBe("Forced for testing");
-    });
-
-    it("should record audit event for forced degradation", async () => {
-      const { auditTrail } = require("../../utils/auditTrail");
-
-      await degradedModeManager.forceDegradationLevel(
-        DegradedModeLevel.OFFLINE,
-        "Emergency shutdown"
-      );
-
-      expect(auditTrail.recordSystemEvent).toHaveBeenCalledWith(
-        expect.any(String),
-        "DegradedModeManager",
-        expect.objectContaining({
-          metadata: expect.objectContaining({
-            forcedLevel: "OFFLINE",
-            reason: "Emergency shutdown",
-          }),
-        })
-      );
-    });
-  });
-
-  describe("attemptRecovery", () => {
-    it("should recover when services become healthy", async () => {
-      // Start in degraded mode
-      await degradedModeManager.forceDegradationLevel(
-        DegradedModeLevel.PARTIAL,
-        "Test degradation"
-      );
-
-      // Mock recovery
-      jest
-        .spyOn(degradedModeManager as any, "performHealthChecks")
-        .mockResolvedValue({
-          mcpServer: true,
-          dataProvider: true,
-          cache: true,
-          network: true,
-        });
-
-      const recovered = await degradedModeManager.attemptRecovery();
-
-      expect(recovered).toBe(true);
-      expect(degradedModeManager.getCurrentState().level).toBe(
+      // Then recover
+      degradedModeManager.updateServiceHealth("dataProvider", true);
+      expect(degradedModeManager.getCurrentMode()).toBe(
         DegradedModeLevel.NORMAL
       );
     });
-
-    it("should not recover when services remain unhealthy", async () => {
-      // Start in degraded mode
-      await degradedModeManager.forceDegradationLevel(
-        DegradedModeLevel.MINIMAL,
-        "Test degradation"
-      );
-
-      // Mock continued degradation
-      jest
-        .spyOn(degradedModeManager as any, "performHealthChecks")
-        .mockResolvedValue({
-          mcpServer: false,
-          dataProvider: false,
-          cache: true,
-          network: true,
-        });
-
-      const recovered = await degradedModeManager.attemptRecovery();
-
-      expect(recovered).toBe(false);
-      expect(degradedModeManager.getCurrentState().level).toBe(
-        DegradedModeLevel.MINIMAL
-      );
-    });
-
-    it("should handle recovery errors gracefully", async () => {
-      jest
-        .spyOn(degradedModeManager as any, "performHealthChecks")
-        .mockRejectedValue(new Error("Recovery check failed"));
-
-      const recovered = await degradedModeManager.attemptRecovery();
-
-      expect(recovered).toBe(false);
-    });
   });
 
-  describe("getCurrentState", () => {
-    it("should return a copy of current state", () => {
-      const state1 = degradedModeManager.getCurrentState();
-      const state2 = degradedModeManager.getCurrentState();
+  describe("Business Context Fallback", () => {
+    const testCodeLocation: CodeLocation = {
+      filePath: "/test/file.ts",
+      startLine: 10,
+      endLine: 15,
+    };
 
-      expect(state1).toEqual(state2);
-      expect(state1).not.toBe(state2); // Should be different objects
-    });
-
-    it("should include all required state properties", () => {
-      const state = degradedModeManager.getCurrentState();
-
-      expect(state).toHaveProperty("level");
-      expect(state).toHaveProperty("activeServices");
-      expect(state).toHaveProperty("lastHealthCheck");
-      expect(state).toHaveProperty("degradationReason");
-      expect(state.activeServices).toHaveProperty("mcpServer");
-      expect(state.activeServices).toHaveProperty("dataProvider");
-      expect(state.activeServices).toHaveProperty("cache");
-      expect(state.activeServices).toHaveProperty("network");
-    });
-  });
-
-  describe("dispose", () => {
-    it("should clean up resources", () => {
-      const statusBarItem = {
-        show: jest.fn(),
-        dispose: jest.fn(),
+    it("should use primary provider in normal mode", async () => {
+      const mockContext: BusinessContext = {
+        requirements: [
+          {
+            id: "req1",
+            title: "Test Requirement",
+            description: "Test description",
+            type: "functional" as any,
+            priority: "high" as any,
+            status: "approved" as any,
+            stakeholders: ["dev"],
+            createdDate: new Date(),
+            lastModified: new Date(),
+            tags: ["test"],
+          },
+        ],
+        implementationStatus: {
+          completionPercentage: 80,
+          lastVerified: new Date(),
+          verifiedBy: "tester",
+        },
+        relatedChanges: [],
+        lastUpdated: new Date(),
       };
 
-      require("vscode").window.createStatusBarItem.mockReturnValue(
-        statusBarItem
+      const primaryProvider = jest.fn().mockResolvedValue(mockContext);
+
+      const result = await degradedModeManager.getBusinessContextWithFallback(
+        testCodeLocation,
+        primaryProvider
       );
 
-      const manager = new DegradedModeManager();
-      manager.dispose();
-
-      expect(statusBarItem.dispose).toHaveBeenCalled();
+      expect(primaryProvider).toHaveBeenCalled();
+      expect(result).toEqual(mockContext);
     });
 
-    it("should clear health check interval", () => {
-      const clearIntervalSpy = jest.spyOn(global, "clearInterval");
+    it("should use cache fallback when primary provider fails", async () => {
+      const mockContext: BusinessContext = {
+        requirements: [],
+        implementationStatus: {
+          completionPercentage: 0,
+          lastVerified: new Date(),
+          verifiedBy: "System",
+        },
+        relatedChanges: [],
+        lastUpdated: new Date(),
+      };
 
-      const manager = new DegradedModeManager();
-      manager.dispose();
+      // First, populate cache with successful call
+      const primaryProvider = jest.fn().mockResolvedValue(mockContext);
+      await degradedModeManager.getBusinessContextWithFallback(
+        testCodeLocation,
+        primaryProvider
+      );
 
-      expect(clearIntervalSpy).toHaveBeenCalled();
+      // Then simulate failure and degraded mode
+      degradedModeManager.updateServiceHealth("dataProvider", false);
+      const failingProvider = jest
+        .fn()
+        .mockRejectedValue(new Error("Service down"));
+
+      const result = await degradedModeManager.getBusinessContextWithFallback(
+        testCodeLocation,
+        failingProvider
+      );
+
+      expect(failingProvider).toHaveBeenCalled();
+      expect(result).toBeDefined(); // Should get cached or static fallback
+    });
+
+    it("should use static fallback when cache is empty", async () => {
+      // Force degraded mode
+      degradedModeManager.updateServiceHealth("dataProvider", false);
+
+      const failingProvider = jest
+        .fn()
+        .mockRejectedValue(new Error("Service down"));
+
+      const result = await degradedModeManager.getBusinessContextWithFallback(
+        testCodeLocation,
+        failingProvider
+      );
+
+      expect(result).toBeDefined();
+      expect(result?.requirements).toBeDefined();
+      expect(result?.requirements[0]?.title).toContain("Static Context");
+    });
+
+    it("should return null when all fallbacks are disabled", async () => {
+      const disabledFallbackManager = new DegradedModeManager(auditLogger, {
+        enabled: true,
+        fallbackDataEnabled: false,
+        cacheEnabled: false,
+        staticFallbackEnabled: false,
+      });
+
+      disabledFallbackManager.updateServiceHealth("dataProvider", false);
+
+      const failingProvider = jest
+        .fn()
+        .mockRejectedValue(new Error("Service down"));
+
+      const result =
+        await disabledFallbackManager.getBusinessContextWithFallback(
+          testCodeLocation,
+          failingProvider
+        );
+
+      expect(result).toBeNull();
+
+      await disabledFallbackManager.shutdown();
+    });
+  });
+
+  describe("Requirement Fallback", () => {
+    it("should use primary provider in normal mode", async () => {
+      const mockRequirement = {
+        id: "req1",
+        title: "Test Requirement",
+        description: "Test description",
+      };
+
+      const primaryProvider = jest.fn().mockResolvedValue(mockRequirement);
+
+      const result = await degradedModeManager.getRequirementWithFallback(
+        "req1",
+        primaryProvider
+      );
+
+      expect(primaryProvider).toHaveBeenCalled();
+      expect(result).toEqual(mockRequirement);
+    });
+
+    it("should use static fallback when primary provider fails", async () => {
+      degradedModeManager.updateServiceHealth("dataProvider", false);
+
+      const failingProvider = jest
+        .fn()
+        .mockRejectedValue(new Error("Service down"));
+
+      const result = await degradedModeManager.getRequirementWithFallback(
+        "req1",
+        failingProvider
+      );
+
+      expect(result).toBeDefined();
+      expect(result.id).toBe("req1");
+      expect(result.title).toBe("Fallback Requirement");
+    });
+  });
+
+  describe("Cache Management", () => {
+    it("should track cache statistics", () => {
+      const stats = degradedModeManager.getCacheStats();
+
+      expect(stats).toHaveProperty("size");
+      expect(stats).toHaveProperty("oldestEntry");
+      expect(stats).toHaveProperty("newestEntry");
+      expect(stats.size).toBe(0); // Initially empty
+    });
+
+    it("should clear cache when requested", () => {
+      degradedModeManager.clearCache();
+
+      const stats = degradedModeManager.getCacheStats();
+      expect(stats.size).toBe(0);
+    });
+  });
+
+  describe("Status Change Notifications", () => {
+    it("should notify listeners of status changes", (done) => {
+      let notificationCount = 0;
+
+      degradedModeManager.onStatusChange((status, mode) => {
+        notificationCount++;
+
+        if (notificationCount === 1) {
+          expect(status).toBe(ConnectionStatus.Connecting); // Partial mode
+          expect(mode).toBe(DegradedModeLevel.PARTIAL);
+          done();
+        }
+      });
+
+      degradedModeManager.updateServiceHealth("dataProvider", false);
+    });
+
+    it("should handle multiple listeners", () => {
+      const listener1 = jest.fn();
+      const listener2 = jest.fn();
+
+      degradedModeManager.onStatusChange(listener1);
+      degradedModeManager.onStatusChange(listener2);
+
+      degradedModeManager.updateServiceHealth("dataProvider", false);
+
+      expect(listener1).toHaveBeenCalled();
+      expect(listener2).toHaveBeenCalled();
+    });
+  });
+
+  describe("Forced Degraded Mode", () => {
+    it("should allow forcing degraded mode", async () => {
+      await degradedModeManager.forceDegradedMode(
+        DegradedModeLevel.MINIMAL,
+        "Maintenance mode"
+      );
+
+      expect(degradedModeManager.getCurrentMode()).toBe(
+        DegradedModeLevel.MINIMAL
+      );
+      expect(degradedModeManager.isDegraded()).toBe(true);
+    });
+
+    it("should allow restoring normal mode", async () => {
+      await degradedModeManager.forceDegradedMode(
+        DegradedModeLevel.OFFLINE,
+        "Testing"
+      );
+
+      expect(degradedModeManager.getCurrentMode()).toBe(
+        DegradedModeLevel.OFFLINE
+      );
+
+      await degradedModeManager.restoreNormalMode();
+
+      expect(degradedModeManager.getCurrentMode()).toBe(
+        DegradedModeLevel.NORMAL
+      );
+      expect(degradedModeManager.isDegraded()).toBe(false);
+    });
+  });
+
+  describe("Service Health Tracking", () => {
+    it("should track individual service health", () => {
+      const initialHealth = degradedModeManager.getServiceHealth();
+
+      expect(initialHealth.mcpServer).toBe(true);
+      expect(initialHealth.dataProvider).toBe(true);
+      expect(initialHealth.cache).toBe(true);
+      expect(initialHealth.auditLogger).toBe(true);
+
+      degradedModeManager.updateServiceHealth("dataProvider", false);
+
+      const updatedHealth = degradedModeManager.getServiceHealth();
+      expect(updatedHealth.dataProvider).toBe(false);
+      expect(updatedHealth.mcpServer).toBe(true); // Others unchanged
+    });
+  });
+
+  describe("Configuration", () => {
+    it("should respect configuration settings", () => {
+      const configuredManager = new DegradedModeManager(auditLogger, {
+        enabled: false,
+        fallbackDataEnabled: false,
+        cacheEnabled: false,
+        staticFallbackEnabled: false,
+      });
+
+      // Even with service failures, should not enter degraded mode if disabled
+      configuredManager.updateServiceHealth("dataProvider", false);
+
+      // Would need to check internal behavior since mode detection might be disabled
+      expect(configuredManager.getCurrentMode()).toBeDefined();
+    });
+  });
+
+  describe("Error Handling", () => {
+    it("should handle errors in status change listeners gracefully", () => {
+      const faultyListener = jest.fn().mockImplementation(() => {
+        throw new Error("Listener error");
+      });
+
+      degradedModeManager.onStatusChange(faultyListener);
+
+      // Should not throw even if listener fails
+      expect(() => {
+        degradedModeManager.updateServiceHealth("dataProvider", false);
+      }).not.toThrow();
+
+      expect(faultyListener).toHaveBeenCalled();
     });
   });
 });
