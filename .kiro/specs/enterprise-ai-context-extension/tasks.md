@@ -63,7 +63,7 @@
   - Write tests for connection monitoring and status updates
   - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5_
 
-- [-] 8. Integrate extension with MCP server process management
+- [x] 8. Integrate extension with MCP server process management
 
   - Implement MCP server spawning and lifecycle management from VSCode extension
   - Add process cleanup and error recovery for server crashes
@@ -72,7 +72,7 @@
   - Write end-to-end tests for extension-server integration
   - _Requirements: 5.4, 5.5, 6.3_
 
-- [ ] 9. Add comprehensive error handling and audit logging
+- [x] 9. Add comprehensive error handling and audit logging
 
   - Implement structured error logging without sensitive data exposure
   - Add audit trail functionality for user interactions and data access
@@ -81,7 +81,26 @@
   - Write tests for error scenarios and recovery behavior
   - _Requirements: 5.1, 5.2, 5.3, 5.5_
 
-- [ ] 10. Create realistic demo scenarios and polish user experience
+- [x] 9.5. Set up remote MCP server for demo (can work on this while Jest configs resolve)
+
+  - Create simple Express server with expanded Accenture delivery patterns mock data
+  - Deploy to Railway/Vercel for demo URL accessibility
+  - Implement MCP protocol endpoints for delivery intelligence queries
+  - Add cross-project learning database simulation
+  - Test remote server connectivity and response times
+  - _Requirements: 8.2, 8.4 (Remote architecture readiness)_
+
+- [ ] 10. Demonstrate RooCode integration with hybrid MCP architecture
+
+  - Configure RooCode to connect to local MCP server for sprint context
+  - Set up RooCode connection to remote MCP server for delivery patterns
+  - Create demo scenarios showing dual-context AI responses
+  - Test RooCode queries for both local context and institutional knowledge
+  - Document hybrid query patterns and response formats
+  - Validate concurrent AI assistant request handling
+  - _Requirements: 4.1-4.5, 8.1-8.5_
+
+- [ ] 11. Create realistic demo scenarios and polish user experience
 
   - Generate comprehensive mock data representing typical enterprise scenarios
   - Create sample TypeScript/JavaScript files with business context mappings
@@ -90,10 +109,19 @@
   - Write end-to-end tests covering complete user workflows
   - _Requirements: 6.1, 6.2, 6.4_
 
-- [ ] 11. Package extension and validate deployment readiness
+- [ ] 12. Package extension and validate deployment readiness
+
   - Create VSCode extension packaging configuration (package.json, README, etc.)
   - Implement extension marketplace metadata and documentation
   - Add configuration schema for user settings and preferences
   - Validate all TypeScript compilation and test coverage requirements
   - Create installation and setup documentation for demo purposes
   - _Requirements: 7.1, 7.2, 7.3, 7.5_
+
+- [ ] 13. Add comprehensive error handling and audit logging
+  - Implement structured error logging without sensitive data exposure
+  - Add audit trail functionality for user interactions and data access
+  - Create fallback mechanisms for degraded mode operation
+  - Implement proper error boundaries and recovery strategies
+  - Write tests for error scenarios and recovery behavior
+  - _Requirements: 5.1, 5.2, 5.3, 5.5_

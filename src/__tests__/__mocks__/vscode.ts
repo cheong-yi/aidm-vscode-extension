@@ -1,6 +1,70 @@
 /**
- * Mock implementation of vscode module for testing
+ * VSCode API Mock
+ * Mock implementation of VSCode API for testing
  */
+
+export const window = {
+  createStatusBarItem: jest.fn(() => ({
+    show: jest.fn(),
+    hide: jest.fn(),
+    dispose: jest.fn(),
+    text: "",
+    tooltip: "",
+    backgroundColor: undefined,
+    command: undefined,
+  })),
+  showErrorMessage: jest.fn().mockResolvedValue(undefined),
+  showWarningMessage: jest.fn().mockResolvedValue(undefined),
+  showInformationMessage: jest.fn().mockResolvedValue(undefined),
+  createOutputChannel: jest.fn(() => ({
+    appendLine: jest.fn(),
+    show: jest.fn(),
+    hide: jest.fn(),
+    dispose: jest.fn(),
+  })),
+};
+
+export const workspace = {
+  getConfiguration: jest.fn(() => ({
+    get: jest.fn(),
+    update: jest.fn(),
+    has: jest.fn(),
+  })),
+  onDidChangeConfiguration: jest.fn(),
+  workspaceFolders: [],
+};
+
+export const commands = {
+  registerCommand: jest.fn(),
+  executeCommand: jest.fn(),
+};
+
+export const languages = {
+  registerHoverProvider: jest.fn(),
+  createDiagnosticCollection: jest.fn(),
+};
+
+export const StatusBarAlignment = {
+  Left: 1,
+  Right: 2,
+};
+
+export const DiagnosticSeverity = {
+  Error: 0,
+  Warning: 1,
+  Information: 2,
+  Hint: 3,
+};
+
+export const ConfigurationTarget = {
+  Global: 1,
+  Workspace: 2,
+  WorkspaceFolder: 3,
+};
+
+export class ThemeColor {
+  constructor(public id: string) {}
+}
 
 export class Position {
   constructor(public line: number, public character: number) {}
@@ -10,66 +74,46 @@ export class Range {
   constructor(public start: Position, public end: Position) {}
 }
 
-export class MarkdownString {
-  public isTrusted: boolean = false;
-  private content: string = "";
-
-  appendMarkdown(value: string): void {
-    this.content += value;
-  }
-
-  get value(): string {
-    return this.content;
-  }
-}
-
 export class Hover {
-  constructor(public contents: MarkdownString | string, public range?: Range) {}
+  constructor(public contents: any, public range?: Range) {}
 }
 
-export const ThemeColor = jest
-  .fn()
-  .mockImplementation((id: string) => ({ id }));
+export class MarkdownString {
+  constructor(public value?: string) {}
 
-export const StatusBarAlignment = {
-  Left: 1,
-  Right: 2,
+  appendText(value: string): MarkdownString {
+    this.value = (this.value || "") + value;
+    return this;
+  }
+
+  appendMarkdown(value: string): MarkdownString {
+    this.value = (this.value || "") + value;
+    return this;
+  }
+}
+
+export const Uri = {
+  file: jest.fn((path: string) => ({ fsPath: path, path })),
+  parse: jest.fn(),
 };
 
-export const window = {
-  createStatusBarItem: jest.fn().mockReturnValue({
-    text: "",
-    tooltip: "",
-    backgroundColor: undefined,
-    command: "",
-    show: jest.fn(),
-    hide: jest.fn(),
-    dispose: jest.fn(),
-  }),
-  showInformationMessage: jest.fn(),
-};
-
-export const languages = {
-  registerHoverProvider: jest.fn(),
-};
-
-export const commands = {
-  registerCommand: jest.fn(),
-  executeCommand: jest.fn(),
-};
-
-export const workspace = {
-  getConfiguration: jest.fn().mockReturnValue({
+export const ExtensionContext = {
+  subscriptions: [],
+  workspaceState: {
     get: jest.fn(),
-  }),
-  onDidChangeConfiguration: jest.fn(),
+    update: jest.fn(),
+  },
+  globalState: {
+    get: jest.fn(),
+    update: jest.fn(),
+  },
+  extensionPath: "/mock/extension/path",
 };
 
-export interface TextDocument {
-  fileName: string;
-  languageId: string;
-}
-
-export interface ExtensionContext {
-  subscriptions: any[];
-}
+// Export commonly used enums and classes
+export {
+  window as vscode_window,
+  workspace as vscode_workspace,
+  commands as vscode_commands,
+  languages as vscode_languages,
+};

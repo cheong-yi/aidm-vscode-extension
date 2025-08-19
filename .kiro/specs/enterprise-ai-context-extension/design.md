@@ -160,6 +160,26 @@ interface SimpleMCPServer {
   stop(): Promise<void>;
   handleToolCall(toolName: string, args: any): Promise<any>;
   isHealthy(): boolean;
+
+  // Added: Support for hybrid architecture
+  enableRemoteSync(remoteEndpoint: string): Promise<void>;
+  syncDeliveryPatterns(): Promise<void>;
+  getLocalContext(query: ContextQuery): Promise<LocalContext>;
+  queryRemoteIntelligence(query: RemoteQuery): Promise<RemoteIntelligence>;
+}
+
+interface LocalContext {
+  sprintDetails: SprintInfo;
+  storyContext: StoryContext;
+  teamPatterns: CodingPattern[];
+  businessRequirements: Requirement[];
+}
+
+interface RemoteIntelligence {
+  deliveryPatterns: DeliveryPattern[];
+  institutionalKnowledge: KnowledgeBase;
+  crossProjectInsights: LearningInsight[];
+  stakeholderMapping: StakeholderMap;
 }
 
 interface Tool {
@@ -277,6 +297,44 @@ interface ToolCallRequest extends JSONRPCRequest {
     name: string; // "get_code_context" | "search_requirements"
     arguments: Record<string, any>;
   };
+}
+```
+
+## AI Assistant Integration Patterns
+
+### RooCode Dual-Context Architecture
+
+**Local Context Queries (Immediate Response)**
+
+```typescript
+interface RooCodeLocalQueries {
+  getCurrentStoryContext(): Promise<{
+    storyId: string;
+    acceptanceCriteria: string[];
+    businessRequirements: Requirement[];
+    teamCodingStandards: CodingPattern[];
+  }>;
+
+  getProjectContext(filePath: string): Promise<{
+    relatedRequirements: Requirement[];
+    implementationStatus: ImplementationStatus;
+    teamPatterns: CodingPattern[];
+  }>;
+}
+
+interface RooCodeRemoteQueries {
+  getAccentureDeliveryPatterns(technology: string): Promise<{
+    provenPatterns: DeliveryPattern[];
+    successfulProjects: ProjectReference[];
+    methodOneGuidance: MethodOneArtifact[];
+    stakeholderConsiderations: StakeholderInsight[];
+  }>;
+
+  queryInstitutionalKnowledge(domain: string): Promise<{
+    crossProjectLearning: LearningInsight[];
+    deliveryMethodology: AccentureMethod[];
+    riskMitigation: RiskPattern[];
+  }>;
 }
 ```
 
@@ -420,33 +478,58 @@ interface AuthenticationProvider {
 
 ## Performance Optimization
 
-### Caching Strategy
+### Hybrid Caching Strategy (Local-First Architecture)
 
-**Multi-Level Caching**
+**Local-First Performance**
 
-1. **Memory Cache** → Frequently accessed business context (5-minute TTL)
-2. **Disk Cache** → Search indices and requirement mappings (1-hour TTL)
-3. **Session Cache** → User-specific data for current VSCode session
+1. **Sprint Context Cache** → Immediate access to current story details (<50ms)
+2. **Business Requirements Cache** → Code-to-requirement mappings (<100ms)
+3. **Team Patterns Cache** → Project coding standards and practices (<200ms)
+4. **Mock Data Cache** → Enterprise demonstration data for rapid iteration
 
-**Cache Invalidation**
+**Remote Sync Patterns (Future Enterprise)**
 
-- Time-based expiration
-- Event-driven invalidation (file changes, requirement updates)
-- Manual cache clearing via command palette
+1. **Daily Delivery Sync** → Accenture Method One artifacts and proven patterns
+2. **Hourly Sprint Updates** → Real-time story progress and stakeholder changes
+3. **Weekly Learning Sync** → Cross-project insights and institutional knowledge
+4. **Monthly Pattern Updates** → Enterprise delivery methodology updates
 
-### Lazy Loading and Pagination
+**Cache Invalidation Strategy**
 
-**Hover Context**
+- **Local Cache**: Time-based expiration (5-minute TTL for active development)
+- **Remote Cache**: Event-driven invalidation (sprint changes, delivery updates)
+- **Hybrid Coordination**: Local cache checks remote timestamps for freshness
+- **Offline Resilience**: Degraded mode with cached data when remote unavailable
 
-- Load basic context immediately
-- Fetch detailed information on demand
-- Progressive enhancement of displayed data
+### Response Time Architecture
 
-**Search Results**
+**MVP Performance Targets (Local)**
 
-- Initial batch of 20 results
-- Infinite scroll for additional results
-- Relevance-based prioritization
+- Hover display: <200ms (local cache + mock data)
+- MCP tool calls: <300ms (local server communication)
+- Status updates: <100ms (local health checks)
+- AI context queries: <500ms (local business context)
+
+**Enterprise Performance Targets (Hybrid)**
+
+- Local context: <200ms (cached sprint and story details)
+- Remote intelligence: <2s (delivery patterns and institutional knowledge)
+- Hybrid responses: <800ms (local context + remote pattern hints)
+- Sync operations: Background (no impact on developer experience)
+
+### Scalability Patterns
+
+**Local MCP Scaling**
+
+- Memory-efficient caching with LRU eviction
+- Concurrent request handling for multiple AI assistants
+- Process isolation for VSCode extension stability
+
+**Future Remote MCP Scaling**
+
+- Connection pooling for enterprise delivery intelligence
+- Request queuing and batching for institutional knowledge queries
+- Circuit breaker patterns for remote service resilience
 
 ## Deployment and Configuration
 
@@ -492,5 +575,37 @@ interface ExtensionConfiguration {
   };
 }
 ```
+
+### Hybrid MCP Architecture (Local + Remote)
+
+// Emphasize the dual MCP architecture pattern from overview
+interface HybridMCPArchitecture {
+local: {
+sprintContext: LocalContextManager;
+teamPatterns: MockDataProvider;
+fastCache: MemoryCache; // <200ms responses for immediate needs
+businessRequirements: RequirementMapper;
+};
+remote: {
+deliveryPatterns: RemoteMCPServer; // Future - Accenture delivery intelligence
+institutionalKnowledge: AccentureADM; // Future - cross-project learning
+crossProjectLearning: EnterpriseDB; // Future - proven patterns database
+stakeholderMapping: StakeholderService; // Future - enterprise relationships
+};
+}
+
+interface LocalMCPCapabilities {
+getCurrentSprintContext(): Promise<SprintContext>;
+getTeamCodingPatterns(): Promise<CodingPattern[]>;
+getBusinessRequirements(codeLocation: CodeLocation): Promise<Requirement[]>;
+cacheDeliveryPatterns(patterns: DeliveryPattern[]): void;
+}
+
+interface RemoteMCPCapabilities {
+getAccentureDeliveryPatterns(technology: string): Promise<DeliveryPattern[]>;
+queryInstitutionalKnowledge(domain: string): Promise<KnowledgeBase>;
+getCrossProjectLearning(query: string): Promise<LearningInsight[]>;
+mapStakeholderRelationships(project: string): Promise<StakeholderMap>;
+}
 
 This design provides a solid foundation for the MVP while establishing patterns that will scale to full enterprise deployment. The architecture separates concerns effectively, enables comprehensive testing, and maintains the flexibility needed for future enhancements.

@@ -1,63 +1,41 @@
 /**
- * Jest test setup file
+ * Jest Setup File
  * Global test configuration and mocks
  */
 
-// Mock VSCode API for testing
-const mockVSCode = {
-  window: {
-    showInformationMessage: jest.fn(),
-    showErrorMessage: jest.fn(),
-    showWarningMessage: jest.fn(),
-    createStatusBarItem: jest.fn(() => ({
-      text: "",
-      tooltip: "",
-      show: jest.fn(),
-      hide: jest.fn(),
-      dispose: jest.fn(),
-    })),
-  },
-  workspace: {
-    getConfiguration: jest.fn(() => ({
-      get: jest.fn(),
-      update: jest.fn(),
-    })),
-  },
-  languages: {
-    registerHoverProvider: jest.fn(),
-  },
-  commands: {
-    registerCommand: jest.fn(),
-  },
-  StatusBarAlignment: {
-    Left: 1,
-    Right: 2,
-  },
-  Hover: class MockHover {
-    constructor(public contents: any, public range?: any) {}
-  },
-  MarkdownString: class MockMarkdownString {
-    constructor(public value: string = "") {}
-    appendMarkdown(value: string) {
-      this.value += value;
-      return this;
+// Global test timeout
+jest.setTimeout(10000);
+
+// Test utilities
+export const testUtils = {
+  delay: (ms: number) => new Promise((resolve) => setTimeout(resolve, ms)),
+
+  createMockError: (message: string, code?: string) => {
+    const error = new Error(message);
+    if (code) {
+      (error as any).code = code;
     }
+    return error;
+  },
+
+  expectEventuallyToBe: async (
+    getValue: () => any,
+    expectedValue: any,
+    timeout: number = 5000,
+    interval: number = 100
+  ) => {
+    const startTime = Date.now();
+
+    while (Date.now() - startTime < timeout) {
+      const currentValue = getValue();
+      if (currentValue === expectedValue) {
+        return;
+      }
+      await new Promise((resolve) => setTimeout(resolve, interval));
+    }
+
+    throw new Error(
+      `Expected ${getValue()} to eventually be ${expectedValue}, but timeout reached`
+    );
   },
 };
-
-// Make vscode module available globally for tests
-(global as any).vscode = mockVSCode;
-
-// Mock axios for HTTP requests
-jest.mock("axios");
-
-// Set up console logging for tests
-const originalConsoleError = console.error;
-beforeEach(() => {
-  console.error = jest.fn();
-});
-
-afterEach(() => {
-  console.error = originalConsoleError;
-  jest.clearAllMocks();
-});

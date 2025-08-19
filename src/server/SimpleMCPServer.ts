@@ -219,6 +219,13 @@ export class SimpleMCPServer {
       case "tools/call":
         return await this.handleToolCall(request as ToolCallRequest);
 
+      case "ping":
+        return {
+          jsonrpc: "2.0",
+          result: "pong",
+          id: request.id,
+        };
+
       default:
         return this.createErrorResponse(request.id, -32601, "Method not found");
     }

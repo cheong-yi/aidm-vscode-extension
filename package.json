@@ -18,6 +18,10 @@
       {
         "command": "enterprise-ai-context.showStatus",
         "title": "Show Connection Status"
+      },
+      {
+        "command": "enterprise-ai-context.restartServer",
+        "title": "Restart MCP Server"
       }
     ],
     "configuration": {
@@ -33,6 +37,16 @@
           "default": 5000,
           "description": "Request timeout in milliseconds"
         },
+        "enterpriseAiContext.mcpServer.retryAttempts": {
+          "type": "number",
+          "default": 3,
+          "description": "Number of restart attempts on server failure"
+        },
+        "enterpriseAiContext.performance.maxConcurrentRequests": {
+          "type": "number",
+          "default": 10,
+          "description": "Maximum concurrent requests to MCP server"
+        },
         "enterpriseAiContext.mock.enabled": {
           "type": "boolean",
           "default": true,
@@ -47,6 +61,11 @@
           ],
           "default": "medium",
           "description": "Size of mock data set"
+        },
+        "enterpriseAiContext.mock.enterprisePatterns": {
+          "type": "boolean",
+          "default": true,
+          "description": "Use realistic enterprise patterns in mock data"
         }
       }
     }
