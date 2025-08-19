@@ -251,7 +251,7 @@ export class MCPClient {
     };
 
     // Update HTTP client to use remote endpoint
-    const headers = { ...this.config.headers };
+    const headers: Record<string, string> = { ...this.config.headers };
     if (apiKey) {
       headers["Authorization"] = `Bearer ${apiKey}`;
     }

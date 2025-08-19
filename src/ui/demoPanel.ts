@@ -43,9 +43,8 @@ export class DemoPanel {
             );
             break;
           case "connectRemote":
-            vscode.commands.executeCommand(
-              "enterprise-ai-context.connectRemoteMCP"
-            );
+            // Handle remote connection with URL and API key from the panel
+            this.handleRemoteConnection(message.url, message.apiKey);
             break;
           case "showStatus":
             vscode.commands.executeCommand("enterprise-ai-context.showStatus");
@@ -214,8 +213,20 @@ export class DemoPanel {
         }
 
         function connectRemote() {
-            document.getElementById('remote-output').textContent = 'Connecting to remote server...';
-            vscode.postMessage({ command: 'connectRemote' });
+            const remoteUrl = document.getElementById('remoteUrl').value;
+            const apiKey = document.getElementById('apiKey').value;
+            
+            if (!remoteUrl) {
+                document.getElementById('remote-output').textContent = 'Please enter a remote MCP server URL';
+                return;
+            }
+            
+            document.getElementById('remote-output').textContent = 'Connecting to ' + remoteUrl + '...';
+            vscode.postMessage({ 
+                command: 'connectRemote', 
+                url: remoteUrl, 
+                apiKey: apiKey 
+            });
         }
 
         function showStatus() {
@@ -246,6 +257,54 @@ export class DemoPanel {
     </script>
 </body>
 </html>`;
+  }
+
+  private async handleRemoteConnection(url: string, apiKey?: string) {
+    try {
+      const config = vscode.workspace.getConfiguration("enterpriseAiContext");
+
+      // Update configuration
+      await config.update(
+        "remote.mcpServerUrl",
+        url,
+        vscode.ConfigurationTarget.Workspace
+      );
+      await config.update(
+        "remote.enabled",
+        true,
+        vscode.ConfigurationTarget.Workspace
+      );
+      if (apiKey) {
+        await config.update(
+          "remote.apiKey",
+          apiKey,
+          vscode.ConfigurationTarget.Workspace
+        );
+      }
+
+      // Send success message back to webview
+      this._panel.webview.postMessage({
+        command: "demoOutput",
+        target: "remote",
+        text: `✅ Connected to remote MCP server: ${url}`,
+      });
+
+      vscode.window.showInformationMessage(
+        `Connected to remote MCP server: ${url}`
+      );
+    } catch (error) {
+      const errorMsg = `❌ Failed to connect: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`;
+
+      this._panel.webview.postMessage({
+        command: "demoOutput",
+        target: "remote",
+        text: errorMsg,
+      });
+
+      vscode.window.showErrorMessage(errorMsg);
+    }
   }
 
   public dispose() {

@@ -1,21 +1,21 @@
 {
-  "name": "enterprise-ai-context",
-  "displayName": "Enterprise AI Context",
+  "name": "aidm-vscode-extension",
+  "displayName": "AiDM VSCode Extension",
   "description": "Bridge business requirements and code implementation with AI-powered context for enterprise development",
   "version": "0.1.0",
-  "publisher": "enterprise-ai-context",
+  "publisher": "aidm-team",
   "author": {
-    "name": "Enterprise AI Context Team"
+    "name": "AiDM Team"
   },
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/enterprise-ai-context/vscode-extension"
+    "url": "https://github.com/aidm-team/vscode-extension"
   },
   "bugs": {
-    "url": "https://github.com/enterprise-ai-context/vscode-extension/issues"
+    "url": "https://github.com/aidm-team/vscode-extension/issues"
   },
-  "homepage": "https://github.com/enterprise-ai-context/vscode-extension#readme",
+  "homepage": "https://github.com/aidm-team/vscode-extension#readme",
   "keywords": [
     "enterprise",
     "ai",
@@ -38,8 +38,9 @@
   ],
   "activationEvents": [
     "onLanguage:typescript",
-    "onCommand:enterprise-ai-context.showStatus",
-    "onCommand:enterprise-ai-context.runRooCodeDemo"
+    "onCommand:aidm-vscode-extension.showStatus",
+    "onCommand:aidm-vscode-extension.runRooCodeDemo",
+    "onStartupFinished"
   ],
   "icon": "resources/icon.png",
   "galleryBanner": {
@@ -50,60 +51,75 @@
   "contributes": {
     "commands": [
       {
-        "command": "enterprise-ai-context.showStatus",
+        "command": "aidm-vscode-extension.showStatus",
         "title": "Show Connection Status",
-        "category": "Enterprise AI Context"
+        "category": "AiDM"
       },
       {
-        "command": "enterprise-ai-context.restartServer",
+        "command": "aidm-vscode-extension.restartServer",
         "title": "Restart MCP Server",
-        "category": "Enterprise AI Context"
+        "category": "AiDM"
       },
       {
-        "command": "enterprise-ai-context.runRooCodeDemo",
+        "command": "aidm-vscode-extension.runRooCodeDemo",
         "title": "Run RooCode Integration Demo",
-        "category": "Enterprise AI Context"
+        "category": "AiDM"
       },
       {
-        "command": "enterprise-ai-context.connectRemoteMCP",
+        "command": "aidm-vscode-extension.connectRemoteMCP",
         "title": "Connect to Remote MCP Server",
-        "category": "Enterprise AI Context"
+        "category": "AiDM"
       },
       {
-        "command": "enterprise-ai-context.showDemoPanel",
+        "command": "aidm-vscode-extension.showDemoPanel",
         "title": "Show Demo Panel",
-        "category": "Enterprise AI Context"
+        "category": "AiDM"
+      },
+      {
+        "command": "aidm-vscode-extension.testActivation",
+        "title": "Test Extension Activation",
+        "category": "AiDM"
+      },
+      {
+        "command": "aidm-vscode-extension.openConfiguration",
+        "title": "Open Configuration Panel",
+        "category": "AiDM"
+      },
+      {
+        "command": "aidm-vscode-extension.hello",
+        "title": "Hello (Test Command)",
+        "category": "AiDM"
       }
     ],
     "configuration": {
-      "title": "Enterprise AI Context",
+      "title": "AiDM VSCode Extension",
       "properties": {
-        "enterpriseAiContext.mcpServer.port": {
+        "aidmVscodeExtension.mcpServer.port": {
           "type": "number",
           "default": 3000,
           "description": "Port for MCP server"
         },
-        "enterpriseAiContext.mcpServer.timeout": {
+        "aidmVscodeExtension.mcpServer.timeout": {
           "type": "number",
           "default": 5000,
           "description": "Request timeout in milliseconds"
         },
-        "enterpriseAiContext.mcpServer.retryAttempts": {
+        "aidmVscodeExtension.mcpServer.retryAttempts": {
           "type": "number",
           "default": 3,
           "description": "Number of restart attempts on server failure"
         },
-        "enterpriseAiContext.performance.maxConcurrentRequests": {
+        "aidmVscodeExtension.performance.maxConcurrentRequests": {
           "type": "number",
           "default": 10,
           "description": "Maximum concurrent requests to MCP server"
         },
-        "enterpriseAiContext.mock.enabled": {
+        "aidmVscodeExtension.mock.enabled": {
           "type": "boolean",
           "default": true,
           "description": "Enable mock data mode"
         },
-        "enterpriseAiContext.mock.dataSize": {
+        "aidmVscodeExtension.mock.dataSize": {
           "type": "string",
           "enum": [
             "small",
@@ -113,12 +129,12 @@
           "default": "medium",
           "description": "Size of mock data set"
         },
-        "enterpriseAiContext.mock.enterprisePatterns": {
+        "aidmVscodeExtension.mock.enterprisePatterns": {
           "type": "boolean",
           "default": true,
           "description": "Use realistic enterprise patterns in mock data"
         },
-        "enterpriseAiContext.demo.scenarioComplexity": {
+        "aidmVscodeExtension.demo.scenarioComplexity": {
           "type": "string",
           "enum": [
             "basic",
@@ -128,12 +144,12 @@
           "default": "intermediate",
           "description": "Complexity level of demo scenarios"
         },
-        "enterpriseAiContext.demo.includeComplianceData": {
+        "aidmVscodeExtension.demo.includeComplianceData": {
           "type": "boolean",
           "default": true,
           "description": "Include compliance and regulatory data in demos"
         },
-        "enterpriseAiContext.demo.industryVertical": {
+        "aidmVscodeExtension.demo.industryVertical": {
           "type": "string",
           "enum": [
             "financial-services",
@@ -146,7 +162,7 @@
           "default": "financial-services",
           "description": "Industry vertical for specialized demo data"
         },
-        "enterpriseAiContext.ui.hoverPopupTheme": {
+        "aidmVscodeExtension.ui.hoverPopupTheme": {
           "type": "string",
           "enum": [
             "default",
@@ -156,29 +172,29 @@
           "default": "detailed",
           "description": "Hover popup display theme"
         },
-        "enterpriseAiContext.ui.showProgressBars": {
+        "aidmVscodeExtension.ui.showProgressBars": {
           "type": "boolean",
           "default": true,
           "description": "Show progress bars in hover popups"
         },
-        "enterpriseAiContext.ui.maxRequirementsShown": {
+        "aidmVscodeExtension.ui.maxRequirementsShown": {
           "type": "number",
           "default": 3,
           "minimum": 1,
           "maximum": 10,
           "description": "Maximum number of requirements to show in hover popup"
         },
-        "enterpriseAiContext.remote.mcpServerUrl": {
+        "aidmVscodeExtension.remote.mcpServerUrl": {
           "type": "string",
           "default": "",
           "description": "URL of remote MCP server (e.g., https://your-roocode-server.com)"
         },
-        "enterpriseAiContext.remote.enabled": {
+        "aidmVscodeExtension.remote.enabled": {
           "type": "boolean",
           "default": false,
           "description": "Enable remote MCP server connection"
         },
-        "enterpriseAiContext.remote.apiKey": {
+        "aidmVscodeExtension.remote.apiKey": {
           "type": "string",
           "default": "",
           "description": "API key for remote MCP server authentication"
@@ -208,7 +224,8 @@
     "clean": "rimraf out coverage && del /q *.vsix 2>nul || echo No .vsix files to delete",
     "prebuild": "npm run clean",
     "build": "npm run validate && npm run package",
-    "prepackage": "npm run validate:deployment"
+    "prepackage": "npm run validate:deployment",
+    "install-extension": "node install-extension.js"
   },
   "devDependencies": {
     "@types/jest": "^29.5.14",

@@ -5,6 +5,12 @@ import { StatusBarManagerImpl } from "./ui/statusBar";
 import { ProcessManager, ProcessManagerConfig } from "./server/ProcessManager";
 import { ConnectionStatus } from "./types/extension";
 import { DemoPanel } from "./ui/demoPanel";
+import { ConfigurationPanel } from "./ui/configurationPanel";
+import {
+  EXTENSION_CONFIG,
+  getCommandId,
+  getConfigKey,
+} from "./config/extensionConfig";
 
 let mcpClient: MCPClient;
 let statusBarManager: StatusBarManagerImpl;
@@ -13,11 +19,14 @@ let processManager: ProcessManager;
 export async function activate(
   context: vscode.ExtensionContext
 ): Promise<void> {
-  console.log("Enterprise AI Context extension is now active!");
+  console.log(`🚀 ${EXTENSION_CONFIG.displayName} activation started!`);
+  vscode.window.showInformationMessage(EXTENSION_CONFIG.activationMessage);
 
   try {
     // Get configuration
-    const config = vscode.workspace.getConfiguration("enterpriseAiContext");
+    const config = vscode.workspace.getConfiguration(
+      EXTENSION_CONFIG.configNamespace
+    );
 
     // Build process manager configuration
     const processConfig: ProcessManagerConfig = {
@@ -67,7 +76,7 @@ export async function activate(
 
     // Register status command
     const statusCommand = vscode.commands.registerCommand(
-      "enterprise-ai-context.showStatus",
+      getCommandId("showStatus"),
       () => {
         statusBarManager.handleStatusClick();
       }
@@ -75,7 +84,7 @@ export async function activate(
 
     // Register restart command
     const restartCommand = vscode.commands.registerCommand(
-      "enterprise-ai-context.restartServer",
+      getCommandId("restartServer"),
       async () => {
         try {
           await processManager.restart();
@@ -94,9 +103,11 @@ export async function activate(
 
     // Register RooCode demo command
     const rooCodeDemoCommand = vscode.commands.registerCommand(
-      "enterprise-ai-context.runRooCodeDemo",
+      getCommandId("runRooCodeDemo"),
       async () => {
-        const outputChannel = vscode.window.createOutputChannel("RooCode Demo");
+        const outputChannel = vscode.window.createOutputChannel(
+          EXTENSION_CONFIG.demoOutputChannel
+        );
         outputChannel.show();
 
         try {
@@ -121,18 +132,18 @@ export async function activate(
 
     // Register remote MCP connection command
     const connectRemoteCommand = vscode.commands.registerCommand(
-      "enterprise-ai-context.connectRemoteMCP",
+      getCommandId("connectRemoteMCP"),
       async () => {
         const remoteUrl = await vscode.window.showInputBox({
           prompt: "Enter remote MCP server URL",
-          placeholder: "https://your-roocode-server.com",
+          placeHolder: "https://your-roocode-server.com",
           value: config.get<string>("remote.mcpServerUrl", ""),
         });
 
         if (remoteUrl) {
           const apiKey = await vscode.window.showInputBox({
             prompt: "Enter API key (optional)",
-            placeholder: "your-api-key",
+            placeHolder: "your-api-key",
             password: true,
             value: config.get<string>("remote.apiKey", ""),
           });
@@ -163,20 +174,63 @@ export async function activate(
       }
     );
 
-    // Register demo panel command
+    // Register demo panel command (with error handling)
     const demoPanelCommand = vscode.commands.registerCommand(
-      "enterprise-ai-context.showDemoPanel",
+      getCommandId("showDemoPanel"),
       () => {
-        DemoPanel.createOrShow(context.extensionUri);
+        try {
+          DemoPanel.createOrShow(context.extensionUri);
+        } catch (error) {
+          vscode.window.showErrorMessage(`Failed to open demo panel: ${error}`);
+          console.error("Demo panel error:", error);
+        }
+      }
+    );
+
+    // Register test activation command (simple, no dependencies)
+    const testActivationCommand = vscode.commands.registerCommand(
+      getCommandId("testActivation"),
+      () => {
+        const serverStatus = processManager
+          ? processManager.isHealthy()
+            ? "Running"
+            : "Stopped"
+          : "Not initialized";
+        vscode.window.showInformationMessage(
+          `✅ ${EXTENSION_CONFIG.displayName} is active! MCP Server: ${serverStatus}`
+        );
+      }
+    );
+
+    // Register simple hello command for testing
+    const helloCommand = vscode.commands.registerCommand(
+      getCommandId("hello"),
+      () => {
+        vscode.window.showInformationMessage(EXTENSION_CONFIG.helloMessage);
+      }
+    );
+
+    // Register configuration panel command (with error handling)
+    const configurationCommand = vscode.commands.registerCommand(
+      getCommandId("openConfiguration"),
+      () => {
+        try {
+          ConfigurationPanel.createOrShow(context.extensionUri);
+        } catch (error) {
+          vscode.window.showErrorMessage(
+            `Failed to open configuration panel: ${error}`
+          );
+          console.error("Configuration panel error:", error);
+        }
       }
     );
 
     // Register configuration change handler
     const configChangeDisposable = vscode.workspace.onDidChangeConfiguration(
       async (event) => {
-        if (event.affectsConfiguration("enterpriseAiContext")) {
+        if (event.affectsConfiguration(EXTENSION_CONFIG.configNamespace)) {
           const newConfig = vscode.workspace.getConfiguration(
-            "enterpriseAiContext"
+            EXTENSION_CONFIG.configNamespace
           );
 
           // Update process manager configuration
@@ -231,6 +285,9 @@ export async function activate(
       rooCodeDemoCommand,
       connectRemoteCommand,
       demoPanelCommand,
+      testActivationCommand,
+      helloCommand,
+      configurationCommand,
       configChangeDisposable,
       statusBarManager,
       {
@@ -245,11 +302,12 @@ export async function activate(
       }
     );
 
-    console.log("Enterprise AI Context extension activated successfully");
+    console.log(`✅ ${EXTENSION_CONFIG.displayName} activated successfully!`);
+    vscode.window.showInformationMessage(EXTENSION_CONFIG.successMessage);
   } catch (error) {
-    console.error("Failed to activate Enterprise AI Context extension:", error);
+    console.error(`Failed to activate ${EXTENSION_CONFIG.displayName}:`, error);
     vscode.window.showErrorMessage(
-      `Failed to activate Enterprise AI Context extension: ${
+      `Failed to activate ${EXTENSION_CONFIG.displayName}: ${
         error instanceof Error ? error.message : "Unknown error"
       }`
     );
@@ -272,7 +330,7 @@ async function startMCPServer(): Promise<void> {
 }
 
 export async function deactivate() {
-  console.log("Enterprise AI Context extension is being deactivated");
+  console.log(`${EXTENSION_CONFIG.displayName} is being deactivated`);
 
   try {
     // Graceful shutdown of process manager

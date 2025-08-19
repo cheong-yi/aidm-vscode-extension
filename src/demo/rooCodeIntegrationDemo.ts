@@ -88,12 +88,12 @@ export class RooCodeIntegrationDemo {
     const vscode = require("vscode");
     const config = vscode.workspace.getConfiguration("enterpriseAiContext");
 
-    const remoteUrl = config.get<string>("remote.mcpServerUrl", "");
-    const apiKey = config.get<string>("remote.apiKey", "");
-    const remoteEnabled = config.get<boolean>("remote.enabled", false);
+    const remoteUrl = (config.get("remote.mcpServerUrl") as string) || "";
+    const apiKey = (config.get("remote.apiKey") as string) || "";
+    const remoteEnabled = (config.get("remote.enabled") as boolean) || false;
 
     if (remoteEnabled && remoteUrl) {
-      this.hybridClient.configureRemoteServer(remoteUrl, apiKey);
+      this.hybridClient.configureRemoteServer(remoteUrl);
       console.log("🌐 Remote MCP server configured:", remoteUrl);
     } else {
       // Use default demo endpoint

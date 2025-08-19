@@ -1,4 +1,4 @@
-# Enterprise AI Context VSCode Extension
+# AiDM VSCode Extension
 
 Bridge business requirements and code implementation in enterprise environments with AI-powered contextual information.
 
@@ -46,7 +46,7 @@ This extension implements a **hybrid MCP architecture**:
 
 1. Open VSCode
 2. Go to Extensions (Ctrl+Shift+X)
-3. Search for "Enterprise AI Context"
+3. Search for "AiDM VSCode Extension"
 4. Click Install
 
 ### Manual Installation for Development
@@ -92,6 +92,25 @@ Once the extension is installed and active:
    - Team coding patterns and standards
    - Mock enterprise data for demonstrations
 
+### Quick Setup & Demo Commands
+
+**Test Extension Activation:**
+
+- Command Palette → "AiDM: Test Extension Activation"
+- Should show: "✅ AiDM VSCode Extension is active! MCP Server: Running"
+
+**Interactive Configuration:**
+
+- Command Palette → "AiDM: Open Configuration Panel"
+- Configure remote MCP servers with live testing
+- Adjust mock data and local server settings
+
+**Live Demo for Managers:**
+
+- Command Palette → "AiDM: Show Demo Panel"
+- Interactive demo showing RooCode integration
+- See `DEMO_GUIDE.md` for complete demo script
+
 ### MCP Tools Available to AI Assistants
 
 - `get_business_context`: Get business requirements for specific code locations
@@ -109,17 +128,17 @@ Once the extension is installed and active:
 
 ## ⚙️ Configuration
 
-Configure the extension through VSCode settings (`Ctrl+,` → search "Enterprise AI Context"):
+Configure the extension through VSCode settings (`Ctrl+,` → search "AiDM VSCode Extension"):
 
 ### MCP Server Settings
 
-- `enterpriseAiContext.mcpServer.port`: MCP server port (default: 3000)
-- `enterpriseAiContext.mcpServer.timeout`: Request timeout in ms (default: 5000)
-- `enterpriseAiContext.mcpServer.retryAttempts`: Number of restart attempts (default: 3)
+- `aidmVscodeExtension.mcpServer.port`: MCP server port (default: 3000)
+- `aidmVscodeExtension.mcpServer.timeout`: Request timeout in ms (default: 5000)
+- `aidmVscodeExtension.mcpServer.retryAttempts`: Number of restart attempts (default: 3)
 
 ### Performance Settings
 
-- `enterpriseAiContext.performance.maxConcurrentRequests`: Maximum concurrent requests (default: 10)
+- `aidmVscodeExtension.performance.maxConcurrentRequests`: Maximum concurrent requests (default: 10)
 
 ### Mock Data Settings
 
