@@ -8,6 +8,7 @@ import { MCPClient } from "../../client/mcpClient";
 import { MockDataProvider } from "../../mock/MockDataProvider";
 import { CodeLocation } from "../../types/business";
 import { ErrorCode } from "../../types/extension";
+import { getNextAvailablePort } from "../utils/testPorts";
 
 describe("Error Handling Integration", () => {
   let contextManager: ContextManager;
@@ -22,7 +23,8 @@ describe("Error Handling Integration", () => {
       errorRate: 0,
     });
     contextManager = new ContextManager(mockDataProvider);
-    mcpClient = new MCPClient(3001, 5000); // Use different port to avoid conflicts
+    const testPort = getNextAvailablePort();
+    mcpClient = new MCPClient(testPort, 5000);
   });
 
   afterEach(async () => {

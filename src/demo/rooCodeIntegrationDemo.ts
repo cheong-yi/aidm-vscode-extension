@@ -84,11 +84,27 @@ export class RooCodeIntegrationDemo {
    * Configure remote MCP server connection
    */
   private configureRemoteMCPServer(): void {
-    // Use the deployed Vercel endpoint
-    const remoteEndpoint =
-      "https://aidm-vscode-extension-remote-mcp.vercel.app/mcp";
-    this.hybridClient.configureRemoteServer(remoteEndpoint);
-    console.log("🌐 Remote MCP server configured:", remoteEndpoint);
+    // Check VS Code configuration for remote server
+    const vscode = require("vscode");
+    const config = vscode.workspace.getConfiguration("enterpriseAiContext");
+
+    const remoteUrl = config.get<string>("remote.mcpServerUrl", "");
+    const apiKey = config.get<string>("remote.apiKey", "");
+    const remoteEnabled = config.get<boolean>("remote.enabled", false);
+
+    if (remoteEnabled && remoteUrl) {
+      this.hybridClient.configureRemoteServer(remoteUrl, apiKey);
+      console.log("🌐 Remote MCP server configured:", remoteUrl);
+    } else {
+      // Use default demo endpoint
+      const defaultEndpoint =
+        "https://aidm-vscode-extension-remote-mcp.vercel.app/mcp";
+      this.hybridClient.configureRemoteServer(defaultEndpoint);
+      console.log("🌐 Using default remote MCP server:", defaultEndpoint);
+      console.log(
+        "💡 Configure your own server in VS Code settings: enterpriseAiContext.remote.mcpServerUrl"
+      );
+    }
   }
 
   /**

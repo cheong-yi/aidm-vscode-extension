@@ -3,10 +3,9 @@
  * Tests the complete extension activation, configuration, and deactivation flow
  */
 
-import * as vscode from "vscode";
 import { activate, deactivate } from "../../extension";
 
-// Mock VSCode API
+// Mock configuration
 const mockConfig = {
   "mcpServer.port": 3003,
   "mcpServer.timeout": 5000,
@@ -47,6 +46,8 @@ jest.mock("vscode", () => ({
     Test: 3,
   },
 }));
+
+import * as vscode from "vscode";
 
 // Mock internal modules
 jest.mock("../../client/mcpClient");

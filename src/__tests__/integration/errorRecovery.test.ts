@@ -3,7 +3,7 @@
  * Tests for end-to-end error handling and recovery scenarios
  */
 
-import { ErrorHandler, ErrorHandlerFactory } from "../../utils/errorHandler";
+import { ErrorHandler } from "../../utils/ErrorHandler";
 import {
   degradedModeManager,
   DegradedModeLevel,

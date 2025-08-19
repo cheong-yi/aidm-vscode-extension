@@ -92,6 +92,11 @@ export class MarkdownString {
   }
 }
 
+export class CancellationToken {
+  public isCancellationRequested: boolean = false;
+  public onCancellationRequested = jest.fn();
+}
+
 export const Uri = {
   file: jest.fn((path: string) => ({ fsPath: path, path })),
   parse: jest.fn(),

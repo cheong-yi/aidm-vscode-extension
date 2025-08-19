@@ -6,6 +6,7 @@
 import { SimpleMCPServer } from "../../server/SimpleMCPServer";
 import { ContextManager } from "../../server/ContextManager";
 import { MockDataProvider } from "../../mock/MockDataProvider";
+import { getNextAvailablePort } from "../utils/testPorts";
 import { JSONRPCRequest, ToolCallRequest } from "../../types/jsonrpc";
 import * as http from "http";
 
@@ -13,7 +14,7 @@ describe("MCP Tools Integration Tests", () => {
   let mcpServer: SimpleMCPServer;
   let contextManager: ContextManager;
   let mockDataProvider: MockDataProvider;
-  const testPort = 3001;
+  const testPort = getNextAvailablePort();
 
   beforeAll(async () => {
     // Initialize components

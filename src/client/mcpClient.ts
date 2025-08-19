@@ -26,6 +26,11 @@ export class MCPClient {
   private requestId: number = 1;
   private auditLogger: AuditLogger;
   private errorHandler: ErrorHandler;
+  private remoteConfig?: {
+    url: string;
+    apiKey?: string;
+    enabled: boolean;
+  };
 
   constructor(port: number = 3000, timeout: number = 5000) {
     this.auditLogger = new AuditLogger({
@@ -48,6 +53,9 @@ export class MCPClient {
       timeout: this.config.timeout,
       headers: this.config.headers,
     });
+
+    // Load remote configuration from VS Code settings
+    this.loadRemoteConfig();
   }
 
   /**
@@ -187,16 +195,71 @@ export class MCPClient {
   }
 
   /**
+   * Load remote configuration from VS Code settings
+   */
+  private loadRemoteConfig(): void {
+    const config = vscode.workspace.getConfiguration("enterpriseAiContext");
+    this.remoteConfig = {
+      url: config.get<string>("remote.mcpServerUrl", ""),
+      apiKey: config.get<string>("remote.apiKey", ""),
+      enabled: config.get<boolean>("remote.enabled", false),
+    };
+  }
+
+  /**
    * Update configuration
    */
   updateConfig(port: number, timeout: number): void {
     this.config.endpoint = `http://localhost:${port}/rpc`;
     this.config.timeout = timeout;
 
+    // Reload remote config
+    this.loadRemoteConfig();
+
+    // Use remote endpoint if enabled and configured
+    const endpoint = this.shouldUseRemote()
+      ? this.remoteConfig!.url
+      : this.config.endpoint;
+
+    const headers: Record<string, string> = { ...this.config.headers };
+    if (this.remoteConfig?.apiKey) {
+      headers["Authorization"] = `Bearer ${this.remoteConfig.apiKey}`;
+    }
+
     this.httpClient = axios.create({
-      baseURL: this.config.endpoint,
+      baseURL: endpoint,
       timeout: this.config.timeout,
-      headers: this.config.headers,
+      headers,
+    });
+  }
+
+  /**
+   * Check if we should use remote MCP server
+   */
+  private shouldUseRemote(): boolean {
+    return !!(this.remoteConfig?.enabled && this.remoteConfig?.url);
+  }
+
+  /**
+   * Set remote configuration
+   */
+  setRemoteConfig(url: string, apiKey?: string): void {
+    this.remoteConfig = {
+      url,
+      apiKey,
+      enabled: true,
+    };
+
+    // Update HTTP client to use remote endpoint
+    const headers = { ...this.config.headers };
+    if (apiKey) {
+      headers["Authorization"] = `Bearer ${apiKey}`;
+    }
+
+    this.httpClient = axios.create({
+      baseURL: url,
+      timeout: this.config.timeout,
+      headers,
     });
   }
 

@@ -8,6 +8,7 @@ import { BusinessContextHover } from "../../providers/hoverProvider";
 import { MCPClient } from "../../client/mcpClient";
 import { MockDataProvider } from "../../mock/MockDataProvider";
 import { ProcessManager } from "../../server/ProcessManager";
+import { getNextAvailablePort } from "../utils/testPorts";
 
 describe("Demo Scenarios E2E Tests", () => {
   let hoverProvider: BusinessContextHover;
@@ -18,8 +19,9 @@ describe("Demo Scenarios E2E Tests", () => {
 
   beforeAll(async () => {
     // Initialize test environment
+    const testPort = getNextAvailablePort();
     processManager = new ProcessManager({
-      port: 3001,
+      port: testPort,
       timeout: 5000,
       retryAttempts: 3,
       maxConcurrentRequests: 10,

@@ -5,10 +5,9 @@
 
 import {
   ErrorHandler,
-  ErrorHandlerFactory,
   ErrorContext,
-  RecoveryStrategy,
-} from "../../utils/errorHandler";
+  ErrorRecoveryStrategy,
+} from "../../utils/ErrorHandler";
 import {
   auditTrail,
   AuditAction,

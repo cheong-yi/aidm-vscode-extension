@@ -4,6 +4,7 @@ import { BusinessContextHover } from "./providers/hoverProvider";
 import { StatusBarManagerImpl } from "./ui/statusBar";
 import { ProcessManager, ProcessManagerConfig } from "./server/ProcessManager";
 import { ConnectionStatus } from "./types/extension";
+import { DemoPanel } from "./ui/demoPanel";
 
 let mcpClient: MCPClient;
 let statusBarManager: StatusBarManagerImpl;
@@ -91,6 +92,85 @@ export async function activate(
       }
     );
 
+    // Register RooCode demo command
+    const rooCodeDemoCommand = vscode.commands.registerCommand(
+      "enterprise-ai-context.runRooCodeDemo",
+      async () => {
+        const outputChannel = vscode.window.createOutputChannel("RooCode Demo");
+        outputChannel.show();
+
+        try {
+          outputChannel.appendLine("🚀 Starting RooCode Integration Demo...");
+
+          // Import and run the demo
+          const { runRooCodeIntegrationDemo } = await import(
+            "./demo/rooCodeIntegrationDemo"
+          );
+          await runRooCodeIntegrationDemo();
+
+          outputChannel.appendLine("✅ Demo completed successfully!");
+          vscode.window.showInformationMessage(
+            "RooCode Demo completed successfully!"
+          );
+        } catch (error) {
+          outputChannel.appendLine(`❌ Demo failed: ${error}`);
+          vscode.window.showErrorMessage(`Demo failed: ${error}`);
+        }
+      }
+    );
+
+    // Register remote MCP connection command
+    const connectRemoteCommand = vscode.commands.registerCommand(
+      "enterprise-ai-context.connectRemoteMCP",
+      async () => {
+        const remoteUrl = await vscode.window.showInputBox({
+          prompt: "Enter remote MCP server URL",
+          placeholder: "https://your-roocode-server.com",
+          value: config.get<string>("remote.mcpServerUrl", ""),
+        });
+
+        if (remoteUrl) {
+          const apiKey = await vscode.window.showInputBox({
+            prompt: "Enter API key (optional)",
+            placeholder: "your-api-key",
+            password: true,
+            value: config.get<string>("remote.apiKey", ""),
+          });
+
+          // Update configuration
+          await config.update(
+            "remote.mcpServerUrl",
+            remoteUrl,
+            vscode.ConfigurationTarget.Workspace
+          );
+          await config.update(
+            "remote.enabled",
+            true,
+            vscode.ConfigurationTarget.Workspace
+          );
+          if (apiKey) {
+            await config.update(
+              "remote.apiKey",
+              apiKey,
+              vscode.ConfigurationTarget.Workspace
+            );
+          }
+
+          vscode.window.showInformationMessage(
+            `Connected to remote MCP server: ${remoteUrl}`
+          );
+        }
+      }
+    );
+
+    // Register demo panel command
+    const demoPanelCommand = vscode.commands.registerCommand(
+      "enterprise-ai-context.showDemoPanel",
+      () => {
+        DemoPanel.createOrShow(context.extensionUri);
+      }
+    );
+
     // Register configuration change handler
     const configChangeDisposable = vscode.workspace.onDidChangeConfiguration(
       async (event) => {
@@ -148,6 +228,9 @@ export async function activate(
       hoverDisposable,
       statusCommand,
       restartCommand,
+      rooCodeDemoCommand,
+      connectRemoteCommand,
+      demoPanelCommand,
       configChangeDisposable,
       statusBarManager,
       {

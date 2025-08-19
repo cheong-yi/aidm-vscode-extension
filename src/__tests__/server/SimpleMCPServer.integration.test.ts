@@ -7,6 +7,7 @@ import { SimpleMCPServer } from "../../server/SimpleMCPServer";
 import { ContextManager } from "../../server/ContextManager";
 import { MockDataProvider } from "../../mock/MockDataProvider";
 import { JSONRPCRequest, ToolCallRequest } from "../../types/jsonrpc";
+import { getNextAvailablePort } from "../utils/testPorts";
 import * as http from "http";
 
 // Helper function to make HTTP requests
@@ -72,7 +73,7 @@ describe("SimpleMCPServer Integration Tests", () => {
   let server: SimpleMCPServer;
   let contextManager: ContextManager;
   let mockDataProvider: MockDataProvider;
-  const testPort = 3004;
+  const testPort = getNextAvailablePort();
 
   beforeAll(async () => {
     // Setup mock data provider and context manager

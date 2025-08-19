@@ -44,6 +44,9 @@ describe("MockDataProvider", () => {
         responseDelay: 500,
         errorRate: 0.1,
         enterprisePatterns: false,
+        scenarioComplexity: "advanced",
+        includeComplianceData: true,
+        industryVertical: "technology",
       };
 
       const provider = new MockDataProvider(config);

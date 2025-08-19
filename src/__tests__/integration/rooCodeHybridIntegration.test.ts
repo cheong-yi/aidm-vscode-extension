@@ -9,6 +9,7 @@ import { SimpleMCPServer } from "../../server/SimpleMCPServer";
 import { ContextManager } from "../../server/ContextManager";
 import { MockDataProvider } from "../../mock/MockDataProvider";
 import { CacheManager } from "../../services/CacheManager";
+import { getNextAvailablePort } from "../utils/testPorts";
 
 describe("RooCode Hybrid MCP Integration", () => {
   let hybridClient: HybridMCPClient;
@@ -21,7 +22,8 @@ describe("RooCode Hybrid MCP Integration", () => {
     const mockDataProvider = new MockDataProvider();
     const contextManager = new ContextManager(mockDataProvider);
 
-    mcpServer = new SimpleMCPServer(3001, contextManager); // Use different port for testing
+    const testPort = getNextAvailablePort();
+    mcpServer = new SimpleMCPServer(testPort, contextManager);
     await mcpServer.start();
     isServerRunning = true;
 
