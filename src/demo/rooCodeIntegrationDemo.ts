@@ -86,11 +86,11 @@ export class RooCodeIntegrationDemo {
   private configureRemoteMCPServer(): void {
     // Check VS Code configuration for remote server
     const vscode = require("vscode");
-    const config = vscode.workspace.getConfiguration("enterpriseAiContext");
+    const config = vscode.workspace.getConfiguration();
 
-    const remoteUrl = (config.get("remote.mcpServerUrl") as string) || "";
-    const apiKey = (config.get("remote.apiKey") as string) || "";
-    const remoteEnabled = (config.get("remote.enabled") as boolean) || false;
+    const remoteUrl = (config.get("aidmVscodeExtension.remote.mcpServerUrl") as string) || "";
+    const apiKey = (config.get("aidmVscodeExtension.remote.apiKey") as string) || "";
+    const remoteEnabled = (config.get("aidmVscodeExtension.remote.enabled") as boolean) || false;
 
     if (remoteEnabled && remoteUrl) {
       this.hybridClient.configureRemoteServer(remoteUrl);

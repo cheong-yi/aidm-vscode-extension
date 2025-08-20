@@ -412,22 +412,22 @@ export class ConfigurationPanel {
 
   private async handleLoadConfiguration() {
     try {
-      const config = vscode.workspace.getConfiguration("enterpriseAiContext");
+      const config = vscode.workspace.getConfiguration();
 
       const currentConfig = {
         remote: {
-          mcpServerUrl: config.get("remote.mcpServerUrl", ""),
-          apiKey: config.get("remote.apiKey", ""),
-          enabled: config.get("remote.enabled", false),
+          mcpServerUrl: config.get("aidmVscodeExtension.remote.mcpServerUrl", ""),
+          apiKey: config.get("aidmVscodeExtension.remote.apiKey", ""),
+          enabled: config.get("aidmVscodeExtension.remote.enabled", false),
         },
         local: {
-          port: config.get("mcpServer.port", 3000),
-          timeout: config.get("mcpServer.timeout", 5000),
+          port: config.get("aidmVscodeExtension.mcpServer.port", 3000),
+          timeout: config.get("aidmVscodeExtension.mcpServer.timeout", 5000),
         },
         mock: {
-          dataSize: config.get("mock.dataSize", "medium"),
+          dataSize: config.get("aidmVscodeExtension.mock.dataSize", "medium"),
           industryVertical: config.get(
-            "demo.industryVertical",
+            "aidmVscodeExtension.demo.industryVertical",
             "financial-services"
           ),
         },

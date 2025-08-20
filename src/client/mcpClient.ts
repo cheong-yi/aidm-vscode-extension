@@ -199,11 +199,11 @@ export class MCPClient {
    */
   private loadRemoteConfig(): void {
     // Use the extension namespace for settings
-    const config = vscode.workspace.getConfiguration("aidmVscodeExtension");
+    const config = vscode.workspace.getConfiguration();
     this.remoteConfig = {
-      url: config.get<string>("remote.mcpServerUrl", ""),
-      apiKey: config.get<string>("remote.apiKey", ""),
-      enabled: config.get<boolean>("remote.enabled", false),
+      url: config.get<string>("aidmVscodeExtension.remote.mcpServerUrl", ""),
+      apiKey: config.get<string>("aidmVscodeExtension.remote.apiKey", ""),
+      enabled: config.get<boolean>("aidmVscodeExtension.remote.enabled", false),
     };
   }
 

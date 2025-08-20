@@ -223,6 +223,27 @@ export class ProcessManager {
   }
 
   /**
+   * Update port configuration
+   */
+  updatePort(newPort: number): void {
+    this.config.port = newPort;
+  }
+
+  /**
+   * Get current port
+   */
+  getPort(): number {
+    return this.config.port;
+  }
+
+  /**
+   * Get current timeout
+   */
+  getTimeout(): number {
+    return this.config.timeout;
+  }
+
+  /**
    * Get current process statistics
    */
   getStats(): ProcessStats {

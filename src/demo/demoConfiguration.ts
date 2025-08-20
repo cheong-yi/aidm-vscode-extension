@@ -48,25 +48,25 @@ export class DemoConfigurationManager {
    * Load configuration from VSCode settings
    */
   private loadConfiguration(): DemoConfiguration {
-    const config = vscode.workspace.getConfiguration("enterpriseAiContext");
+    const config = vscode.workspace.getConfiguration();
 
     return {
       // Mock Data Configuration
       dataSize: config.get<"small" | "medium" | "large">(
-        "mock.dataSize",
+        "aidmVscodeExtension.mock.dataSize",
         "medium"
       ),
-      responseDelay: config.get<number>("mcpServer.timeout", 5000) / 10, // 10% of timeout
+      responseDelay: config.get<number>("aidmVscodeExtension.mcpServer.timeout", 5000) / 10, // 10% of timeout
       errorRate: 0, // No errors in demo mode
-      enterprisePatterns: config.get<boolean>("mock.enterprisePatterns", true),
+      enterprisePatterns: config.get<boolean>("aidmVscodeExtension.mock.enterprisePatterns", true),
 
       // Demo-specific Configuration
       scenarioComplexity: config.get<"basic" | "intermediate" | "advanced">(
-        "demo.scenarioComplexity",
+        "aidmVscodeExtension.demo.scenarioComplexity",
         "intermediate"
       ),
       includeComplianceData: config.get<boolean>(
-        "demo.includeComplianceData",
+        "aidmVscodeExtension.demo.includeComplianceData",
         true
       ),
       industryVertical: config.get<
@@ -76,19 +76,19 @@ export class DemoConfigurationManager {
         | "manufacturing"
         | "technology"
         | "generic"
-      >("demo.industryVertical", "financial-services"),
+      >("aidmVscodeExtension.demo.industryVertical", "financial-services"),
 
       // UI Configuration
       hoverPopupTheme: config.get<"default" | "compact" | "detailed">(
-        "ui.hoverPopupTheme",
+        "aidmVscodeExtension.ui.hoverPopupTheme",
         "detailed"
       ),
-      showProgressBars: config.get<boolean>("ui.showProgressBars", true),
-      maxRequirementsShown: config.get<number>("ui.maxRequirementsShown", 3),
+      showProgressBars: config.get<boolean>("aidmVscodeExtension.ui.showProgressBars", true),
+      maxRequirementsShown: config.get<number>("aidmVscodeExtension.ui.maxRequirementsShown", 3),
 
       // Performance Configuration
       maxConcurrentRequests: config.get<number>(
-        "performance.maxConcurrentRequests",
+        "aidmVscodeExtension.performance.maxConcurrentRequests",
         10
       ),
       cacheEnabled: true, // Always enabled for demo

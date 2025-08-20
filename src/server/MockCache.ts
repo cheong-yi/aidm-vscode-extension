@@ -9,8 +9,8 @@ export interface CachedContextEntry {
 }
 
 export class MockCache {
-  private readonly cacheFilePath: string;
   private readonly cacheDir: string;
+  public readonly cacheFilePath: string;
   private readonly data: Map<string, CachedContextEntry[]> = new Map();
 
   constructor(workspaceRoot: string, relativeCachePath: string = ".aidm/mock-cache.json") {
@@ -86,6 +86,13 @@ export class MockCache {
         this.data.delete(key);
       }
     }
+  }
+
+  /**
+   * Get all cache keys for debugging purposes
+   */
+  getCacheKeys(): string[] {
+    return Array.from(this.data.keys());
   }
 }
 

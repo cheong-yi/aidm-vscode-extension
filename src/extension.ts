@@ -12,6 +12,7 @@ import {
   getConfigKey,
 } from "./config/extensionConfig";
 import { MockCache } from "./server/MockCache";
+import { PortFinder } from "./utils/portFinder";
 
 let mcpClient: MCPClient;
 let statusBarManager: StatusBarManagerImpl;
@@ -27,57 +28,7 @@ export async function activate(
     console.log(`🚀 ${EXTENSION_CONFIG.displayName} activation started!`);
     vscode.window.showInformationMessage(EXTENSION_CONFIG.activationMessage);
 
-    console.log("=== ACTIVATION STEP 3: Registering basic commands ===");
-    // Force register a simple command immediately for testing
-    const forceTestCommand = vscode.commands.registerCommand(
-      "aidm-vscode-extension.forceTest",
-      () => {
-        vscode.window.showInformationMessage("✅ Force test command works!");
-      }
-    );
-    context.subscriptions.push(forceTestCommand);
-    console.log("✅ forceTest command registered");
-
-    // Register startup command that's always available
-    const startupCommand = vscode.commands.registerCommand(
-      "aidm-vscode-extension.startup",
-      () => {
-        vscode.window.showInformationMessage(
-          "🚀 Extension startup command works!"
-        );
-      }
-    );
-    context.subscriptions.push(startupCommand);
-    console.log("✅ startup command registered");
-
-    // Register debug command to show extension status
-    const debugCommand = vscode.commands.registerCommand(
-      "aidm-vscode-extension.debug",
-      () => {
-        const status = {
-          extensionActive: true,
-          commandsRegistered: [
-            "aidm-vscode-extension.forceTest",
-            "aidm-vscode-extension.startup",
-            "aidm-vscode-extension.hello",
-            "aidm-vscode-extension.debug",
-          ],
-          timestamp: new Date().toISOString(),
-        };
-
-        vscode.window.showInformationMessage(
-          `🔍 Debug: Extension active, ${status.commandsRegistered.length} commands registered`
-        );
-
-        // Show detailed info in output channel
-        const outputChannel = vscode.window.createOutputChannel("AiDM Debug");
-        outputChannel.show();
-        outputChannel.appendLine("=== AiDM Extension Debug Info ===");
-        outputChannel.appendLine(JSON.stringify(status, null, 2));
-      }
-    );
-    context.subscriptions.push(debugCommand);
-    console.log("✅ debug command registered");
+    console.log("=== ACTIVATION STEP 3: Registering essential commands ===");
 
     // Register version command to show current version
     const versionCommand = vscode.commands.registerCommand(
@@ -104,29 +55,33 @@ export async function activate(
 
     console.log("=== ACTIVATION STEP 4: Getting configuration ===");
     // Get configuration
-    const config = vscode.workspace.getConfiguration(
-      EXTENSION_CONFIG.configNamespace
-    );
+    const config = vscode.workspace.getConfiguration();
     console.log("✅ Configuration loaded");
 
     console.log("=== ACTIVATION STEP 5: Building process config ===");
+    // Get configured port or use smart port selection
+    const configuredPort = config.get<number>(getConfigKey("mcpServer.port"), 3000);
+    
     // Build process manager configuration
     const processConfig: ProcessManagerConfig = {
-      port: config.get<number>("mcpServer.port", 3000),
-      timeout: config.get<number>("mcpServer.timeout", 5000),
-      retryAttempts: config.get<number>("mcpServer.retryAttempts", 3),
+      port: configuredPort, // Will be updated with actual available port
+      timeout: config.get<number>(getConfigKey("mcpServer.timeout"), 5000),
+      retryAttempts: config.get<number>(
+        getConfigKey("mcpServer.retryAttempts"),
+        3
+      ),
       maxConcurrentRequests: config.get<number>(
-        "performance.maxConcurrentRequests",
+        getConfigKey("performance.maxConcurrentRequests"),
         10
       ),
       mock: {
-        enabled: config.get<boolean>("mock.enabled", true),
+        enabled: config.get<boolean>(getConfigKey("mock.enabled"), true),
         dataSize: config.get<"small" | "medium" | "large">(
-          "mock.dataSize",
+          getConfigKey("mock.dataSize"),
           "medium"
         ),
         enterprisePatterns: config.get<boolean>(
-          "mock.enterprisePatterns",
+          getConfigKey("mock.enterprisePatterns"),
           true
         ),
       },
@@ -230,6 +185,23 @@ export async function activate(
       console.error("❌ restartServer command failed:", error);
     }
 
+    // Register show port command
+    try {
+      const showPortCommand = vscode.commands.registerCommand(
+        getCommandId("showPort"),
+        () => {
+          const currentPort = processManager.getPort();
+          vscode.window.showInformationMessage(
+            `AiDM MCP Server is running on port ${currentPort}`
+          );
+        }
+      );
+      context.subscriptions.push(showPortCommand);
+      console.log("✅ showPort command registered");
+    } catch (error) {
+      console.error("❌ showPort command failed:", error);
+    }
+
     // Register RooCode demo command
     try {
       const rooCodeDemoCommand = vscode.commands.registerCommand(
@@ -273,7 +245,7 @@ export async function activate(
           const remoteUrl = await vscode.window.showInputBox({
             prompt: "Enter remote MCP server URL",
             placeHolder: "https://your-roocode-server.com",
-            value: config.get<string>("remote.mcpServerUrl", ""),
+            value: config.get<string>("aidmVscodeExtension.remote.mcpServerUrl", ""),
           });
 
           if (remoteUrl) {
@@ -281,23 +253,23 @@ export async function activate(
               prompt: "Enter API key (optional)",
               placeHolder: "your-api-key",
               password: true,
-              value: config.get<string>("remote.apiKey", ""),
+              value: config.get<string>("aidmVscodeExtension.remote.apiKey", ""),
             });
 
             // Update configuration
             await config.update(
-              "remote.mcpServerUrl",
+              "aidmVscodeExtension.remote.mcpServerUrl",
               remoteUrl,
               vscode.ConfigurationTarget.Workspace
             );
             await config.update(
-              "remote.enabled",
+              "aidmVscodeExtension.remote.enabled",
               true,
               vscode.ConfigurationTarget.Workspace
             );
             if (apiKey) {
               await config.update(
-                "remote.apiKey",
+                "aidmVscodeExtension.remote.apiKey",
                 apiKey,
                 vscode.ConfigurationTarget.Workspace
               );
@@ -334,41 +306,6 @@ export async function activate(
       console.log("✅ showDemoPanel command registered");
     } catch (error) {
       console.error("❌ showDemoPanel command failed:", error);
-    }
-
-    // Register test activation command (simple, no dependencies)
-    try {
-      const testActivationCommand = vscode.commands.registerCommand(
-        getCommandId("testActivation"),
-        () => {
-          const serverStatus = processManager
-            ? processManager.isHealthy()
-              ? "Running"
-              : "Stopped"
-            : "Not initialized";
-          vscode.window.showInformationMessage(
-            `✅ ${EXTENSION_CONFIG.displayName} is active! MCP Server: ${serverStatus}`
-          );
-        }
-      );
-      context.subscriptions.push(testActivationCommand);
-      console.log("✅ testActivation command registered");
-    } catch (error) {
-      console.error("❌ testActivation command failed:", error);
-    }
-
-    // Register simple hello command for testing
-    try {
-      const helloCommand = vscode.commands.registerCommand(
-        getCommandId("hello"),
-        () => {
-          vscode.window.showInformationMessage(EXTENSION_CONFIG.helloMessage);
-        }
-      );
-      context.subscriptions.push(helloCommand);
-      console.log("✅ hello command registered");
-    } catch (error) {
-      console.error("❌ hello command failed:", error);
     }
 
     // Register configuration panel command (with error handling)
@@ -491,21 +428,21 @@ export async function activate(
             console.log("Configuration changed, updating process manager...");
 
             const newProcessConfig: ProcessManagerConfig = {
-              port: config.get<number>("mcpServer.port", 3000),
-              timeout: config.get<number>("mcpServer.timeout", 5000),
-              retryAttempts: config.get<number>("mcpServer.retryAttempts", 3),
+              port: config.get<number>(getConfigKey("mcpServer.port"), 3000),
+              timeout: config.get<number>(getConfigKey("mcpServer.timeout"), 5000),
+              retryAttempts: config.get<number>(getConfigKey("mcpServer.retryAttempts"), 3),
               maxConcurrentRequests: config.get<number>(
-                "performance.maxConcurrentRequests",
+                getConfigKey("performance.maxConcurrentRequests"),
                 10
               ),
               mock: {
-                enabled: config.get<boolean>("mock.enabled", true),
+                enabled: config.get<boolean>(getConfigKey("mock.enabled"), true),
                 dataSize: config.get<"small" | "medium" | "large">(
-                  "mock.dataSize",
+                  getConfigKey("mock.dataSize"),
                   "medium"
                 ),
                 enterprisePatterns: config.get<boolean>(
-                  "mock.enterprisePatterns",
+                  getConfigKey("mock.enterprisePatterns"),
                   true
                 ),
               },
@@ -567,8 +504,26 @@ export async function activate(
 
 async function startMCPServer(): Promise<void> {
   try {
+    // Find available port before starting
+    const currentPort = processManager.getPort();
+    const availablePort = await PortFinder.findAvailablePort(currentPort);
+    
+    // Update the process manager with the available port
+    if (availablePort !== currentPort) {
+      console.log(`🔄 Port ${currentPort} is busy, switching to port ${availablePort}`);
+      processManager.updatePort(availablePort);
+      
+      // Update MCP client with new port
+      mcpClient.updateConfig(availablePort, processManager.getTimeout());
+    }
+    
     await processManager.start();
-    console.log("MCP server started successfully");
+    console.log(`✅ MCP server started successfully on port ${availablePort}`);
+    
+    // Show notification with port info
+    vscode.window.showInformationMessage(
+      `AiDM MCP Server started on port ${availablePort}`
+    );
   } catch (error) {
     console.error("Failed to start MCP server:", error);
     vscode.window.showErrorMessage(

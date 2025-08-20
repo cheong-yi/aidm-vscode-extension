@@ -2,8 +2,8 @@
   "name": "aidm-vscode-extension",
   "displayName": "AiDM VSCode Extension",
   "description": "Bridge business requirements and code implementation with AI-powered context for enterprise development",
-  "version": "0.5.1",
-  "_versionNotes": "Auto-packaged version 0.5.1 - 2025-08-19",
+  "version": "0.9.1",
+  "_versionNotes": "Auto-packaged version 0.9.1 - 2025-08-19",
   "publisher": "aidm-team",
   "author": {
     "name": "AiDM Team"
@@ -73,6 +73,11 @@
         "category": "AiDM"
       },
       {
+        "command": "aidm-vscode-extension.showPort",
+        "title": "Show MCP Server Port",
+        "category": "AiDM"
+      },
+      {
         "command": "aidm-vscode-extension.runRooCodeDemo",
         "title": "Run RooCode Integration Demo",
         "category": "AiDM"
@@ -88,11 +93,6 @@
         "category": "AiDM"
       },
       {
-        "command": "aidm-vscode-extension.testActivation",
-        "title": "Test Extension Activation",
-        "category": "AiDM"
-      },
-      {
         "command": "aidm-vscode-extension.openConfiguration",
         "title": "Open Configuration Panel",
         "category": "AiDM"
@@ -103,28 +103,8 @@
         "category": "AiDM"
       },
       {
-        "command": "aidm-vscode-extension.forceTest",
-        "title": "Force Test Command",
-        "category": "AiDM"
-      },
-      {
-        "command": "aidm-vscode-extension.startup",
-        "title": "Startup Test",
-        "category": "AiDM"
-      },
-      {
-        "command": "aidm-vscode-extension.debug",
-        "title": "Debug Extension Status",
-        "category": "AiDM"
-      },
-      {
         "command": "aidm-vscode-extension.version",
         "title": "Show Extension Version",
-        "category": "AiDM"
-      },
-      {
-        "command": "aidm-vscode-extension.hello",
-        "title": "Hello (Test Command)",
         "category": "AiDM"
       }
     ],
