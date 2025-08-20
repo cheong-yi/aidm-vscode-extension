@@ -1,0 +1,15 @@
+{
+  "mcpServer": {
+    "port": 3000,
+    "timeout": 5000,
+    "retryAttempts": 3
+  },
+  "mock": {
+    "enabled": true,
+    "dataSize": "medium",
+    "enterprisePatterns": true
+  },
+  "performance": {
+    "maxConcurrentRequests": 10
+  }
+}

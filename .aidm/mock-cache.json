@@ -1,268 +1,216 @@
 {
-  "src/demo/sampleFiles/DashboardAnalytics.ts": [
-    {
-      "startLine": 1,
-      "endLine": 50,
-      "context": {
-        "requirements": [
-          {
-            "id": "REQ-005",
-            "title": "Customer Dashboard with Real-time Analytics",
-            "description": "Implement comprehensive customer dashboard providing real-time analytics, transaction history, and predictive insights with WCAG 2.1 AA accessibility compliance",
-            "type": "BUSINESS",
-            "priority": "HIGH",
-            "status": "IN_PROGRESS",
-            "stakeholders": [
-              "Product Manager",
-              "UX Designer",
-              "Accessibility Team"
-            ],
-            "createdDate": "2024-01-15T00:00:00.000Z",
-            "lastModified": "2024-01-20T00:00:00.000Z",
-            "tags": [
-              "dashboard",
-              "analytics",
-              "accessibility",
-              "customer-experience"
-            ]
-          }
-        ],
-        "implementationStatus": {
-          "completionPercentage": 75,
-          "lastVerified": "2024-01-20T00:00:00.000Z",
-          "verifiedBy": "Lead Developer",
-          "notes": "Core functionality complete, accessibility testing in progress"
-        },
-        "relatedChanges": [
-          {
-            "id": "CHG-001",
-            "type": "FEATURE",
-            "description": "Added WCAG 2.1 AA compliance features",
-            "author": "UX Designer",
-            "timestamp": "2024-01-20T00:00:00.000Z",
-            "relatedRequirements": [
-              "REQ-005"
-            ]
-          }
-        ],
-        "lastUpdated": "2024-01-20T00:00:00.000Z"
+  "src/demo/sampleFiles/DashboardAnalytics.ts": {
+    "15-29": {
+      "requirements": [
+        {
+          "id": "REQ-003",
+          "title": "Audit Logging Infrastructure",
+          "description": "All customer dashboard operations must be logged for compliance and monitoring purposes",
+          "type": "NON_FUNCTIONAL",
+          "priority": "HIGH",
+          "status": "COMPLETED",
+          "stakeholders": ["Security Team", "Compliance Officer"],
+          "createdDate": "2024-01-10",
+          "lastModified": "2024-01-18",
+          "tags": ["logging", "security", "compliance"],
+          "linkedRequirements": ["REQ-005"],
+          "functions": ["constructor"]
+        }
+      ],
+      "implementationStatus": {
+        "completionPercentage": 100,
+        "lastVerified": "2024-01-20",
+        "verifiedBy": "Lead Developer",
+        "notes": "Constructor completed with dependency injection for audit logging, cache manager, and ML service"
+      },
+      "relatedChanges": [
+        {
+          "id": "CHG-003",
+          "type": "FEATURE",
+          "description": "Integrated comprehensive audit logging",
+          "author": "Security Engineer",
+          "timestamp": "2024-01-18",
+          "relatedRequirements": ["REQ-003"]
+        }
+      ],
+      "lastUpdated": "2024-01-20T08:00:00.000Z",
+      "functionMappings": {
+        "constructor": {
+          "startLine": 20,
+          "endLine": 28,
+          "requirements": ["REQ-003"],
+          "description": "Dependency injection setup for audit logging, cache management, and ML services"
+        }
       }
     },
-    {
-      "startLine": 51,
-      "endLine": 100,
-      "context": {
-        "requirements": [
-          {
-            "id": "REQ-003",
-            "title": "Performance Optimization",
-            "description": "System must respond to user requests within 200ms for 95th percentile with intelligent caching strategies",
-            "type": "NON_FUNCTIONAL",
-            "priority": "CRITICAL",
-            "status": "COMPLETED",
-            "stakeholders": [
-              "DevOps Engineer",
-              "Performance Team"
-            ],
-            "createdDate": "2024-01-10T00:00:00.000Z",
-            "lastModified": "2024-01-18T00:00:00.000Z",
-            "tags": [
-              "performance",
-              "caching",
-              "response-time",
-              "optimization"
-            ]
-          }
-        ],
-        "implementationStatus": {
-          "completionPercentage": 100,
-          "lastVerified": "2024-01-18T00:00:00.000Z",
-          "verifiedBy": "Performance Engineer",
-          "notes": "All performance targets met, monitoring in place"
+    "30-133": {
+      "requirements": [
+        {
+          "id": "REQ-005",
+          "title": "Customer Dashboard with Real-time Analytics",
+          "description": "Implement comprehensive customer dashboard providing real-time analytics, transaction history, and predictive insights with WCAG 2.1 AA accessibility compliance",
+          "type": "BUSINESS",
+          "priority": "HIGH",
+          "status": "IN_PROGRESS",
+          "stakeholders": [
+            "Product Manager",
+            "UX Designer",
+            "Accessibility Team"
+          ],
+          "createdDate": "2024-01-15",
+          "lastModified": "2024-01-20",
+          "tags": [
+            "dashboard",
+            "analytics",
+            "accessibility",
+            "customer-experience"
+          ],
+          "linkedRequirements": ["REQ-003", "REQ-007"],
+          "functions": ["generateDashboardAnalytics"]
         },
-        "relatedChanges": [],
-        "lastUpdated": "2024-01-18T00:00:00.000Z"
+        {
+          "id": "REQ-007",
+          "title": "Real-time Data Processing Engine",
+          "description": "Process customer analytics data in real-time with sub-second latency requirements for dashboard updates",
+          "type": "FUNCTIONAL",
+          "priority": "HIGH",
+          "status": "IN_PROGRESS",
+          "stakeholders": ["Product Manager", "Data Engineering Team"],
+          "createdDate": "2024-01-12",
+          "lastModified": "2024-01-19",
+          "tags": ["real-time", "performance", "data-processing"],
+          "linkedRequirements": ["REQ-005", "REQ-008"],
+          "functions": ["generateDashboardAnalytics"]
+        }
+      ],
+      "implementationStatus": {
+        "completionPercentage": 85,
+        "lastVerified": "2024-01-20",
+        "verifiedBy": "Lead Developer",
+        "notes": "Main dashboard analytics generation complete with caching, audit logging, and real-time processing"
+      },
+      "relatedChanges": [
+        {
+          "id": "CHG-001",
+          "type": "FEATURE",
+          "description": "Added WCAG 2.1 AA compliance features",
+          "author": "UX Designer",
+          "timestamp": "2024-01-20",
+          "relatedRequirements": ["REQ-005"]
+        },
+        {
+          "id": "CHG-002",
+          "type": "PERFORMANCE",
+          "description": "Optimized real-time data processing pipeline",
+          "author": "Data Engineer",
+          "timestamp": "2024-01-19",
+          "relatedRequirements": ["REQ-007"]
+        }
+      ],
+      "lastUpdated": "2024-01-20T08:00:00.000Z",
+      "functionMappings": {
+        "generateDashboardAnalytics": {
+          "startLine": 33,
+          "endLine": 133,
+          "requirements": ["REQ-005", "REQ-007"],
+          "description": "Main dashboard analytics generation with caching, audit logging, and real-time data processing"
+        }
       }
     },
-    {
-      "startLine": 101,
-      "endLine": 150,
-      "context": {
-        "requirements": [
-          {
-            "id": "REQ-010",
-            "title": "Machine Learning Pipeline",
-            "description": "Build ML pipeline for predictive analytics and recommendation engine with sub-100ms inference latency",
-            "type": "BUSINESS",
-            "priority": "HIGH",
-            "status": "IN_PROGRESS",
-            "stakeholders": [
-              "Data Scientist",
-              "ML Engineer",
-              "Product Manager"
-            ],
-            "createdDate": "2024-01-12T00:00:00.000Z",
-            "lastModified": "2024-01-19T00:00:00.000Z",
-            "tags": [
-              "machine-learning",
-              "analytics",
-              "recommendations",
-              "pipeline"
-            ]
-          }
-        ],
-        "implementationStatus": {
-          "completionPercentage": 60,
-          "lastVerified": "2024-01-19T00:00:00.000Z",
-          "verifiedBy": "ML Engineer",
-          "notes": "Core models implemented, optimization for latency in progress"
-        },
-        "relatedChanges": [
-          {
-            "id": "CHG-002",
-            "type": "FEATURE",
-            "description": "Implemented churn prediction and spending forecast models",
-            "author": "Data Scientist",
-            "timestamp": "2024-01-19T00:00:00.000Z",
-            "relatedRequirements": [
-              "REQ-010"
-            ]
-          }
-        ],
-        "lastUpdated": "2024-01-19T00:00:00.000Z"
+    "134-204": {
+      "requirements": [
+        {
+          "id": "REQ-008",
+          "title": "User Metrics and Engagement Analytics",
+          "description": "Generate detailed user engagement metrics including session duration, feature usage, and behavior patterns",
+          "type": "FUNCTIONAL",
+          "priority": "MEDIUM",
+          "status": "IN_PROGRESS",
+          "stakeholders": ["Product Manager", "Data Analytics Team"],
+          "createdDate": "2024-01-16",
+          "lastModified": "2024-01-19",
+          "tags": ["user-metrics", "engagement", "behavior-analytics"],
+          "linkedRequirements": ["REQ-005"],
+          "functions": ["generateUserMetrics"]
+        }
+      ],
+      "implementationStatus": {
+        "completionPercentage": 70,
+        "lastVerified": "2024-01-19",
+        "verifiedBy": "Data Analyst",
+        "notes": "User metrics generation implemented, engagement scoring in progress"
+      },
+      "relatedChanges": [
+        {
+          "id": "CHG-004",
+          "type": "FEATURE",
+          "description": "Added user behavior tracking metrics",
+          "author": "Data Analyst",
+          "timestamp": "2024-01-19",
+          "relatedRequirements": ["REQ-008"]
+        }
+      ],
+      "lastUpdated": "2024-01-19T16:00:00.000Z",
+      "functionMappings": {
+        "generateUserMetrics": {
+          "startLine": 134,
+          "endLine": 204,
+          "requirements": ["REQ-008"],
+          "description": "Generate comprehensive user engagement metrics and behavior analytics"
+        }
+      }
+    },
+    "205-309": {
+      "requirements": [
+        {
+          "id": "REQ-009",
+          "title": "Predictive Analytics and ML Integration",
+          "description": "Implement machine learning-driven predictive insights for customer behavior, fraud detection, and business forecasting",
+          "type": "TECHNICAL",
+          "priority": "HIGH",
+          "status": "IN_PROGRESS",
+          "stakeholders": [
+            "Data Science Team",
+            "Product Manager",
+            "ML Engineering Team"
+          ],
+          "createdDate": "2024-01-14",
+          "lastModified": "2024-01-20",
+          "tags": [
+            "machine-learning",
+            "predictive-analytics",
+            "fraud-detection",
+            "forecasting"
+          ],
+          "linkedRequirements": ["REQ-005", "REQ-007"],
+          "functions": ["generatePredictiveInsights"]
+        }
+      ],
+      "implementationStatus": {
+        "completionPercentage": 65,
+        "lastVerified": "2024-01-20",
+        "verifiedBy": "ML Engineer",
+        "notes": "ML model integration complete, prediction accuracy optimization ongoing"
+      },
+      "relatedChanges": [
+        {
+          "id": "CHG-005",
+          "type": "FEATURE",
+          "description": "Integrated ML prediction models",
+          "author": "ML Engineer",
+          "timestamp": "2024-01-20",
+          "relatedRequirements": ["REQ-009"]
+        }
+      ],
+      "lastUpdated": "2024-01-20T10:30:00.000Z",
+      "functionMappings": {
+        "generatePredictiveInsights": {
+          "startLine": 205,
+          "endLine": 309,
+          "requirements": ["REQ-009"],
+          "description": "Generate ML-driven predictive insights for customer behavior and business forecasting"
+        }
       }
     }
-  ],
-  "src/demo/sampleFiles/PaymentProcessor.ts": [
-    {
-      "startLine": 1,
-      "endLine": 50,
-      "context": {
-        "requirements": [
-          {
-            "id": "REQ-002",
-            "title": "Payment Processing Integration",
-            "description": "Integrate with external payment gateway for transaction processing with PCI DSS compliance and fraud detection",
-            "type": "FUNCTIONAL",
-            "priority": "CRITICAL",
-            "status": "COMPLETED",
-            "stakeholders": [
-              "Payment Team",
-              "Security Team",
-              "Compliance Officer"
-            ],
-            "createdDate": "2024-01-08T00:00:00.000Z",
-            "lastModified": "2024-01-17T00:00:00.000Z",
-            "tags": [
-              "payment",
-              "integration",
-              "pci-dss",
-              "fraud-detection",
-              "security"
-            ]
-          }
-        ],
-        "implementationStatus": {
-          "completionPercentage": 100,
-          "lastVerified": "2024-01-17T00:00:00.000Z",
-          "verifiedBy": "Security Engineer",
-          "notes": "PCI DSS audit passed, fraud detection operational"
-        },
-        "relatedChanges": [],
-        "lastUpdated": "2024-01-17T00:00:00.000Z"
-      }
-    }
-  ],
-  "src/demo/sampleFiles/UserService.ts": [
-    {
-      "startLine": 1,
-      "endLine": 50,
-      "context": {
-        "requirements": [
-          {
-            "id": "REQ-001",
-            "title": "User Authentication System",
-            "description": "Implement secure user authentication with multi-factor support including OAuth 2.0, SAML, and biometric authentication",
-            "type": "FUNCTIONAL",
-            "priority": "CRITICAL",
-            "status": "COMPLETED",
-            "stakeholders": [
-              "Security Team",
-              "DevOps Engineer",
-              "Product Manager"
-            ],
-            "createdDate": "2024-01-05T00:00:00.000Z",
-            "lastModified": "2024-01-16T00:00:00.000Z",
-            "tags": [
-              "security",
-              "authentication",
-              "oauth",
-              "saml",
-              "biometric",
-              "compliance"
-            ]
-          }
-        ],
-        "implementationStatus": {
-          "completionPercentage": 100,
-          "lastVerified": "2024-01-16T00:00:00.000Z",
-          "verifiedBy": "Security Engineer",
-          "notes": "All authentication methods implemented and tested"
-        },
-        "relatedChanges": [],
-        "lastUpdated": "2024-01-16T00:00:00.000Z"
-      }
-    }
-  ],
-  "src/demo/sampleFiles/FraudDetection.ts": [
-    {
-      "startLine": 1,
-      "endLine": 50,
-      "context": {
-        "requirements": [
-          {
-            "id": "REQ-008",
-            "title": "Advanced Fraud Detection",
-            "description": "Implement real-time fraud detection using machine learning with 99.5% accuracy and sub-second response time",
-            "type": "FUNCTIONAL",
-            "priority": "HIGH",
-            "status": "IN_PROGRESS",
-            "stakeholders": [
-              "Data Scientist",
-              "Security Team",
-              "Risk Management"
-            ],
-            "createdDate": "2024-01-14T00:00:00.000Z",
-            "lastModified": "2024-01-20T00:00:00.000Z",
-            "tags": [
-              "fraud-detection",
-              "machine-learning",
-              "security",
-              "real-time",
-              "risk-management"
-            ]
-          }
-        ],
-        "implementationStatus": {
-          "completionPercentage": 80,
-          "lastVerified": "2024-01-20T00:00:00.000Z",
-          "verifiedBy": "Data Scientist",
-          "notes": "Core ML models deployed, accuracy optimization in progress"
-        },
-        "relatedChanges": [
-          {
-            "id": "CHG-003",
-            "type": "FEATURE",
-            "description": "Deployed new fraud detection models with improved accuracy",
-            "author": "Data Scientist",
-            "timestamp": "2024-01-20T00:00:00.000Z",
-            "relatedRequirements": [
-              "REQ-008"
-            ]
-          }
-        ],
-        "lastUpdated": "2024-01-20T00:00:00.000Z"
-      }
-    }
-  ]
+  }
 }

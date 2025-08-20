@@ -14,6 +14,8 @@ export interface Requirement {
   createdDate: Date;
   lastModified: Date;
   tags: string[];
+  linkedRequirements?: string[];
+  functions?: string[];
 }
 
 export enum RequirementType {
@@ -88,11 +90,19 @@ export enum ChangeType {
   TEST = "test",
 }
 
+export interface FunctionMapping {
+  startLine: number;
+  endLine: number;
+  requirements: string[];
+  description: string;
+}
+
 export interface BusinessContext {
   requirements: Requirement[];
   implementationStatus: ImplementationStatus;
   relatedChanges: Change[];
   lastUpdated: Date;
+  functionMappings?: Record<string, FunctionMapping>;
 }
 
 export interface ImplementationStatus {

@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "test-remote-mcp": {
+      "type": "streamable-http",
+      "url": "https://aidm-vscode-extension-remote-mcp.vercel.app/mcp"
+    }
+  }
+}

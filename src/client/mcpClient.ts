@@ -128,6 +128,9 @@ export class MCPClient {
    * Get business context for a code location with error handling
    */
   async getBusinessContext(filePath: string, line: number): Promise<any> {
+    // Log request details for debugging
+    console.log("MCPClient - Requesting context for:", { filePath, line });
+
     const context: ErrorContext = {
       operation: "getBusinessContext",
       component: "MCPClient",
@@ -142,10 +145,23 @@ export class MCPClient {
 
     return await this.errorHandler.executeWithErrorHandling(
       async () => {
-        return await this.callTool("get_business_context", {
+        const response = await this.callTool("get_business_context", {
           filePath,
-          line,
+          startLine: line,
+          endLine: line,
         });
+
+        console.log(
+          "MCPClient - Raw response:",
+          JSON.stringify(response, null, 2)
+        );
+
+        // Validate response format
+        if (typeof response === "string" && response.startsWith("Invalid")) {
+          throw new Error(`Server error: ${response}`);
+        }
+
+        return response;
       },
       context,
       {
@@ -298,6 +314,14 @@ export class MCPClient {
       endpoint: this.config.endpoint,
       errorStats: this.errorHandler.getErrorStats(),
     };
+  }
+
+  /**
+   * Get the current port number
+   */
+  getPort(): number {
+    const match = this.config.endpoint.match(/:(\d+)/);
+    return match ? parseInt(match[1], 10) : 3000;
   }
 
   /**

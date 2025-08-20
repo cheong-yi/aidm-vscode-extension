@@ -1,5 +1,203 @@
 # AiDM VSCode Extension - Version History
 
+## Version 0.28.1 (Packaged)
+**Date**: 2025-08-20
+**Status**: Auto-packaged for testing
+
+### 📦 Packaging Notes
+- **Auto-versioned**: Incremented from 0.27.1
+- **Build Date**: 2025-08-20T06:58:43.382Z
+- **Purpose**: Testing and demo packaging
+
+---
+
+## Version 0.27.1 (Packaged)
+**Date**: 2025-08-20
+**Status**: Auto-packaged for testing
+
+### 📦 Packaging Notes
+- **Auto-versioned**: Incremented from 0.26.1
+- **Build Date**: 2025-08-20T06:47:36.730Z
+- **Purpose**: Testing and demo packaging
+
+---
+
+## Version 0.26.1 (Packaged)
+**Date**: 2025-08-20
+**Status**: Auto-packaged for testing
+
+### 📦 Packaging Notes
+- **Auto-versioned**: Incremented from 0.25.1
+- **Build Date**: 2025-08-20T06:29:10.345Z
+- **Purpose**: Testing and demo packaging
+
+---
+
+## Version 0.25.1 (Packaged)
+**Date**: 2025-08-20
+**Status**: Auto-packaged for testing
+
+### 📦 Packaging Notes
+- **Auto-versioned**: Incremented from 0.24.1
+- **Build Date**: 2025-08-20T06:18:25.799Z
+- **Purpose**: Testing and demo packaging
+
+---
+
+## Version 0.24.1 (Packaged)
+**Date**: 2025-08-20
+**Status**: Auto-packaged for testing
+
+### 📦 Packaging Notes
+- **Auto-versioned**: Incremented from 0.23.1
+- **Build Date**: 2025-08-20T06:10:11.223Z
+- **Purpose**: Testing and demo packaging
+
+---
+
+## Version 0.23.1 (Packaged)
+**Date**: 2025-08-20
+**Status**: Auto-packaged for testing
+
+### 📦 Packaging Notes
+- **Auto-versioned**: Incremented from 0.22.1
+- **Build Date**: 2025-08-20T05:55:07.910Z
+- **Purpose**: Testing and demo packaging
+
+---
+
+## Version 0.22.1 (Packaged)
+**Date**: 2025-08-20
+**Status**: Auto-packaged for testing
+
+### 📦 Packaging Notes
+- **Auto-versioned**: Incremented from 0.21.1
+- **Build Date**: 2025-08-20T05:49:42.951Z
+- **Purpose**: Testing and demo packaging
+
+---
+
+## Version 0.21.1 (Packaged)
+**Date**: 2025-08-20
+**Status**: Auto-packaged for testing
+
+### 📦 Packaging Notes
+- **Auto-versioned**: Incremented from 0.20.1
+- **Build Date**: 2025-08-20T05:44:25.969Z
+- **Purpose**: Testing and demo packaging
+
+---
+
+## Version 0.20.1 (Packaged)
+**Date**: 2025-08-20
+**Status**: Auto-packaged for testing
+
+### 📦 Packaging Notes
+- **Auto-versioned**: Incremented from 0.19.1
+- **Build Date**: 2025-08-20T05:42:40.007Z
+- **Purpose**: Testing and demo packaging
+
+---
+
+## Version 0.19.1 (Packaged)
+**Date**: 2025-08-20
+**Status**: Auto-packaged for testing
+
+### 📦 Packaging Notes
+- **Auto-versioned**: Incremented from 0.18.1
+- **Build Date**: 2025-08-20T05:36:06.287Z
+- **Purpose**: Testing and demo packaging
+
+---
+
+## Version 0.18.1 (Packaged)
+**Date**: 2025-08-20
+**Status**: Auto-packaged for testing
+
+### 📦 Packaging Notes
+- **Auto-versioned**: Incremented from 0.17.1
+- **Build Date**: 2025-08-20T03:57:23.628Z
+- **Purpose**: Testing and demo packaging
+
+---
+
+## Version 0.17.1 (Packaged)
+**Date**: 2025-08-20
+**Status**: Auto-packaged for testing
+
+### 📦 Packaging Notes
+- **Auto-versioned**: Incremented from 0.16.1
+- **Build Date**: 2025-08-20T03:55:20.625Z
+- **Purpose**: Testing and demo packaging
+
+---
+
+## Version 0.16.1 (Packaged)
+**Date**: 2025-08-20
+**Status**: Auto-packaged for testing
+
+### 📦 Packaging Notes
+- **Auto-versioned**: Incremented from 0.15.1
+- **Build Date**: 2025-08-20T03:54:34.816Z
+- **Purpose**: Testing and demo packaging
+
+---
+
+## Version 0.15.1 (Packaged)
+**Date**: 2025-08-20
+**Status**: Auto-packaged for testing
+
+### 📦 Packaging Notes
+- **Auto-versioned**: Incremented from 0.14.1
+- **Build Date**: 2025-08-20T03:48:46.533Z
+- **Purpose**: Testing and demo packaging
+
+---
+
+## Version 0.14.1 (Packaged)
+**Date**: 2025-08-20
+**Status**: Auto-packaged for testing
+
+### 📦 Packaging Notes
+- **Auto-versioned**: Incremented from 0.13.1
+- **Build Date**: 2025-08-20T03:46:37.107Z
+- **Purpose**: Testing and demo packaging
+
+---
+
+## Version 0.13.1 (Packaged)
+**Date**: 2025-08-20
+**Status**: Auto-packaged for testing
+
+### 📦 Packaging Notes
+- **Auto-versioned**: Incremented from 0.12.1
+- **Build Date**: 2025-08-20T01:43:52.577Z
+- **Purpose**: Testing and demo packaging
+
+---
+
+## Version 0.12.1 (Packaged)
+**Date**: 2025-08-20
+**Status**: Auto-packaged for testing
+
+### 📦 Packaging Notes
+- **Auto-versioned**: Incremented from 0.11.1
+- **Build Date**: 2025-08-20T01:41:57.025Z
+- **Purpose**: Testing and demo packaging
+
+---
+
+## Version 0.11.1 (Packaged)
+**Date**: 2025-08-20
+**Status**: Auto-packaged for testing
+
+### 📦 Packaging Notes
+- **Auto-versioned**: Incremented from 0.10.1
+- **Build Date**: 2025-08-20T01:40:38.384Z
+- **Purpose**: Testing and demo packaging
+
+---
+
 ## Version 0.10.1 (Packaged)
 **Date**: 2025-08-20
 **Status**: Auto-packaged for testing

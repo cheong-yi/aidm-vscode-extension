@@ -554,19 +554,14 @@ export class SimpleMCPServer {
         codeLocation
       );
 
-      // Format response for AI consumption with structured data
-      const formattedResponse = this.formatBusinessContextForAI(
-        businessContext,
-        codeLocation
-      );
-
+      // Return structured JSON data wrapped in MCP format for hover provider
       return {
         jsonrpc: "2.0",
         result: {
           content: [
             {
               type: "text",
-              text: formattedResponse,
+              text: JSON.stringify(businessContext, null, 2),
             },
           ],
         },
