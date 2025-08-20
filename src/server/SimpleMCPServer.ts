@@ -91,6 +91,13 @@ export class SimpleMCPServer {
   }
 
   /**
+   * Get the port the server is configured to run on
+   */
+  getPort(): number {
+    return this.port;
+  }
+
+  /**
    * Get server statistics
    */
   getServerStats(): {

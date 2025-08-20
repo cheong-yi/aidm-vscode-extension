@@ -60,8 +60,11 @@ export async function activate(
 
     console.log("=== ACTIVATION STEP 5: Building process config ===");
     // Get configured port or use smart port selection
-    const configuredPort = config.get<number>(getConfigKey("mcpServer.port"), 3000);
-    
+    const configuredPort = config.get<number>(
+      getConfigKey("mcpServer.port"),
+      3000
+    );
+
     // Build process manager configuration
     const processConfig: ProcessManagerConfig = {
       port: configuredPort, // Will be updated with actual available port
@@ -191,9 +194,17 @@ export async function activate(
         getCommandId("showPort"),
         () => {
           const currentPort = processManager.getPort();
-          vscode.window.showInformationMessage(
-            `AiDM MCP Server is running on port ${currentPort}`
-          );
+          const actualPort = processManager.getActualPort();
+
+          if (currentPort === actualPort) {
+            vscode.window.showInformationMessage(
+              `AiDM MCP Server is running on port ${actualPort}`
+            );
+          } else {
+            vscode.window.showInformationMessage(
+              `AiDM MCP Server: Configured for port ${currentPort}, actually running on port ${actualPort}`
+            );
+          }
         }
       );
       context.subscriptions.push(showPortCommand);
@@ -245,7 +256,10 @@ export async function activate(
           const remoteUrl = await vscode.window.showInputBox({
             prompt: "Enter remote MCP server URL",
             placeHolder: "https://your-roocode-server.com",
-            value: config.get<string>("aidmVscodeExtension.remote.mcpServerUrl", ""),
+            value: config.get<string>(
+              "aidmVscodeExtension.remote.mcpServerUrl",
+              ""
+            ),
           });
 
           if (remoteUrl) {
@@ -253,7 +267,10 @@ export async function activate(
               prompt: "Enter API key (optional)",
               placeHolder: "your-api-key",
               password: true,
-              value: config.get<string>("aidmVscodeExtension.remote.apiKey", ""),
+              value: config.get<string>(
+                "aidmVscodeExtension.remote.apiKey",
+                ""
+              ),
             });
 
             // Update configuration
@@ -429,14 +446,23 @@ export async function activate(
 
             const newProcessConfig: ProcessManagerConfig = {
               port: config.get<number>(getConfigKey("mcpServer.port"), 3000),
-              timeout: config.get<number>(getConfigKey("mcpServer.timeout"), 5000),
-              retryAttempts: config.get<number>(getConfigKey("mcpServer.retryAttempts"), 3),
+              timeout: config.get<number>(
+                getConfigKey("mcpServer.timeout"),
+                5000
+              ),
+              retryAttempts: config.get<number>(
+                getConfigKey("mcpServer.retryAttempts"),
+                3
+              ),
               maxConcurrentRequests: config.get<number>(
                 getConfigKey("performance.maxConcurrentRequests"),
                 10
               ),
               mock: {
-                enabled: config.get<boolean>(getConfigKey("mock.enabled"), true),
+                enabled: config.get<boolean>(
+                  getConfigKey("mock.enabled"),
+                  true
+                ),
                 dataSize: config.get<"small" | "medium" | "large">(
                   getConfigKey("mock.dataSize"),
                   "medium"
@@ -506,23 +532,37 @@ async function startMCPServer(): Promise<void> {
   try {
     // Find available port before starting
     const currentPort = processManager.getPort();
+    console.log(`🔍 PortFinder: Starting with configured port ${currentPort}`);
+
     const availablePort = await PortFinder.findAvailablePort(currentPort);
-    
+    console.log(`🔍 PortFinder: Found available port ${availablePort}`);
+
     // Update the process manager with the available port
     if (availablePort !== currentPort) {
-      console.log(`🔄 Port ${currentPort} is busy, switching to port ${availablePort}`);
+      console.log(
+        `🔄 Port ${currentPort} is busy, switching to port ${availablePort}`
+      );
       processManager.updatePort(availablePort);
-      
+
       // Update MCP client with new port
       mcpClient.updateConfig(availablePort, processManager.getTimeout());
+    } else {
+      console.log(`✅ Port ${currentPort} is available, using configured port`);
     }
-    
+
+    // Get the final port that will actually be used
+    const finalPort = processManager.getPort();
+    console.log(`🔍 Final port before start: ${finalPort}`);
+
     await processManager.start();
-    console.log(`✅ MCP server started successfully on port ${availablePort}`);
-    
+
+    // Get the actual port the server is running on
+    const actualPort = processManager.getActualPort();
+    console.log(`✅ MCP server started successfully on port ${actualPort}`);
+
     // Show notification with port info
     vscode.window.showInformationMessage(
-      `AiDM MCP Server started on port ${availablePort}`
+      `AiDM MCP Server started on port ${actualPort}`
     );
   } catch (error) {
     console.error("Failed to start MCP server:", error);

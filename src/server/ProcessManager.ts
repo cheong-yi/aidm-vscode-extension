@@ -60,7 +60,9 @@ export class ProcessManager {
     }
 
     try {
-      console.log("Starting MCP server process...");
+      console.log(
+        `🚀 Starting MCP server process on port ${this.config.port}...`
+      );
       this.notifyStatusChange(ConnectionStatus.Connecting);
 
       // Initialize mock data provider
@@ -80,7 +82,10 @@ export class ProcessManager {
       // Initialize context manager with mock cache
       const contextManager = new ContextManager(mockDataProvider, mockCache);
 
-      // Create server instance
+      // Create server instance with current config port
+      console.log(
+        `🔧 Creating SimpleMCPServer instance on port ${this.config.port}`
+      );
       this.server = new SimpleMCPServer(this.config.port, contextManager);
 
       // Configure server
@@ -226,13 +231,49 @@ export class ProcessManager {
    * Update port configuration
    */
   updatePort(newPort: number): void {
-    this.config.port = newPort;
+    if (this.config.port !== newPort) {
+      console.log(
+        `🔄 ProcessManager: Updating port from ${this.config.port} to ${newPort}`
+      );
+      this.config.port = newPort;
+
+      // If server is already running, we need to restart it with the new port
+      if (this.isRunning && this.server) {
+        console.log(
+          `🔄 Port changed while server running, restarting server on new port ${newPort}`
+        );
+        this.restart().catch((error) => {
+          console.error(
+            `❌ Failed to restart server on new port ${newPort}:`,
+            error
+          );
+        });
+      }
+    }
   }
 
   /**
    * Get current port
    */
   getPort(): number {
+    return this.config.port;
+  }
+
+  /**
+   * Get the actual port the server is running on (if different from config)
+   */
+  getActualPort(): number {
+    if (this.server && this.isRunning) {
+      // Get the actual port from the server instance
+      try {
+        const serverPort = this.server.getPort();
+        if (serverPort && typeof serverPort === "number") {
+          return serverPort;
+        }
+      } catch (error) {
+        console.log("Could not get actual server port, using config port");
+      }
+    }
     return this.config.port;
   }
 
