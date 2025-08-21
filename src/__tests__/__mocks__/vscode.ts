@@ -97,6 +97,34 @@ export class CancellationToken {
   public onCancellationRequested = jest.fn();
 }
 
+export class TreeItem {
+  public label: string;
+  public collapsibleState: any;
+  public iconPath: any;
+  public command: any;
+  public contextValue: string;
+  public tooltip: string | undefined;
+
+  constructor(label: string, collapsibleState?: any) {
+    this.label = label;
+    this.collapsibleState = collapsibleState;
+    this.iconPath = undefined;
+    this.command = undefined;
+    this.contextValue = '';
+    this.tooltip = undefined;
+  }
+}
+
+export class ThemeIcon {
+  constructor(public id: string) {}
+}
+
+export const TreeItemCollapsibleState = {
+  None: 0,
+  Collapsed: 1,
+  Expanded: 2,
+};
+
 export const Uri = {
   file: jest.fn((path: string) => ({ fsPath: path, path })),
   parse: jest.fn(),
