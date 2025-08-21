@@ -25,7 +25,7 @@ module.exports = {
   setupFilesAfterEnv: ["<rootDir>/src/__tests__/jest.setup.ts"],
   moduleFileExtensions: ["ts", "js", "json"],
   testTimeout: 10000,
-  moduleNameMapping: {
+  moduleNameMapper: {
     "^vscode$": "<rootDir>/src/__tests__/__mocks__/vscode.ts",
   },
 };
