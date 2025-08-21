@@ -148,6 +148,57 @@ export class TasksDataService implements ITasksDataService {
     }
   }
 
+  // Recovery Task 2.4.4: Add updateTaskStatus method with JSON-RPC communication
+  async updateTaskStatus(id: string, status: TaskStatus): Promise<boolean> {
+    try {
+      const response = await this.makeJSONRPCCall("tasks/update-status", {
+        id,
+        newStatus: status,
+      });
+
+      if (response.error) {
+        throw new Error(`MCP server error: ${response.error.message}`);
+      }
+
+      const success = response.result?.success || false;
+
+      if (success) {
+        // Fire onTasksUpdated event after successful update
+        // Use TaskStatusManager directly to avoid additional HTTP calls
+        const updatedTasks = await this.taskStatusManager.getTasks();
+        this.onTasksUpdated.fire(updatedTasks);
+      }
+
+      return success;
+    } catch (error) {
+      // Check if this is an MCP server error - if so, re-throw it
+      if (
+        error instanceof Error &&
+        error.message.startsWith("MCP server error:")
+      ) {
+        throw error;
+      }
+
+      // Fire error event and fallback to TaskStatusManager for HTTP failures
+      this.onError.fire({
+        operation: "status_update",
+        taskId: id,
+        suggestedAction: "retry",
+        userInstructions: `Failed to update task status: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+        technicalDetails:
+          error instanceof Error ? error.message : String(error),
+      });
+
+      console.warn(
+        "HTTP call failed, falling back to TaskStatusManager:",
+        error instanceof Error ? error.message : String(error)
+      );
+      return await this.taskStatusManager.updateTaskStatus(id, status);
+    }
+  }
+
   // Cleanup method for event emitters - Recovery Task 2.3.1 & 2.3.2
   dispose(): void {
     this.onTasksUpdated.dispose();

@@ -41,7 +41,7 @@ This implementation plan breaks down the feature into atomic, TDD-friendly tasks
 
 - [x] 2.4.1 Add HTTP client setup to TasksDataService
 - [x] 2.4.2 Replace getTasks with real JSON-RPC call
-- [ ] 2.4.3 Replace getTaskById with real JSON-RPC call
+- [x] 2.4.3 Replace getTaskById with real JSON-RPC call
 - [ ] 2.4.4 Add updateTaskStatus method with JSON-RPC
 
   2.5 MCP Server Integration
@@ -49,11 +49,11 @@ This implementation plan breaks down the feature into atomic, TDD-friendly tasks
 - [x] 2.5.1 Add first MCP tool (tasks/list) to SimpleMCPServer
 - [x] 2.5.2 Add tasks/get tool to SimpleMCPServer
 - [x] 2.5.3 Add tasks/update-status tool to SimpleMCPServer
-- [ ] 2.5.4 Add remaining MCP tools (refresh, dependencies, test-results)
+- [d] 2.5.4 Add remaining MCP tools (refresh, dependencies, test-results)
 
 ### 3. Implement VSCode UI components
 
-#### 3.1 TaskTreeViewProvider Foundation
+#### 3.1 TaskTreeItem Foundation
 
 - [x] 3.1.1 Create TaskTreeItem class with basic properties
 
@@ -62,198 +62,357 @@ This implementation plan breaks down the feature into atomic, TDD-friendly tasks
   - Write unit tests for TaskTreeItem creation
   - _Requirements: 1.1, 1.2_
 
-- [ ] 3.1.2 Create TaskTreeViewProvider class structure
+- [ ] 3.1.2 Add TaskTreeItem status indicator property
+
+  - Add iconPath property with status-based theme icons
+  - Write unit tests for icon assignment logic
+  - _Requirements: 2.2_
+
+- [ ] 3.1.3 Add TaskTreeItem collapsible state logic
+
+  - Implement collapsibleState based on task hierarchy
+  - Write unit tests for collapsible state determination
+  - _Requirements: 1.6_
+
+- [ ] 3.1.4 Add TaskTreeItem tooltip functionality
+
+  - Add tooltip text with task details and metadata
+  - Write unit tests for tooltip text generation
+  - _Requirements: 2.3_
+
+#### 3.2 TaskTreeViewProvider Foundation
+
+- [ ] 3.2.1 Create TaskTreeViewProvider class structure
 
   - Implement vscode.TreeDataProvider interface
   - Add basic getChildren and getTreeItem methods (return empty/mock data)
   - Write unit tests for provider interface compliance
   - _Requirements: 1.3, 1.4_
 
-- [ ] 3.1.3 Implement getChildren method for task hierarchy
+- [ ] 3.2.2 Implement getTreeItem method
 
-  - Connect to TasksDataService for real task data
-  - Handle parent-child relationships and filtering
+  - Convert Task objects to TaskTreeItem instances
+  - Write unit tests for task-to-tree-item conversion
+  - _Requirements: 1.5_
+
+- [ ] 3.2.3 Connect TaskTreeViewProvider to TasksDataService
+
+  - Add TasksDataService dependency injection
+  - Write unit tests for service connection
+  - _Requirements: 2.1_
+
+- [ ] 3.2.4 Implement getChildren for root level tasks
+
+  - Return top-level tasks (no parent dependencies)
+  - Write unit tests for root task filtering
+  - _Requirements: 1.5, 2.1_
+
+- [ ] 3.2.5 Implement getChildren for task hierarchy
+
+  - Handle parent-child relationships in task dependencies
   - Write unit tests for hierarchy logic
   - _Requirements: 1.5, 2.1_
 
-- [ ] 3.1.4 Add task status indicators to tree items
+- [ ] 3.2.6 Add task status filtering to getChildren
 
-  - Implement status-based icons and colors
-  - Add tooltip text with task details
-  - Write unit tests for status indicator logic
-  - _Requirements: 2.2, 2.3_
+  - Filter tasks based on status (hide completed, etc.)
+  - Write unit tests for status filtering logic
+  - _Requirements: 2.4_
 
-- [ ] 3.1.5 Implement expand/collapse functionality
-
-  - Add collapsibleState logic for tree nodes
-  - Handle nested task hierarchies
-  - Write unit tests for expand/collapse behavior
-  - _Requirements: 1.6, 2.4_
-
-- [ ] 3.1.6 Add "No Tasks" state handling
+- [ ] 3.2.7 Implement "No Tasks" state handling
 
   - Create empty state tree item when no tasks exist
-  - Add helpful messaging and actions
   - Write unit tests for empty state scenarios
   - _Requirements: 2.5_
 
-- [ ] 3.1.7 Implement refresh mechanism for tree view
+- [ ] 3.2.8 Add refresh mechanism infrastructure
+
   - Add onDidChangeTreeData event emitter
-  - Connect to TasksDataService events
-  - Write unit tests for refresh functionality
+  - Write unit tests for event emitter setup
   - _Requirements: 2.6_
 
-#### 3.2 TaskDetailCardProvider Foundation
+- [ ] 3.2.9 Connect refresh mechanism to data events
 
-- [ ] 3.2.1 Create TaskDetailCardProvider class structure
+  - Connect to TasksDataService events for auto-refresh
+  - Write unit tests for event listener connections
+  - _Requirements: 2.6_
+
+#### 3.3 TaskDetailCardProvider Foundation
+
+- [ ] 3.3.1 Create TaskDetailCardProvider class structure
 
   - Implement vscode.WebviewViewProvider interface
-  - Add basic resolveWebviewView method
+  - Add basic resolveWebviewView method (empty content)
   - Write unit tests for provider initialization
   - _Requirements: 2.1, 2.2_
 
-- [ ] 3.2.2 Create basic HTML template for task details
+- [ ] 3.3.2 Create basic HTML template structure
 
-  - Design responsive webview HTML structure
-  - Add CSS styling for task information layout
-  - Write unit tests for HTML generation
-  - _Requirements: 2.3, 2.4_
+  - Design responsive webview HTML skeleton
+  - Write unit tests for HTML template generation
+  - _Requirements: 2.3_
 
-- [ ] 3.2.3 Implement task data display in webview
+- [ ] 3.3.3 Add CSS styling for task information layout
 
-  - Show task title, description, and basic metadata
-  - Handle task selection from tree view
-  - Write unit tests for data binding
-  - _Requirements: 2.5, 7.1_
+  - Create CSS styles for task detail sections
+  - Write unit tests for CSS class application
+  - _Requirements: 2.4_
 
-- [ ] 3.2.4 Add status dropdown with validation
+- [ ] 3.3.4 Implement task title and description display
 
-  - Create interactive status selection dropdown
-  - Implement client-side validation
-  - Write unit tests for status change handling
-  - _Requirements: 2.6, 7.2_
+  - Show task title and description in webview
+  - Write unit tests for content rendering
+  - _Requirements: 2.5_
 
-- [ ] 3.2.5 Implement test results display section
+- [ ] 3.3.5 Add task metadata display section
 
-  - Show test status and results in dedicated section
-  - Handle test data formatting and visualization
-  - Write unit tests for test results rendering
-  - _Requirements: 7.3, 7.4_
+  - Show complexity, priority, dependencies
+  - Write unit tests for metadata formatting
+  - _Requirements: 7.1_
 
-- [ ] 3.2.6 Add "no task selected" state
+- [ ] 3.3.6 Create status dropdown component
 
-  - Create placeholder content when no task is selected
-  - Add helpful instructions for task selection
+  - Add interactive status selection dropdown
+  - Write unit tests for dropdown rendering
+  - _Requirements: 2.6_
+
+- [ ] 3.3.7 Add status dropdown validation logic
+
+  - Implement client-side status transition validation
+  - Write unit tests for validation rules
+  - _Requirements: 7.2_
+
+- [ ] 3.3.8 Implement webview-to-extension message handling
+
+  - Handle status change messages from webview
+  - Write unit tests for message handling
+  - _Requirements: 7.2_
+
+- [ ] 3.3.9 Add test results display section structure
+
+  - Create test results section HTML and CSS
+  - Write unit tests for test section rendering
+  - _Requirements: 7.3_
+
+- [ ] 3.3.10 Implement test status indicators
+
+  - Show pass/fail counts and status icons
+  - Write unit tests for test status display
+  - _Requirements: 7.4_
+
+- [ ] 3.3.11 Add failing tests collapsible section
+
+  - Show failing test details in expandable section
+  - Write unit tests for collapsible behavior
+  - _Requirements: 7.4_
+
+- [ ] 3.3.12 Create "no task selected" state
+
+  - Add placeholder content when no task is selected
   - Write unit tests for empty state display
   - _Requirements: 7.5_
 
-- [ ] 3.2.7 Create action buttons for common operations
-  - Add buttons for refresh, edit, and other task actions
-  - Implement click handlers and command integration
-  - Write unit tests for button functionality
+- [ ] 3.3.13 Add action buttons for common operations
+
+  - Create buttons for refresh, edit, history actions
+  - Write unit tests for button rendering
   - _Requirements: 7.6_
 
-#### 3.3 Task Management Commands
+- [ ] 3.3.14 Implement action button click handlers
 
-- [ ] 3.3.1 Create refreshTasks command
+  - Connect buttons to VSCode commands
+  - Write unit tests for click handler logic
+  - _Requirements: 7.6_
 
-  - Implement command to manually refresh task data
+#### 3.4 Task Management Commands
+
+- [ ] 3.4.1 Create refreshTasks command structure
+
   - Register command with VSCode command palette
+  - Write unit tests for command registration
+  - _Requirements: 3.1, 4.1_
+
+- [ ] 3.4.2 Implement refreshTasks command logic
+
+  - Connect to TasksDataService.refreshTasks()
   - Write unit tests for refresh command execution
   - _Requirements: 3.1, 4.1_
 
-- [ ] 3.3.2 Implement updateTaskStatus command
+- [ ] 3.4.3 Create updateTaskStatus command structure
 
-  - Create command for updating task status
-  - Add status validation and error handling
-  - Write unit tests for status update command
+  - Register updateTaskStatus command
+  - Write unit tests for command registration
   - _Requirements: 3.2, 4.2_
 
-- [ ] 3.3.3 Create viewTestResults command
+- [ ] 3.4.4 Implement updateTaskStatus command logic
 
-  - Implement command to show detailed test results
-  - Handle test data retrieval and display
-  - Write unit tests for test results command
+  - Add status validation and TasksDataService integration
+  - Write unit tests for status update execution
+  - _Requirements: 3.2, 4.2_
+
+- [ ] 3.4.5 Create viewTestResults command structure
+
+  - Register viewTestResults command
+  - Write unit tests for command registration
   - _Requirements: 3.3, 4.3_
 
-- [ ] 3.3.4 Implement reportTaskIssue command
+- [ ] 3.4.6 Implement viewTestResults command logic
 
-  - Create command for reporting task issues
-  - Add issue reporting workflow and validation
+  - Show detailed test results in new webview
+  - Write unit tests for test results display
+  - _Requirements: 3.3, 4.3_
+
+- [ ] 3.4.7 Create reportTaskIssue command structure
+
+  - Register reportTaskIssue command
+  - Write unit tests for command registration
+  - _Requirements: 3.4, 4.4_
+
+- [ ] 3.4.8 Implement reportTaskIssue command logic
+
+  - Create issue reporting workflow
   - Write unit tests for issue reporting
   - _Requirements: 3.4, 4.4_
 
-- [ ] 3.3.5 Add context menu integration
+- [ ] 3.4.9 Add tree view context menu registration
+
   - Register commands for right-click context menus
-  - Configure command visibility and availability
-  - Write integration tests for context menu functionality
+  - Write unit tests for context menu configuration
+  - _Requirements: 3.5, 3.6_
+
+- [ ] 3.4.10 Configure command visibility conditions
+
+  - Set up when clauses for command availability
+  - Write unit tests for visibility logic
   - _Requirements: 3.5, 3.6_
 
 ### 4. Integrate with existing MCP server infrastructure
 
-#### 4.1 Tasks Tool Enhancement (Note: May be partially complete based on 2.4)
+#### 4.1 TasksDataService Creation
 
-- [ ] 4.1.1 Create modular Tasks Tool class
+- [ ] 4.1.1 Create TasksDataService class structure
 
-  - Extract task functionality into separate tool class
-  - Implement clean interface for MCP server integration
-  - Write unit tests for tool class structure
+  - Create class with basic method signatures
+  - Write unit tests for class instantiation
+  - _Requirements: 6.1_
+
+- [ ] 4.1.2 Add getTasks method implementation
+
+  - Implement JSON-RPC call to MCP server for task list
+  - Write unit tests for getTasks method
+  - _Requirements: 6.2_
+
+- [ ] 4.1.3 Add getTaskById method implementation
+
+  - Implement task retrieval by ID
+  - Write unit tests for getTaskById method
+  - _Requirements: 6.3_
+
+- [ ] 4.1.4 Add updateTaskStatus method implementation
+
+  - Implement status update via JSON-RPC
+  - Write unit tests for updateTaskStatus method
+  - _Requirements: 6.4_
+
+- [ ] 4.1.5 Add refreshTasks method implementation
+
+  - Implement full task data refresh
+  - Write unit tests for refreshTasks method
+  - _Requirements: 6.5_
+
+- [ ] 4.1.6 Add event emitters to TasksDataService
+
+  - Add onTasksUpdated and onTaskStatusChanged events
+  - Write unit tests for event emission
+  - _Requirements: 6.6_
+
+#### 4.2 Tasks Tool Enhancement (Note: May be partially complete based on 2.4)
+
+- [ ] 4.2.1 Extract Tasks Tool class from existing code
+
+  - Create modular Tasks Tool class structure
+  - Write unit tests for tool class isolation
   - _Requirements: 1.4, 3.1_
 
-- [ ] 4.1.2 Decouple TaskStatusManager from JSON-RPC
+- [ ] 4.2.2 Decouple TaskStatusManager from JSON-RPC
+
   - Separate business logic from communication layer
-  - Create adapter pattern for MCP integration
   - Write unit tests for decoupling logic
   - _Requirements: 6.1, 6.2_
 
-#### 4.2 ContextManager Enhancement
+- [ ] 4.2.3 Create MCP adapter for Tasks Tool
 
-- [ ] 4.2.1 Extend ContextManager interface for tasks
+  - Implement adapter pattern for MCP integration
+  - Write unit tests for adapter functionality
+  - _Requirements: 6.1, 6.2_
+
+#### 4.3 ContextManager Enhancement
+
+- [ ] 4.3.1 Extend ContextManager interface for tasks
 
   - Add task-specific method signatures to interface
-  - Ensure backward compatibility with existing code
   - Write unit tests for interface extensions
   - _Requirements: 6.1, 6.2_
 
-- [ ] 4.2.2 Implement getTaskContext method
+- [ ] 4.3.2 Implement getTaskContext method
 
   - Add method for comprehensive task information retrieval
-  - Include related context and dependencies
   - Write unit tests for context retrieval
   - _Requirements: 6.3, 6.4_
 
-- [ ] 4.2.3 Add getTasksForFile method
+- [ ] 4.3.3 Implement getTasksForFile method
 
-  - Implement file-to-task mapping functionality
-  - Handle file path resolution and task association
+  - Add file-to-task mapping functionality
   - Write unit tests for file mapping logic
   - _Requirements: 6.5_
 
-- [ ] 4.2.4 Create task filtering methods
-  - Implement getTasksByStatus, getTasksByRequirement
-  - Add getTasksByPriority and getTasksByAssignee
-  - Write unit tests for filtering functionality
-  - _Requirements: 6.6, 6.7_
+- [ ] 4.3.4 Implement getTasksByStatus method
 
-#### 4.3 Error Handling Integration
+  - Add status-based task filtering
+  - Write unit tests for status filtering
+  - _Requirements: 6.6_
 
-- [ ] 4.3.1 Integrate with existing ErrorHandler
+- [ ] 4.3.5 Implement getTasksByRequirement method
+
+  - Add requirement-based task filtering
+  - Write unit tests for requirement filtering
+  - _Requirements: 6.7_
+
+- [ ] 4.3.6 Implement getTasksByPriority method
+
+  - Add priority-based task filtering
+  - Write unit tests for priority filtering
+  - _Requirements: 6.7_
+
+- [ ] 4.3.7 Implement getTasksByAssignee method
+
+  - Add assignee-based task filtering
+  - Write unit tests for assignee filtering
+  - _Requirements: 6.7_
+
+#### 4.4 Error Handling Integration
+
+- [ ] 4.4.1 Integrate TasksDataService with ErrorHandler
 
   - Use existing ErrorHandler for task-related errors
-  - Map task errors to existing error categories
   - Write unit tests for error handler integration
   - _Requirements: 5.1, 5.2_
 
-- [ ] 4.3.2 Add DegradedModeManager integration
+- [ ] 4.4.2 Map task errors to existing error categories
+
+  - Create error mapping for task operations
+  - Write unit tests for error categorization
+  - _Requirements: 5.1, 5.2_
+
+- [ ] 4.4.3 Add DegradedModeManager integration for task operations
 
   - Implement fallback scenarios for task operations
-  - Handle graceful degradation when services unavailable
   - Write unit tests for degraded mode behavior
   - _Requirements: 5.3, 5.4_
 
-- [ ] 4.3.3 Implement audit logging for task operations
-  - Add audit entries for all task state changes
-  - Use existing audit patterns and infrastructure
+- [ ] 4.4.4 Add audit logging for task operations
+
+  - Use existing audit patterns for task state changes
   - Write unit tests for audit logging
   - _Requirements: 5.5, 5.6_
 
@@ -261,234 +420,566 @@ This implementation plan breaks down the feature into atomic, TDD-friendly tasks
 
 #### 5.1 Event System Foundation
 
-- [ ] 5.1.1 Create task-specific event types
+- [ ] 5.1.1 Define TaskUpdateEvent interface
 
-  - Define TaskUpdateEvent and TaskSyncEvent interfaces
-  - Add error event types for task operations
-  - Write unit tests for event type definitions
+  - Create TaskUpdateEvent type definition
+  - Write unit tests for event type structure
   - _Requirements: 2.1, 3.1_
 
-- [ ] 5.1.2 Implement event emitters for task updates
+- [ ] 5.1.2 Define TaskSyncEvent interface
+
+  - Create TaskSyncEvent type definition
+  - Write unit tests for sync event structure
+  - _Requirements: 2.1, 3.1_
+
+- [ ] 5.1.3 Define TaskErrorEvent interface
+
+  - Create error event types for task operations
+  - Write unit tests for error event structure
+  - _Requirements: 2.1, 3.1_
+
+- [ ] 5.1.4 Implement event emitters for task updates
 
   - Create EventEmitter instances for task state changes
-  - Add event emission on data modifications
-  - Write unit tests for event emission
+  - Write unit tests for event emitter creation
   - _Requirements: 2.2, 3.2_
 
-- [ ] 5.1.3 Add UI event listeners
+- [ ] 5.1.5 Add event emission on data modifications
 
-  - Connect tree view and detail view to task events
-  - Implement automatic UI updates on data changes
-  - Write unit tests for event listener functionality
+  - Emit events when task data changes
+  - Write unit tests for event emission timing
+  - _Requirements: 2.2, 3.2_
+
+- [ ] 5.1.6 Connect tree view to task events
+
+  - Add event listeners for tree view updates
+  - Write unit tests for tree view event handling
   - _Requirements: 2.3, 3.3_
 
-- [ ] 5.1.4 Create UI state consistency validation
-  - Implement checks for UI-data synchronization
-  - Add validation for stale state detection
+- [ ] 5.1.7 Connect detail view to task events
+
+  - Add event listeners for detail view updates
+  - Write unit tests for detail view event handling
+  - _Requirements: 2.3, 3.3_
+
+- [ ] 5.1.8 Implement UI state consistency validation
+
+  - Add checks for UI-data synchronization
   - Write unit tests for consistency validation
   - _Requirements: 2.4, 3.4_
 
 #### 5.2 Refresh Functionality
 
-- [ ] 5.2.1 Create configurable auto-refresh timer
+- [ ] 5.2.1 Create configurable timer infrastructure
 
-  - Implement timer with 5-minute default interval
-  - Add configuration for refresh frequency
-  - Write unit tests for timer functionality
+  - Implement timer with configurable interval
+  - Write unit tests for timer creation and configuration
   - _Requirements: 4.1, 5.1_
 
-- [ ] 5.2.2 Add manual refresh command implementation
+- [ ] 5.2.2 Implement auto-refresh timer logic
+
+  - Set default 5-minute refresh interval
+  - Write unit tests for auto-refresh execution
+  - _Requirements: 4.1, 5.1_
+
+- [ ] 5.2.3 Add manual refresh command implementation
 
   - Connect refresh command to data reload
-  - Show progress indicators during refresh
-  - Write unit tests for manual refresh
+  - Write unit tests for manual refresh execution
   - _Requirements: 4.2, 5.2_
 
-- [ ] 5.2.3 Implement refresh failure handling
+- [ ] 5.2.4 Add refresh progress indicators
+
+  - Show progress indicators during refresh operations
+  - Write unit tests for progress indicator display
+  - _Requirements: 4.2, 5.2_
+
+- [ ] 5.2.5 Implement refresh failure handling
+
   - Handle network errors and service unavailability
-  - Display cached data with staleness indicators
   - Write unit tests for failure scenarios
+  - _Requirements: 4.3, 5.3_
+
+- [ ] 5.2.6 Add stale data indicators
+
+  - Display cached data with staleness indicators
+  - Write unit tests for staleness display
   - _Requirements: 4.3, 5.3_
 
 #### 5.3 Performance Monitoring
 
-- [ ] 5.3.1 Add response time tracking
+- [ ] 5.3.1 Add response time tracking infrastructure
 
-  - Implement timing for all task operations
-  - Create performance metrics collection
+  - Create timing measurement utilities
   - Write unit tests for timing functionality
   - _Requirements: 1.6, 4.1_
 
-- [ ] 5.3.2 Implement cache monitoring
+- [ ] 5.3.2 Implement operation timing for task operations
 
-  - Track cache hit/miss ratios for task data
-  - Add cache performance metrics
+  - Track timing for all task operations
+  - Write unit tests for operation timing
+  - _Requirements: 1.6, 4.1_
+
+- [ ] 5.3.3 Create performance metrics collection
+
+  - Collect and store performance metrics
+  - Write unit tests for metrics collection
+  - _Requirements: 4.2, 5.1_
+
+- [ ] 5.3.4 Implement cache hit/miss ratio tracking
+
+  - Track cache performance for task data
   - Write unit tests for cache monitoring
   - _Requirements: 4.2, 5.1_
 
-- [ ] 5.3.3 Create performance degradation alerts
+- [ ] 5.3.5 Create performance threshold monitoring
+
   - Implement thresholds for performance warnings
-  - Add user notifications for performance issues
+  - Write unit tests for threshold checking
+  - _Requirements: 4.3, 5.2_
+
+- [ ] 5.3.6 Add performance degradation alerts
+
+  - Show user notifications for performance issues
   - Write unit tests for alert functionality
   - _Requirements: 4.3, 5.2_
 
 #### 5.4 Offline Scenario Handling
 
-- [ ] 5.4.1 Create offline mode detection
+- [ ] 5.4.1 Create service availability detection
 
-  - Implement service availability checking
-  - Add offline state management
-  - Write unit tests for offline detection
+  - Implement connectivity checking for MCP server
+  - Write unit tests for availability detection
   - _Requirements: 5.1, 5.2_
 
-- [ ] 5.4.2 Implement local caching for offline updates
+- [ ] 5.4.2 Implement offline state management
+
+  - Add offline state tracking and UI indicators
+  - Write unit tests for offline state handling
+  - _Requirements: 5.1, 5.2_
+
+- [ ] 5.4.3 Create local update caching for offline mode
 
   - Cache task updates when server unavailable
-  - Store pending operations in local queue
   - Write unit tests for offline caching
   - _Requirements: 5.3, 5.4_
 
-- [ ] 5.4.3 Add automatic sync on reconnection
-  - Implement sync queue processing when server returns
-  - Handle conflict resolution for offline changes
-  - Write unit tests for sync functionality
+- [ ] 5.4.4 Implement pending operations queue
+
+  - Store pending operations in local queue
+  - Write unit tests for operation queuing
+  - _Requirements: 5.3, 5.4_
+
+- [ ] 5.4.5 Add automatic sync on reconnection
+
+  - Process sync queue when server returns
+  - Write unit tests for reconnection sync
+  - _Requirements: 5.5, 5.6_
+
+- [ ] 5.4.6 Implement conflict resolution for offline changes
+
+  - Handle conflicts from offline modifications
+  - Write unit tests for conflict resolution
   - _Requirements: 5.5, 5.6_
 
 ### 6. Create comprehensive test suite
 
-#### 6.1 Unit Test Completion
+#### 6.1 TaskTreeItem Unit Tests
 
-- [ ] 6.1.1 Complete UI provider unit tests
+- [ ] 6.1.1 Test TaskTreeItem constructor
 
-  - Add remaining tests for tree view provider
-  - Complete detail card provider test coverage
-  - Ensure 90%+ code coverage for UI components
-  - _Requirements: All UI requirements_
+  - Test basic property assignment in constructor
+  - Verify all required properties are set correctly
+  - _Requirements: UI components_
 
-- [ ] 6.1.2 Add error handling unit tests
-  - Test error scenarios for all components
-  - Verify error propagation and handling
-  - Add boundary condition testing
-  - _Requirements: All error handling requirements_
+- [ ] 6.1.2 Test TaskTreeItem status icon logic
 
-#### 6.2 Integration Tests
+  - Test icon assignment for each status type
+  - Verify icon changes with status updates
+  - _Requirements: UI components_
 
-- [ ] 6.2.1 Test VSCode extension ↔ MCP server communication
+- [ ] 6.1.3 Test TaskTreeItem tooltip generation
 
-  - Verify end-to-end communication flow
-  - Test error handling in communication layer
-  - Add timeout and retry testing
-  - _Requirements: All communication requirements_
+  - Test tooltip text formatting
+  - Verify tooltip content accuracy
+  - _Requirements: UI components_
 
-- [ ] 6.2.2 Test UI synchronization between panels
-  - Verify tree view and detail view stay in sync
-  - Test event propagation between components
-  - Add stress testing for rapid updates
-  - _Requirements: All synchronization requirements_
+#### 6.2 TaskTreeViewProvider Unit Tests
 
-#### 6.3 End-to-End Tests
+- [ ] 6.2.1 Test TaskTreeViewProvider getTreeItem method
 
-- [ ] 6.3.1 Create critical workflow E2E test
+  - Test task-to-tree-item conversion
+  - Verify all properties are correctly mapped
+  - _Requirements: UI components_
 
-  - Test complete user interaction flow
-  - Verify UI → API → File → Watcher → UI cycle
-  - Add performance benchmarking
-  - _Requirements: All workflow requirements_
+- [ ] 6.2.2 Test TaskTreeViewProvider getChildren with no data
 
-- [ ] 6.3.2 Add error recovery E2E tests
-  - Test graceful degradation scenarios
-  - Verify user experience during failures
-  - Add accessibility testing
-  - _Requirements: All resilience requirements_
+  - Test empty state handling
+  - Verify appropriate empty response
+  - _Requirements: UI components_
+
+- [ ] 6.2.3 Test TaskTreeViewProvider getChildren with task data
+
+  - Test hierarchy logic with mock task data
+  - Verify parent-child relationships
+  - _Requirements: UI components_
+
+- [ ] 6.2.4 Test TaskTreeViewProvider refresh mechanism
+
+  - Test event emitter functionality
+  - Verify refresh triggers UI updates
+  - _Requirements: UI components_
+
+#### 6.3 TaskDetailCardProvider Unit Tests
+
+- [ ] 6.3.1 Test TaskDetailCardProvider HTML generation
+
+  - Test basic HTML template creation
+  - Verify HTML structure and CSS classes
+  - _Requirements: UI components_
+
+- [ ] 6.3.2 Test TaskDetailCardProvider task data binding
+
+  - Test task data display in webview
+  - Verify all task properties are shown
+  - _Requirements: UI components_
+
+- [ ] 6.3.3 Test TaskDetailCardProvider status dropdown
+
+  - Test dropdown rendering and options
+  - Verify status change handling
+  - _Requirements: UI components_
+
+- [ ] 6.3.4 Test TaskDetailCardProvider empty state
+
+  - Test no-task-selected display
+  - Verify placeholder content
+  - _Requirements: UI components_
+
+#### 6.4 TasksDataService Unit Tests
+
+- [ ] 6.4.1 Test TasksDataService getTasks method
+
+  - Test successful task retrieval
+  - Verify JSON-RPC request format
+  - _Requirements: Data layer_
+
+- [ ] 6.4.2 Test TasksDataService getTasks error handling
+
+  - Test network failure scenarios
+  - Verify error response handling
+  - _Requirements: Data layer_
+
+- [ ] 6.4.3 Test TasksDataService getTaskById method
+
+  - Test single task retrieval
+  - Verify task ID parameter handling
+  - _Requirements: Data layer_
+
+- [ ] 6.4.4 Test TasksDataService updateTaskStatus method
+
+  - Test status update requests
+  - Verify request parameters and response handling
+  - _Requirements: Data layer_
+
+- [ ] 6.4.5 Test TasksDataService event emission
+
+  - Test event emitters for data changes
+  - Verify correct event data
+  - _Requirements: Data layer_
+
+#### 6.5 Command Unit Tests
+
+- [ ] 6.5.1 Test refreshTasks command registration
+
+  - Test command is properly registered
+  - Verify command palette integration
+  - _Requirements: Commands_
+
+- [ ] 6.5.2 Test refreshTasks command execution
+
+  - Test command logic execution
+  - Verify TasksDataService integration
+  - _Requirements: Commands_
+
+- [ ] 6.5.3 Test updateTaskStatus command registration
+
+  - Test command registration
+  - Verify context menu integration
+  - _Requirements: Commands_
+
+- [ ] 6.5.4 Test updateTaskStatus command execution
+
+  - Test status update command logic
+  - Verify validation and service calls
+  - _Requirements: Commands_
+
+#### 6.6 Error Handling Unit Tests
+
+- [ ] 6.6.1 Test TasksDataService network error handling
+
+  - Test timeout and connection failures
+  - Verify error propagation
+  - _Requirements: Error handling_
+
+- [ ] 6.6.2 Test UI error state display
+
+  - Test error indicators in tree view
+  - Verify error messages in detail view
+  - _Requirements: Error handling_
+
+- [ ] 6.6.3 Test degraded mode functionality
+
+  - Test offline mode behavior
+  - Verify cached data display
+  - _Requirements: Error handling_
+
+- [ ] 6.6.4 Test error recovery mechanisms
+
+  - Test automatic retry logic
+  - Verify recovery from error states
+  - _Requirements: Error handling_
+
+#### 6.7 Integration Tests
+
+- [ ] 6.7.1 Test TaskTreeViewProvider to TasksDataService integration
+
+  - Test data flow from service to tree view
+  - Verify data synchronization
+  - _Requirements: Integration_
+
+- [ ] 6.7.2 Test TaskDetailCardProvider to TasksDataService integration
+
+  - Test detail view data binding
+  - Verify real-time updates
+  - _Requirements: Integration_
+
+- [ ] 6.7.3 Test tree view to detail view synchronization
+
+  - Test selection synchronization
+  - Verify both panels stay in sync
+  - _Requirements: Integration_
+
+- [ ] 6.7.4 Test command to UI integration
+
+  - Test commands trigger UI updates
+  - Verify status changes reflect in both panels
+  - _Requirements: Integration_
+
+#### 6.8 End-to-End Tests
+
+- [ ] 6.8.1 Test complete task selection workflow
+
+  - Test tree selection → detail display → status update cycle
+  - Verify end-to-end functionality
+  - _Requirements: Complete workflow_
+
+- [ ] 6.8.2 Test task refresh workflow
+
+  - Test manual refresh → data fetch → UI update cycle
+  - Verify complete refresh functionality
+  - _Requirements: Complete workflow_
+
+- [ ] 6.8.3 Test error recovery workflow
+
+  - Test error state → recovery → normal operation cycle
+  - Verify graceful error handling
+  - _Requirements: Complete workflow_
+
+- [ ] 6.8.4 Test offline mode workflow
+
+  - Test offline detection → cached data → reconnection cycle
+  - Verify offline functionality
+  - _Requirements: Complete workflow_
 
 ### 7. Wire everything together and final integration
 
 #### 7.1 Extension Registration
 
-- [ ] 7.1.1 Register task tree view provider
+- [ ] 7.1.1 Register task tree view provider in extension
 
-  - Add tree view to VSCode sidebar
-  - Configure view container and placement
-  - Test view registration and activation
+  - Add tree view provider to extension.ts
+  - Write integration test for provider registration
   - _Requirements: VSCode integration_
 
-- [ ] 7.1.2 Register task detail webview provider
+- [ ] 7.1.2 Configure task tree view container
 
-  - Add detail view to task container
-  - Configure webview provider settings
-  - Test webview provider registration
+  - Add tree view to VSCode sidebar configuration
+  - Write integration test for view container
   - _Requirements: VSCode integration_
 
-- [ ] 7.1.3 Register all task management commands
+- [ ] 7.1.3 Register task detail webview provider in extension
 
-  - Add commands to command palette
-  - Configure command categories and descriptions
-  - Test command registration and execution
+  - Add webview provider to extension.ts
+  - Write integration test for webview registration
+  - _Requirements: VSCode integration_
+
+- [ ] 7.1.4 Configure task detail webview container
+
+  - Add detail view to task container configuration
+  - Write integration test for webview container
+  - _Requirements: VSCode integration_
+
+- [ ] 7.1.5 Register refreshTasks command in extension
+
+  - Add command registration to extension.ts
+  - Write integration test for command registration
   - _Requirements: Command integration_
 
-- [ ] 7.1.4 Initialize data services and event listeners
-  - Start TasksDataService and file watcher
-  - Connect event listeners for UI synchronization
-  - Test service initialization and cleanup
+- [ ] 7.1.6 Register updateTaskStatus command in extension
+
+  - Add status update command registration
+  - Write integration test for command registration
+  - _Requirements: Command integration_
+
+- [ ] 7.1.7 Register remaining task commands in extension
+
+  - Add viewTestResults and reportTaskIssue commands
+  - Write integration test for all command registrations
+  - _Requirements: Command integration_
+
+- [ ] 7.1.8 Initialize TasksDataService in extension
+
+  - Create and configure TasksDataService instance
+  - Write integration test for service initialization
+  - _Requirements: Service integration_
+
+- [ ] 7.1.9 Connect event listeners for UI synchronization
+
+  - Wire up event listeners between components
+  - Write integration test for event flow
+  - _Requirements: Service integration_
+
+- [ ] 7.1.10 Add extension cleanup and disposal
+
+  - Implement proper resource cleanup on deactivation
+  - Write integration test for cleanup behavior
   - _Requirements: Service integration_
 
 #### 7.2 Package.json Configuration
 
-- [ ] 7.2.1 Create taskmaster view container
+- [ ] 7.2.1 Create taskmaster view container in package.json
 
-  - Add dedicated activity bar container
-  - Configure container icon and title
-  - Test container display and functionality
+  - Add dedicated activity bar container configuration
+  - Write validation test for package.json structure
   - _Requirements: VSCode manifest_
 
-- [ ] 7.2.2 Configure view contributions
+- [ ] 7.2.2 Configure task-tree view contribution
 
-  - Add task-tree and task-detail views
-  - Set up view welcome content and actions
-  - Test view configuration and behavior
+  - Add task tree view configuration
+  - Write validation test for view contribution
   - _Requirements: VSCode manifest_
 
-- [ ] 7.2.3 Add command contributions
+- [ ] 7.2.3 Configure task-detail view contribution
 
-  - Register all commands with proper categories
-  - Configure keyboard shortcuts and icons
-  - Test command discoverability
+  - Add task detail view configuration
+  - Write validation test for view contribution
   - _Requirements: VSCode manifest_
 
-- [ ] 7.2.4 Configure context menus
-  - Add right-click context menu items
-  - Set up command visibility conditions
-  - Test context menu functionality
+- [ ] 7.2.4 Add refreshTasks command contribution
+
+  - Add command contribution with proper metadata
+  - Write validation test for command contribution
+  - _Requirements: VSCode manifest_
+
+- [ ] 7.2.5 Add updateTaskStatus command contribution
+
+  - Add status update command contribution
+  - Write validation test for command contribution
+  - _Requirements: VSCode manifest_
+
+- [ ] 7.2.6 Add remaining command contributions
+
+  - Add all other task command contributions
+  - Write validation test for all commands
+  - _Requirements: VSCode manifest_
+
+- [ ] 7.2.7 Configure tree view context menu
+
+  - Add right-click context menu configuration
+  - Write validation test for context menu setup
+  - _Requirements: VSCode manifest_
+
+- [ ] 7.2.8 Configure command visibility conditions
+
+  - Set up when clauses for command availability
+  - Write validation test for visibility logic
   - _Requirements: VSCode manifest_
 
 #### 7.3 Demo Data and Testing
 
-- [ ] 7.3.1 Create realistic task hierarchies
+- [ ] 7.3.1 Create simple task hierarchy mock data
 
-  - Generate enterprise-style task structures
-  - Add varied complexity and dependencies
-  - Create data for testing edge cases
+  - Generate basic 2-level task structure
+  - Write validation test for data structure
   - _Requirements: Testing data_
 
-- [ ] 7.3.2 Add test scenarios with various outcomes
-  - Create tasks with different pass/fail ratios
-  - Add error scenarios and edge cases
-  - Generate large datasets for performance testing
+- [ ] 7.3.2 Add varied task status mock data
+
+  - Create tasks with different status values
+  - Write validation test for status variety
+  - _Requirements: Testing data_
+
+- [ ] 7.3.3 Add task dependency mock data
+
+  - Create tasks with realistic dependencies
+  - Write validation test for dependency structure
+  - _Requirements: Testing data_
+
+- [ ] 7.3.4 Add test results mock data
+
+  - Generate test status data for tasks
+  - Write validation test for test data structure
+  - _Requirements: Testing scenarios_
+
+- [ ] 7.3.5 Create error scenario mock data
+
+  - Add data for testing error conditions
+  - Write validation test for error scenarios
+  - _Requirements: Testing scenarios_
+
+- [ ] 7.3.6 Add large dataset mock data for performance testing
+
+  - Generate 100+ task dataset
+  - Write validation test for performance data
   - _Requirements: Testing scenarios_
 
 #### 7.4 Final Integration Testing
 
-- [ ] 7.4.1 Complete end-to-end workflow testing
+- [ ] 7.4.1 Test complete task selection workflow end-to-end
 
-  - Test all user workflows from start to finish
-  - Verify integration with existing extension features
-  - Validate performance targets are met
+  - Verify tree selection → detail display → status update
+  - Test with real VSCode extension environment
   - _Requirements: Complete functionality_
 
-- [ ] 7.4.2 Final validation and polish
-  - Review all error handling and user experience
-  - Verify accessibility and usability standards
-  - Complete final integration with MCP server
+- [ ] 7.4.2 Test refresh workflow end-to-end
+
+  - Verify manual and auto-refresh functionality
+  - Test with real MCP server communication
+  - _Requirements: Complete functionality_
+
+- [ ] 7.4.3 Test error handling workflow end-to-end
+
+  - Verify error states and recovery
+  - Test with simulated failure conditions
+  - _Requirements: Complete functionality_
+
+- [ ] 7.4.4 Test performance targets with large datasets
+
+  - Verify response time targets are met
+  - Test with 100+ task datasets
+  - _Requirements: Production readiness_
+
+- [ ] 7.4.5 Test accessibility and usability standards
+
+  - Verify keyboard navigation and screen reader support
+  - Test user interaction patterns
+  - _Requirements: Production readiness_
+
+- [ ] 7.4.6 Verify integration with existing extension features
+
+  - Test that new features don't break existing functionality
+  - Verify backward compatibility
   - _Requirements: Production readiness_
 
 ## Development Guidelines
@@ -515,3 +1006,11 @@ This implementation plan breaks down the feature into atomic, TDD-friendly tasks
 - Build functionality incrementally
 - Maintain working state after each task
 - No orphaned or hanging code at any stage
+
+### VSCode Extension Considerations
+
+- Always test extension activation/deactivation
+- Implement proper resource disposal
+- Handle VSCode context switching gracefully
+- Consider extension startup time impact
+- Test with multiple workspace scenarios

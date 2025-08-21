@@ -41,6 +41,18 @@ describe("TasksDataService", () => {
     } as unknown as jest.Mocked<TaskStatusManager>;
 
     service = new TasksDataService(mockTaskStatusManager);
+
+    // Set up mock HTTP client for all tests to prevent real HTTP calls
+    const mockHttpClient = {
+      post: jest
+        .fn()
+        .mockImplementation(() =>
+          Promise.reject(
+            new Error("Mock HTTP client not configured for this test")
+          )
+        ),
+    } as unknown as jest.Mocked<AxiosInstance>;
+    (service as any).setHttpClientForTesting(mockHttpClient);
   });
 
   // Task 2.1.1: Basic instantiation tests
@@ -677,6 +689,198 @@ describe("TasksDataService", () => {
       // Assert
       expect(result).toBeNull();
       expect(mockHttpClient.post).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  // Recovery Task 2.4.4: updateTaskStatus JSON-RPC Implementation Tests
+  describe("updateTaskStatus JSON-RPC Implementation", () => {
+    let mockHttpClient: jest.Mocked<AxiosInstance>;
+
+    beforeEach(() => {
+      // Create mock HTTP client for testing
+      mockHttpClient = {
+        post: jest.fn(),
+      } as unknown as jest.Mocked<AxiosInstance>;
+
+      // Inject mock HTTP client for testing
+      (service as any).setHttpClientForTesting(mockHttpClient);
+    });
+
+    it("should make JSON-RPC call with 'tasks/update-status' method and correct parameters", async () => {
+      // Arrange
+      const taskId = "test-task-123";
+      const newStatus = TaskStatus.COMPLETED;
+      const mockResponse = {
+        data: {
+          jsonrpc: "2.0",
+          id: expect.any(Number),
+          result: { success: true },
+        },
+      };
+      mockHttpClient.post.mockResolvedValue(mockResponse);
+
+      // Act
+      await service.updateTaskStatus(taskId, newStatus);
+
+      // Assert
+      expect(mockHttpClient.post).toHaveBeenCalledWith(
+        "/jsonrpc",
+        expect.objectContaining({
+          jsonrpc: "2.0",
+          method: "tasks/update-status",
+          params: { id: taskId, newStatus },
+        })
+      );
+    });
+
+    it("should return boolean success status from successful MCP server response", async () => {
+      // Arrange
+      const taskId = "successful-update-task";
+      const newStatus = TaskStatus.IN_PROGRESS;
+      const mockResponse = {
+        data: {
+          jsonrpc: "2.0",
+          id: expect.any(Number),
+          result: { success: true },
+        },
+      };
+      mockHttpClient.post.mockResolvedValue(mockResponse);
+
+      // Act
+      const result = await service.updateTaskStatus(taskId, newStatus);
+
+      // Assert
+      expect(result).toBe(true);
+      expect(mockHttpClient.post).toHaveBeenCalledTimes(1);
+    });
+
+    it("should fire onTasksUpdated event with refreshed task list after successful update", async () => {
+      // Arrange
+      const taskId = "event-test-task";
+      const newStatus = TaskStatus.REVIEW;
+      const mockResponse = {
+        data: {
+          jsonrpc: "2.0",
+          id: expect.any(Number),
+          result: { success: true },
+        },
+      };
+      mockHttpClient.post.mockResolvedValue(mockResponse);
+
+      // Mock getTasks to return refreshed task list
+      const refreshedTasks: Task[] = [
+        {
+          id: taskId,
+          title: "Updated Task",
+          description: "Task with updated status",
+          status: newStatus,
+          complexity: TaskComplexity.MEDIUM,
+          dependencies: [],
+          requirements: ["3.1"],
+          createdDate: new Date("2024-01-01"),
+          lastModified: new Date("2024-01-03"),
+          priority: TaskPriority.HIGH,
+        },
+      ];
+      mockTaskStatusManager.getTasks.mockResolvedValue(refreshedTasks);
+
+      // Spy on the event emitter
+      const mockListener = jest.fn();
+      const disposable = service.onTasksUpdated.event(mockListener);
+
+      // Act
+      await service.updateTaskStatus(taskId, newStatus);
+
+      // Assert
+      expect(mockListener).toHaveBeenCalledWith(refreshedTasks);
+      expect(mockListener).toHaveBeenCalledTimes(1);
+
+      // Cleanup
+      disposable.dispose();
+    });
+
+    it("should throw descriptive error when MCP server returns error response", async () => {
+      // Arrange
+      const taskId = "error-update-task";
+      const newStatus = TaskStatus.BLOCKED;
+      const mockResponse = {
+        data: {
+          jsonrpc: "2.0",
+          id: expect.any(Number),
+          error: {
+            code: -32603,
+            message: "Task status update failed: Invalid transition",
+          },
+        },
+      };
+      mockHttpClient.post.mockResolvedValue(mockResponse);
+
+      // Act & Assert
+      await expect(service.updateTaskStatus(taskId, newStatus)).rejects.toThrow(
+        "MCP server error: Task status update failed: Invalid transition"
+      );
+      expect(mockHttpClient.post).toHaveBeenCalledTimes(1);
+    });
+
+    it("should fire onError event and fallback to TaskStatusManager when HTTP call fails", async () => {
+      // Arrange
+      const taskId = "fallback-update-task";
+      const newStatus = TaskStatus.COMPLETED;
+      const httpError = new Error("Network timeout");
+
+      // Mock HTTP failure
+      mockHttpClient.post.mockRejectedValue(httpError);
+
+      // Mock TaskStatusManager fallback
+      mockTaskStatusManager.updateTaskStatus.mockResolvedValue(true);
+
+      // Spy on the error event emitter
+      const mockErrorListener = jest.fn();
+      const errorDisposable = service.onError.event(mockErrorListener);
+
+      // Act
+      const result = await service.updateTaskStatus(taskId, newStatus);
+
+      // Assert
+      expect(mockErrorListener).toHaveBeenCalledWith({
+        operation: "status_update",
+        taskId,
+        suggestedAction: "retry",
+        userInstructions: `Failed to update task status: HTTP request failed: ${httpError.message}`,
+        technicalDetails: `HTTP request failed: ${httpError.message}`,
+      });
+      expect(mockErrorListener).toHaveBeenCalledTimes(1);
+      expect(mockTaskStatusManager.updateTaskStatus).toHaveBeenCalledWith(
+        taskId,
+        newStatus
+      );
+      expect(result).toBe(true);
+
+      // Cleanup
+      errorDisposable.dispose();
+    });
+
+    it("should pass correct parameters to TaskStatusManager fallback", async () => {
+      // Arrange
+      const taskId = "parameter-test-task";
+      const newStatus = TaskStatus.IN_PROGRESS;
+
+      // Mock HTTP failure
+      mockHttpClient.post.mockRejectedValue(new Error("Connection refused"));
+
+      // Mock TaskStatusManager to return false (update failed)
+      mockTaskStatusManager.updateTaskStatus.mockResolvedValue(false);
+
+      // Act
+      const result = await service.updateTaskStatus(taskId, newStatus);
+
+      // Assert
+      expect(result).toBe(false);
+      expect(mockTaskStatusManager.updateTaskStatus).toHaveBeenCalledWith(
+        taskId,
+        newStatus
+      );
+      expect(mockTaskStatusManager.updateTaskStatus).toHaveBeenCalledTimes(1);
     });
   });
 });
