@@ -110,13 +110,39 @@ export class TreeItem {
     this.collapsibleState = collapsibleState;
     this.iconPath = undefined;
     this.command = undefined;
-    this.contextValue = '';
+    this.contextValue = "";
     this.tooltip = undefined;
   }
 }
 
 export class ThemeIcon {
   constructor(public id: string) {}
+}
+
+export class EventEmitter<T> {
+  private listeners: Array<(e: T) => any> = [];
+
+  get event(): (listener: (e: T) => any) => any {
+    return (listener: (e: T) => any) => {
+      this.listeners.push(listener);
+      return {
+        dispose: () => {
+          const index = this.listeners.indexOf(listener);
+          if (index > -1) {
+            this.listeners.splice(index, 1);
+          }
+        },
+      };
+    };
+  }
+
+  fire(data: T): void {
+    this.listeners.forEach((listener) => listener(data));
+  }
+
+  dispose(): void {
+    this.listeners = [];
+  }
 }
 
 export const TreeItemCollapsibleState = {
