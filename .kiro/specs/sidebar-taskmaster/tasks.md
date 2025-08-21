@@ -19,15 +19,15 @@ This implementation plan breaks down the feature into atomic, TDD-friendly tasks
 - [x] 2.1.1 Create basic TasksDataService class structure
 - [x] 2.1.2 Create basic MarkdownTaskParser class structure
 - [x] 2.1.3 Add parseTasksFromFile method to MarkdownTaskParser (mock data)
-- [ ] 2.1.4 Add parseTaskFromMarkdown method to MarkdownTaskParser
+- [x] 2.1.4 Add parseTaskFromMarkdown method to MarkdownTaskParser
 - [ ] 2.1.5 Add basic TaskStatusManager class structure
 - [ ] 2.1.6 Connect TaskStatusManager to MarkdownTaskParser
 
   2.2 Data Service Layer
 
-- [ ] 2.2.1 Add interface definition to TasksDataService
-- [ ] 2.2.2 Add getTasks method to TasksDataService (mock data)
-- [ ] 2.2.3 Add getTaskById method to TasksDataService (mock data)
+- [x] 2.2.1 Add interface definition to TasksDataService
+- [x] 2.2.2 Add getTasks method to TasksDataService (mock data)
+- [x] 2.2.3 Add getTaskById method to TasksDataService (mock data)
 - [ ] 2.2.4 Connect TasksDataService to TaskStatusManager
 
   2.3 Event System Layer

@@ -5,4 +5,6 @@
 
 export { TasksDataService } from "./TasksDataService";
 export { MarkdownTaskParser } from "./MarkdownTaskParser";
+export { TaskStatusManager } from "./TaskStatusManager";
 export { CacheManager } from "./CacheManager";
+export { TaskFileWatcher } from "./TaskFileWatcher";
