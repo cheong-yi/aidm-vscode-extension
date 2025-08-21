@@ -5,10 +5,12 @@
  * Recovery Task 2.2.4: Connect to TaskStatusManager for real data flow
  * Recovery Task 2.3.1: Add EventEmitter infrastructure for task updates
  * Recovery Task 2.3.2: Add Error Event Emitter infrastructure for error events
+ * Recovery Task 2.4.1: Add HTTP client setup and JSON-RPC infrastructure
  * Requirements: 3.1-3.6, 4.1-4.4, 7.1-7.6
  */
 
-import { EventEmitter } from "vscode";
+import { EventEmitter, workspace } from "vscode";
+import axios, { AxiosInstance } from "axios";
 import {
   Task,
   TaskStatus,
@@ -33,8 +35,43 @@ export class TasksDataService implements ITasksDataService {
   public readonly onError: EventEmitter<TaskErrorResponse> =
     new EventEmitter<TaskErrorResponse>();
 
+  // HTTP client for JSON-RPC communication - Recovery Task 2.4.1
+  private httpClient!: AxiosInstance;
+  private readonly serverUrl: string;
+
   constructor(private taskStatusManager: TaskStatusManager) {
     // Constructor now accepts TaskStatusManager dependency
+    // Get port from VS Code configuration
+    const config = workspace.getConfiguration("aidmVscodeExtension");
+    const port = config.get<number>("mcpServer.port", 3001);
+    this.serverUrl = `http://localhost:${port}`;
+    
+    this.setupHttpClient();
+  }
+
+  // Recovery Task 2.4.1: Setup HTTP client with axios configuration
+  private setupHttpClient(): void {
+    this.httpClient = axios.create({
+      baseURL: this.serverUrl,
+      timeout: 5000,
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+    });
+  }
+
+  // Recovery Task 2.4.1: JSON-RPC request formatting infrastructure
+  public async makeJSONRPCCall(method: string, params?: any): Promise<any> {
+    const request = {
+      jsonrpc: "2.0",
+      id: Date.now(),
+      method,
+      params,
+    };
+
+    // Placeholder implementation - just return mock response
+    return { result: null, error: null };
   }
 
   // Delegate to TaskStatusManager for real data

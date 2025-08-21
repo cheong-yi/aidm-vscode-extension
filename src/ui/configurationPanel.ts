@@ -421,7 +421,7 @@ export class ConfigurationPanel {
           enabled: config.get("aidmVscodeExtension.remote.enabled", false),
         },
         local: {
-          port: config.get("aidmVscodeExtension.mcpServer.port", 3000),
+          port: config.get("aidmVscodeExtension.mcpServer.port", 3001),
           timeout: config.get("aidmVscodeExtension.mcpServer.timeout", 5000),
         },
         mock: {

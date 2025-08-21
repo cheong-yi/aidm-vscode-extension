@@ -32,7 +32,7 @@ export class MCPClient {
     enabled: boolean;
   };
 
-  constructor(port: number = 3000, timeout: number = 5000) {
+  constructor(port: number = 3001, timeout: number = 5000) {
     this.auditLogger = new AuditLogger({
       enabled: true,
       logLevel: AuditSeverity.LOW,

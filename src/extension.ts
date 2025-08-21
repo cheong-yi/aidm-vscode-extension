@@ -445,7 +445,7 @@ export async function activate(
             console.log("Configuration changed, updating process manager...");
 
             const newProcessConfig: ProcessManagerConfig = {
-              port: config.get<number>(getConfigKey("mcpServer.port"), 3000),
+              port: config.get<number>(getConfigKey("mcpServer.port"), 3001),
               timeout: config.get<number>(
                 getConfigKey("mcpServer.timeout"),
                 5000

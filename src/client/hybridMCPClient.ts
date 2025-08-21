@@ -115,7 +115,7 @@ export class HybridMCPClient {
   private requestId: number = 1;
   private timeout: number = 5000;
 
-  constructor(localPort: number = 3000, timeout: number = 5000) {
+  constructor(localPort: number = 3001, timeout: number = 5000) {
     this.localEndpoint = `http://localhost:${localPort}/rpc`;
     this.timeout = timeout;
 

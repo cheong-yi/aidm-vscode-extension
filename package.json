@@ -113,8 +113,8 @@
       "properties": {
         "aidmVscodeExtension.mcpServer.port": {
           "type": "number",
-          "default": 3000,
-          "description": "Port for MCP server"
+          "default": 3001,
+          "description": "Port for MCP server (default: 3001 to avoid conflicts with Cursor)"
         },
         "aidmVscodeExtension.mcpServer.timeout": {
           "type": "number",

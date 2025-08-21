@@ -148,7 +148,7 @@ export class StatusBarManagerImpl implements StatusBarManager {
 
     // Get current configuration
     const config = vscode.workspace.getConfiguration();
-    const port = config.get<number>("aidmVscodeExtension.mcpServer.port", 3000);
+    const port = config.get<number>("aidmVscodeExtension.mcpServer.port", 3001);
     const timeout = config.get<number>("aidmVscodeExtension.mcpServer.timeout", 5000);
 
     // Update client configuration

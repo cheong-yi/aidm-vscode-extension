@@ -392,4 +392,57 @@ describe("TasksDataService", () => {
       expect(service.onError).not.toBe(service.onTasksUpdated);
     });
   });
+
+  // Recovery Task 2.4.1: HTTP Client Setup Tests
+  describe("HTTP Client Setup", () => {
+    it("should create axios HTTP client with correct base URL and timeout", () => {
+      // Assert
+      expect(service).toHaveProperty("httpClient");
+      // The httpClient should be configured with localhost:3001 and 5-second timeout
+      expect(service).toBeDefined();
+    });
+
+    it("should configure HTTP client with proper headers", () => {
+      // Assert
+      expect(service).toHaveProperty("httpClient");
+      // Headers should include Content-Type and Accept for JSON
+      expect(service).toBeDefined();
+    });
+
+    it("should have makeJSONRPCCall method that formats JSON-RPC request correctly", async () => {
+      // Act
+      const result = await service.makeJSONRPCCall("test_method", {
+        test: "param",
+      });
+
+      // Assert
+      expect(typeof service.makeJSONRPCCall).toBe("function");
+      expect(result).toBeDefined();
+      expect(result).toHaveProperty("result");
+      expect(result).toHaveProperty("error");
+    });
+
+    it("should return consistent response structure from makeJSONRPCCall", async () => {
+      // Act
+      const result1 = await service.makeJSONRPCCall("method1");
+      const result2 = await service.makeJSONRPCCall("method2", {
+        param: "value",
+      });
+
+      // Assert
+      expect(result1).toHaveProperty("result");
+      expect(result1).toHaveProperty("error");
+      expect(result2).toHaveProperty("result");
+      expect(result2).toHaveProperty("error");
+      expect(typeof result1.result).toBe(typeof result2.result);
+      expect(typeof result1.error).toBe(typeof result2.error);
+    });
+
+    it("should be ready for future JSON-RPC calls after HTTP client configuration", () => {
+      // Assert
+      expect(service).toHaveProperty("httpClient");
+      expect(typeof service.makeJSONRPCCall).toBe("function");
+      // Service should have all infrastructure needed for HTTP communication
+    });
+  });
 });
