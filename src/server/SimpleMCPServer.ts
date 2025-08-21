@@ -13,6 +13,7 @@ import {
 } from "../types/jsonrpc";
 import { ContextManager } from "../types/extension";
 import { CodeLocation } from "../types/business";
+import { TaskStatusManager } from "../services/TaskStatusManager";
 
 export interface Tool {
   name: string;
@@ -24,14 +25,16 @@ export class SimpleMCPServer {
   private server: http.Server | null = null;
   private port: number;
   private contextManager: ContextManager;
+  private taskStatusManager: TaskStatusManager;
   private isRunning: boolean = false;
   private activeRequests: Map<string, Promise<any>> = new Map();
   private maxConcurrentRequests: number = 10;
   private requestCounter: number = 0;
 
-  constructor(port: number, contextManager: ContextManager) {
+  constructor(port: number, contextManager: ContextManager, taskStatusManager: TaskStatusManager) {
     this.port = port;
     this.contextManager = contextManager;
+    this.taskStatusManager = taskStatusManager;
   }
 
   /**
@@ -258,6 +261,21 @@ export class SimpleMCPServer {
           required: ["filePath", "startLine", "endLine"],
         },
       },
+      {
+        name: "tasks/list",
+        description: "Retrieve all tasks from the task management system",
+        inputSchema: {
+          type: "object",
+          properties: {
+            status: {
+              type: "string",
+              enum: ["not_started", "in_progress", "review", "completed", "blocked", "deprecated"],
+              description: "Optional status filter for tasks"
+            }
+          },
+          additionalProperties: false
+        }
+      },
     ];
 
     return {
@@ -285,6 +303,7 @@ export class SimpleMCPServer {
           "mock_cache_upsert",
           "mock_cache_clear",
           "seed_from_remote",
+          "tasks/list",
         ].includes(name)
       ) {
         return this.createErrorResponse(
@@ -331,6 +350,9 @@ export class SimpleMCPServer {
 
         case "seed_from_remote":
           return await this.handleSeedFromRemote(request, args);
+
+        case "tasks/list":
+          return await this.handleTasksList(request, args);
 
         default:
           // This should not be reached since we check tool existence earlier
@@ -528,6 +550,15 @@ export class SimpleMCPServer {
         }
         break;
 
+      case "tasks/list":
+        if (args.status && typeof args.status !== "string") {
+          return "status must be a string if provided";
+        }
+        if (args.status && !["not_started", "in_progress", "review", "completed", "blocked", "deprecated"].includes(args.status)) {
+          return "status must be one of: not_started, in_progress, review, completed, blocked, deprecated";
+        }
+        break;
+
       default:
         return `Unknown tool: ${toolName}`;
     }
@@ -719,6 +750,36 @@ export class SimpleMCPServer {
         },
         id: request.id,
       };
+    }
+  }
+
+  /**
+   * Handle tasks/list requests
+   */
+  private async handleTasksList(request: JSONRPCRequest, args: any): Promise<JSONRPCResponse> {
+    try {
+      const allTasks = await this.taskStatusManager.getTasks();
+      
+      let filteredTasks = allTasks;
+      if (args?.status) {
+        filteredTasks = allTasks.filter(task => task.status === args.status);
+      }
+      
+      return {
+        jsonrpc: "2.0",
+        result: {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify({ tasks: filteredTasks, count: filteredTasks.length }, null, 2),
+            },
+          ],
+        },
+        id: request.id,
+      };
+    } catch (error) {
+      console.error("Error listing tasks:", error);
+      return this.createErrorResponse(request.id, -32000, `Failed to list tasks: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 

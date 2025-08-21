@@ -39,3 +39,52 @@ export const testUtils = {
     );
   },
 };
+
+// Global AuditLogger cleanup tracking
+const auditLoggerInstances: any[] = [];
+
+// Helper to track AuditLogger instances
+export const trackAuditLogger = (instance: any) => {
+  auditLoggerInstances.push(instance);
+};
+
+// Cleanup all AuditLogger instances after tests
+afterAll(async () => {
+  // Cleanup all tracked AuditLogger instances
+  for (const instance of auditLoggerInstances) {
+    if (instance && typeof instance.cleanup === 'function') {
+      try {
+        await instance.cleanup();
+      } catch (error) {
+        // Ignore cleanup errors
+      }
+    }
+  }
+  
+  // Clear the tracking array
+  auditLoggerInstances.length = 0;
+  
+  // Use Jest's fake timers to prevent real timers from running
+  jest.useFakeTimers();
+  
+  // Clear any remaining timers
+  jest.clearAllTimers();
+  
+  // Restore real timers
+  jest.useRealTimers();
+  
+  // Give a small delay to allow any pending operations to complete
+  await new Promise(resolve => setTimeout(resolve, 100));
+});
+
+// Cleanup after each test to prevent timer accumulation
+afterEach(() => {
+  // Use Jest's fake timers to prevent real timers from running
+  jest.useFakeTimers();
+  
+  // Clear any timers that might have been set during the test
+  jest.clearAllTimers();
+  
+  // Restore real timers
+  jest.useRealTimers();
+});

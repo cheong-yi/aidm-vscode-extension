@@ -6,6 +6,9 @@
 import { SimpleMCPServer } from "../../server/SimpleMCPServer";
 import { ContextManager } from "../../server/ContextManager";
 import { MockDataProvider } from "../../mock/MockDataProvider";
+import { TaskStatusManager } from "../../services/TaskStatusManager";
+import { MarkdownTaskParser } from "../../services/MarkdownTaskParser";
+import { trackAuditLogger } from "../jest.setup";
 import { JSONRPCRequest, ToolCallRequest } from "../../types/jsonrpc";
 import { getNextAvailablePort } from "../utils/testPorts";
 import * as http from "http";
@@ -73,6 +76,7 @@ describe("SimpleMCPServer Integration Tests", () => {
   let server: SimpleMCPServer;
   let contextManager: ContextManager;
   let mockDataProvider: MockDataProvider;
+  let taskStatusManager: TaskStatusManager;
   const testPort = getNextAvailablePort();
 
   beforeAll(async () => {
@@ -84,9 +88,15 @@ describe("SimpleMCPServer Integration Tests", () => {
     });
 
     contextManager = new ContextManager(mockDataProvider);
+    taskStatusManager = new TaskStatusManager(new MarkdownTaskParser());
+
+    // Track AuditLogger instances for cleanup
+    if (contextManager && (contextManager as any).auditLogger) {
+      trackAuditLogger((contextManager as any).auditLogger);
+    }
 
     // Create and start server
-    server = new SimpleMCPServer(testPort, contextManager);
+    server = new SimpleMCPServer(testPort, contextManager, taskStatusManager);
     await server.start();
 
     // Wait for server to be ready
@@ -96,6 +106,15 @@ describe("SimpleMCPServer Integration Tests", () => {
   afterAll(async () => {
     if (server) {
       await server.stop();
+    }
+    
+    // Cleanup AuditLogger instances
+    if (contextManager && (contextManager as any).auditLogger) {
+      try {
+        await (contextManager as any).auditLogger.cleanup();
+      } catch (error) {
+        // Ignore cleanup errors
+      }
     }
   });
 
@@ -169,13 +188,30 @@ describe("SimpleMCPServer Integration Tests", () => {
       const response = await makeRequest(testPort, request);
 
       expect(response.status).toBe(200);
-      expect(response.data.result.tools).toHaveLength(1);
+      expect(response.data.result.tools).toHaveLength(2);
 
-      const tool = response.data.result.tools[0];
-      expect(tool.name).toBe("get_code_context");
-      expect(tool.description).toBeDefined();
-      expect(tool.inputSchema).toBeDefined();
-      expect(tool.inputSchema.properties).toBeDefined();
+      // Check get_code_context tool
+      const contextTool = response.data.result.tools.find(
+        (t: any) => t.name === "get_code_context"
+      );
+      expect(contextTool).toBeDefined();
+      expect(contextTool.description).toBeDefined();
+      expect(contextTool.inputSchema).toBeDefined();
+      expect(contextTool.inputSchema.properties).toBeDefined();
+
+      // Check tasks/list tool
+      const tasksTool = response.data.result.tools.find(
+        (t: any) => t.name === "tasks/list"
+      );
+      expect(tasksTool).toBeDefined();
+      expect(tasksTool.description).toBe(
+        "Retrieve all tasks from the task management system"
+      );
+      expect(tasksTool.inputSchema.type).toBe("object");
+      expect(tasksTool.inputSchema.properties.status).toBeDefined();
+      expect(tasksTool.inputSchema.properties.status.enum).toContain(
+        "in_progress"
+      );
     });
   });
 
@@ -277,6 +313,78 @@ describe("SimpleMCPServer Integration Tests", () => {
         content.includes("Business Context for") ||
           content.includes("No business context available")
       ).toBe(true);
+    });
+  });
+
+  describe("Tasks List Tool", () => {
+    test("should handle tasks/list request without filter", async () => {
+      const request: ToolCallRequest = {
+        jsonrpc: "2.0",
+        method: "tools/call",
+        params: {
+          name: "tasks/list",
+          arguments: {},
+        },
+        id: "test-tasks-1",
+      };
+
+      const response = await makeRequest(testPort, request);
+
+      expect(response.status).toBe(200);
+      expect(response.data.jsonrpc).toBe("2.0");
+      expect(response.data.id).toBe("test-tasks-1");
+      expect(response.data.result).toBeDefined();
+      expect(response.data.result.content).toBeInstanceOf(Array);
+      expect(response.data.result.content[0].type).toBe("text");
+
+      // Parse the response content to check structure
+      const content = response.data.result.content[0].text;
+      expect(typeof content).toBe("string");
+      expect(content.length).toBeGreaterThan(0);
+    });
+
+    test("should handle tasks/list request with status filter", async () => {
+      const request: ToolCallRequest = {
+        jsonrpc: "2.0",
+        method: "tools/call",
+        params: {
+          name: "tasks/list",
+          arguments: {
+            status: "in_progress",
+          },
+        },
+        id: "test-tasks-2",
+      };
+
+      const response = await makeRequest(testPort, request);
+
+      expect(response.status).toBe(200);
+      expect(response.data.jsonrpc).toBe("2.0");
+      expect(response.data.id).toBe("test-tasks-2");
+      expect(response.data.result).toBeDefined();
+      expect(response.data.result.content).toBeInstanceOf(Array);
+    });
+
+    test("should reject invalid status filter", async () => {
+      const request: ToolCallRequest = {
+        jsonrpc: "2.0",
+        method: "tools/call",
+        params: {
+          name: "tasks/list",
+          arguments: {
+            status: "invalid_status",
+          },
+        },
+        id: "test-tasks-invalid",
+      };
+
+      const response = await makeRequest(testPort, request);
+
+      expect(response.status).toBe(200);
+      expect(response.data.result.isError).toBe(true);
+      expect(response.data.result.content[0].text).toContain(
+        "Invalid arguments"
+      );
     });
   });
 

@@ -8,6 +8,8 @@ import { SimpleMCPServer } from "../server/SimpleMCPServer";
 import { ContextManager } from "../server/ContextManager";
 import { MockDataProvider } from "../mock/MockDataProvider";
 import { CacheManager } from "../services/CacheManager";
+import { TaskStatusManager } from "../services/TaskStatusManager";
+import { MarkdownTaskParser } from "../services/MarkdownTaskParser";
 
 export interface RooCodeQuery {
   type: "code_suggestion" | "context_analysis" | "delivery_guidance";
@@ -68,8 +70,9 @@ export class RooCodeIntegrationDemo {
     try {
       const mockDataProvider = new MockDataProvider();
       const contextManager = new ContextManager(mockDataProvider);
+      const taskStatusManager = new TaskStatusManager(new MarkdownTaskParser());
 
-      this.mcpServer = new SimpleMCPServer(3000, contextManager);
+      this.mcpServer = new SimpleMCPServer(3000, contextManager, taskStatusManager);
       await this.mcpServer.start();
       this.isServerRunning = true;
 

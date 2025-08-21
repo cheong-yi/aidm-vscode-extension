@@ -6,6 +6,9 @@
 import { SimpleMCPServer } from "../../server/SimpleMCPServer";
 import { ContextManager } from "../../server/ContextManager";
 import { MockDataProvider } from "../../mock/MockDataProvider";
+import { TaskStatusManager } from "../../services/TaskStatusManager";
+import { MarkdownTaskParser } from "../../services/MarkdownTaskParser";
+import { trackAuditLogger } from "../jest.setup";
 import {
   BusinessContext,
   CodeLocation,
@@ -14,16 +17,35 @@ import {
   RequirementStatus,
   ChangeType,
 } from "../../types/business";
+import { Task, TaskStatus, TaskComplexity } from "../../types/tasks";
 
 describe("MCP Tools Unit Tests", () => {
   let mcpServer: SimpleMCPServer;
   let contextManager: ContextManager;
   let mockDataProvider: MockDataProvider;
+  let taskStatusManager: TaskStatusManager;
 
   beforeEach(() => {
     mockDataProvider = new MockDataProvider();
     contextManager = new ContextManager(mockDataProvider);
-    mcpServer = new SimpleMCPServer(3000, contextManager);
+    taskStatusManager = new TaskStatusManager(new MarkdownTaskParser());
+    mcpServer = new SimpleMCPServer(3000, contextManager, taskStatusManager);
+
+    // Track AuditLogger instances for cleanup
+    if (contextManager && (contextManager as any).auditLogger) {
+      trackAuditLogger((contextManager as any).auditLogger);
+    }
+  });
+
+  afterEach(async () => {
+    // Cleanup any AuditLogger instances created during this test
+    if (contextManager && (contextManager as any).auditLogger) {
+      try {
+        await (contextManager as any).auditLogger.cleanup();
+      } catch (error) {
+        // Ignore cleanup errors
+      }
+    }
   });
 
   describe("Tool Argument Validation", () => {
@@ -427,6 +449,150 @@ describe("MCP Tools Unit Tests", () => {
       expect(formatted).not.toContain("## Acceptance Criteria");
       expect(formatted).not.toContain("## Dependencies");
       expect(formatted).not.toContain("## Risks");
+    });
+  });
+
+  describe("Tasks List Tool", () => {
+    it("should validate tasks/list arguments correctly", () => {
+      const validateArgs = (mcpServer as any).validateToolArguments.bind(
+        mcpServer
+      );
+
+      // Valid arguments - no arguments
+      expect(validateArgs("tasks/list", {})).toBeNull();
+
+      // Valid arguments - with status filter
+      expect(
+        validateArgs("tasks/list", {
+          status: "in_progress",
+        })
+      ).toBeNull();
+
+      // Valid status values
+      const validStatuses = [
+        "not_started",
+        "in_progress",
+        "review",
+        "completed",
+        "blocked",
+        "deprecated",
+      ];
+
+      validStatuses.forEach((status) => {
+        expect(validateArgs("tasks/list", { status })).toBeNull();
+      });
+
+      // Invalid status type
+      expect(
+        validateArgs("tasks/list", {
+          status: 123,
+        })
+      ).toContain("status must be a string if provided");
+
+      // Invalid status value
+      expect(
+        validateArgs("tasks/list", {
+          status: "invalid_status",
+        })
+      ).toContain(
+        "status must be one of: not_started, in_progress, review, completed, blocked, deprecated"
+      );
+    });
+
+    it("should handle tasks/list tool execution", async () => {
+      // Mock the TaskStatusManager.getTasks method
+      const mockTasks: Task[] = [
+        {
+          id: "TASK-001",
+          title: "Implement user authentication",
+          description: "Add secure user login functionality",
+          status: TaskStatus.IN_PROGRESS,
+          complexity: TaskComplexity.MEDIUM,
+          dependencies: [],
+          requirements: ["REQ-001"],
+          createdDate: new Date("2024-01-01"),
+          lastModified: new Date("2024-01-15"),
+        },
+        {
+          id: "TASK-002",
+          title: "Write unit tests",
+          description: "Create comprehensive test coverage",
+          status: TaskStatus.NOT_STARTED,
+          complexity: TaskComplexity.LOW,
+          dependencies: ["TASK-001"],
+          requirements: ["REQ-002"],
+          createdDate: new Date("2024-01-01"),
+          lastModified: new Date("2024-01-01"),
+        },
+      ];
+
+      // Mock the getTasks method
+      jest.spyOn(taskStatusManager, "getTasks").mockResolvedValue(mockTasks);
+
+      // Test without status filter
+      const handleTasksList = (mcpServer as any).handleTasksList.bind(
+        mcpServer
+      );
+      const result = await handleTasksList({ id: "test-1" }, {});
+
+      expect(result.jsonrpc).toBe("2.0");
+      expect(result.id).toBe("test-1");
+      expect(result.result.content[0].type).toBe("text");
+
+      const responseData = JSON.parse(result.result.content[0].text);
+
+      // Check that we have the right number of tasks
+      expect(responseData.tasks).toHaveLength(2);
+      expect(responseData.count).toBe(2);
+
+      // Check task properties (dates will be strings after JSON serialization)
+      const firstTask = responseData.tasks[0];
+      expect(firstTask.id).toBe("TASK-001");
+      expect(firstTask.title).toBe("Implement user authentication");
+      expect(firstTask.status).toBe("in_progress");
+      expect(firstTask.complexity).toBe("medium");
+
+      const secondTask = responseData.tasks[1];
+      expect(secondTask.id).toBe("TASK-002");
+      expect(secondTask.title).toBe("Write unit tests");
+      expect(secondTask.status).toBe("not_started");
+      expect(secondTask.complexity).toBe("low");
+
+      // Test with status filter
+      const filteredResult = await handleTasksList(
+        { id: "test-2" },
+        { status: "in_progress" }
+      );
+      const filteredData = JSON.parse(filteredResult.result.content[0].text);
+      expect(filteredData.tasks).toHaveLength(1);
+      expect(filteredData.tasks[0].status).toBe(TaskStatus.IN_PROGRESS);
+      expect(filteredData.count).toBe(1);
+
+      // Restore mock
+      jest.restoreAllMocks();
+    });
+
+    it("should handle errors in tasks/list tool execution", async () => {
+      // Mock the getTasks method to throw an error
+      jest
+        .spyOn(taskStatusManager, "getTasks")
+        .mockRejectedValue(new Error("Database connection failed"));
+
+      const handleTasksList = (mcpServer as any).handleTasksList.bind(
+        mcpServer
+      );
+      const result = await handleTasksList({ id: "test-error" }, {});
+
+      expect(result.jsonrpc).toBe("2.0");
+      expect(result.id).toBe("test-error");
+      expect(result.error).toBeDefined();
+      expect(result.error.code).toBe(-32000);
+      expect(result.error.message).toContain(
+        "Failed to list tasks: Database connection failed"
+      );
+
+      // Restore mock
+      jest.restoreAllMocks();
     });
   });
 

@@ -11,6 +11,8 @@ import { ContextManager } from "./ContextManager";
 import { MockDataProvider } from "../mock/MockDataProvider";
 import { MockCache } from "./MockCache";
 import { ConnectionStatus, ErrorCode, ErrorResponse } from "../types/extension";
+import { TaskStatusManager } from "../services/TaskStatusManager";
+import { MarkdownTaskParser } from "../services/MarkdownTaskParser";
 
 export interface ProcessManagerConfig {
   port: number;
@@ -82,11 +84,14 @@ export class ProcessManager {
       // Initialize context manager with mock cache
       const contextManager = new ContextManager(mockDataProvider, mockCache);
 
+      // Initialize task status manager
+      const taskStatusManager = new TaskStatusManager(new MarkdownTaskParser());
+
       // Create server instance with current config port
       console.log(
         `🔧 Creating SimpleMCPServer instance on port ${this.config.port}`
       );
-      this.server = new SimpleMCPServer(this.config.port, contextManager);
+      this.server = new SimpleMCPServer(this.config.port, contextManager, taskStatusManager);
 
       // Configure server
       this.server.updateConfiguration({

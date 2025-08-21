@@ -455,4 +455,18 @@ export class AuditLogger {
       console.error("AUDIT_CRITICAL_FAILURE:", fallbackError);
     }
   }
+
+  /**
+   * Cleanup method to stop timers and flush remaining events
+   * Call this when shutting down the logger
+   */
+  async cleanup(): Promise<void> {
+    if (this.flushTimer) {
+      clearInterval(this.flushTimer);
+      this.flushTimer = null;
+    }
+    
+    // Flush any remaining events
+    await this.flushBuffer();
+  }
 }
