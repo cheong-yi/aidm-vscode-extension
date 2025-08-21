@@ -1,17 +1,65 @@
 /**
  * TaskFileWatcher Unit Tests
- * Recovery Task 2.3.3: Test minimal class structure
- * Requirements: 3.1.1 - Basic TaskFileWatcher instantiation and interface
+ * Recovery Task 2.3.4: Test file watching functionality with VSCode FileSystemWatcher
+ * Requirements: 3.1.1 - File watching, event emission, and lifecycle management
  */
 
 import { jest } from '@jest/globals';
 import { TaskFileWatcher } from '../TaskFileWatcher';
 
+// Mock vscode module
+jest.mock('vscode', () => {
+  // Mock EventEmitter
+  class MockEventEmitter {
+    private listeners: any[] = [];
+    
+    constructor() {
+      this.listeners = [];
+    }
+    
+    event(listener: any) {
+      this.listeners.push(listener);
+      return { dispose: () => this.listeners.splice(this.listeners.indexOf(listener), 1) };
+    }
+    
+    fire(value: any) {
+      this.listeners.forEach(listener => listener(value));
+    }
+    
+    dispose() {
+      this.listeners = [];
+    }
+  }
+
+  return {
+    workspace: {
+      createFileSystemWatcher: jest.fn(),
+    },
+    EventEmitter: MockEventEmitter,
+  };
+});
+
 describe('TaskFileWatcher', () => {
   let watcher: TaskFileWatcher;
+  const testFilePath = '/test/path/tasks.md';
+  
+  // Get mocked functions
+  const mockCreateFileSystemWatcher = jest.mocked(require('vscode').workspace.createFileSystemWatcher);
+  const mockFileWatcher = {
+    onDidChange: jest.fn(),
+    onDidCreate: jest.fn(),
+    onDidDelete: jest.fn(),
+    dispose: jest.fn(),
+  };
 
   beforeEach(() => {
-    watcher = new TaskFileWatcher();
+    jest.clearAllMocks();
+    mockCreateFileSystemWatcher.mockReturnValue(mockFileWatcher);
+    watcher = new TaskFileWatcher(testFilePath);
+  });
+
+  afterEach(async () => {
+    await watcher.stopWatching();
   });
 
   // Test 1: Basic instantiation
@@ -23,7 +71,7 @@ describe('TaskFileWatcher', () => {
 
     it('should not throw error when constructor is called', () => {
       expect(() => {
-        new TaskFileWatcher();
+        new TaskFileWatcher(testFilePath);
       }).not.toThrow();
     });
 
@@ -34,6 +82,91 @@ describe('TaskFileWatcher', () => {
 
     it('should be instanceof TaskFileWatcher', () => {
       expect(watcher).toBeInstanceOf(TaskFileWatcher);
+    });
+  });
+
+  // Test 2: File watching lifecycle
+  describe('File Watching Lifecycle', () => {
+    it('should create VSCode FileSystemWatcher when startWatching is called', async () => {
+      await watcher.startWatching();
+      
+      expect(mockCreateFileSystemWatcher).toHaveBeenCalledWith(testFilePath);
+      expect(mockFileWatcher.onDidChange).toHaveBeenCalled();
+      expect(mockFileWatcher.onDidCreate).toHaveBeenCalled();
+      expect(mockFileWatcher.onDidDelete).toHaveBeenCalled();
+    });
+
+    it('should not create duplicate watchers when startWatching is called twice', async () => {
+      await watcher.startWatching();
+      await watcher.startWatching();
+      
+      expect(mockCreateFileSystemWatcher).toHaveBeenCalledTimes(1);
+    });
+
+    it('should dispose FileSystemWatcher when stopWatching is called', async () => {
+      await watcher.startWatching();
+      await watcher.stopWatching();
+      
+      expect(mockFileWatcher.dispose).toHaveBeenCalled();
+    });
+
+    it('should handle stopWatching when no watcher exists', async () => {
+      await expect(watcher.stopWatching()).resolves.not.toThrow();
+    });
+  });
+
+  // Test 3: Event handling
+  describe('Event Handling', () => {
+    it('should fire onFileChanged event when file changes are detected', async () => {
+      const onFileChangedSpy = jest.fn();
+      watcher.onFileChanged.event(onFileChangedSpy);
+      
+      await watcher.startWatching();
+      
+      // Simulate file change event
+      const changeCallback = mockFileWatcher.onDidChange.mock.calls[0][0] as () => void;
+      changeCallback();
+      
+      expect(onFileChangedSpy).toHaveBeenCalledWith(testFilePath);
+    });
+
+    it('should fire onFileChanged event when file is created', async () => {
+      const onFileChangedSpy = jest.fn();
+      watcher.onFileChanged.event(onFileChangedSpy);
+      
+      await watcher.startWatching();
+      
+      // Simulate file creation event
+      const createCallback = mockFileWatcher.onDidCreate.mock.calls[0][0] as () => void;
+      createCallback();
+      
+      expect(onFileChangedSpy).toHaveBeenCalledWith(testFilePath);
+    });
+
+    it('should fire onFileChanged event when file is deleted', async () => {
+      const onFileChangedSpy = jest.fn();
+      watcher.onFileChanged.event(onFileChangedSpy);
+      
+      await watcher.startWatching();
+      
+      // Simulate file deletion event
+      const deleteCallback = mockFileWatcher.onDidDelete.mock.calls[0][0] as () => void;
+      deleteCallback();
+      
+      expect(onFileChangedSpy).toHaveBeenCalledWith(testFilePath);
+    });
+  });
+
+  // Test 4: Event emitter access
+  describe('Event Emitter Access', () => {
+    it('should provide access to onFileChanged event emitter', () => {
+      expect(watcher.onFileChanged).toBeDefined();
+      expect(typeof watcher.onFileChanged.event).toBe('function');
+    });
+
+    it('should provide access to onTasksChanged event emitter', () => {
+      expect(watcher.onTasksChanged).toBeDefined();
+      expect(typeof watcher.onTasksChanged.event).toBe('function');
     });
   });
 });
