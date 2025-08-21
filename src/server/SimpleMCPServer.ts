@@ -32,7 +32,11 @@ export class SimpleMCPServer {
   private maxConcurrentRequests: number = 10;
   private requestCounter: number = 0;
 
-  constructor(port: number, contextManager: ContextManager, taskStatusManager: TaskStatusManager) {
+  constructor(
+    port: number,
+    contextManager: ContextManager,
+    taskStatusManager: TaskStatusManager
+  ) {
     this.port = port;
     this.contextManager = contextManager;
     this.taskStatusManager = taskStatusManager;
@@ -270,12 +274,19 @@ export class SimpleMCPServer {
           properties: {
             status: {
               type: "string",
-              enum: ["not_started", "in_progress", "review", "completed", "blocked", "deprecated"],
-              description: "Optional status filter for tasks"
-            }
+              enum: [
+                "not_started",
+                "in_progress",
+                "review",
+                "completed",
+                "blocked",
+                "deprecated",
+              ],
+              description: "Optional status filter for tasks",
+            },
           },
-          additionalProperties: false
-        }
+          additionalProperties: false,
+        },
       },
       {
         name: "tasks/get",
@@ -285,12 +296,12 @@ export class SimpleMCPServer {
           properties: {
             id: {
               type: "string",
-              description: "The unique identifier of the task to retrieve"
-            }
+              description: "The unique identifier of the task to retrieve",
+            },
           },
           required: ["id"],
-          additionalProperties: false
-        }
+          additionalProperties: false,
+        },
       },
       {
         name: "tasks/update-status",
@@ -300,17 +311,63 @@ export class SimpleMCPServer {
           properties: {
             id: {
               type: "string",
-              description: "The unique identifier of the task to update"
+              description: "The unique identifier of the task to update",
             },
             newStatus: {
               type: "string",
-              enum: ["not_started", "in_progress", "review", "completed", "blocked", "deprecated"],
-              description: "The new status to set for the task"
-            }
+              enum: [
+                "not_started",
+                "in_progress",
+                "review",
+                "completed",
+                "blocked",
+                "deprecated",
+              ],
+              description: "The new status to set for the task",
+            },
           },
           required: ["id", "newStatus"],
-          additionalProperties: false
-        }
+          additionalProperties: false,
+        },
+      },
+      {
+        name: "tasks/refresh",
+        description: "Refresh task data from the source file",
+        inputSchema: {
+          type: "object",
+          properties: {},
+          additionalProperties: false,
+        },
+      },
+      {
+        name: "tasks/dependencies",
+        description: "Get dependency information for a specific task",
+        inputSchema: {
+          type: "object",
+          properties: {
+            id: {
+              type: "string",
+              description: "The unique identifier of the task",
+            },
+          },
+          required: ["id"],
+          additionalProperties: false,
+        },
+      },
+      {
+        name: "tasks/test-results",
+        description: "Get test results for a specific task",
+        inputSchema: {
+          type: "object",
+          properties: {
+            id: {
+              type: "string",
+              description: "The unique identifier of the task",
+            },
+          },
+          required: ["id"],
+          additionalProperties: false,
+        },
       },
     ];
 
@@ -342,6 +399,9 @@ export class SimpleMCPServer {
           "tasks/list",
           "tasks/get",
           "tasks/update-status",
+          "tasks/refresh",
+          "tasks/dependencies",
+          "tasks/test-results",
         ].includes(name)
       ) {
         return this.createErrorResponse(
@@ -397,6 +457,15 @@ export class SimpleMCPServer {
 
         case "tasks/update-status":
           return await this.handleTasksUpdateStatus(request, args);
+
+        case "tasks/refresh":
+          return await this.handleTasksRefresh(request);
+
+        case "tasks/dependencies":
+          return await this.handleTasksDependencies(request, args);
+
+        case "tasks/test-results":
+          return await this.handleTasksTestResults(request, args);
 
         default:
           // This should not be reached since we check tool existence earlier
@@ -598,7 +667,17 @@ export class SimpleMCPServer {
         if (args.status && typeof args.status !== "string") {
           return "status must be a string if provided";
         }
-        if (args.status && !["not_started", "in_progress", "review", "completed", "blocked", "deprecated"].includes(args.status)) {
+        if (
+          args.status &&
+          ![
+            "not_started",
+            "in_progress",
+            "review",
+            "completed",
+            "blocked",
+            "deprecated",
+          ].includes(args.status)
+        ) {
           return "status must be one of: not_started, in_progress, review, completed, blocked, deprecated";
         }
         break;
@@ -616,8 +695,33 @@ export class SimpleMCPServer {
         if (!args.newStatus || typeof args.newStatus !== "string") {
           return "newStatus is required and must be a string";
         }
-        if (!["not_started", "in_progress", "review", "completed", "blocked", "deprecated"].includes(args.newStatus)) {
+        if (
+          ![
+            "not_started",
+            "in_progress",
+            "review",
+            "completed",
+            "blocked",
+            "deprecated",
+          ].includes(args.newStatus)
+        ) {
           return "newStatus must be one of: not_started, in_progress, review, completed, blocked, deprecated";
+        }
+        break;
+
+      case "tasks/refresh":
+        // No arguments required for refresh
+        break;
+
+      case "tasks/dependencies":
+        if (!args.id || typeof args.id !== "string") {
+          return "id is required and must be a string";
+        }
+        break;
+
+      case "tasks/test-results":
+        if (!args.id || typeof args.id !== "string") {
+          return "id is required and must be a string";
         }
         break;
 
@@ -818,22 +922,29 @@ export class SimpleMCPServer {
   /**
    * Handle tasks/list requests
    */
-  private async handleTasksList(request: JSONRPCRequest, args: any): Promise<JSONRPCResponse> {
+  private async handleTasksList(
+    request: JSONRPCRequest,
+    args: any
+  ): Promise<JSONRPCResponse> {
     try {
       const allTasks = await this.taskStatusManager.getTasks();
-      
+
       let filteredTasks = allTasks;
       if (args?.status) {
-        filteredTasks = allTasks.filter(task => task.status === args.status);
+        filteredTasks = allTasks.filter((task) => task.status === args.status);
       }
-      
+
       return {
         jsonrpc: "2.0",
         result: {
           content: [
             {
               type: "text",
-              text: JSON.stringify({ tasks: filteredTasks, count: filteredTasks.length }, null, 2),
+              text: JSON.stringify(
+                { tasks: filteredTasks, count: filteredTasks.length },
+                null,
+                2
+              ),
             },
           ],
         },
@@ -841,21 +952,30 @@ export class SimpleMCPServer {
       };
     } catch (error) {
       console.error("Error listing tasks:", error);
-      return this.createErrorResponse(request.id, -32000, `Failed to list tasks: ${error instanceof Error ? error.message : String(error)}`);
+      return this.createErrorResponse(
+        request.id,
+        -32000,
+        `Failed to list tasks: ${
+          error instanceof Error ? error.message : String(error)
+        }`
+      );
     }
   }
 
   /**
    * Handle tasks/get requests
    */
-  private async handleTasksGet(request: JSONRPCRequest, args: any): Promise<JSONRPCResponse> {
+  private async handleTasksGet(
+    request: JSONRPCRequest,
+    args: any
+  ): Promise<JSONRPCResponse> {
     try {
       if (!args?.id) {
         throw new Error("Task ID is required");
       }
-      
+
       const task = await this.taskStatusManager.getTaskById(args.id);
-      
+
       if (!task) {
         return {
           jsonrpc: "2.0",
@@ -863,29 +983,37 @@ export class SimpleMCPServer {
             content: [
               {
                 type: "text",
-                text: JSON.stringify({ 
-                  task: null, 
-                  found: false,
-                  message: `Task with ID '${args.id}' not found`
-                }, null, 2),
+                text: JSON.stringify(
+                  {
+                    task: null,
+                    found: false,
+                    message: `Task with ID '${args.id}' not found`,
+                  },
+                  null,
+                  2
+                ),
               },
             ],
           },
           id: request.id,
         };
       }
-      
+
       return {
         jsonrpc: "2.0",
         result: {
           content: [
             {
               type: "text",
-              text: JSON.stringify({ 
-                task: task, 
-                found: true,
-                id: args.id
-              }, null, 2),
+              text: JSON.stringify(
+                {
+                  task: task,
+                  found: true,
+                  id: args.id,
+                },
+                null,
+                2
+              ),
             },
           ],
         },
@@ -914,16 +1042,19 @@ export class SimpleMCPServer {
   /**
    * Handle tasks/update-status requests
    */
-  private async handleTasksUpdateStatus(request: JSONRPCRequest, args: any): Promise<JSONRPCResponse> {
+  private async handleTasksUpdateStatus(
+    request: JSONRPCRequest,
+    args: any
+  ): Promise<JSONRPCResponse> {
     try {
       if (!args?.id) {
         throw new Error("Task ID is required");
       }
-      
+
       if (!args?.newStatus) {
         throw new Error("New status is required");
       }
-      
+
       // Verify task exists before updating
       const existingTask = await this.taskStatusManager.getTaskById(args.id);
       if (!existingTask) {
@@ -933,33 +1064,46 @@ export class SimpleMCPServer {
             content: [
               {
                 type: "text",
-                text: JSON.stringify({
-                  success: false,
-                  message: `Task with ID '${args.id}' not found`,
-                  taskId: args.id
-                }, null, 2),
+                text: JSON.stringify(
+                  {
+                    success: false,
+                    message: `Task with ID '${args.id}' not found`,
+                    taskId: args.id,
+                  },
+                  null,
+                  2
+                ),
               },
             ],
           },
           id: request.id,
         };
       }
-      
-      const success = await this.taskStatusManager.updateTaskStatus(args.id, args.newStatus as TaskStatus);
-      
+
+      const success = await this.taskStatusManager.updateTaskStatus(
+        args.id,
+        args.newStatus as TaskStatus
+      );
+
       return {
         jsonrpc: "2.0",
         result: {
           content: [
             {
               type: "text",
-                text: JSON.stringify({
+              text: JSON.stringify(
+                {
                   success: success,
                   taskId: args.id,
                   newStatus: args.newStatus,
                   previousStatus: existingTask.status,
-                  message: success ? "Task status updated successfully" : "Failed to update task status"
-                }, null, 2),
+                  message: success
+                    ? "Task status updated successfully"
+                    : "Failed to update task status",
+                },
+                null,
+                2
+              ),
             },
           ],
         },
@@ -974,6 +1118,228 @@ export class SimpleMCPServer {
             {
               type: "text",
               text: `Error executing tool tasks/update-status: ${
+                error instanceof Error ? error.message : "Unknown error"
+              }`,
+            },
+          ],
+          isError: true,
+        },
+        id: request.id,
+      };
+    }
+  }
+
+  /**
+   * Handle tasks/refresh requests
+   */
+  private async handleTasksRefresh(
+    request: JSONRPCRequest
+  ): Promise<JSONRPCResponse> {
+    try {
+      await this.taskStatusManager.refreshTasksFromFile();
+      const refreshedTasks = await this.taskStatusManager.getTasks();
+
+      return {
+        jsonrpc: "2.0",
+        result: {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify(
+                {
+                  success: true,
+                  message: "Tasks refreshed successfully",
+                  taskCount: refreshedTasks.length,
+                  refreshedAt: new Date().toISOString(),
+                },
+                null,
+                2
+              ),
+            },
+          ],
+        },
+        id: request.id,
+      };
+    } catch (error) {
+      console.error("Error refreshing tasks:", error);
+      return {
+        jsonrpc: "2.0",
+        result: {
+          content: [
+            {
+              type: "text",
+              text: `Error executing tool tasks/refresh: ${
+                error instanceof Error ? error.message : "Unknown error"
+              }`,
+            },
+          ],
+          isError: true,
+        },
+        id: request.id,
+      };
+    }
+  }
+
+  /**
+   * Handle tasks/dependencies requests
+   */
+  private async handleTasksDependencies(
+    request: JSONRPCRequest,
+    args: any
+  ): Promise<JSONRPCResponse> {
+    try {
+      if (!args?.id) {
+        throw new Error("Task ID is required");
+      }
+
+      const dependencies = await this.taskStatusManager.getTaskDependencies(
+        args.id
+      );
+
+      return {
+        jsonrpc: "2.0",
+        result: {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify(
+                {
+                  taskId: args.id,
+                  dependencies: dependencies,
+                  dependencyCount: dependencies.length,
+                  hasDependencies: dependencies.length > 0,
+                },
+                null,
+                2
+              ),
+            },
+          ],
+        },
+        id: request.id,
+      };
+    } catch (error) {
+      console.error("Error getting task dependencies:", error);
+      return {
+        jsonrpc: "2.0",
+        result: {
+          content: [
+            {
+              type: "text",
+              text: `Error executing tool tasks/dependencies: ${
+                error instanceof Error ? error.message : "Unknown error"
+              }`,
+            },
+          ],
+          isError: true,
+        },
+        id: request.id,
+      };
+    }
+  }
+
+  /**
+   * Handle tasks/test-results requests
+   */
+  private async handleTasksTestResults(
+    request: JSONRPCRequest,
+    args: any
+  ): Promise<JSONRPCResponse> {
+    try {
+      if (!args?.id) {
+        throw new Error("Task ID is required");
+      }
+
+      const task = await this.taskStatusManager.getTaskById(args.id);
+
+      if (!task) {
+        return {
+          jsonrpc: "2.0",
+          result: {
+            content: [
+              {
+                type: "text",
+                text: JSON.stringify(
+                  {
+                    taskId: args.id,
+                    hasTestResults: false,
+                    message: `Task with ID '${args.id}' not found`,
+                  },
+                  null,
+                  2
+                ),
+              },
+            ],
+          },
+          id: request.id,
+        };
+      }
+
+      if (!task.testStatus) {
+        return {
+          jsonrpc: "2.0",
+          result: {
+            content: [
+              {
+                type: "text",
+                text: JSON.stringify(
+                  {
+                    taskId: args.id,
+                    hasTestResults: false,
+                    message: "No test results available for this task",
+                  },
+                  null,
+                  2
+                ),
+              },
+            ],
+          },
+          id: request.id,
+        };
+      }
+
+      const testResults = task.testStatus;
+
+      return {
+        jsonrpc: "2.0",
+        result: {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify(
+                {
+                  taskId: args.id,
+                  hasTestResults: true,
+                  testResults: testResults,
+                  summary: {
+                    total: testResults.totalTests,
+                    passed: testResults.passedTests,
+                    failed: testResults.failedTests,
+                    passRate:
+                      testResults.totalTests > 0
+                        ? (
+                            (testResults.passedTests / testResults.totalTests) *
+                            100
+                          ).toFixed(1) + "%"
+                        : "0%",
+                  },
+                },
+                null,
+                2
+              ),
+            },
+          ],
+        },
+        id: request.id,
+      };
+    } catch (error) {
+      console.error("Error getting test results:", error);
+      return {
+        jsonrpc: "2.0",
+        result: {
+          content: [
+            {
+              type: "text",
+              text: `Error executing tool tasks/test-results: ${
                 error instanceof Error ? error.message : "Unknown error"
               }`,
             },

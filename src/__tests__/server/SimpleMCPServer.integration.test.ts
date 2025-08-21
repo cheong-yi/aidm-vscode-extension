@@ -188,7 +188,7 @@ describe("SimpleMCPServer Integration Tests", () => {
       const response = await makeRequest(testPort, request);
 
       expect(response.status).toBe(200);
-      expect(response.data.result.tools).toHaveLength(4);
+      expect(response.data.result.tools).toHaveLength(7);
 
       // Check get_code_context tool
       const contextTool = response.data.result.tools.find(
@@ -243,6 +243,46 @@ describe("SimpleMCPServer Integration Tests", () => {
       expect(updateStatusTool.inputSchema.required).toContain("id");
       expect(updateStatusTool.inputSchema.required).toContain("newStatus");
       expect(updateStatusTool.inputSchema.additionalProperties).toBe(false);
+
+      // Check tasks/refresh tool
+      const refreshTool = response.data.result.tools.find(
+        (t: any) => t.name === "tasks/refresh"
+      );
+      expect(refreshTool).toBeDefined();
+      expect(refreshTool.description).toBe(
+        "Refresh task data from the source file"
+      );
+      expect(refreshTool.inputSchema.type).toBe("object");
+      expect(refreshTool.inputSchema.properties).toEqual({});
+      expect(refreshTool.inputSchema.additionalProperties).toBe(false);
+
+      // Check tasks/dependencies tool
+      const dependenciesTool = response.data.result.tools.find(
+        (t: any) => t.name === "tasks/dependencies"
+      );
+      expect(dependenciesTool).toBeDefined();
+      expect(dependenciesTool.description).toBe(
+        "Get dependency information for a specific task"
+      );
+      expect(dependenciesTool.inputSchema.type).toBe("object");
+      expect(dependenciesTool.inputSchema.properties.id).toBeDefined();
+      expect(dependenciesTool.inputSchema.properties.id.type).toBe("string");
+      expect(dependenciesTool.inputSchema.required).toContain("id");
+      expect(dependenciesTool.inputSchema.additionalProperties).toBe(false);
+
+      // Check tasks/test-results tool
+      const testResultsTool = response.data.result.tools.find(
+        (t: any) => t.name === "tasks/test-results"
+      );
+      expect(testResultsTool).toBeDefined();
+      expect(testResultsTool.description).toBe(
+        "Get test results for a specific task"
+      );
+      expect(testResultsTool.inputSchema.type).toBe("object");
+      expect(testResultsTool.inputSchema.properties.id).toBeDefined();
+      expect(testResultsTool.inputSchema.properties.id.type).toBe("string");
+      expect(testResultsTool.inputSchema.required).toContain("id");
+      expect(testResultsTool.inputSchema.additionalProperties).toBe(false);
     });
   });
 
