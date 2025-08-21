@@ -33,9 +33,9 @@ This implementation plan breaks down the feature into atomic, TDD-friendly tasks
   2.3 Event System Layer
 
 - [x] 2.3.1 Add single event emitter to TasksDataService (onTasksUpdated)
-- [ ] 2.3.2 Add error event emitter to TasksDataService (onError)
+- [x] 2.3.2 Add error event emitter to TasksDataService (onError)
 - [x] 2.3.3 Create basic TaskFileWatcher class structure
-- [ ] 2.3.4 Add file change detection to TaskFileWatcher
+- [d] 2.3.4 Add file change detection to TaskFileWatcher
 
   2.4 HTTP Communication Layer
 

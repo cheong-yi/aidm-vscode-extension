@@ -107,7 +107,7 @@ describe("SimpleMCPServer Integration Tests", () => {
     if (server) {
       await server.stop();
     }
-    
+
     // Cleanup AuditLogger instances
     if (contextManager && (contextManager as any).auditLogger) {
       try {
@@ -311,7 +311,8 @@ describe("SimpleMCPServer Integration Tests", () => {
       // Should contain business context information or no context message
       expect(
         content.includes("Business Context for") ||
-          content.includes("No business context available")
+          content.includes("No business context available") ||
+          content.includes("No business context found")
       ).toBe(true);
     });
   });

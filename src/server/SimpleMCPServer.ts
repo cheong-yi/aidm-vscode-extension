@@ -339,8 +339,8 @@ export class SimpleMCPServer {
           return await this.handleGetRequirementDetails(request, args);
 
         case "get_code_context":
-          // Legacy support - redirect to get_business_context
-          return await this.handleGetBusinessContext(request, args);
+          // Use dedicated handler that formats the response for AI consumption
+          return await this.handleGetCodeContext(request, args);
 
         case "mock_cache_upsert":
           return await this.handleMockCacheUpsert(request, args);
