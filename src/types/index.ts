@@ -10,3 +10,6 @@ export * from "./business";
 
 // Extension-specific types
 export * from "./extension";
+
+// Task-related types
+export * from "./tasks";
