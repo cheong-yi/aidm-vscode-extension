@@ -40,15 +40,15 @@ This implementation plan breaks down the feature into atomic, TDD-friendly tasks
   2.4 HTTP Communication Layer
 
 - [x] 2.4.1 Add HTTP client setup to TasksDataService
-- [ ] 2.4.2 Replace getTasks with real JSON-RPC call
+- [d] 2.4.2 Replace getTasks with real JSON-RPC call
 - [ ] 2.4.3 Replace getTaskById with real JSON-RPC call
 - [ ] 2.4.4 Add updateTaskStatus method with JSON-RPC
 
   2.5 MCP Server Integration
 
 - [x] 2.5.1 Add first MCP tool (tasks/list) to SimpleMCPServer
-- [ ] 2.5.2 Add tasks/get tool to SimpleMCPServer
-- [ ] 2.5.3 Add tasks/update-status tool to SimpleMCPServer
+- [x] 2.5.2 Add tasks/get tool to SimpleMCPServer
+- [d] 2.5.3 Add tasks/update-status tool to SimpleMCPServer
 - [ ] 2.5.4 Add remaining MCP tools (refresh, dependencies, test-results)
 
 ### 3. Implement VSCode UI components

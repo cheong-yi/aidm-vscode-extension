@@ -36,7 +36,7 @@ export class TasksDataService implements ITasksDataService {
     new EventEmitter<TaskErrorResponse>();
 
   // HTTP client for JSON-RPC communication - Recovery Task 2.4.1
-  private httpClient!: AxiosInstance;
+  protected httpClient!: AxiosInstance;
   private readonly serverUrl: string;
 
   constructor(private taskStatusManager: TaskStatusManager) {
@@ -45,7 +45,7 @@ export class TasksDataService implements ITasksDataService {
     const config = workspace.getConfiguration("aidmVscodeExtension");
     const port = config.get<number>("mcpServer.port", 3001);
     this.serverUrl = `http://localhost:${port}`;
-    
+
     this.setupHttpClient();
   }
 
@@ -61,7 +61,12 @@ export class TasksDataService implements ITasksDataService {
     });
   }
 
-  // Recovery Task 2.4.1: JSON-RPC request formatting infrastructure
+  // Method for testing - allows injection of mock HTTP client
+  protected setHttpClientForTesting(client: AxiosInstance): void {
+    this.httpClient = client;
+  }
+
+  // Recovery Task 2.4.2: Real JSON-RPC communication implementation
   public async makeJSONRPCCall(method: string, params?: any): Promise<any> {
     const request = {
       jsonrpc: "2.0",
@@ -70,13 +75,48 @@ export class TasksDataService implements ITasksDataService {
       params,
     };
 
-    // Placeholder implementation - just return mock response
-    return { result: null, error: null };
+    try {
+      const response = await this.httpClient.post("/jsonrpc", request);
+      return response.data;
+    } catch (error) {
+      throw new Error(
+        `HTTP request failed: ${
+          error instanceof Error ? error.message : String(error)
+        }`
+      );
+    }
   }
 
-  // Delegate to TaskStatusManager for real data
+  // Recovery Task 2.4.2: Replace with real JSON-RPC call to MCP server
   async getTasks(): Promise<Task[]> {
-    return await this.taskStatusManager.getTasks();
+    try {
+      const response = await this.makeJSONRPCCall("tasks/list");
+
+      if (response.error) {
+        throw new Error(`MCP server error: ${response.error.message}`);
+      }
+
+      // Extract tasks from the MCP response format
+      // The response.result.content[0].text contains JSON string with tasks
+      if (response.result?.content?.[0]?.text) {
+        try {
+          const parsedContent = JSON.parse(response.result.content[0].text);
+          return parsedContent.tasks || [];
+        } catch (parseError) {
+          console.warn("Failed to parse MCP response content:", parseError);
+          return [];
+        }
+      }
+
+      return [];
+    } catch (error) {
+      // Fallback to TaskStatusManager if HTTP fails
+      console.warn(
+        "HTTP call failed, falling back to TaskStatusManager:",
+        error instanceof Error ? error.message : String(error)
+      );
+      return await this.taskStatusManager.getTasks();
+    }
   }
 
   // Delegate to TaskStatusManager for individual task lookup
