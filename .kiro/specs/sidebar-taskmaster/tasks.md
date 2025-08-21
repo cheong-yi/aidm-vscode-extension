@@ -28,11 +28,11 @@ This implementation plan breaks down the feature into atomic, TDD-friendly tasks
 - [x] 2.2.1 Add interface definition to TasksDataService
 - [x] 2.2.2 Add getTasks method to TasksDataService (mock data)
 - [x] 2.2.3 Add getTaskById method to TasksDataService (mock data)
-- [d] 2.2.4 Connect TasksDataService to TaskStatusManager
+- [x] 2.2.4 Connect TasksDataService to TaskStatusManager
 
   2.3 Event System Layer
 
-- [ ] 2.3.1 Add single event emitter to TasksDataService (onTasksUpdated)
+- [x] 2.3.1 Add single event emitter to TasksDataService (onTasksUpdated)
 - [ ] 2.3.2 Add error event emitter to TasksDataService (onError)
 - [x] 2.3.3 Create basic TaskFileWatcher class structure
 - [ ] 2.3.4 Add file change detection to TaskFileWatcher
@@ -46,7 +46,7 @@ This implementation plan breaks down the feature into atomic, TDD-friendly tasks
 
   2.5 MCP Server Integration
 
-- [ ] 2.5.1 Add first MCP tool (tasks/list) to SimpleMCPServer
+- [d] 2.5.1 Add first MCP tool (tasks/list) to SimpleMCPServer
 - [ ] 2.5.2 Add tasks/get tool to SimpleMCPServer
 - [ ] 2.5.3 Add tasks/update-status tool to SimpleMCPServer
 - [ ] 2.5.4 Add remaining MCP tools (refresh, dependencies, test-results)

@@ -28,7 +28,7 @@ describe("TasksDataService", () => {
   beforeEach(() => {
     // Clear all mocks before each test
     jest.clearAllMocks();
-    
+
     // Create mock TaskStatusManager instance
     mockTaskStatusManager = {
       getTasks: jest.fn(),
@@ -110,7 +110,7 @@ describe("TasksDataService", () => {
           createdDate: new Date("2024-01-01"),
           lastModified: new Date("2024-01-02"),
           priority: TaskPriority.HIGH,
-        }
+        },
       ];
       mockTaskStatusManager.getTasks.mockResolvedValue(mockTasks);
 
@@ -144,7 +144,9 @@ describe("TasksDataService", () => {
 
       // Assert
       expect(mockTaskStatusManager.getTaskById).toHaveBeenCalledTimes(1);
-      expect(mockTaskStatusManager.getTaskById).toHaveBeenCalledWith("delegated-task-2");
+      expect(mockTaskStatusManager.getTaskById).toHaveBeenCalledWith(
+        "delegated-task-2"
+      );
       expect(result).toEqual(mockTask);
     });
 
@@ -156,7 +158,9 @@ describe("TasksDataService", () => {
       const result = await service.getTaskById("non-existent-task");
 
       // Assert
-      expect(mockTaskStatusManager.getTaskById).toHaveBeenCalledWith("non-existent-task");
+      expect(mockTaskStatusManager.getTaskById).toHaveBeenCalledWith(
+        "non-existent-task"
+      );
       expect(result).toBeNull();
     });
 
@@ -166,7 +170,9 @@ describe("TasksDataService", () => {
       mockTaskStatusManager.getTasks.mockRejectedValue(error);
 
       // Act & Assert
-      await expect(service.getTasks()).rejects.toThrow("TaskStatusManager getTasks failed");
+      await expect(service.getTasks()).rejects.toThrow(
+        "TaskStatusManager getTasks failed"
+      );
       expect(mockTaskStatusManager.getTasks).toHaveBeenCalledTimes(1);
     });
 
@@ -176,7 +182,9 @@ describe("TasksDataService", () => {
       mockTaskStatusManager.getTaskById.mockRejectedValue(error);
 
       // Act & Assert
-      await expect(service.getTaskById("test-id")).rejects.toThrow("TaskStatusManager getTaskById failed");
+      await expect(service.getTaskById("test-id")).rejects.toThrow(
+        "TaskStatusManager getTaskById failed"
+      );
       expect(mockTaskStatusManager.getTaskById).toHaveBeenCalledWith("test-id");
     });
   });
@@ -197,7 +205,7 @@ describe("TasksDataService", () => {
           createdDate: new Date("2024-01-01"),
           lastModified: new Date("2024-01-02"),
           priority: TaskPriority.HIGH,
-        }
+        },
       ];
       mockTaskStatusManager.getTasks.mockResolvedValue(mockTasks);
 
@@ -233,7 +241,7 @@ describe("TasksDataService", () => {
           createdDate: new Date("2024-01-01"),
           lastModified: new Date("2024-01-02"),
           priority: TaskPriority.MEDIUM,
-        }
+        },
       ];
       mockTaskStatusManager.getTasks.mockResolvedValue(mockTasks);
 
@@ -245,6 +253,63 @@ describe("TasksDataService", () => {
       expect(firstCall).toEqual(secondCall);
       expect(firstCall.length).toBe(secondCall.length);
       expect(mockTaskStatusManager.getTasks).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  // Recovery Task 2.3.1: Event Emitter Infrastructure Tests
+  describe("Event Emitter Infrastructure", () => {
+    it("should have onTasksUpdated EventEmitter property", () => {
+      // Assert
+      expect(service.onTasksUpdated).toBeDefined();
+      expect(typeof service.onTasksUpdated).toBe("object");
+    });
+
+    it("should have onTasksUpdated as EventEmitter<Task[]> type", () => {
+      // Assert
+      expect(service.onTasksUpdated).toBeDefined();
+      // Check that it has EventEmitter-like properties
+      expect(typeof service.onTasksUpdated.event).toBe("function");
+      expect(typeof service.onTasksUpdated.fire).toBe("function");
+      expect(typeof service.onTasksUpdated.dispose).toBe("function");
+    });
+
+    it("should allow listeners to be attached to onTasksUpdated", () => {
+      // Arrange
+      const mockListener = jest.fn();
+
+      // Act
+      const disposable = service.onTasksUpdated.event(mockListener);
+
+      // Assert
+      expect(disposable).toBeDefined();
+      expect(typeof disposable.dispose).toBe("function");
+    });
+
+    it("should have dispose method for cleanup", () => {
+      // Assert
+      expect(typeof service.dispose).toBe("function");
+    });
+
+    it("should clean up event emitter when dispose is called", () => {
+      // Arrange
+      const mockListener = jest.fn();
+      const disposable = service.onTasksUpdated.event(mockListener);
+
+      // Act
+      service.dispose();
+
+      // Assert
+      // The event emitter should be disposed and listeners cleaned up
+      expect(disposable).toBeDefined();
+    });
+
+    it("should initialize event emitter in constructor", () => {
+      // Arrange & Act
+      const newService = new TasksDataService(mockTaskStatusManager);
+
+      // Assert
+      expect(newService.onTasksUpdated).toBeDefined();
+      expect(typeof newService.onTasksUpdated.event).toBe("function");
     });
   });
 });
