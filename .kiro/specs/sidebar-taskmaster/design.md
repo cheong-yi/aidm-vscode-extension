@@ -16,36 +16,38 @@ graph TB
         TDC[Task Detail Card]
         SB[Status Bar]
         TDS[TasksDataService]
+        TFW[TaskFileWatcher]
+        CACHE[CacheManager]
     end
 
     subgraph "Local MCP Server Process"
-        MCP[MCP Server]
+        MCP[SimpleMCPServer - Extended]
         CTX[Context Manager]
         TSM[Task Status Manager]
         MTP[MarkdownTaskParser]
-        MOCK[Mock Data Layer]
-        MCACHE[Mock Cache (.aidm/mock-cache.json)]
+        MOCK[Mock Task Data]
     end
 
     subgraph "Data Sources"
         TASKS[tasks.md file]
-        MOCK_DATA[Mock Task Data]
+        MOCK_DATA[Mock Data Provider]
         TEST_RESULTS[Test Results]
     end
 
     EXT --> TDS
-    TDS --> MCP : JSON-RPC
+    EXT --> TFW
+    TDS --> MCP : JSON-RPC/HTTP
+    TDS --> CACHE
+    TFW --> TDS : File Change Events
     TTV --> EXT
     TDC --> EXT
     SB --> EXT
 
-    MCP --> CTX
-    CTX --> TSM
-    TSM --> MTP
-    MTP --> TASKS
-    TSM --> MOCK_DATA
-    TSM --> TEST_RESULTS
-    TSM --> MCACHE
+    MCP --> TSM : Task Management Tools
+    TSM --> MTP : Business Logic
+    MTP --> TASKS : File I/O
+    TSM --> MOCK_DATA : Fallback Data
+    TSM --> TEST_RESULTS : Test Integration
 
     subgraph "AI Assistants"
         AI1[RooCode]
@@ -56,28 +58,66 @@ graph TB
     AI2 --> MCP : MCP Protocol
 ```
 
+### Implemented File Structure
+
+The task management system follows the established extension architecture pattern:
+
+```
+src/
+├── services/                    # Core business services (Task 2 ✅)
+│   ├── MarkdownTaskParser.ts    # tasks.md file parsing and serialization
+│   ├── TaskStatusManager.ts     # Business logic and status management
+│   ├── TasksDataService.ts      # Extension-side data service with caching
+│   ├── TaskFileWatcher.ts       # Real-time file synchronization
+│   └── CacheManager.ts          # Existing caching infrastructure
+├── server/                      # MCP server components
+│   └── SimpleMCPServer.ts       # Extended with task management tools
+├── types/                       # Type definitions
+│   └── tasks.ts                 # Task-related interfaces and enums
+├── tasks/                       # Task-specific organization (legacy)
+│   ├── types/                   # Detailed task type definitions
+│   ├── providers/               # VSCode UI providers (Task 3)
+│   └── services/                # Service barrel exports
+└── mock/                        # Development and demo data
+    ├── taskMockData.ts          # Realistic task scenarios
+    └── MockDataProvider.ts      # Extended with task data
+```
+
 ### Component Separation
 
-**VSCode Extension (UI Layer)**
+**VSCode Extension (UI Layer)** - _Task 3 (Pending)_
 
 - Manages VSCode-specific integrations (TreeView, commands, status bar)
 - Handles user interactions and UI state
 - Communicates with MCP server via TasksDataService
 - Lightweight and focused on presentation logic
 
-**TasksDataService (Data Layer)**
+**TasksDataService (Data Layer)** - _Task 2 (Completed)_
 
 - Manages JSON-RPC communication with MCP server
-- Handles caching and data synchronization
-- Provides clean API for UI components
-- Manages error handling and retry logic
+- Handles caching and data synchronization with CacheManager integration
+- Provides clean API for UI components with event emitters
+- Manages error handling and retry logic with existing ErrorHandler/DegradedModeManager
 
-**MCP Server (Business Logic Layer)**
+**TaskFileWatcher (Synchronization Layer)** - _Task 2 (Completed)_
 
-- Implements task management functionality
+- Monitors tasks.md files for real-time changes
+- Provides bidirectional synchronization between file system and UI
+- Debounced change processing for performance
+- Integrates with VSCode FileSystemWatcher API
+
+**MCP Server (Business Logic Layer)** - _Task 2 (Completed)_
+
+- Extended SimpleMCPServer with task management tools
+- Implements task management functionality via TaskStatusManager
 - Manages task data retrieval and status updates
-- Handles tasks.md file parsing and modification
-- Provides JSON-RPC interface for VSCode extension
+- Provides JSON-RPC interface for VSCode extension with tools:
+  - `tasks/list` - Get all tasks with filtering
+  - `tasks/get` - Get specific task details
+  - `tasks/update-status` - Update task status
+  - `tasks/refresh` - Refresh from markdown file
+  - `tasks/dependencies` - Get dependency graph
+  - `tasks/test-results` - Get test status information
 
 ## Components and Interfaces
 
@@ -127,24 +167,70 @@ interface TaskDetailCardProvider {
 }
 ```
 
-#### TasksDataService
+#### TasksDataService (Implemented)
 
 ```typescript
 interface TasksDataService {
-  getTasks(): Promise<Task[]>;
+  // Core task operations
+  getTasks(filters?: TaskSearchFilters): Promise<Task[]>;
   getTaskById(id: string): Promise<Task | null>;
-  updateTaskStatus(id: string, status: TaskStatus): Promise<boolean>;
+  updateTaskStatus(updateRequest: TaskUpdateRequest): Promise<boolean>;
+  updateTask(taskId: string, updates: Partial<Task>): Promise<boolean>;
   refreshTasks(): Promise<void>;
-  getTaskDependencies(id: string): Promise<string[]>;
+
+  // Advanced operations
+  searchTasks(filters: TaskSearchFilters): Promise<TaskSearchResult>;
+  getTaskDependencies(id: string): Promise<TaskDependencyGraph>;
+  getTaskStatistics(): Promise<TaskStatistics>;
   getTestResults(taskId: string): Promise<TestStatus | null>;
+
+  // Cache and performance
+  clearCache(): Promise<void>;
+  getCacheStatistics(): Promise<any>;
+
+  // Configuration and health
+  isHealthy(): Promise<boolean>;
+  getConfiguration(): TasksDataServiceConfig;
+  updateConfiguration(config: Partial<TasksDataServiceConfig>): void;
 
   // Event emitters for UI synchronization
   onTasksUpdated: vscode.EventEmitter<Task[]>;
-  onTaskStatusChanged: vscode.EventEmitter<{
-    taskId: string;
-    newStatus: TaskStatus;
-  }>;
-  onError: vscode.EventEmitter<TaskErrorResponse>;
+  onTaskStatusChanged: vscode.EventEmitter<TaskUpdateEvent>;
+  onTaskSyncEvent: vscode.EventEmitter<TaskSyncEvent>;
+  onError: vscode.EventEmitter<Error>;
+}
+```
+
+#### TaskFileWatcher (Implemented)
+
+```typescript
+interface TaskFileWatcher {
+  // Core watching functionality
+  startWatching(filePaths: string[]): Promise<void>;
+  stopWatching(): Promise<void>;
+  isWatching(): boolean;
+
+  // Configuration
+  getConfiguration(): FileWatchConfig;
+  updateConfiguration(config: Partial<FileWatchConfig>): void;
+
+  // Statistics and monitoring
+  getStatistics(): WatchStatistics;
+  resetStatistics(): void;
+
+  // Event emitters
+  onFileChanged: vscode.EventEmitter<FileChangeEvent>;
+  onWatcherError: vscode.EventEmitter<Error>;
+  onWatcherStarted: vscode.EventEmitter<string[]>;
+  onWatcherStopped: vscode.EventEmitter<void>;
+}
+
+interface FileChangeEvent {
+  type: "created" | "changed" | "deleted";
+  filePath: string;
+  timestamp: Date;
+  fileSize?: number;
+  changeCount: number;
 }
 ```
 
@@ -163,20 +249,40 @@ interface TaskCommands {
 
 ### MCP Server Components
 
-#### Task Status Manager
+#### Task Status Manager (Implemented)
 
 ```typescript
 interface TaskStatusManager {
-  getTasks(): Promise<Task[]>;
+  // Core task operations
+  getAllTasks(): Promise<Task[]>;
   getTaskById(id: string): Promise<Task | null>;
-  updateTaskStatus(id: string, status: TaskStatus): Promise<boolean>;
-  refreshTasksFromFile(): Promise<void>;
-  getTaskDependencies(id: string): Promise<string[]>;
-  getTestResults(taskId: string): Promise<TestStatus | null>;
+  getTasksByStatus(status: TaskStatus): Promise<Task[]>;
+  getTasksBySection(section: string): Promise<Task[]>;
+
+  // Task updates
+  updateTask(updateRequest: TaskUpdateRequest): Promise<boolean>;
+  updateTaskStatus(taskId: string, newStatus: TaskStatus): Promise<boolean>;
+
+  // File operations
+  loadTasksFromFile(filePath?: string): Promise<void>;
+  saveTasksToFile(filePath?: string): Promise<void>;
+
+  // Advanced queries
+  getTaskDependencyGraph(taskId?: string): TaskDependencyGraph;
+  getTaskStatistics(): TaskStatistics;
+  searchTasks(filters: TaskSearchFilters): TaskSearchResult;
+
+  // Validation and business logic
   validateStatusTransition(
     currentStatus: TaskStatus,
     newStatus: TaskStatus
   ): boolean;
+  validateTaskData(task: Task): ValidationResult;
+  validateTaskDependencies(taskId: string): ValidationResult;
+
+  // Cache and performance
+  clearCache(): void;
+  refreshCache(): Promise<void>;
 }
 
 interface Task {

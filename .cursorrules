@@ -366,6 +366,190 @@ const contextMapping = {
 };
 ```
 
+### Task Management Integration (Task 2 Implementation Patterns)
+
+```typescript
+// Use your established TasksDataService pattern for data management
+import { TasksDataService } from "../services/TasksDataService";
+import { TaskFileWatcher } from "../services/TaskFileWatcher";
+
+// Follow your TaskStatusManager pattern for business logic
+import { TaskStatusManager } from "../services/TaskStatusManager";
+import { MarkdownTaskParser } from "../services/MarkdownTaskParser";
+
+// Task management service initialization
+const tasksDataService = new TasksDataService({
+  mcpServerUrl: "http://localhost:3000",
+  cacheEnabled: true,
+  cacheTTL: 300000, // 5 minutes
+  retryAttempts: 3,
+  enableRealTimeSync: true,
+});
+
+// File watching for real-time synchronization
+const taskFileWatcher = new TaskFileWatcher({
+  enabled: true,
+  debounceDelay: 500,
+  watchPatterns: ["**/tasks.md"],
+  autoReload: true,
+  notifyOnChanges: true,
+});
+
+// Event-driven UI synchronization
+tasksDataService.onTasksUpdated.event((tasks) => {
+  // Update UI components
+  treeViewProvider.refresh();
+  detailCardProvider.updateTaskList(tasks);
+});
+
+// Error handling integration
+tasksDataService.onError.event((error) => {
+  ErrorHandler.handle(error, {
+    component: "tasks-data-service",
+    context: { operation: "task-sync" },
+    severity: "medium",
+  });
+});
+```
+
+### MCP Server Task Tool Integration (Extended SimpleMCPServer Pattern)
+
+```typescript
+// Follow your SimpleMCPServer extension pattern for task management tools
+// Tools implemented: tasks/list, tasks/get, tasks/update-status, tasks/refresh, tasks/dependencies, tasks/test-results
+
+// Task tools provide AI-formatted output for RooCode/Gemini integration
+async function formatTaskDetailsForAI(task: Task): Promise<string> {
+  return `# Task Details: ${task.title}
+
+**ID:** ${task.id}
+**Status:** ${task.status}
+**Priority:** ${task.priority}
+**Complexity:** ${task.complexity}
+
+## Description
+${task.description}
+
+## Dependencies
+${task.dependencies.length > 0 ? task.dependencies.join(", ") : "None"}
+
+## Requirements
+${task.requirements.length > 0 ? task.requirements.join(", ") : "None"}
+
+## Test Status
+${task.testStatus ? `${task.testStatus.passedTests}/${task.testStatus.totalTests} tests passing` : "No test data"}`;
+}
+
+// JSON-RPC tool implementation pattern
+async handleTasksList(params: any): Promise<JSONRPCResponse> {
+  try {
+    const tasks = await this.taskStatusManager.getAllTasks();
+    const formattedTasks = tasks.map(task => this.formatTaskDetailsForAI(task)).join("\n\n---\n\n");
+
+    return {
+      jsonrpc: "2.0",
+      id: params.id,
+      result: {
+        content: [{
+          type: "text",
+          text: formattedTasks
+        }]
+      }
+    };
+  } catch (error) {
+    return this.handleError(error, params.id, "tasks/list");
+  }
+}
+```
+
+### Task Data Patterns (Type Safety and Validation)
+
+```typescript
+// Use your established task type patterns from src/types/tasks.ts
+import {
+  Task,
+  TaskStatus,
+  TaskUpdateRequest,
+  TaskSearchFilters,
+  TaskDependencyGraph,
+  ValidationResult
+} from "../types/tasks";
+
+// Status transition validation (business rules)
+validateStatusTransition(currentStatus: TaskStatus, newStatus: TaskStatus): boolean {
+  const validTransitions: Record<TaskStatus, TaskStatus[]> = {
+    [TaskStatus.NOT_STARTED]: [TaskStatus.IN_PROGRESS, TaskStatus.BLOCKED],
+    [TaskStatus.IN_PROGRESS]: [TaskStatus.REVIEW, TaskStatus.COMPLETED, TaskStatus.BLOCKED],
+    [TaskStatus.REVIEW]: [TaskStatus.COMPLETED, TaskStatus.IN_PROGRESS],
+    [TaskStatus.COMPLETED]: [TaskStatus.IN_PROGRESS], // Allow reopening
+    [TaskStatus.BLOCKED]: [TaskStatus.NOT_STARTED, TaskStatus.IN_PROGRESS],
+    [TaskStatus.DEPRECATED]: [] // No transitions from deprecated
+  };
+
+  return validTransitions[currentStatus]?.includes(newStatus) ?? false;
+}
+
+// Task search and filtering pattern
+async searchTasks(filters: TaskSearchFilters): Promise<TaskSearchResult> {
+  const allTasks = await this.getAllTasks();
+
+  let filteredTasks = allTasks.filter(task => {
+    if (filters.status && task.status !== filters.status) return false;
+    if (filters.priority && task.priority !== filters.priority) return false;
+    if (filters.assignee && task.assignee !== filters.assignee) return false;
+    if (filters.tags && !filters.tags.some(tag => task.tags?.includes(tag))) return false;
+    if (filters.searchText) {
+      const searchLower = filters.searchText.toLowerCase();
+      return task.title.toLowerCase().includes(searchLower) ||
+             task.description.toLowerCase().includes(searchLower);
+    }
+    return true;
+  });
+
+  return {
+    tasks: filteredTasks,
+    totalCount: filteredTasks.length,
+    filteredCount: allTasks.length,
+    searchCriteria: filters
+  };
+}
+```
+
+### File Watching and Synchronization Patterns
+
+```typescript
+// Use your TaskFileWatcher pattern for real-time file monitoring
+import { TaskFileWatcher, FileChangeEvent } from "../services/TaskFileWatcher";
+
+// Initialize file watcher with configuration
+const fileWatcher = new TaskFileWatcher({
+  enabled: true,
+  debounceDelay: 500, // ms
+  watchPatterns: ["**/tasks.md", "**/*.tasks.md"],
+  autoReload: true,
+  notifyOnChanges: true,
+});
+
+// Handle file change events
+fileWatcher.onFileChanged.event((event: FileChangeEvent) => {
+  console.log(`File ${event.type}: ${event.filePath}`);
+
+  // Trigger data refresh
+  if (event.type === "changed") {
+    tasksDataService.refreshTasks();
+  }
+});
+
+// Bidirectional synchronization
+tasksDataService.onTaskStatusChanged.event(async (updateEvent) => {
+  // Update file system when status changes from UI
+  await taskStatusManager.saveTasksToFile();
+
+  // Notify other components
+  statusBarManager.updateTaskProgress();
+});
+```
+
 ## Client Architecture (Use Your MCP Client Components)
 
 ### Standard MCP Client (Use mcpClient.ts)

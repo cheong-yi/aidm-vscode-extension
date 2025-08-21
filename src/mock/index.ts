@@ -11,3 +11,6 @@ export {
   enterpriseScenarios,
   fileContextMappings,
 } from "./sampleData";
+
+// Task management mock data
+export { TaskMockDataGenerator, mockTaskData } from "./taskMockData";
