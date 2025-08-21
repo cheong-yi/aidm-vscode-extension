@@ -188,7 +188,7 @@ describe("SimpleMCPServer Integration Tests", () => {
       const response = await makeRequest(testPort, request);
 
       expect(response.status).toBe(200);
-      expect(response.data.result.tools).toHaveLength(2);
+      expect(response.data.result.tools).toHaveLength(3);
 
       // Check get_code_context tool
       const contextTool = response.data.result.tools.find(
@@ -212,6 +212,19 @@ describe("SimpleMCPServer Integration Tests", () => {
       expect(tasksTool.inputSchema.properties.status.enum).toContain(
         "in_progress"
       );
+
+      // Check tasks/get tool
+      const getTaskTool = response.data.result.tools.find(
+        (t: any) => t.name === "tasks/get"
+      );
+      expect(getTaskTool).toBeDefined();
+      expect(getTaskTool.description).toBe(
+        "Retrieve a specific task by its ID"
+      );
+      expect(getTaskTool.inputSchema.type).toBe("object");
+      expect(getTaskTool.inputSchema.properties.id).toBeDefined();
+      expect(getTaskTool.inputSchema.required).toContain("id");
+      expect(getTaskTool.inputSchema.additionalProperties).toBe(false);
     });
   });
 
@@ -377,6 +390,78 @@ describe("SimpleMCPServer Integration Tests", () => {
           },
         },
         id: "test-tasks-invalid",
+      };
+
+      const response = await makeRequest(testPort, request);
+
+      expect(response.status).toBe(200);
+      expect(response.data.result.isError).toBe(true);
+      expect(response.data.result.content[0].text).toContain(
+        "Invalid arguments"
+      );
+    });
+  });
+
+  describe("Tasks Get Tool", () => {
+    test("should handle tasks/get request with valid ID", async () => {
+      const request: ToolCallRequest = {
+        jsonrpc: "2.0",
+        method: "tools/call",
+        params: {
+          name: "tasks/get",
+          arguments: {
+            id: "task-123",
+          },
+        },
+        id: "test-get-task-1",
+      };
+
+      const response = await makeRequest(testPort, request);
+
+      expect(response.status).toBe(200);
+      expect(response.data.jsonrpc).toBe("2.0");
+      expect(response.data.id).toBe("test-get-task-1");
+      expect(response.data.result).toBeDefined();
+      expect(response.data.result.content).toBeInstanceOf(Array);
+      expect(response.data.result.content[0].type).toBe("text");
+
+      // Parse the response content to check structure
+      const content = response.data.result.content[0].text;
+      expect(typeof content).toBe("string");
+      expect(content.length).toBeGreaterThan(0);
+    });
+
+    test("should handle tasks/get request with missing ID", async () => {
+      const request: ToolCallRequest = {
+        jsonrpc: "2.0",
+        method: "tools/call",
+        params: {
+          name: "tasks/get",
+          arguments: {},
+        },
+        id: "test-get-task-missing-id",
+      };
+
+      const response = await makeRequest(testPort, request);
+
+      expect(response.status).toBe(200);
+      expect(response.data.result.isError).toBe(true);
+      expect(response.data.result.content[0].text).toContain(
+        "Invalid arguments"
+      );
+    });
+
+    test("should handle tasks/get request with invalid ID type", async () => {
+      const request: ToolCallRequest = {
+        jsonrpc: "2.0",
+        method: "tools/call",
+        params: {
+          name: "tasks/get",
+          arguments: {
+            id: 123, // Invalid: should be string
+          },
+        },
+        id: "test-get-task-invalid-id",
       };
 
       const response = await makeRequest(testPort, request);

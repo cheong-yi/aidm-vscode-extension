@@ -35,18 +35,18 @@ This implementation plan breaks down the feature into atomic, TDD-friendly tasks
 - [x] 2.3.1 Add single event emitter to TasksDataService (onTasksUpdated)
 - [x] 2.3.2 Add error event emitter to TasksDataService (onError)
 - [x] 2.3.3 Create basic TaskFileWatcher class structure
-- [d] 2.3.4 Add file change detection to TaskFileWatcher
+- [x] 2.3.4 Add file change detection to TaskFileWatcher
 
   2.4 HTTP Communication Layer
 
-- [ ] 2.4.1 Add HTTP client setup to TasksDataService
+- [x] 2.4.1 Add HTTP client setup to TasksDataService
 - [ ] 2.4.2 Replace getTasks with real JSON-RPC call
 - [ ] 2.4.3 Replace getTaskById with real JSON-RPC call
 - [ ] 2.4.4 Add updateTaskStatus method with JSON-RPC
 
   2.5 MCP Server Integration
 
-- [d] 2.5.1 Add first MCP tool (tasks/list) to SimpleMCPServer
+- [x] 2.5.1 Add first MCP tool (tasks/list) to SimpleMCPServer
 - [ ] 2.5.2 Add tasks/get tool to SimpleMCPServer
 - [ ] 2.5.3 Add tasks/update-status tool to SimpleMCPServer
 - [ ] 2.5.4 Add remaining MCP tools (refresh, dependencies, test-results)

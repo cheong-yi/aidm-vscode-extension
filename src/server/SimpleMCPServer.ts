@@ -276,6 +276,21 @@ export class SimpleMCPServer {
           additionalProperties: false
         }
       },
+      {
+        name: "tasks/get",
+        description: "Retrieve a specific task by its ID",
+        inputSchema: {
+          type: "object",
+          properties: {
+            id: {
+              type: "string",
+              description: "The unique identifier of the task to retrieve"
+            }
+          },
+          required: ["id"],
+          additionalProperties: false
+        }
+      },
     ];
 
     return {
@@ -304,6 +319,7 @@ export class SimpleMCPServer {
           "mock_cache_clear",
           "seed_from_remote",
           "tasks/list",
+          "tasks/get",
         ].includes(name)
       ) {
         return this.createErrorResponse(
@@ -353,6 +369,9 @@ export class SimpleMCPServer {
 
         case "tasks/list":
           return await this.handleTasksList(request, args);
+
+        case "tasks/get":
+          return await this.handleTasksGet(request, args);
 
         default:
           // This should not be reached since we check tool existence earlier
@@ -556,6 +575,12 @@ export class SimpleMCPServer {
         }
         if (args.status && !["not_started", "in_progress", "review", "completed", "blocked", "deprecated"].includes(args.status)) {
           return "status must be one of: not_started, in_progress, review, completed, blocked, deprecated";
+        }
+        break;
+
+      case "tasks/get":
+        if (!args.id || typeof args.id !== "string") {
+          return "id is required and must be a string";
         }
         break;
 
@@ -780,6 +805,72 @@ export class SimpleMCPServer {
     } catch (error) {
       console.error("Error listing tasks:", error);
       return this.createErrorResponse(request.id, -32000, `Failed to list tasks: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+
+  /**
+   * Handle tasks/get requests
+   */
+  private async handleTasksGet(request: JSONRPCRequest, args: any): Promise<JSONRPCResponse> {
+    try {
+      if (!args?.id) {
+        throw new Error("Task ID is required");
+      }
+      
+      const task = await this.taskStatusManager.getTaskById(args.id);
+      
+      if (!task) {
+        return {
+          jsonrpc: "2.0",
+          result: {
+            content: [
+              {
+                type: "text",
+                text: JSON.stringify({ 
+                  task: null, 
+                  found: false,
+                  message: `Task with ID '${args.id}' not found`
+                }, null, 2),
+              },
+            ],
+          },
+          id: request.id,
+        };
+      }
+      
+      return {
+        jsonrpc: "2.0",
+        result: {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify({ 
+                task: task, 
+                found: true,
+                id: args.id
+              }, null, 2),
+            },
+          ],
+        },
+        id: request.id,
+      };
+    } catch (error) {
+      console.error("Error getting task:", error);
+      return {
+        jsonrpc: "2.0",
+        result: {
+          content: [
+            {
+              type: "text",
+              text: `Error executing tool tasks/get: ${
+                error instanceof Error ? error.message : "Unknown error"
+              }`,
+            },
+          ],
+          isError: true,
+        },
+        id: request.id,
+      };
     }
   }
 
