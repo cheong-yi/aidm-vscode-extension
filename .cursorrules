@@ -1,13 +1,15 @@
 # Enterprise AI Context VSCode Extension - Cursor Rules
 
 ## Project Overview
+
 This VSCode extension bridges business requirements and code implementation through a hybrid local/remote MCP architecture. The codebase uses TypeScript with CommonJS modules, targeting ES2020 with strict compilation settings.
 
 ## Architecture Principles
 
 ### Established File Structure (DO NOT DEVIATE)
+
 - **`src/extension.ts`**: Main entry point - keep lightweight, delegate to providers/services
-- **`src/server/`**: MCP server components - pure business logic, no VS Code dependencies  
+- **`src/server/`**: MCP server components - pure business logic, no VS Code dependencies
 - **`src/providers/`**: VS Code language features - hover, completion, etc.
 - **`src/ui/`**: VS Code UI components - status bar, panels, webviews
 - **`src/services/`**: Core business services - stateless where possible
@@ -17,6 +19,7 @@ This VSCode extension bridges business requirements and code implementation thro
 - **`src/__tests__/`**: Comprehensive test organization matching `src/` structure
 
 ### Layer Separation Rules
+
 - **`providers/`** ↔ **`services/`** ↔ **`server/`** ↔ **`mock/`**
 - Never import VS Code API outside of `extension.ts`, `providers/`, `ui/`
 - Server components must be testable without VS Code runtime
@@ -25,6 +28,7 @@ This VSCode extension bridges business requirements and code implementation thro
 ## TypeScript Standards (Matching Your tsconfig.json)
 
 ### Compilation Rules
+
 - **Target**: ES2020 with CommonJS modules (as configured)
 - **Strict Mode**: Always enabled - no exceptions
 - **Source Maps**: Required for debugging (`"sourceMap": true`)
@@ -32,6 +36,7 @@ This VSCode extension bridges business requirements and code implementation thro
 - **Module Resolution**: Use explicit file extensions for imports when needed
 
 ### Type Organization (Follow Your Existing Pattern)
+
 - **`src/types/index.ts`**: Central export point for all types
 - **`src/types/business.ts`**: Business domain types (Requirement, CodeMapping, etc.)
 - **`src/types/extension.ts`**: VS Code specific types
@@ -39,21 +44,24 @@ This VSCode extension bridges business requirements and code implementation thro
 - Import from `src/types` barrel exports, not individual files
 
 ### Error Handling (Use Your ErrorHandler.ts Pattern)
+
 ```typescript
 // Follow your established ErrorHandler pattern
-import { ErrorHandler } from '../utils/ErrorHandler';
+import { ErrorHandler } from "../utils/ErrorHandler";
 
 // Use your DegradedModeManager for fallbacks
-import { DegradedModeManager } from '../utils/DegradedModeManager';
+import { DegradedModeManager } from "../utils/DegradedModeManager";
 
-async function getBusinessContext(location: CodeLocation): Promise<BusinessContext | null> {
+async function getBusinessContext(
+  location: CodeLocation
+): Promise<BusinessContext | null> {
   try {
     const context = await this.contextManager.retrieve(location);
     return context;
   } catch (error) {
     // Use your centralized error handling
-    ErrorHandler.handle(error, { context: 'hover-provider', location });
-    
+    ErrorHandler.handle(error, { context: "hover-provider", location });
+
     // Use your degraded mode fallback
     return DegradedModeManager.getFallbackContext(location);
   }
@@ -61,6 +69,7 @@ async function getBusinessContext(location: CodeLocation): Promise<BusinessConte
 ```
 
 ### Interface Design (Match Your Types Structure)
+
 ```typescript
 // Follow patterns in src/types/business.ts
 interface BusinessContext {
@@ -82,21 +91,23 @@ interface GenericContext {
 ## Development Patterns (Match Your Established Components)
 
 ### Mock-First Development (Use Your MockDataProvider.ts)
+
 ```typescript
 // Follow pattern in src/mock/MockDataProvider.ts
-import { MockDataProvider } from '../mock/MockDataProvider';
-import { sampleData } from '../mock/sampleData';
+import { MockDataProvider } from "../mock/MockDataProvider";
+import { sampleData } from "../mock/sampleData";
 
 // Always provide realistic enterprise data
 const mockProvider = new MockDataProvider();
-const enterpriseScenario = mockProvider.getEnterpriseScenario('fintech');
+const enterpriseScenario = mockProvider.getEnterpriseScenario("fintech");
 ```
 
-### Test Organization (Follow Your __tests__ Structure)
+### Test Organization (Follow Your **tests** Structure)
+
 ```
 src/__tests__/
 ├── unit/           # Single component tests
-├── integration/    # Component interaction tests  
+├── integration/    # Component interaction tests
 ├── e2e/           # Full workflow tests
 ├── server/        # MCP server specific tests
 ├── utils/         # Utility function tests
@@ -105,11 +116,12 @@ src/__tests__/
 ```
 
 ### Testing Patterns (Use Your jest.setup.ts)
+
 ```typescript
 // Follow pattern in src/__tests__/jest.setup.ts
-import { jest } from '@jest/globals';
+import { jest } from "@jest/globals";
 
-describe('HoverProvider', () => {
+describe("HoverProvider", () => {
   let provider: BusinessContextHoverProvider;
   let mockContextManager: jest.Mocked<ContextManager>;
 
@@ -120,9 +132,9 @@ describe('HoverProvider', () => {
   });
 
   // Test structure: Arrange, Act, Assert
-  it('should return hover context for valid TypeScript location', async () => {
+  it("should return hover context for valid TypeScript location", async () => {
     // Arrange
-    const location = createCodeLocation('DashboardAnalytics.ts', 10, 5);
+    const location = createCodeLocation("DashboardAnalytics.ts", 10, 5);
     const mockContext = createMockBusinessContext();
     mockContextManager.getBusinessContext.mockResolvedValue(mockContext);
 
@@ -137,29 +149,31 @@ describe('HoverProvider', () => {
 ```
 
 ### Logging & Auditing (Use Your Established Components)
+
 ```typescript
 // Use your logger.ts and auditTrail.ts
-import { logger } from '../utils/logger';
-import { auditTrail } from '../utils/auditTrail';
+import { logger } from "../utils/logger";
+import { auditTrail } from "../utils/auditTrail";
 
 // Structured logging without sensitive data
-logger.info('Context retrieved', {
+logger.info("Context retrieved", {
   requestId: uuidv4(),
   filePath: location.filePath,
   responseTimeMs: performance.now() - startTime,
-  source: 'mock-cache',
-  requirementCount: context.requirements.length
+  source: "mock-cache",
+  requirementCount: context.requirements.length,
 });
 
 // Audit user interactions
-auditTrail.logUserAction('hover-request', {
+auditTrail.logUserAction("hover-request", {
   filePath: document.fileName,
   position: `${position.line}:${position.character}`,
-  timestamp: new Date().toISOString()
+  timestamp: new Date().toISOString(),
 });
 ```
 
 ### Performance Guidelines (Based on Your Architecture)
+
 - **Hover Provider**: <200ms (use MockCache.ts for fast responses)
 - **MCP Server Tools**: <300ms (via SimpleMCPServer.ts)
 - **Status Bar Updates**: <100ms (via statusBar.ts)
@@ -169,19 +183,22 @@ auditTrail.logUserAction('hover-request', {
 ## VSCode Extension Patterns (Based on Your Components)
 
 ### Extension Lifecycle (extension.ts Patterns)
+
 ```typescript
 // Follow your extension.ts pattern - keep lightweight
-export async function activate(context: vscode.ExtensionContext): Promise<void> {
+export async function activate(
+  context: vscode.ExtensionContext
+): Promise<void> {
   // Initialize core managers first
   const processManager = new ProcessManager();
   const statusBarManager = new StatusBarManager();
-  
+
   // Register providers
   const hoverProvider = new BusinessContextHoverProvider(contextManager);
   context.subscriptions.push(
-    vscode.languages.registerHoverProvider('typescript', hoverProvider)
+    vscode.languages.registerHoverProvider("typescript", hoverProvider)
   );
-  
+
   // Initialize UI components
   const demoPanel = new DemoPanel(context);
   const configPanel = new ConfigurationPanel(context);
@@ -194,20 +211,22 @@ export function deactivate(): Thenable<void> | undefined {
 ```
 
 ### Status Bar Integration (Use statusBar.ts Pattern)
+
 ```typescript
 // Follow your established StatusBarManager pattern
-import { StatusBarManager } from '../ui/statusBar';
+import { StatusBarManager } from "../ui/statusBar";
 
 const statusBar = new StatusBarManager();
-statusBar.updateConnectionStatus('connected');
+statusBar.updateConnectionStatus("connected");
 statusBar.showHealthMetrics();
 ```
 
 ### Configuration Management (Use configLoader.ts + extensionConfig.ts)
+
 ```typescript
 // Use your configLoader.ts pattern
-import { loadConfig } from '../utils/configLoader';
-import { ExtensionConfig } from '../config/extensionConfig';
+import { loadConfig } from "../utils/configLoader";
+import { ExtensionConfig } from "../config/extensionConfig";
 
 const config = await loadConfig();
 // Validate configuration on startup as per your pattern
@@ -216,10 +235,11 @@ const config = await loadConfig();
 ## MCP Server Architecture (Follow Your Server Components)
 
 ### Server Management (Use SimpleMCPServer.ts + ProcessManager.ts)
+
 ```typescript
 // Follow your SimpleMCPServer architecture
-import { SimpleMCPServer } from '../server/SimpleMCPServer';
-import { ProcessManager } from '../server/ProcessManager';
+import { SimpleMCPServer } from "../server/SimpleMCPServer";
+import { ProcessManager } from "../server/ProcessManager";
 
 class MCPServerManager {
   private server: SimpleMCPServer;
@@ -229,7 +249,7 @@ class MCPServerManager {
     // Use your ProcessManager for lifecycle
     this.processManager = new ProcessManager();
     await this.processManager.startServer();
-    
+
     // Initialize your SimpleMCPServer
     this.server = new SimpleMCPServer();
     await this.server.start();
@@ -238,10 +258,11 @@ class MCPServerManager {
 ```
 
 ### Context Management (Use ContextManager.ts Pattern)
+
 ```typescript
 // Follow your ContextManager.ts established patterns
-import { ContextManager } from '../server/ContextManager';
-import { MockCache } from '../server/MockCache';
+import { ContextManager } from "../server/ContextManager";
+import { MockCache } from "../server/MockCache";
 
 const contextManager = new ContextManager();
 const mockCache = new MockCache();
@@ -251,12 +272,13 @@ const businessContext = await contextManager.getBusinessContext(codeLocation);
 ```
 
 ### Degraded Mode Handling (Use Your DegradedModeManager.ts)
+
 ```typescript
 // Always implement degraded mode fallbacks using your components
-import { DegradedModeManager } from '../utils/DegradedModeManager';
-import { degradedMode } from '../utils/degradedMode';
+import { DegradedModeManager } from "../utils/DegradedModeManager";
+import { degradedMode } from "../utils/degradedMode";
 
-if (!await healthCheck()) {
+if (!(await healthCheck())) {
   // Use your degraded mode system
   DegradedModeManager.enableDegradedMode();
   return degradedMode.getFallbackResponse(request);
@@ -266,29 +288,32 @@ if (!await healthCheck()) {
 ## Security & Compliance (Use Your Security Components)
 
 ### Audit Logging (Use AuditLogger.ts)
+
 ```typescript
 // Follow your AuditLogger.ts patterns
-import { AuditLogger } from '../security/AuditLogger';
+import { AuditLogger } from "../security/AuditLogger";
 
 const auditLogger = new AuditLogger();
-auditLogger.logAccess('context-request', {
-  userId: 'system',
+auditLogger.logAccess("context-request", {
+  userId: "system",
   resource: filePath,
   timestamp: new Date(),
-  action: 'hover-context-retrieved'
+  action: "hover-context-retrieved",
 });
 ```
 
 ### Encryption (Use EncryptionUtil.ts for Sensitive Data)
+
 ```typescript
 // Use your EncryptionUtil for any sensitive data
-import { EncryptionUtil } from '../security/EncryptionUtil';
+import { EncryptionUtil } from "../security/EncryptionUtil";
 
 // Only encrypt if handling sensitive business data
 const encryptedData = EncryptionUtil.encrypt(sensitiveBusinessData);
 ```
 
 ### Data Protection Patterns
+
 - Use your AuditLogger.ts for all data access tracking
 - Never log sensitive business requirements or stakeholder data
 - Use your EncryptionUtil.ts for any cached sensitive data
@@ -297,10 +322,11 @@ const encryptedData = EncryptionUtil.encrypt(sensitiveBusinessData);
 ## Demo & Integration Patterns (Use Your Demo Components)
 
 ### RooCode Integration (Follow rooCodeIntegration.ts)
+
 ```typescript
 // Use your established RooCode patterns
-import { RooCodeIntegration } from '../demo/rooCodeIntegration';
-import { rooCodeIntegrationDemo } from '../demo/rooCodeIntegrationDemo';
+import { RooCodeIntegration } from "../demo/rooCodeIntegration";
+import { rooCodeIntegrationDemo } from "../demo/rooCodeIntegrationDemo";
 
 // Follow your dual-context architecture
 const rooCode = new RooCodeIntegration();
@@ -309,51 +335,55 @@ await rooCode.setupRemoteContext(deliveryPatterns);
 ```
 
 ### Demo Scenarios (Use demoScenarios.ts + runDemo.ts)
+
 ```typescript
 // Follow your demo orchestration pattern
-import { DemoScenarios } from '../demo/demoScenarios';
-import { runDemo } from '../demo/runDemo';
+import { DemoScenarios } from "../demo/demoScenarios";
+import { runDemo } from "../demo/runDemo";
 
 // Use your predefined enterprise scenarios
 const demo = new DemoScenarios();
-const fintechDemo = demo.getScenario('fintech-payment-processing');
+const fintechDemo = demo.getScenario("fintech-payment-processing");
 await runDemo.execute(fintechDemo);
 ```
 
 ### Sample Files Integration (Use Your demo/sampleFiles/)
+
 ```typescript
 // Reference your actual sample files for context mapping
 const sampleFiles = [
-  'DashboardAnalytics.ts',    // 479 lines - analytics scenarios
-  'UserService.ts',           // 262 lines - user management
-  'PaymentProcessor.ts',      // 459 lines - payment processing  
-  'FraudDetection.ts'         // 51 lines - ML inference
+  "DashboardAnalytics.ts", // 479 lines - analytics scenarios
+  "UserService.ts", // 262 lines - user management
+  "PaymentProcessor.ts", // 459 lines - payment processing
+  "FraudDetection.ts", // 51 lines - ML inference
 ];
 
 // Map business context to these specific files
 const contextMapping = {
-  'DashboardAnalytics.ts': ['analytics-requirements', 'reporting-compliance'],
-  'PaymentProcessor.ts': ['payment-security', 'fraud-detection'],
-  'UserService.ts': ['user-management', 'data-privacy']
+  "DashboardAnalytics.ts": ["analytics-requirements", "reporting-compliance"],
+  "PaymentProcessor.ts": ["payment-security", "fraud-detection"],
+  "UserService.ts": ["user-management", "data-privacy"],
 };
 ```
 
 ## Client Architecture (Use Your MCP Client Components)
 
 ### Standard MCP Client (Use mcpClient.ts)
+
 ```typescript
 // Follow your mcpClient.ts pattern for standard connections
-import { MCPClient } from '../client/mcpClient';
+import { MCPClient } from "../client/mcpClient";
 
 const client = new MCPClient();
 await client.connect(serverEndpoint);
-const response = await client.callTool('get_business_context', params);
+const response = await client.callTool("get_business_context", params);
 ```
 
 ### Hybrid MCP Client (Use hybridMCPClient.ts)
+
 ```typescript
 // Use your hybrid client for local + remote fallback
-import { HybridMCPClient } from '../client/hybridMCPClient';
+import { HybridMCPClient } from "../client/hybridMCPClient";
 
 const hybridClient = new HybridMCPClient();
 hybridClient.configureLocalFallback(localServer);
@@ -366,9 +396,10 @@ const context = await hybridClient.getBusinessContext(location);
 ## ML & Analytics Integration (Use InferenceService.ts)
 
 ### Machine Learning Patterns
+
 ```typescript
 // Follow your InferenceService.ts pattern
-import { InferenceService } from '../ml/InferenceService';
+import { InferenceService } from "../ml/InferenceService";
 
 const inferenceService = new InferenceService();
 const prediction = await inferenceService.predict(inputData);
@@ -378,9 +409,10 @@ const fraudScore = await inferenceService.detectFraud(paymentData);
 ```
 
 ### Analytics Integration
+
 ```typescript
 // Follow patterns from your Analytics.ts model
-import { Analytics } from '../models/Analytics';
+import { Analytics } from "../models/Analytics";
 
 const analytics = new Analytics();
 analytics.trackHoverEvent(filePath, position);
@@ -390,38 +422,41 @@ analytics.trackContextRetrieval(businessContext);
 ## Debugging & Troubleshooting (Your Codebase Specific)
 
 ### Port Management (Use portFinder.ts)
+
 ```typescript
 // Use your established port finding logic
-import { findAvailablePort } from '../utils/portFinder';
+import { findAvailablePort } from "../utils/portFinder";
 
 const port = await findAvailablePort(3000, 3100);
 console.log(`Starting MCP server on port ${port}`);
 ```
 
 ### Process Debugging (Use ProcessManager.ts)
+
 ```typescript
 // Debug server startup issues using your ProcessManager
-import { ProcessManager } from '../server/ProcessManager';
+import { ProcessManager } from "../server/ProcessManager";
 
 const processManager = new ProcessManager();
 const serverHealth = await processManager.checkServerHealth();
 if (!serverHealth.isHealthy) {
-  console.log('Server issues:', serverHealth.diagnostics);
+  console.log("Server issues:", serverHealth.diagnostics);
 }
 ```
 
 ### Error Context (Use ErrorHandler.ts)
+
 ```typescript
 // Use your sophisticated error handling
-import { ErrorHandler } from '../utils/ErrorHandler';
+import { ErrorHandler } from "../utils/ErrorHandler";
 
 try {
   // risky operation
 } catch (error) {
   ErrorHandler.handle(error, {
-    component: 'hover-provider',
+    component: "hover-provider",
     context: { filePath, position },
-    severity: 'medium'
+    severity: "medium",
   });
 }
 ```
@@ -429,22 +464,24 @@ try {
 ## Import/Export Patterns (Follow Your Index Files)
 
 ### Barrel Exports (Use Your index.ts Pattern)
+
 ```typescript
 // Follow your barrel export pattern in each directory
 // src/types/index.ts
-export * from './business';
-export * from './extension';
-export * from './jsonrpc';
+export * from "./business";
+export * from "./extension";
+export * from "./jsonrpc";
 
-// src/providers/index.ts  
-export { BusinessContextHoverProvider } from './hoverProvider';
+// src/providers/index.ts
+export { BusinessContextHoverProvider } from "./hoverProvider";
 
 // Import from barrels, not individual files
-import { BusinessContext, Requirement } from '../types';
-import { BusinessContextHoverProvider } from '../providers';
+import { BusinessContext, Requirement } from "../types";
+import { BusinessContextHoverProvider } from "../providers";
 ```
 
 ### Module Organization
+
 - Always export through `index.ts` files as you've established
 - Import from barrel exports to maintain loose coupling
 - Keep your established separation: no server imports in providers, etc.
@@ -453,6 +490,7 @@ import { BusinessContextHoverProvider } from '../providers';
 ## Build & Dependencies (Based on Your package.json)
 
 ### Webpack Build System
+
 ```typescript
 // Your project uses webpack - follow these patterns:
 // - Main entry: ./dist/extension.js (not out/extension.js)
@@ -461,7 +499,7 @@ import { BusinessContextHoverProvider } from '../providers';
 
 // Development commands (use your npm scripts):
 npm run compile     // Webpack build
-npm run watch       // Webpack watch mode  
+npm run watch       // Webpack watch mode
 npm run compile-tsc // TypeScript only (for checking)
 npm run test        // Jest test suite
 npm run lint        // ESLint validation
@@ -469,28 +507,33 @@ npm run package     // Custom packaging script
 ```
 
 ### HTTP Client Patterns (You Use Axios)
+
 ```typescript
 // Use axios for all HTTP JSON-RPC calls (you already have it)
-import axios from 'axios';
+import axios from "axios";
 
 // Follow your established JSON-RPC pattern
 async function callMCPTool(method: string, params: any): Promise<any> {
   try {
-    const response = await axios.post('http://localhost:3000/rpc', {
-      jsonrpc: '2.0',
-      method: 'tools/call',
-      params: { name: method, arguments: params },
-      id: Date.now()
-    }, {
-      timeout: 5000, // Use your config timeout setting
-      headers: { 'Content-Type': 'application/json' }
-    });
-    
+    const response = await axios.post(
+      "http://localhost:3000/rpc",
+      {
+        jsonrpc: "2.0",
+        method: "tools/call",
+        params: { name: method, arguments: params },
+        id: Date.now(),
+      },
+      {
+        timeout: 5000, // Use your config timeout setting
+        headers: { "Content-Type": "application/json" },
+      }
+    );
+
     return response.data.result;
   } catch (error) {
     // Use your ErrorHandler for axios errors
     if (axios.isAxiosError(error)) {
-      ErrorHandler.handle(error, { context: 'mcp-client', method });
+      ErrorHandler.handle(error, { context: "mcp-client", method });
     }
     throw error;
   }
@@ -498,30 +541,31 @@ async function callMCPTool(method: string, params: any): Promise<any> {
 ```
 
 ### Jest Testing Configuration (You Use ts-jest)
+
 ```typescript
 // Your jest setup with ts-jest - follow these patterns:
-import { jest } from '@jest/globals';
+import { jest } from "@jest/globals";
 
 // Test file naming: *.test.ts (as per your structure)
 // Jest config: uses ts-jest for TypeScript compilation
 // Coverage: Target >80% as per your requirements
 
-describe('ComponentName', () => {
+describe("ComponentName", () => {
   // Use your jest.setup.ts for global test configuration
   beforeEach(() => {
     jest.clearAllMocks();
   });
 
   // Async/await pattern for axios mocks
-  it('should handle HTTP requests properly', async () => {
+  it("should handle HTTP requests properly", async () => {
     const mockAxios = jest.mocked(axios);
     mockAxios.post.mockResolvedValue({ data: { result: mockData } });
-    
+
     const result = await service.callRemoteAPI();
-    
+
     expect(mockAxios.post).toHaveBeenCalledWith(
-      expect.stringContaining('/rpc'),
-      expect.objectContaining({ jsonrpc: '2.0' }),
+      expect.stringContaining("/rpc"),
+      expect.objectContaining({ jsonrpc: "2.0" }),
       expect.objectContaining({ timeout: 5000 })
     );
   });
@@ -529,6 +573,7 @@ describe('ComponentName', () => {
 ```
 
 ### ESLint Configuration (You Use @typescript-eslint)
+
 ```typescript
 // Follow your ESLint rules with @typescript-eslint/parser
 // Rules to enforce in your codebase:
@@ -538,44 +583,52 @@ function processBusinessContext(context: BusinessContext): Promise<void> {
   return contextManager.process(context);
 }
 
-// ❌ Avoid: Implicit any parameters  
-function processBusinessContext(context) { // ESLint will flag this
+// ❌ Avoid: Implicit any parameters
+function processBusinessContext(context) {
+  // ESLint will flag this
   return contextManager.process(context);
 }
 
 // ✅ Good: Proper async/await with axios
 async function fetchContext(): Promise<BusinessContext> {
-  const response = await axios.get('/api/context');
+  const response = await axios.get("/api/context");
   return response.data;
 }
 
 // ❌ Avoid: Promise chains when async/await available
 function fetchContext(): Promise<BusinessContext> {
-  return axios.get('/api/context').then(response => response.data);
+  return axios.get("/api/context").then((response) => response.data);
 }
 ```
 
 ### Configuration System (Your VS Code Settings Schema)
+
 ```typescript
 // Use your established configuration schema
 interface AiDMConfig {
   mcpServer: {
-    port: number;          // default: 3000
-    timeout: number;       // default: 5000
+    port: number; // default: 3000
+    timeout: number; // default: 5000
     retryAttempts: number; // default: 3
   };
   mock: {
-    enabled: boolean;        // default: true
-    dataSize: 'small' | 'medium' | 'large'; // default: 'medium'
+    enabled: boolean; // default: true
+    dataSize: "small" | "medium" | "large"; // default: 'medium'
     enterprisePatterns: boolean; // default: true
   };
   demo: {
-    scenarioComplexity: 'basic' | 'intermediate' | 'advanced';
-    industryVertical: 'financial-services' | 'healthcare' | 'retail' | 'manufacturing' | 'technology' | 'generic';
+    scenarioComplexity: "basic" | "intermediate" | "advanced";
+    industryVertical:
+      | "financial-services"
+      | "healthcare"
+      | "retail"
+      | "manufacturing"
+      | "technology"
+      | "generic";
     includeComplianceData: boolean;
   };
   ui: {
-    hoverPopupTheme: 'default' | 'compact' | 'detailed';
+    hoverPopupTheme: "default" | "compact" | "detailed";
     maxRequirementsShown: number; // 1-10, default: 3
     showProgressBars: boolean;
   };
@@ -587,26 +640,28 @@ interface AiDMConfig {
 }
 
 // Access via VS Code configuration API
-const config = vscode.workspace.getConfiguration('aidmVscodeExtension');
-const port = config.get<number>('mcpServer.port', 3000);
-const mockEnabled = config.get<boolean>('mock.enabled', true);
+const config = vscode.workspace.getConfiguration("aidmVscodeExtension");
+const port = config.get<number>("mcpServer.port", 3000);
+const mockEnabled = config.get<boolean>("mock.enabled", true);
 ```
 
 ## Node.js & VS Code Version Requirements
 
 ### Runtime Environment (Your Engines)
+
 - **Node.js**: >=20.0.0 (use modern Node features, ES2022+ syntax)
 - **VS Code**: ^1.80.0 (use current VS Code API features)
 - **TypeScript**: ^5.1.6 (use latest TS features, avoid experimental ones)
 
 ### Modern JavaScript Features (Node 20+)
+
 ```typescript
 // ✅ Use modern Node.js 20 features
-const config = await import('./config.json', { assert: { type: 'json' } });
+const config = await import("./config.json", { assert: { type: "json" } });
 
 // ✅ Use Array.findLast, Object.hasOwn, etc. (Node 20 features)
-const lastRequirement = requirements.findLast(req => req.priority === 'high');
-const hasProperty = Object.hasOwn(context, 'requirements');
+const lastRequirement = requirements.findLast((req) => req.priority === "high");
+const hasProperty = Object.hasOwn(context, "requirements");
 
 // ✅ Use top-level await in modules
 await setupMCPServer();
@@ -616,10 +671,11 @@ export const serverReady = true;
 ## Development Workflow (Based on Your Scripts)
 
 ### Development Commands
+
 ```bash
 # Development cycle (use your npm scripts)
 npm run watch           # Webpack watch during development
-npm run lint           # Check ESLint rules before commit  
+npm run lint           # Check ESLint rules before commit
 npm run test           # Run Jest test suite
 npm run compile        # Production webpack build
 npm run package        # Custom packaging (your script)
@@ -630,6 +686,7 @@ code --extensionDevelopmentHost=127.0.0.1:3000  # VS Code extension debugging
 ```
 
 ### File Watching & Hot Reload
+
 ```typescript
 // Your webpack watch picks up changes - structure for fast rebuilds:
 // - Keep business logic in src/server/ (minimal VS Code dependencies)
@@ -638,7 +695,8 @@ code --extensionDevelopmentHost=127.0.0.1:3000  # VS Code extension debugging
 // - Put heavy mock data in src/mock/ - loaded lazily to speed up builds
 ```
 
-### Packaging & Distribution  
+### Packaging & Distribution
+
 ```typescript
 // Use your custom package-extension.js script
 // Outputs: Creates .vsix file for distribution
@@ -654,14 +712,17 @@ code --extensionDevelopmentHost=127.0.0.1:3000  # VS Code extension debugging
 ## Spec File Integration (Reference Your .kiro/specs/ Documents)
 
 ### When to Reference Spec Files
+
 **ALWAYS reference specs for:**
-- New feature development 
+
+- New feature development
 - Major architectural changes
 - Component interface modifications
 - Business logic implementation
 - Integration between major components (providers ↔ server ↔ mock)
 
 **Optional for:**
+
 - Bug fixes in existing functionality
 - Performance optimizations
 - Refactoring without behavior changes
@@ -669,12 +730,13 @@ code --extensionDevelopmentHost=127.0.0.1:3000  # VS Code extension debugging
 - Test improvements
 
 ### Module-Specific Spec Reference
+
 ```typescript
 // When working on HOVER PROVIDER features:
 // → Reference: requirements.md (Requirements 1, 3) + design.md (Hover Provider section)
 // → Focus: 200ms response time, TypeScript-only support, graceful degradation
 
-// When working on MCP SERVER components:  
+// When working on MCP SERVER components:
 // → Reference: requirements.md (Requirements 4, 8) + design.md (MCP Protocol Handler)
 // → Focus: AI assistant integration, concurrent requests, tool registration
 
@@ -692,11 +754,12 @@ code --extensionDevelopmentHost=127.0.0.1:3000  # VS Code extension debugging
 ```
 
 ### Spec File Guidance for Cursor
+
 ```
 When implementing features in this codebase:
 
 1. CHECK requirements.md for the relevant requirement number and acceptance criteria
-2. VERIFY the implementation approach matches design.md patterns  
+2. VERIFY the implementation approach matches design.md patterns
 3. REFERENCE tasks.md for step-by-step implementation guidance
 4. ENSURE the code satisfies specific acceptance criteria from requirements.md
 
@@ -719,16 +782,18 @@ The spec files provide the "why" behind architectural decisions - use them to un
 ```
 
 ### Spec-Driven Development Rules
+
 - **Requirements Traceability**: Every major function should map to a requirement ID
 - **Design Compliance**: Follow established patterns in design.md (don't invent new ones)
 - **Task Alignment**: Check tasks.md to see if implementation matches planned approach
 - **Acceptance Criteria**: Validate code meets the specific WHEN/THEN criteria from requirements.md
 
 ### Documentation Comments (Reference Specs)
+
 ```typescript
 /**
  * Provides business context hover information for TypeScript files
- * 
+ *
  * Requirements: 1.1, 1.2, 1.4 (hover display within 200ms)
  * Design: BusinessContextHoverProvider pattern from design.md
  * Implementation: Task 6 - VSCode extension with hover provider
@@ -738,32 +803,115 @@ class BusinessContextHoverProvider {
    * Requirements 1.1: Display relevant business context within 200ms
    * Requirements 1.5: Handle errors gracefully without breaking hover
    */
-  async provideHover(document: TextDocument, position: Position): Promise<Hover | null> {
+  async provideHover(
+    document: TextDocument,
+    position: Position
+  ): Promise<Hover | null> {
     // Implementation here...
   }
 }
 ```
 
+## Terminal & Command Execution (Fix Common Issues)
+
+### Terminal Context Awareness
+
+```bash
+# The terminal is ALREADY in the project workspace
+# Current working directory: ~/[logs]/[workspace]/[repos]/[manual shelf]/aidm-vscode-extension
+# DO NOT add unnecessary `cd` commands before npm scripts
+
+# ✅ Correct: Direct command execution
+npm test -- --testPathPattern="MarkdownTaskParser" --verbose
+npm run lint
+npm run compile
+
+# ❌ Incorrect: Unnecessary cd with unquoted paths (causes "too many arguments" error)
+cd /c/Users/yi.a.cheong/[logs]/[workspace]/[repos]/[manual shelf]/aidm-vscode-extension && npm test
+```
+
+### Path Handling Rules
+
+- **Never** add `cd` commands unless explicitly changing to a different directory
+- **Always** quote paths with spaces: `"path with spaces"`
+- **Assume** the terminal is already in the correct workspace directory
+- **Use** relative paths when possible: `./src/file.ts` not absolute paths
+
+### Test Command Patterns (Your Environment)
+
+```bash
+# Running specific tests (correct format)
+npm test -- --testPathPattern="ComponentName" --verbose
+npm test -- --testNamePattern="should handle hover requests"
+npm test -- src/__tests__/unit/hoverProvider.test.ts
+
+# Running test suites by directory
+npm test -- src/__tests__/unit/
+npm test -- src/__tests__/integration/
+npm test -- src/__tests__/server/
+
+# Full test suite
+npm test
+npm run test
+```
+
+### Build & Development Commands
+
+```bash
+# Development workflow (no cd needed)
+npm run watch          # Webpack watch mode
+npm run compile        # Production build
+npm run lint           # ESLint check
+npm run package        # Your custom packaging
+
+# Debugging specific files
+npm run compile-tsc    # TypeScript compilation check
+```
+
+### File Path References
+
+```bash
+# ✅ Correct: Use relative paths from project root
+src/providers/hoverProvider.ts
+src/__tests__/unit/hoverProvider.test.ts
+dist/extension.js
+
+# ❌ Avoid: Absolute paths with spaces
+/c/Users/yi.a.cheong/[logs]/[workspace]/[repos]/[manual shelf]/aidm-vscode-extension/src/file.ts
+```
+
+### VS Code Integration Commands
+
+```bash
+# Extension debugging (when needed)
+code --extensionDevelopmentHost=localhost:3000
+
+# Open specific files (use VS Code's file explorer or Ctrl+P instead of command line)
+# The terminal is for running scripts, not navigation
+```
+
 ## Production Deployment Patterns
 
 ### Extension Bundle Optimization
+
 ```typescript
 // Your webpack config bundles everything into dist/extension.js
 // Optimization rules:
 // - Minimize dependencies in production bundle
-// - Use axios efficiently (it's your only runtime dependency)  
+// - Use axios efficiently (it's your only runtime dependency)
 // - Lazy load demo components (src/demo/) only when needed
 // - Cache MockDataProvider responses to reduce bundle parsing time
 
 // Example lazy loading for demo features:
 async function loadDemoComponents() {
-  const { DemoScenarios } = await import('../demo/demoScenarios');
-  const { runDemo } = await import('../demo/runDemo');
+  const { DemoScenarios } = await import("../demo/demoScenarios");
+  const { runDemo } = await import("../demo/runDemo");
   return { DemoScenarios, runDemo };
 }
 ```
 
 ### VS Code Extension Distribution
+
 ```typescript
 // Your package.json metadata for marketplace:
 // - Update publisher from "aidm-team" to your actual publisher
@@ -772,9 +920,9 @@ async function loadDemoComponents() {
 // - Categories: ["Other", "Machine Learning", "Snippets"] are appropriate
 
 // Commands registered in package.json - all are working:
-'aidm-vscode-extension.showStatus'
-'aidm-vscode-extension.runRooCodeDemo'  
-'aidm-vscode-extension.restartServer'
-'aidm-vscode-extension.showDemoPanel'
+"aidm-vscode-extension.showStatus";
+"aidm-vscode-extension.runRooCodeDemo";
+"aidm-vscode-extension.restartServer";
+"aidm-vscode-extension.showDemoPanel";
 // ... (all your commands are properly registered)
 ```
