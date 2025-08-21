@@ -17,6 +17,7 @@ import {
   TaskComplexity,
   TaskPriority,
 } from "../../types/tasks";
+import { AxiosInstance } from "axios";
 
 // Mock TaskStatusManager
 jest.mock("../TaskStatusManager");
@@ -493,6 +494,189 @@ describe("TasksDataService", () => {
       // This should work through the fallback mechanism
       const result = await service.getTasks();
       expect(result).toBeDefined();
+    });
+  });
+
+  // Recovery Task 2.4.3: getTaskById JSON-RPC Implementation Tests
+  describe("getTaskById JSON-RPC Implementation", () => {
+    let mockHttpClient: jest.Mocked<AxiosInstance>;
+
+    beforeEach(() => {
+      // Create mock HTTP client for testing
+      mockHttpClient = {
+        post: jest.fn(),
+      } as unknown as jest.Mocked<AxiosInstance>;
+
+      // Inject mock HTTP client for testing
+      (service as any).setHttpClientForTesting(mockHttpClient);
+    });
+
+    it("should make JSON-RPC call with 'tasks/get' method and correct id parameter", async () => {
+      // Arrange
+      const taskId = "test-task-123";
+      const mockResponse = {
+        data: {
+          jsonrpc: "2.0",
+          id: expect.any(Number),
+          result: {
+            task: {
+              id: taskId,
+              title: "Test Task",
+              description: "Test task description",
+              status: TaskStatus.IN_PROGRESS,
+              complexity: TaskComplexity.MEDIUM,
+              dependencies: [],
+              requirements: ["1.1"],
+              createdDate: "2024-01-01T00:00:00.000Z",
+              lastModified: "2024-01-02T00:00:00.000Z",
+              priority: TaskPriority.MEDIUM,
+            },
+          },
+        },
+      };
+      mockHttpClient.post.mockResolvedValue(mockResponse);
+
+      // Act
+      await service.getTaskById(taskId);
+
+      // Assert
+      expect(mockHttpClient.post).toHaveBeenCalledWith(
+        "/jsonrpc",
+        expect.objectContaining({
+          jsonrpc: "2.0",
+          method: "tasks/get",
+          params: { id: taskId },
+        })
+      );
+    });
+
+    it("should return task from response.result.task on successful MCP server response", async () => {
+      // Arrange
+      const taskId = "successful-task-456";
+      const expectedTask: Task = {
+        id: taskId,
+        title: "Successful Task",
+        description: "Task retrieved successfully from MCP server",
+        status: TaskStatus.COMPLETED,
+        complexity: TaskComplexity.HIGH,
+        dependencies: ["task-1", "task-2"],
+        requirements: ["3.1", "3.2"],
+        createdDate: new Date("2024-01-01"),
+        lastModified: new Date("2024-01-03"),
+        priority: TaskPriority.CRITICAL,
+      };
+
+      const mockResponse = {
+        data: {
+          jsonrpc: "2.0",
+          id: expect.any(Number),
+          result: {
+            task: expectedTask,
+          },
+        },
+      };
+      mockHttpClient.post.mockResolvedValue(mockResponse);
+
+      // Act
+      const result = await service.getTaskById(taskId);
+
+      // Assert
+      expect(result).toEqual(expectedTask);
+      expect(mockHttpClient.post).toHaveBeenCalledTimes(1);
+    });
+
+    it("should throw descriptive error when MCP server returns error response", async () => {
+      // Arrange
+      const taskId = "error-task-789";
+      const mockResponse = {
+        data: {
+          jsonrpc: "2.0",
+          id: expect.any(Number),
+          error: {
+            code: -32603,
+            message: "Internal server error: Task not found",
+          },
+        },
+      };
+      mockHttpClient.post.mockResolvedValue(mockResponse);
+
+      // Act & Assert
+      await expect(service.getTaskById(taskId)).rejects.toThrow(
+        "MCP server error: Internal server error: Task not found"
+      );
+      expect(mockHttpClient.post).toHaveBeenCalledTimes(1);
+    });
+
+    it("should fallback to TaskStatusManager.getTaskById when HTTP call fails", async () => {
+      // Arrange
+      const taskId = "fallback-task-101";
+      const fallbackTask: Task = {
+        id: taskId,
+        title: "Fallback Task",
+        description: "Task retrieved from TaskStatusManager fallback",
+        status: TaskStatus.NOT_STARTED,
+        complexity: TaskComplexity.LOW,
+        dependencies: [],
+        requirements: ["1.1"],
+        createdDate: new Date("2024-01-01"),
+        lastModified: new Date("2024-01-01"),
+        priority: TaskPriority.LOW,
+      };
+
+      // Mock HTTP failure
+      mockHttpClient.post.mockRejectedValue(new Error("Network timeout"));
+
+      // Mock TaskStatusManager fallback
+      mockTaskStatusManager.getTaskById.mockResolvedValue(fallbackTask);
+
+      // Act
+      const result = await service.getTaskById(taskId);
+
+      // Assert
+      expect(result).toEqual(fallbackTask);
+      expect(mockHttpClient.post).toHaveBeenCalledTimes(1);
+      expect(mockTaskStatusManager.getTaskById).toHaveBeenCalledWith(taskId);
+    });
+
+    it("should pass correct id parameter to TaskStatusManager fallback", async () => {
+      // Arrange
+      const taskId = "parameter-test-task";
+
+      // Mock HTTP failure
+      mockHttpClient.post.mockRejectedValue(new Error("Connection refused"));
+
+      // Mock TaskStatusManager to return null (task not found)
+      mockTaskStatusManager.getTaskById.mockResolvedValue(null);
+
+      // Act
+      const result = await service.getTaskById(taskId);
+
+      // Assert
+      expect(result).toBeNull();
+      expect(mockTaskStatusManager.getTaskById).toHaveBeenCalledWith(taskId);
+      expect(mockTaskStatusManager.getTaskById).toHaveBeenCalledTimes(1);
+    });
+
+    it("should return null when task not found (consistent with interface contract)", async () => {
+      // Arrange
+      const taskId = "not-found-task";
+      const mockResponse = {
+        data: {
+          jsonrpc: "2.0",
+          id: expect.any(Number),
+          result: {
+            task: null, // MCP server indicates task not found
+          },
+        },
+      };
+      mockHttpClient.post.mockResolvedValue(mockResponse);
+
+      // Act
+      const result = await service.getTaskById(taskId);
+
+      // Assert
+      expect(result).toBeNull();
+      expect(mockHttpClient.post).toHaveBeenCalledTimes(1);
     });
   });
 });

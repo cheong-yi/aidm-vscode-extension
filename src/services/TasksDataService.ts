@@ -119,9 +119,33 @@ export class TasksDataService implements ITasksDataService {
     }
   }
 
-  // Delegate to TaskStatusManager for individual task lookup
+  // Recovery Task 2.4.3: Replace with real JSON-RPC call to MCP server
   async getTaskById(id: string): Promise<Task | null> {
-    return await this.taskStatusManager.getTaskById(id);
+    try {
+      const response = await this.makeJSONRPCCall("tasks/get", { id });
+
+      if (response.error) {
+        throw new Error(`MCP server error: ${response.error.message}`);
+      }
+
+      return response.result?.task || null;
+    } catch (error) {
+      // Only fallback to TaskStatusManager on actual HTTP failures, not MCP server errors
+      if (
+        error instanceof Error &&
+        error.message.startsWith("MCP server error:")
+      ) {
+        // Re-throw MCP server errors to the caller
+        throw error;
+      }
+
+      // Fallback to TaskStatusManager if HTTP fails (network issues, timeouts, etc.)
+      console.warn(
+        "HTTP call failed, falling back to TaskStatusManager:",
+        error instanceof Error ? error.message : String(error)
+      );
+      return await this.taskStatusManager.getTaskById(id);
+    }
   }
 
   // Cleanup method for event emitters - Recovery Task 2.3.1 & 2.3.2
