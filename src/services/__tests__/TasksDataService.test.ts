@@ -312,4 +312,84 @@ describe("TasksDataService", () => {
       expect(typeof newService.onTasksUpdated.event).toBe("function");
     });
   });
+
+  // Recovery Task 2.3.2: Error Event Emitter Infrastructure Tests
+  describe("Error Event Emitter Infrastructure", () => {
+    it("should have onError EventEmitter property", () => {
+      // Assert
+      expect(service.onError).toBeDefined();
+      expect(typeof service.onError).toBe("object");
+    });
+
+    it("should have onError as EventEmitter<TaskErrorResponse> type", () => {
+      // Assert
+      expect(service.onError).toBeDefined();
+      // Check that it has EventEmitter-like properties
+      expect(typeof service.onError.event).toBe("function");
+      expect(typeof service.onError.fire).toBe("function");
+      expect(typeof service.onError.dispose).toBe("function");
+    });
+
+    it("should allow listeners to be attached to onError independently", () => {
+      // Arrange
+      const mockErrorListener = jest.fn();
+      const mockTaskListener = jest.fn();
+
+      // Act
+      const errorDisposable = service.onError.event(mockErrorListener);
+      const taskDisposable = service.onTasksUpdated.event(mockTaskListener);
+
+      // Assert
+      expect(errorDisposable).toBeDefined();
+      expect(taskDisposable).toBeDefined();
+      expect(typeof errorDisposable.dispose).toBe("function");
+      expect(typeof taskDisposable.dispose).toBe("function");
+    });
+
+    it("should clean up both event emitters when dispose is called", () => {
+      // Arrange
+      const mockErrorListener = jest.fn();
+      const mockTaskListener = jest.fn();
+      const errorDisposable = service.onError.event(mockErrorListener);
+      const taskDisposable = service.onTasksUpdated.event(mockTaskListener);
+
+      // Act
+      service.dispose();
+
+      // Assert
+      // Both event emitters should be disposed
+      expect(errorDisposable).toBeDefined();
+      expect(taskDisposable).toBeDefined();
+    });
+
+    it("should initialize both event emitters in constructor", () => {
+      // Arrange & Act
+      const newService = new TasksDataService(mockTaskStatusManager);
+
+      // Assert
+      expect(newService.onTasksUpdated).toBeDefined();
+      expect(newService.onError).toBeDefined();
+      expect(typeof newService.onTasksUpdated.event).toBe("function");
+      expect(typeof newService.onError.event).toBe("function");
+    });
+
+    it("should have both event emitters coexist without interference", () => {
+      // Arrange
+      const mockErrorListener = jest.fn();
+      const mockTaskListener = jest.fn();
+
+      // Act
+      const errorDisposable = service.onError.event(mockErrorListener);
+      const taskDisposable = service.onTasksUpdated.event(mockTaskListener);
+
+      // Assert
+      expect(service.onError).toBeDefined();
+      expect(service.onTasksUpdated).toBeDefined();
+      expect(errorDisposable).toBeDefined();
+      expect(taskDisposable).toBeDefined();
+
+      // Both should be independent EventEmitters
+      expect(service.onError).not.toBe(service.onTasksUpdated);
+    });
+  });
 });

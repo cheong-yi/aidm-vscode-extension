@@ -4,11 +4,18 @@
  * Recovery Task 2.2.1: Interface definition and stub methods
  * Recovery Task 2.2.4: Connect to TaskStatusManager for real data flow
  * Recovery Task 2.3.1: Add EventEmitter infrastructure for task updates
+ * Recovery Task 2.3.2: Add Error Event Emitter infrastructure for error events
  * Requirements: 3.1-3.6, 4.1-4.4, 7.1-7.6
  */
 
 import { EventEmitter } from "vscode";
-import { Task, TaskStatus, TaskComplexity, TaskPriority } from "../types/tasks";
+import {
+  Task,
+  TaskStatus,
+  TaskComplexity,
+  TaskPriority,
+  TaskErrorResponse,
+} from "../types/tasks";
 import { TaskStatusManager } from "./TaskStatusManager";
 
 interface ITasksDataService {
@@ -21,6 +28,10 @@ export class TasksDataService implements ITasksDataService {
   public readonly onTasksUpdated: EventEmitter<Task[]> = new EventEmitter<
     Task[]
   >();
+
+  // Event emitter for error events - Recovery Task 2.3.2
+  public readonly onError: EventEmitter<TaskErrorResponse> =
+    new EventEmitter<TaskErrorResponse>();
 
   constructor(private taskStatusManager: TaskStatusManager) {
     // Constructor now accepts TaskStatusManager dependency
@@ -36,8 +47,9 @@ export class TasksDataService implements ITasksDataService {
     return await this.taskStatusManager.getTaskById(id);
   }
 
-  // Cleanup method for event emitter - Recovery Task 2.3.1
+  // Cleanup method for event emitters - Recovery Task 2.3.1 & 2.3.2
   dispose(): void {
     this.onTasksUpdated.dispose();
+    this.onError.dispose();
   }
 }
