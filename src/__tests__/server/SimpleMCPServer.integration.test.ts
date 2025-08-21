@@ -188,7 +188,7 @@ describe("SimpleMCPServer Integration Tests", () => {
       const response = await makeRequest(testPort, request);
 
       expect(response.status).toBe(200);
-      expect(response.data.result.tools).toHaveLength(3);
+      expect(response.data.result.tools).toHaveLength(4);
 
       // Check get_code_context tool
       const contextTool = response.data.result.tools.find(
@@ -225,6 +225,24 @@ describe("SimpleMCPServer Integration Tests", () => {
       expect(getTaskTool.inputSchema.properties.id).toBeDefined();
       expect(getTaskTool.inputSchema.required).toContain("id");
       expect(getTaskTool.inputSchema.additionalProperties).toBe(false);
+
+      // Check tasks/update-status tool
+      const updateStatusTool = response.data.result.tools.find(
+        (t: any) => t.name === "tasks/update-status"
+      );
+      expect(updateStatusTool).toBeDefined();
+      expect(updateStatusTool.description).toBe(
+        "Update the status of a specific task"
+      );
+      expect(updateStatusTool.inputSchema.type).toBe("object");
+      expect(updateStatusTool.inputSchema.properties.id).toBeDefined();
+      expect(updateStatusTool.inputSchema.properties.newStatus).toBeDefined();
+      expect(updateStatusTool.inputSchema.properties.newStatus.enum).toContain(
+        "in_progress"
+      );
+      expect(updateStatusTool.inputSchema.required).toContain("id");
+      expect(updateStatusTool.inputSchema.required).toContain("newStatus");
+      expect(updateStatusTool.inputSchema.additionalProperties).toBe(false);
     });
   });
 
@@ -462,6 +480,152 @@ describe("SimpleMCPServer Integration Tests", () => {
           },
         },
         id: "test-get-task-invalid-id",
+      };
+
+      const response = await makeRequest(testPort, request);
+
+      expect(response.status).toBe(200);
+      expect(response.data.result.isError).toBe(true);
+      expect(response.data.result.content[0].text).toContain(
+        "Invalid arguments"
+      );
+    });
+  });
+
+  describe("Tasks Update Status Tool", () => {
+    test("should handle tasks/update-status request with valid parameters", async () => {
+      const request: ToolCallRequest = {
+        jsonrpc: "2.0",
+        method: "tools/call",
+        params: {
+          name: "tasks/update-status",
+          arguments: {
+            id: "task-123",
+            newStatus: "in_progress",
+          },
+        },
+        id: "test-update-status-1",
+      };
+
+      const response = await makeRequest(testPort, request);
+
+      expect(response.status).toBe(200);
+      expect(response.data.jsonrpc).toBe("2.0");
+      expect(response.data.id).toBe("test-update-status-1");
+      expect(response.data.result).toBeDefined();
+      expect(response.data.result.content).toBeInstanceOf(Array);
+      expect(response.data.result.content[0].type).toBe("text");
+
+      // Parse the response content to check structure
+      const content = response.data.result.content[0].text;
+      expect(typeof content).toBe("string");
+      expect(content.length).toBeGreaterThan(0);
+    });
+
+    test("should handle tasks/update-status request with missing ID", async () => {
+      const request: ToolCallRequest = {
+        jsonrpc: "2.0",
+        method: "tools/call",
+        params: {
+          name: "tasks/update-status",
+          arguments: {
+            newStatus: "in_progress",
+            // Missing id
+          },
+        },
+        id: "test-update-status-missing-id",
+      };
+
+      const response = await makeRequest(testPort, request);
+
+      expect(response.status).toBe(200);
+      expect(response.data.result.isError).toBe(true);
+      expect(response.data.result.content[0].text).toContain(
+        "Invalid arguments"
+      );
+    });
+
+    test("should handle tasks/update-status request with missing newStatus", async () => {
+      const request: ToolCallRequest = {
+        jsonrpc: "2.0",
+        method: "tools/call",
+        params: {
+          name: "tasks/update-status",
+          arguments: {
+            id: "task-123",
+            // Missing newStatus
+          },
+        },
+        id: "test-update-status-missing-status",
+      };
+
+      const response = await makeRequest(testPort, request);
+
+      expect(response.status).toBe(200);
+      expect(response.data.result.isError).toBe(true);
+      expect(response.data.result.content[0].text).toContain(
+        "Invalid arguments"
+      );
+    });
+
+    test("should handle tasks/update-status request with invalid status value", async () => {
+      const request: ToolCallRequest = {
+        jsonrpc: "2.0",
+        method: "tools/call",
+        params: {
+          name: "tasks/update-status",
+          arguments: {
+            id: "task-123",
+            newStatus: "invalid_status", // Invalid status value
+          },
+        },
+        id: "test-update-status-invalid-status",
+      };
+
+      const response = await makeRequest(testPort, request);
+
+      expect(response.status).toBe(200);
+      expect(response.data.result.isError).toBe(true);
+      expect(response.data.result.content[0].text).toContain(
+        "Invalid arguments"
+      );
+    });
+
+    test("should handle tasks/update-status request with invalid ID type", async () => {
+      const request: ToolCallRequest = {
+        jsonrpc: "2.0",
+        method: "tools/call",
+        params: {
+          name: "tasks/update-status",
+          arguments: {
+            id: 123, // Invalid: should be string
+            newStatus: "in_progress",
+          },
+        },
+        id: "test-update-status-invalid-id-type",
+      };
+
+      const response = await makeRequest(testPort, request);
+
+      expect(response.status).toBe(200);
+      expect(response.data.result.isError).toBe(true);
+      expect(response.data.result.content[0].text).toContain(
+        "Invalid arguments"
+      );
+    });
+
+    test("should handle tasks/update-status request with invalid newStatus type", async () => {
+      const request: ToolCallRequest = {
+        jsonrpc: "2.0",
+        method: "tools/call",
+        params: {
+          name: "tasks/update-status",
+          arguments: {
+            id: "task-123",
+            newStatus: 123, // Invalid: should be string
+          },
+        },
+        id: "test-update-status-invalid-status-type",
       };
 
       const response = await makeRequest(testPort, request);

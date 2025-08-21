@@ -14,6 +14,7 @@ import {
 import { ContextManager } from "../types/extension";
 import { CodeLocation } from "../types/business";
 import { TaskStatusManager } from "../services/TaskStatusManager";
+import { TaskStatus } from "../types/tasks";
 
 export interface Tool {
   name: string;
@@ -291,6 +292,26 @@ export class SimpleMCPServer {
           additionalProperties: false
         }
       },
+      {
+        name: "tasks/update-status",
+        description: "Update the status of a specific task",
+        inputSchema: {
+          type: "object",
+          properties: {
+            id: {
+              type: "string",
+              description: "The unique identifier of the task to update"
+            },
+            newStatus: {
+              type: "string",
+              enum: ["not_started", "in_progress", "review", "completed", "blocked", "deprecated"],
+              description: "The new status to set for the task"
+            }
+          },
+          required: ["id", "newStatus"],
+          additionalProperties: false
+        }
+      },
     ];
 
     return {
@@ -320,6 +341,7 @@ export class SimpleMCPServer {
           "seed_from_remote",
           "tasks/list",
           "tasks/get",
+          "tasks/update-status",
         ].includes(name)
       ) {
         return this.createErrorResponse(
@@ -372,6 +394,9 @@ export class SimpleMCPServer {
 
         case "tasks/get":
           return await this.handleTasksGet(request, args);
+
+        case "tasks/update-status":
+          return await this.handleTasksUpdateStatus(request, args);
 
         default:
           // This should not be reached since we check tool existence earlier
@@ -581,6 +606,18 @@ export class SimpleMCPServer {
       case "tasks/get":
         if (!args.id || typeof args.id !== "string") {
           return "id is required and must be a string";
+        }
+        break;
+
+      case "tasks/update-status":
+        if (!args.id || typeof args.id !== "string") {
+          return "id is required and must be a string";
+        }
+        if (!args.newStatus || typeof args.newStatus !== "string") {
+          return "newStatus is required and must be a string";
+        }
+        if (!["not_started", "in_progress", "review", "completed", "blocked", "deprecated"].includes(args.newStatus)) {
+          return "newStatus must be one of: not_started, in_progress, review, completed, blocked, deprecated";
         }
         break;
 
@@ -863,6 +900,80 @@ export class SimpleMCPServer {
             {
               type: "text",
               text: `Error executing tool tasks/get: ${
+                error instanceof Error ? error.message : "Unknown error"
+              }`,
+            },
+          ],
+          isError: true,
+        },
+        id: request.id,
+      };
+    }
+  }
+
+  /**
+   * Handle tasks/update-status requests
+   */
+  private async handleTasksUpdateStatus(request: JSONRPCRequest, args: any): Promise<JSONRPCResponse> {
+    try {
+      if (!args?.id) {
+        throw new Error("Task ID is required");
+      }
+      
+      if (!args?.newStatus) {
+        throw new Error("New status is required");
+      }
+      
+      // Verify task exists before updating
+      const existingTask = await this.taskStatusManager.getTaskById(args.id);
+      if (!existingTask) {
+        return {
+          jsonrpc: "2.0",
+          result: {
+            content: [
+              {
+                type: "text",
+                text: JSON.stringify({
+                  success: false,
+                  message: `Task with ID '${args.id}' not found`,
+                  taskId: args.id
+                }, null, 2),
+              },
+            ],
+          },
+          id: request.id,
+        };
+      }
+      
+      const success = await this.taskStatusManager.updateTaskStatus(args.id, args.newStatus as TaskStatus);
+      
+      return {
+        jsonrpc: "2.0",
+        result: {
+          content: [
+            {
+              type: "text",
+                text: JSON.stringify({
+                  success: success,
+                  taskId: args.id,
+                  newStatus: args.newStatus,
+                  previousStatus: existingTask.status,
+                  message: success ? "Task status updated successfully" : "Failed to update task status"
+                }, null, 2),
+            },
+          ],
+        },
+        id: request.id,
+      };
+    } catch (error) {
+      console.error("Error updating task status:", error);
+      return {
+        jsonrpc: "2.0",
+        result: {
+          content: [
+            {
+              type: "text",
+              text: `Error executing tool tasks/update-status: ${
                 error instanceof Error ? error.message : "Unknown error"
               }`,
             },
