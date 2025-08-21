@@ -21,7 +21,7 @@ This implementation plan breaks down the feature into atomic, TDD-friendly tasks
 - [x] 2.1.3 Add parseTasksFromFile method to MarkdownTaskParser (mock data)
 - [x] 2.1.4 Add parseTaskFromMarkdown method to MarkdownTaskParser
 - [x] 2.1.5 Add basic TaskStatusManager class structure
-- [d] 2.1.6 Connect TaskStatusManager to MarkdownTaskParser
+- [x] 2.1.6 Connect TaskStatusManager to MarkdownTaskParser
 
   2.2 Data Service Layer
 
