@@ -3,5 +3,5 @@
 
 export { TaskTreeItem } from "./TaskTreeItem";
 export { TaskTreeViewProvider } from "./TaskTreeViewProvider";
-// export * from './TaskDetailCardProvider';
+export { TaskDetailCardProvider } from "./TaskDetailCardProvider";
 // export * from './TaskMasterDashboard';
