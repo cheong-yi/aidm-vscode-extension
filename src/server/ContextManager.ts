@@ -248,8 +248,10 @@ export class ContextManager implements IContextManager {
     );
 
     try {
-      console.log(`ContextManager.getBusinessContextInternal() called for: ${codeLocation.filePath}:${codeLocation.startLine}`);
-      
+      console.log(
+        `ContextManager.getBusinessContextInternal() called for: ${codeLocation.filePath}:${codeLocation.startLine}`
+      );
+
       // 1) Check explicit mock cache first (line-aware)
       if (this.mockCache) {
         console.log("MockCache is available, checking for cached data...");
@@ -262,7 +264,9 @@ export class ContextManager implements IContextManager {
           await tracker.finish(AuditOutcome.SUCCESS);
           return cachedFromMock;
         } else {
-          console.log("❌ No data found in MockCache, falling back to MockDataProvider...");
+          console.log(
+            "❌ No data found in MockCache, falling back to MockDataProvider..."
+          );
         }
       } else {
         console.log("❌ No MockCache available");

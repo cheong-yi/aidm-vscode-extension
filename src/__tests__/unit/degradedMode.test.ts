@@ -159,7 +159,8 @@ describe("DegradedModeManager", () => {
         failingProvider
       );
 
-      expect(failingProvider).toHaveBeenCalled();
+      // In degraded mode, the failing provider should NOT be called
+      expect(failingProvider).not.toHaveBeenCalled();
       expect(result).toBeDefined(); // Should get cached or static fallback
     });
 

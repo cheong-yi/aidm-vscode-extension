@@ -5,9 +5,9 @@
 
 import { ErrorHandler } from "../../utils/ErrorHandler";
 import {
-  degradedModeManager,
+  DegradedModeManager,
   DegradedModeLevel,
-} from "../../utils/degradedMode";
+} from "../../utils/DegradedModeManager";
 import { auditTrail } from "../../utils/auditTrail";
 import { LoggerFactory } from "../../utils/logger";
 
