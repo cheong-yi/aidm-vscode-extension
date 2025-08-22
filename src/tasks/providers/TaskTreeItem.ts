@@ -3,6 +3,7 @@
  * VSCode TreeItem implementation for task display in tree view
  * Requirements: 3.1.1 - TaskTreeItem class with basic properties
  * Requirements: 3.1.2 - Add Status Indicator to TaskTreeItem
+ * Requirements: 3.1.3 - Add TaskTreeItem collapsible state logic
  * Enhanced for Taskmaster Dashboard: 6.8, 6.9, 7.7
  */
 
@@ -24,17 +25,14 @@ export class TaskTreeItem extends vscode.TreeItem {
     // Format label as "Task [ID]: [Title]" to match mockup structure
     const formattedLabel = `Task ${task.id}: ${task.title}`;
 
-    // Set collapsible state to Collapsed for expandable list behavior matching mockup
-    const collapsibleState =
-      task.dependencies.length > 0
-        ? vscode.TreeItemCollapsibleState.Collapsed
-        : vscode.TreeItemCollapsibleState.None;
+    // Determine collapsible state based on task content analysis
+    const collapsibleState = TaskTreeItem.determineCollapsibleState(task);
 
     super(formattedLabel, collapsibleState);
 
     this.id = task.id;
     this.task = task;
-    this.hasChildren = task.dependencies.length > 0;
+    this.hasChildren = TaskTreeItem.hasExpandableContent(task);
     this.dependencyLevel = dependencyLevel;
     this.contextValue = "task"; // Changed from "taskItem" to match design requirements
     this.isExecutable =
@@ -54,6 +52,69 @@ export class TaskTreeItem extends vscode.TreeItem {
 
     // Set description to show additional context (estimated duration, test summary)
     this.description = this.generateDescription();
+  }
+
+  /**
+   * Determine if task should be collapsible based on content analysis
+   * Requirements: 3.1.3 - Collapsible state logic for expandable list design
+   * 
+   * Tasks are collapsible if they have:
+   * - Detailed description
+   * - Dependencies
+   * - Test status
+   * - Estimated duration
+   * - Tags or other metadata
+   * 
+   * @param task The task to analyze
+   * @returns vscode.TreeItemCollapsibleState
+   */
+  private static determineCollapsibleState(task: Task): vscode.TreeItemCollapsibleState {
+    if (TaskTreeItem.hasExpandableContent(task)) {
+      return vscode.TreeItemCollapsibleState.Collapsed;
+    }
+    return vscode.TreeItemCollapsibleState.None;
+  }
+
+  /**
+   * Check if task has expandable content that should be shown in expanded state
+   * Requirements: 3.1.3 - hasChildren property logic for expandable content
+   * 
+   * @param task The task to check
+   * @returns boolean indicating if task has expandable content
+   */
+  private static hasExpandableContent(task: Task): boolean {
+    // Check for detailed description (more than just basic text)
+    const hasDetailedDescription = task.description && 
+      task.description.trim().length > 20; // Basic threshold for "detailed" content
+
+    // Check for dependencies
+    const hasDependencies = task.dependencies && task.dependencies.length > 0;
+
+    // Check for test status
+    const hasTestStatus = task.testStatus && 
+      (task.testStatus.totalTests > 0 || (task.testStatus.failingTestsList && task.testStatus.failingTestsList.length > 0));
+
+    // Check for estimated duration
+    const hasEstimatedDuration = task.estimatedDuration && 
+      task.estimatedDuration.trim().length > 0;
+
+    // Check for tags
+    const hasTags = task.tags && task.tags.length > 0;
+
+    // Check for requirements
+    const hasRequirements = task.requirements && task.requirements.length > 0;
+
+    // Check for assignee
+    const hasAssignee = Boolean(task.assignee && task.assignee.trim().length > 0);
+
+    // Task is expandable if it has any of these content types
+    return Boolean(hasDetailedDescription || 
+           hasDependencies || 
+           hasTestStatus || 
+           hasEstimatedDuration || 
+           hasTags || 
+           hasRequirements || 
+           hasAssignee);
   }
 
   /**

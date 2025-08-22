@@ -2,6 +2,7 @@
  * TaskTreeItem Unit Tests
  * Requirements: 3.1.1 - TaskTreeItem class with basic properties
  * Requirements: 3.1.2 - Add Status Indicator to TaskTreeItem
+ * Requirements: 3.1.3 - Add TaskTreeItem collapsible state logic
  * Enhanced for Taskmaster Dashboard: 6.8, 6.9, 7.7
  */
 
@@ -46,7 +47,7 @@ describe("TaskTreeItem", () => {
       expect(treeItem.id).toBe("1.1");
       expect(treeItem.task).toBe(mockTask);
       expect(treeItem.label).toBe("Task 1.1: Setup Project Structure");
-      expect(treeItem.hasChildren).toBe(false);
+      expect(treeItem.hasChildren).toBe(true); // Updated: task has expandable content
       expect(treeItem.dependencyLevel).toBe(0);
       expect(treeItem.contextValue).toBe("task");
       expect(treeItem.isExecutable).toBe(true);
@@ -193,17 +194,159 @@ describe("TaskTreeItem", () => {
       );
     });
 
-    it("should set hasChildren to false when task has no dependencies", () => {
-      const taskWithoutDependencies = {
+    it("should set hasChildren to true when task has expandable content", () => {
+      // Task has description, requirements, estimatedDuration, tags, assignee
+      const treeItem = new TaskTreeItem(mockTask, 0);
+
+      expect(treeItem.hasChildren).toBe(true);
+      expect(treeItem.collapsibleState).toBe(
+        vscode.TreeItemCollapsibleState.Collapsed
+      );
+    });
+  });
+
+  describe("Collapsible state logic", () => {
+    it("should set collapsible state to Collapsed for tasks with detailed description", () => {
+      const taskWithDetailedDescription = {
         ...mockTask,
         dependencies: [],
+        requirements: [],
+        estimatedDuration: undefined,
+        tags: undefined,
+        assignee: undefined,
+        description:
+          "This is a very detailed description that exceeds the minimum length threshold for expandable content",
       };
 
-      const treeItem = new TaskTreeItem(taskWithoutDependencies, 0);
+      const treeItem = new TaskTreeItem(taskWithDetailedDescription, 0);
+
+      expect(treeItem.hasChildren).toBe(true);
+      expect(treeItem.collapsibleState).toBe(
+        vscode.TreeItemCollapsibleState.Collapsed
+      );
+    });
+
+    it("should set collapsible state to Collapsed for tasks with test status", () => {
+      const taskWithTestStatus = {
+        ...mockTask,
+        dependencies: [],
+        requirements: [],
+        estimatedDuration: undefined,
+        tags: undefined,
+        assignee: undefined,
+        description: "Short",
+        testStatus: {
+          totalTests: 5,
+          passedTests: 4,
+          failedTests: 1,
+        },
+      };
+
+      const treeItem = new TaskTreeItem(taskWithTestStatus, 0);
+
+      expect(treeItem.hasChildren).toBe(true);
+      expect(treeItem.collapsibleState).toBe(
+        vscode.TreeItemCollapsibleState.Collapsed
+      );
+    });
+
+    it("should set collapsible state to None for minimal tasks without expandable content", () => {
+      const minimalTask = {
+        ...mockTask,
+        description: "Short",
+        dependencies: [],
+        requirements: [],
+        estimatedDuration: undefined,
+        tags: undefined,
+        assignee: undefined,
+        testStatus: undefined,
+      };
+
+      const treeItem = new TaskTreeItem(minimalTask, 0);
 
       expect(treeItem.hasChildren).toBe(false);
       expect(treeItem.collapsibleState).toBe(
         vscode.TreeItemCollapsibleState.None
+      );
+    });
+
+    it("should set collapsible state to Collapsed for tasks with estimated duration", () => {
+      const taskWithDuration = {
+        ...mockTask,
+        dependencies: [],
+        requirements: [],
+        description: "Short",
+        tags: undefined,
+        assignee: undefined,
+        testStatus: undefined,
+        estimatedDuration: "15-20 min",
+      };
+
+      const treeItem = new TaskTreeItem(taskWithDuration, 0);
+
+      expect(treeItem.hasChildren).toBe(true);
+      expect(treeItem.collapsibleState).toBe(
+        vscode.TreeItemCollapsibleState.Collapsed
+      );
+    });
+
+    it("should set collapsible state to Collapsed for tasks with tags", () => {
+      const taskWithTags = {
+        ...mockTask,
+        dependencies: [],
+        requirements: [],
+        description: "Short",
+        estimatedDuration: undefined,
+        assignee: undefined,
+        testStatus: undefined,
+        tags: ["tag1", "tag2"],
+      };
+
+      const treeItem = new TaskTreeItem(taskWithTags, 0);
+
+      expect(treeItem.hasChildren).toBe(true);
+      expect(treeItem.collapsibleState).toBe(
+        vscode.TreeItemCollapsibleState.Collapsed
+      );
+    });
+
+    it("should set collapsible state to Collapsed for tasks with requirements", () => {
+      const taskWithRequirements = {
+        ...mockTask,
+        dependencies: [],
+        description: "Short",
+        estimatedDuration: undefined,
+        tags: undefined,
+        assignee: undefined,
+        testStatus: undefined,
+        requirements: ["req1", "req2"],
+      };
+
+      const treeItem = new TaskTreeItem(taskWithRequirements, 0);
+
+      expect(treeItem.hasChildren).toBe(true);
+      expect(treeItem.collapsibleState).toBe(
+        vscode.TreeItemCollapsibleState.Collapsed
+      );
+    });
+
+    it("should set collapsible state to Collapsed for tasks with assignee", () => {
+      const taskWithAssignee = {
+        ...mockTask,
+        dependencies: [],
+        requirements: [],
+        description: "Short",
+        estimatedDuration: undefined,
+        tags: undefined,
+        testStatus: undefined,
+        assignee: "developer",
+      };
+
+      const treeItem = new TaskTreeItem(taskWithAssignee, 0);
+
+      expect(treeItem.hasChildren).toBe(true);
+      expect(treeItem.collapsibleState).toBe(
+        vscode.TreeItemCollapsibleState.Collapsed
       );
     });
   });
@@ -221,7 +364,7 @@ describe("TaskTreeItem", () => {
       // Should have our custom properties
       expect(treeItem.id).toBe("1.1");
       expect(treeItem.task).toBe(mockTask);
-      expect(treeItem.hasChildren).toBe(false);
+      expect(treeItem.hasChildren).toBe(true); // Updated: task has expandable content
       expect(treeItem.dependencyLevel).toBe(1);
     });
   });
