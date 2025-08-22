@@ -3,11 +3,13 @@
  * VSCode TreeDataProvider implementation for task tree view
  * Requirements: 3.1.2 - TaskTreeViewProvider class structure with VSCode TreeDataProvider interface
  * Requirements: 3.2.6 - Implement "No Tasks" state handling
+ * Task 3.2.3: Connect TaskTreeViewProvider to TasksDataService
  */
 
 import * as vscode from "vscode";
 import { TaskTreeItem } from "./TaskTreeItem";
 import { Task } from "../types";
+import { TasksDataService } from "../../services";
 
 /**
  * Custom TreeItem for empty state display
@@ -48,7 +50,16 @@ export class TaskTreeViewProvider
     TreeItemType | undefined | null
   >;
 
-  constructor() {
+  /**
+   * TasksDataService dependency for data retrieval
+   * Task 3.2.3: Service integration for data access
+   */
+  private readonly tasksDataService: TasksDataService;
+
+  constructor(tasksDataService: TasksDataService) {
+    // Task 3.2.3: Store TasksDataService reference
+    this.tasksDataService = tasksDataService;
+
     this._onDidChangeTreeData = new vscode.EventEmitter<
       TreeItemType | undefined | null
     >();
@@ -68,19 +79,26 @@ export class TaskTreeViewProvider
    * Required by vscode.TreeDataProvider interface
    * Returns the children of the given element or root items if no element is passed
    *
-   * Note: Currently returns empty state for scaffolding - data integration in next task (3.1.3)
+   * Task 3.2.3: Now uses TasksDataService for data retrieval
    */
-  getChildren(element?: TreeItemType): Promise<TreeItemType[]> {
-    // For now, simulate empty task list to demonstrate empty state handling
-    // In real implementation, this would call a data service
-    const mockTasks: Task[] = [];
+  async getChildren(element?: TreeItemType): Promise<TreeItemType[]> {
+    try {
+      // Task 3.2.3: Use TasksDataService to retrieve tasks
+      const tasks = await this.tasksDataService.getTasks();
 
-    if (mockTasks.length === 0) {
-      return Promise.resolve([this.createEmptyStateItem("no-tasks")]);
+      if (tasks.length === 0) {
+        return [this.createEmptyStateItem("no-tasks")];
+      }
+
+      // Convert tasks to TaskTreeItems for display
+      // This prepares for the next task (flat list implementation)
+      const taskTreeItems = tasks.map((task) => new TaskTreeItem(task));
+      return taskTreeItems;
+    } catch (error) {
+      // Task 3.2.3: Handle service errors gracefully
+      console.warn("Failed to retrieve tasks from TasksDataService:", error);
+      return [this.createEmptyStateItem("error")];
     }
-
-    // Return empty array for now - real data integration in next task
-    return Promise.resolve([]);
   }
 
   /**

@@ -148,7 +148,7 @@ This implementation plan breaks down the feature into atomic, TDD-friendly tasks
   - Write unit tests for executable state logic
   - _Requirements: 1.8, 8.7_
 
-- [ ] 3.1.6 Add TaskTreeItem enhanced display properties
+- [x] 3.1.6 Add TaskTreeItem enhanced display properties
 
   - Add estimatedDuration display in tooltip
   - Add statusDisplayName from STATUS_DISPLAY_NAMES mapping
@@ -171,7 +171,7 @@ This implementation plan breaks down the feature into atomic, TDD-friendly tasks
   - Write unit tests for task-to-tree-item conversion
   - _Requirements: 1.5_
 
-- [ ] 3.2.3 Connect TaskTreeViewProvider to TasksDataService
+- [x] 3.2.3 Connect TaskTreeViewProvider to TasksDataService
 
   - Add TasksDataService dependency injection
   - Write unit tests for service connection
