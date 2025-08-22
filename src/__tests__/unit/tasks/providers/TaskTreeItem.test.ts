@@ -3,6 +3,7 @@
  * Requirements: 3.1.1 - TaskTreeItem class with basic properties
  * Requirements: 3.1.2 - Add Status Indicator to TaskTreeItem
  * Requirements: 3.1.3 - Add TaskTreeItem collapsible state logic
+ * Requirements: 3.1.4 - Add TaskTreeItem tooltip functionality
  * Enhanced for Taskmaster Dashboard: 6.8, 6.9, 7.7
  */
 
@@ -526,6 +527,288 @@ describe("TaskTreeItem", () => {
           id: "circle-outline",
         })
       );
+    });
+  });
+
+  describe("Tooltip functionality", () => {
+    it("should generate comprehensive tooltip with complete task data", () => {
+      const completeTask = {
+        ...mockTask,
+        description: "Create directory structure for task management components",
+        dependencies: ["1.2", "1.3"],
+        requirements: ["6.1", "6.2", "6.3"],
+        estimatedDuration: "15-30 min",
+        priority: TaskPriority.HIGH,
+        assignee: "developer",
+        testStatus: {
+          totalTests: 18,
+          passedTests: 15,
+          failedTests: 3,
+          status: "passing" as any,
+        },
+      };
+
+      const treeItem = new TaskTreeItem(completeTask, 0);
+      const expectedTooltip = `Task 1.1: Setup Project Structure
+
+Description: Create directory structure for task management components
+
+Status: not started
+Complexity: medium
+Dependencies: 1.2, 1.3
+Requirements: 6.1, 6.2, 6.3
+Estimated Duration: 15-30 min
+Priority: high
+Assignee: developer
+Test Results: 15/18 passed`;
+
+      expect(treeItem.tooltip).toBe(expectedTooltip);
+    });
+
+    it("should generate tooltip with minimal task data gracefully", () => {
+      const minimalTask = {
+        id: "3.1.2",
+        title: "Basic task",
+        description: "",
+        status: TaskStatus.NOT_STARTED,
+        complexity: TaskComplexity.LOW,
+        priority: TaskPriority.MEDIUM,
+        dependencies: [],
+        requirements: [],
+        createdDate: "2024-01-01T00:00:00Z",
+        lastModified: "2024-01-01T00:00:00Z",
+      };
+
+      const treeItem = new TaskTreeItem(minimalTask, 0);
+      const expectedTooltip = `Task 3.1.2: Basic task
+
+Status: not started
+Complexity: low
+Priority: medium`;
+
+      expect(treeItem.tooltip).toBe(expectedTooltip);
+    });
+
+    it("should handle missing description property gracefully", () => {
+      const taskWithoutDescription = {
+        ...mockTask,
+        description: "",
+      };
+
+      const treeItem = new TaskTreeItem(taskWithoutDescription, 0);
+      const tooltip = treeItem.tooltip as string;
+
+      // Should not contain "Description:" section
+      expect(tooltip).not.toContain("Description:");
+      // Should still contain other sections
+      expect(tooltip).toContain("Task 1.1: Setup Project Structure");
+      expect(tooltip).toContain("Status: not started");
+      expect(tooltip).toContain("Complexity: medium");
+    });
+
+    it("should handle empty dependencies array gracefully", () => {
+      const taskWithEmptyDependencies = {
+        ...mockTask,
+        dependencies: [],
+      };
+
+      const treeItem = new TaskTreeItem(taskWithEmptyDependencies, 0);
+      const tooltip = treeItem.tooltip as string;
+
+      // Should not contain "Dependencies:" section
+      expect(tooltip).not.toContain("Dependencies:");
+    });
+
+    it("should handle empty requirements array gracefully", () => {
+      const taskWithEmptyRequirements = {
+        ...mockTask,
+        requirements: [],
+      };
+
+      const treeItem = new TaskTreeItem(taskWithEmptyRequirements, 0);
+      const tooltip = treeItem.tooltip as string;
+
+      // Should not contain "Requirements:" section
+      expect(tooltip).not.toContain("Requirements:");
+    });
+
+    it("should handle missing estimated duration gracefully", () => {
+      const taskWithoutDuration = {
+        ...mockTask,
+        estimatedDuration: undefined,
+      };
+
+      const treeItem = new TaskTreeItem(taskWithoutDuration, 0);
+      const tooltip = treeItem.tooltip as string;
+
+      // Should not contain "Estimated Duration:" section
+      expect(tooltip).not.toContain("Estimated Duration:");
+    });
+
+    it("should handle missing priority gracefully", () => {
+      const taskWithoutPriority = {
+        ...mockTask,
+        priority: undefined,
+      };
+
+      const treeItem = new TaskTreeItem(taskWithoutPriority, 0);
+      const tooltip = treeItem.tooltip as string;
+
+      // Should not contain "Priority:" section
+      expect(tooltip).not.toContain("Priority:");
+    });
+
+    it("should handle missing assignee gracefully", () => {
+      const taskWithoutAssignee = {
+        ...mockTask,
+        assignee: undefined,
+      };
+
+      const treeItem = new TaskTreeItem(taskWithoutAssignee, 0);
+      const tooltip = treeItem.tooltip as string;
+
+      // Should not contain "Assignee:" section
+      expect(tooltip).not.toContain("Assignee:");
+    });
+
+    it("should handle missing test status gracefully", () => {
+      const taskWithoutTestStatus = {
+        ...mockTask,
+        testStatus: undefined,
+      };
+
+      const treeItem = new TaskTreeItem(taskWithoutTestStatus, 0);
+      const tooltip = treeItem.tooltip as string;
+
+      // Should not contain "Test Results:" section
+      expect(tooltip).not.toContain("Test Results:");
+    });
+
+    it("should handle long title and description in tooltip", () => {
+      const taskWithLongContent = {
+        ...mockTask,
+        title: "This is a very long task title that demonstrates how the tooltip handles lengthy text content without breaking the formatting or display",
+        description: "This is an extremely detailed description that provides comprehensive information about the task requirements, implementation details, acceptance criteria, and any additional context that developers might need to understand the full scope of work involved in completing this particular development task successfully.",
+      };
+
+      const treeItem = new TaskTreeItem(taskWithLongContent, 0);
+      const tooltip = treeItem.tooltip as string;
+
+      // Should contain the full title and description
+      expect(tooltip).toContain("This is a very long task title that demonstrates how the tooltip handles lengthy text content without breaking the formatting or display");
+      expect(tooltip).toContain("This is an extremely detailed description that provides comprehensive information about the task requirements");
+    });
+
+    it("should format tooltip with proper line breaks and sections", () => {
+      const taskWithAllFields = {
+        ...mockTask,
+        dependencies: ["1.2", "1.3", "1.4"],
+        requirements: ["6.1", "6.2", "6.3", "6.4"],
+        estimatedDuration: "20-25 min",
+        priority: TaskPriority.CRITICAL,
+        assignee: "senior-developer",
+      };
+
+      const treeItem = new TaskTreeItem(taskWithAllFields, 0);
+      const tooltip = treeItem.tooltip as string;
+
+      // Should have proper section separation with double line breaks
+      expect(tooltip).toContain("\n\nDescription:");
+      expect(tooltip).toContain("\n\nStatus:");
+      expect(tooltip).toContain("\nComplexity:");
+      expect(tooltip).toContain("\nDependencies:");
+      expect(tooltip).toContain("\nRequirements:");
+      expect(tooltip).toContain("\nEstimated Duration:");
+      expect(tooltip).toContain("\nPriority:");
+      expect(tooltip).toContain("\nAssignee:");
+    });
+
+    it("should handle task with custom status display name", () => {
+      const taskWithCustomStatus = {
+        ...mockTask,
+        statusDisplayName: "custom status name",
+      };
+
+      const treeItem = new TaskTreeItem(taskWithCustomStatus, 0);
+      const tooltip = treeItem.tooltip as string;
+
+      expect(tooltip).toContain("Status: custom status name");
+    });
+
+    it("should fallback to enum status when statusDisplayName is missing", () => {
+      const taskWithoutStatusName = {
+        ...mockTask,
+        statusDisplayName: undefined,
+      };
+
+      const treeItem = new TaskTreeItem(taskWithoutStatusName, 0);
+      const tooltip = treeItem.tooltip as string;
+
+      expect(tooltip).toContain("Status: not started");
+    });
+
+    it("should handle task with test status showing passed/failed counts", () => {
+      const taskWithTests = {
+        ...mockTask,
+        testStatus: {
+          totalTests: 25,
+          passedTests: 22,
+          failedTests: 3,
+          status: "passing" as any,
+        },
+      };
+
+      const treeItem = new TaskTreeItem(taskWithTests, 0);
+      const tooltip = treeItem.tooltip as string;
+
+      expect(tooltip).toContain("Test Results: 22/25 passed");
+    });
+
+    it("should not show test results section when totalTests is 0", () => {
+      const taskWithNoTests = {
+        ...mockTask,
+        testStatus: {
+          totalTests: 0,
+          passedTests: 0,
+          failedTests: 0,
+          status: "not_run" as any,
+        },
+      };
+
+      const treeItem = new TaskTreeItem(taskWithNoTests, 0);
+      const tooltip = treeItem.tooltip as string;
+
+      expect(tooltip).not.toContain("Test Results:");
+    });
+
+    it("should handle edge case with null/undefined task properties", () => {
+      const taskWithNulls = {
+        ...mockTask,
+        description: null as any,
+        dependencies: null as any,
+        requirements: null as any,
+        estimatedDuration: null as any,
+        priority: null as any,
+        assignee: null as any,
+        testStatus: null as any,
+      };
+
+      const treeItem = new TaskTreeItem(taskWithNulls, 0);
+      const tooltip = treeItem.tooltip as string;
+
+      // Should still generate valid tooltip without errors
+      expect(tooltip).toBeDefined();
+      expect(tooltip).toContain("Task 1.1: Setup Project Structure");
+      expect(tooltip).toContain("Status: not started");
+      expect(tooltip).toContain("Complexity: medium");
+      // Should not contain sections for null properties
+      expect(tooltip).not.toContain("Description:");
+      expect(tooltip).not.toContain("Dependencies:");
+      expect(tooltip).not.toContain("Requirements:");
+      expect(tooltip).not.toContain("Estimated Duration:");
+      expect(tooltip).not.toContain("Priority:");
+      expect(tooltip).not.toContain("Assignee:");
+      expect(tooltip).not.toContain("Test Results:");
     });
   });
 });

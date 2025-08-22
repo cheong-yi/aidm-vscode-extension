@@ -4,6 +4,7 @@
  * Requirements: 3.1.1 - TaskTreeItem class with basic properties
  * Requirements: 3.1.2 - Add Status Indicator to TaskTreeItem
  * Requirements: 3.1.3 - Add TaskTreeItem collapsible state logic
+ * Requirements: 3.1.4 - Add TaskTreeItem tooltip functionality
  * Enhanced for Taskmaster Dashboard: 6.8, 6.9, 7.7
  */
 
@@ -44,8 +45,8 @@ export class TaskTreeItem extends vscode.TreeItem {
     // Generate test summary for display
     this.testSummary = this.generateTestSummary(task);
 
-    // Set tooltip to show task description
-    this.tooltip = task.description;
+    // Set comprehensive tooltip with task metadata
+    this.tooltip = this.generateTooltipText(task);
 
     // Set icon based on task status
     this.iconPath = this.getStatusIcon(task.status);
@@ -132,6 +133,75 @@ export class TaskTreeItem extends vscode.TreeItem {
     }
 
     return `${passedTests}/${totalTests} passed`;
+  }
+
+  /**
+   * Generate comprehensive tooltip text for task display
+   * Requirements: 3.1.4 - Add TaskTreeItem tooltip functionality
+   * 
+   * Tooltip includes:
+   * - Task ID and full title
+   * - Description (if available)
+   * - Status and complexity
+   * - Dependencies and requirements (if available)
+   * - Estimated duration (if available)
+   * 
+   * @param task The task to generate tooltip for
+   * @returns Formatted tooltip string with task metadata
+   */
+  private generateTooltipText(task: Task): string {
+    const sections: string[] = [];
+
+    // Header: Task ID and Title
+    sections.push(`Task ${task.id}: ${task.title}`);
+
+    // Description section
+    if (task.description && task.description.trim().length > 0) {
+      sections.push(`\nDescription: ${task.description.trim()}`);
+    }
+
+    // Status and complexity section
+    const statusText = task.statusDisplayName || STATUS_DISPLAY_NAMES[task.status] || task.status;
+    const complexityText = task.complexity ? task.complexity.toLowerCase() : 'unknown';
+    sections.push(`\nStatus: ${statusText}`);
+    sections.push(`Complexity: ${complexityText}`);
+
+    // Dependencies section
+    if (task.dependencies && task.dependencies.length > 0) {
+      const dependencyList = task.dependencies.join(', ');
+      sections.push(`Dependencies: ${dependencyList}`);
+    }
+
+    // Requirements section
+    if (task.requirements && task.requirements.length > 0) {
+      const requirementList = task.requirements.join(', ');
+      sections.push(`Requirements: ${requirementList}`);
+    }
+
+    // Estimated duration section
+    if (task.estimatedDuration && task.estimatedDuration.trim().length > 0) {
+      sections.push(`Estimated Duration: ${task.estimatedDuration.trim()}`);
+    }
+
+    // Priority section (if available)
+    if (task.priority) {
+      sections.push(`Priority: ${task.priority.toLowerCase()}`);
+    }
+
+    // Assignee section (if available)
+    if (task.assignee && task.assignee.trim().length > 0) {
+      sections.push(`Assignee: ${task.assignee.trim()}`);
+    }
+
+    // Test status summary (if available)
+    if (task.testStatus) {
+      const { totalTests, passedTests, failedTests } = task.testStatus;
+      if (totalTests > 0) {
+        sections.push(`Test Results: ${passedTests}/${totalTests} passed`);
+      }
+    }
+
+    return sections.join('\n');
   }
 
   /**
