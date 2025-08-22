@@ -1,189 +1,632 @@
 # Enterprise AI Context VSCode Extension - Cursor Rules
 
-## Project Overview
+## Project Context
+VSCode extension bridging business requirements and code implementation through MCP architecture. TypeScript with CommonJS modules, ES2020 target, strict compilation.
 
-This VSCode extension bridges business requirements and code implementation through a hybrid local/remote MCP architecture. The codebase uses TypeScript with CommonJS modules, targeting ES2020 with strict compilation settings.
+## Architecture Rules
 
-## Architecture Principles
+### Layer Separation (STRICT)
+```
+providers/ ↔ services/ ↔ server/ ↔ mock/
+```
+- **NO** VS Code API outside `extension.ts`, `providers/`, `ui/`
+- **NO** server imports in providers
+- Use dependency injection pattern
 
-### Established File Structure (DO NOT DEVIATE)
+### File Structure
+```
+aidm-vscode-extension/
+├── 📦 Package & Configuration
+│   ├── package.json                    # Extension metadata, dependencies, scripts
+│   ├── package-lock.json              # Locked dependency versions
+│   ├── tsconfig.json                  # TypeScript compilation settings
+│   ├── webpack.config.js              # Webpack bundling configuration
+│   ├── jest.config.js                 # Jest testing configuration
+│   └── .cursorrules                   # Cursor AI coding rules
+│
+├── 🚀 Source Code (src/)
+│   ├── extension.ts                   # Main entry point (596 lines)
+│   │
+│   ├── 🏗️ Architecture Layers
+│   │   ├── server/                    # MCP Server Components (Pure Business Logic)
+│   │   │   ├── SimpleMCPServer.ts    # HTTP JSON-RPC server (1,568 lines)
+│   │   │   ├── ProcessManager.ts     # Server lifecycle management
+│   │   │   ├── ContextManager.ts     # Business context retrieval
+│   │   │   ├── MockCache.ts          # Fast response caching
+│   │   │   └── index.ts              # Server exports
+│   │   │
+│   │   ├── providers/                 # VS Code Language Features
+│   │   │   ├── hoverProvider.ts      # Business context hover (864 lines)
+│   │   │   └── index.ts              # Provider exports
+│   │   │
+│   │   ├── services/                  # Core Business Services (Stateless)
+│   │   │   ├── TasksDataService.ts   # Task data management
+│   │   │   ├── MarkdownTaskParser.ts # Markdown task parsing
+│   │   │   ├── TaskStatusManager.ts  # Task lifecycle management
+│   │   │   ├── CacheManager.ts       # Response caching with TTL
+│   │   │   └── index.ts              # Service exports
+│   │   │
+│   │   ├── ui/                       # VS Code UI Components
+│   │   │   ├── statusBar.ts          # Connection status display
+│   │   │   ├── demoPanel.ts          # Interactive demo panel
+│   │   │   ├── configurationPanel.ts # Configuration interface
+│   │   │   └── index.ts              # UI exports
+│   │   │
+│   │   ├── client/                   # MCP Client Components
+│   │   │   ├── mcpClient.ts          # Standard MCP client
+│   │   │   ├── hybridMCPClient.ts    # Hybrid local/remote client
+│   │   │   └── index.ts              # Client exports
+│   │   │
+│   │   ├── utils/                     # Pure Utility Functions (No Side Effects)
+│   │   │   ├── ErrorHandler.ts       # Centralized error handling
+│   │   │   ├── DegradedModeManager.ts # Graceful degradation
+│   │   │   ├── logger.ts             # Structured logging
+│   │   │   ├── portFinder.ts         # Smart port selection
+│   │   │   ├── auditTrail.ts         # User action tracking
+│   │   │   ├── configLoader.ts       # Configuration loading
+│   │   │   └── degradedMode.ts       # Degraded mode utilities
+│   │   │
+│   │   ├── types/                     # Shared TypeScript Definitions
+│   │   │   ├── business.ts           # Business domain types
+│   │   │   ├── extension.ts          # VS Code specific types
+│   │   │   ├── jsonrpc.ts            # MCP/JSON-RPC protocol types
+│   │   │   ├── tasks.ts              # Task management types
+│   │   │   └── index.ts              # Central barrel exports
+│   │   │
+│   │   ├── mock/                      # Development & Demo Data
+│   │   │   ├── MockDataProvider.ts   # Enterprise data generation (647 lines)
+│   │   │   ├── sampleData.ts         # Pre-built enterprise datasets
+│   │   │   └── index.ts              # Mock data exports
+│   │   │
+│   │   ├── demo/                      # Demo & Integration Components
+│   │   │   ├── demoScenarios.ts      # Enterprise demo scenarios (482 lines)
+│   │   │   ├── rooCodeIntegration.ts # RooCode AI integration
+│   │   │   ├── runDemo.ts            # Demo orchestration
+│   │   │   ├── demoConfiguration.ts  # Demo configuration
+│   │   │   ├── rooCodeIntegrationDemo.ts # RooCode demo
+│   │   │   └── sampleFiles/          # Realistic enterprise code samples
+│   │   │       ├── DashboardAnalytics.ts  # Analytics scenarios (479 lines)
+│   │   │       ├── UserService.ts          # User management (262 lines)
+│   │   │       ├── PaymentProcessor.ts     # Payment processing (459 lines)
+│   │   │       └── FraudDetection.ts       # ML inference (51 lines)
+│   │   │
+│   │   ├── security/                  # Security & Compliance
+│   │   │   ├── AuditLogger.ts        # Comprehensive audit logging
+│   │   │   └── EncryptionUtil.ts     # Data encryption utilities
+│   │   │
+│   │   ├── ml/                        # Machine Learning Integration
+│   │   │   └── InferenceService.ts   # ML inference service
+│   │   │
+│   │   ├── config/                    # Configuration Management
+│   │   │   └── extensionConfig.ts    # Extension configuration schema
+│   │   │
+│   │   ├── models/                    # Data Models
+│   │   │   ├── Analytics.ts          # Analytics tracking model
+│   │   │   ├── Payment.ts            # Payment processing model
+│   │   │   └── User.ts               # User management model
+│   │   │
+│   │   ├── tasks/                     # Task Management System
+│   │   │   ├── providers/             # Task UI Components
+│   │   │   │   ├── TaskTreeItem.ts   # Task tree view items
+│   │   │   │   ├── TaskTreeViewProvider.ts # Task tree provider
+│   │   │   │   └── index.ts          # Task provider exports
+│   │   │   ├── services/              # Task Business Services
+│   │   │   │   └── index.ts          # Task service exports
+│   │   │   ├── types/                 # Task Type Definitions
+│   │   │   │   ├── taskEnums.ts      # Task enumeration types
+│   │   │   │   ├── taskInterfaces.ts # Task interface definitions
+│   │   │   │   ├── taskJsonRpc.ts    # Task JSON-RPC types
+│   │   │   │   ├── taskTypes.ts      # Core task types
+│   │   │   │   └── index.ts          # Task type exports
+│   │   │   └── index.ts              # Task system exports
+│   │   │
+│   │   └── __tests__/                 # Comprehensive Test Suite
+│   │       ├── jest.setup.ts          # Jest global configuration
+│   │       ├── __mocks__/             # Jest mock implementations
+│   │       │   └── vscode.ts         # VS Code API mocks
+│   │       ├── unit/                  # Single component tests
+│   │       ├── integration/           # Component interaction tests
+│   │       ├── e2e/                   # Full workflow tests
+│   │       ├── server/                # MCP server specific tests
+│   │       ├── mock/                  # Mock data tests
+│   │       ├── services/              # Service layer tests
+│   │       ├── tasks/                 # Task system tests
+│   │       ├── utils/                 # Utility function tests
+│   │       └── ...                    # Other test files
+│   │
+│   └── index.ts                       # Main source exports
+│
+├── 📚 Documentation
+├── 🛠️ Build & Development Scripts
+├── 🎨 Resources
+├── 📊 Coverage & Build Artifacts
+└── 🔧 Development Tools
+```
 
-- **`src/extension.ts`**: Main entry point - keep lightweight, delegate to providers/services
-- **`src/server/`**: MCP server components - pure business logic, no VS Code dependencies
-- **`src/providers/`**: VS Code language features - hover, completion, etc.
-- **`src/ui/`**: VS Code UI components - status bar, panels, webviews
-- **`src/services/`**: Core business services - stateless where possible
-- **`src/utils/`**: Pure utility functions - no side effects, highly testable
-- **`src/types/`**: Shared TypeScript definitions - export via `index.ts`
-- **`src/mock/`**: Development/demo data - realistic enterprise scenarios
-- **`src/__tests__/`**: Comprehensive test organization matching `src/` structure
+## TypeScript Standards
 
-### Layer Separation Rules
+### Compilation
+- Target: ES2020, CommonJS modules
+- Strict mode: ALWAYS enabled
+- Import from barrel exports (`index.ts`), not individual files
+- All dates as ISO 8601 strings in API responses
 
-- **`providers/`** ↔ **`services/`** ↔ **`server/`** ↔ **`mock/`**
-- Never import VS Code API outside of `extension.ts`, `providers/`, `ui/`
-- Server components must be testable without VS Code runtime
-- Use dependency injection pattern established in your codebase
-
-## TypeScript Standards (Matching Your tsconfig.json)
-
-### Compilation Rules
-
-- **Target**: ES2020 with CommonJS modules (as configured)
-- **Strict Mode**: Always enabled - no exceptions
-- **Source Maps**: Required for debugging (`"sourceMap": true`)
-- **Declarations**: Generate `.d.ts` files for all exports (`"declaration": true`)
-- **Module Resolution**: Use explicit file extensions for imports when needed
-
-### Type Organization (Follow Your Existing Pattern)
-
-- **`src/types/index.ts`**: Central export point for all types
-- **`src/types/business.ts`**: Business domain types (Requirement, CodeMapping, etc.)
-- **`src/types/extension.ts`**: VS Code specific types
-- **`src/types/jsonrpc.ts`**: MCP/JSON-RPC protocol types
-- Import from `src/types` barrel exports, not individual files
-
-### Error Handling (Use Your ErrorHandler.ts Pattern)
-
+### Type Organization
 ```typescript
-// Follow your established ErrorHandler pattern
-import { ErrorHandler } from "../utils/ErrorHandler";
+// Single source of truth for task types
+import { Task, TaskExecutionContext } from './tasks/types';
 
-// Use your DegradedModeManager for fallbacks
-import { DegradedModeManager } from "../utils/DegradedModeManager";
+// Import from barrels
+import { BusinessContext, Requirement } from './types';
+import { TasksDataService } from './services';
+import { TaskTreeViewProvider } from './tasks/providers';
+```
 
-async function getBusinessContext(
-  location: CodeLocation
-): Promise<BusinessContext | null> {
-  try {
-    const context = await this.contextManager.retrieve(location);
-    return context;
-  } catch (error) {
-    // Use your centralized error handling
-    ErrorHandler.handle(error, { context: "hover-provider", location });
+## Development Patterns
 
-    // Use your degraded mode fallback
-    return DegradedModeManager.getFallbackContext(location);
+### Error Handling
+```typescript
+import { ErrorHandler } from './utils/ErrorHandler';
+import { DegradedModeManager } from './utils/DegradedModeManager';
+
+try {
+  const context = await this.contextManager.retrieve(location);
+  return context;
+} catch (error) {
+  ErrorHandler.handle(error, { context: 'component-name', location });
+  return DegradedModeManager.getFallbackContext(location);
+}
+```
+
+### Enhanced Error Recovery Patterns
+```typescript
+// Comprehensive error handling with specific recovery strategies
+try {
+  const result = await service.operation();
+  return result;
+} catch (error) {
+  if (error.code === 'NETWORK_TIMEOUT') {
+    return DegradedModeManager.getOfflineFallback();
   }
+  if (error.code === 'PERMISSION_DENIED') {
+    return DegradedModeManager.getReadOnlyFallback();
+  }
+  if (error.code === 'FILE_NOT_FOUND') {
+    return DegradedModeManager.getMockFallback();
+  }
+  ErrorHandler.handle(error, { context: 'operation-name' });
+  throw error;
 }
 ```
 
-### Interface Design (Match Your Types Structure)
-
+### Testing (TDD Required)
 ```typescript
-// Follow patterns in src/types/business.ts
-interface BusinessContext {
-  requirements: Requirement[];
-  implementationStatus: ImplementationStatus;
-  relatedChanges: Change[];
-  lastUpdated: Date;
-  source: ContextSource;
-  confidence: number;
-}
+// Test structure: *.test.ts files in __tests__/ matching src/ structure
+describe('ComponentName', () => {
+  // Arrange, Act, Assert pattern
+  it('should handle specific behavior', async () => {
+    // Arrange: setup test data
+    const mockData = { id: '1', status: 'not_started' };
+    
+    // Act: execute function
+    const result = await service.process(mockData);
+    
+    // Assert: verify outcome
+    expect(result).toBeDefined();
+  });
+});
 
-// Avoid: Generic interfaces that don't match your domain
-interface GenericContext {
-  data?: any;
-  metadata?: Record<string, unknown>;
-}
+// Test file organization mirrors src/ structure exactly:
+// - Unit tests: src/__tests__/unit/ → src/unit/ components
+// - Integration tests: src/__tests__/integration/ → src/integration/ components
+// - E2E tests: src/__tests__/e2e/ → full workflow testing
+// - Server tests: src/__tests__/server/ → src/server/ components
+// - Service tests: src/__tests__/services/ → src/services/ components
+// - Task tests: src/__tests__/tasks/ → src/tasks/ components
 ```
 
-## Development Patterns (Match Your Established Components)
-
-### Mock-First Development (Use Your MockDataProvider.ts)
-
+### Mock Data Patterns
 ```typescript
-// Follow pattern in src/mock/MockDataProvider.ts
-import { MockDataProvider } from "../mock/MockDataProvider";
-import { sampleData } from "../mock/sampleData";
+// API responses must match exact format
+const mockResponse = {
+  jsonrpc: "2.0",
+  result: {
+    content: [{
+      text: JSON.stringify({
+        id: "task-1",
+        createdDate: "2024-01-01T00:00:00.000Z", // String dates only
+        lastModified: "2024-01-02T00:00:00.000Z"
+      })
+    }]
+  }
+};
 
-// Always provide realistic enterprise data
+// Use MockDataProvider for enterprise scenarios
+import { MockDataProvider } from './mock/MockDataProvider';
 const mockProvider = new MockDataProvider();
 const enterpriseScenario = mockProvider.getEnterpriseScenario("fintech");
 ```
 
-### Test Organization (Follow Your **tests** Structure)
+## Performance Targets
+- Hover Provider: <200ms
+- MCP Server Tools: <300ms
+- Task Tree Display: <300ms
+- Context Extraction: <800ms
+- Prompt Generation: <500ms
 
-```
-src/__tests__/
-├── unit/           # Single component tests
-├── integration/    # Component interaction tests
-├── e2e/           # Full workflow tests
-├── server/        # MCP server specific tests
-├── utils/         # Utility function tests
-├── mock/          # Mock data tests
-└── __mocks__/     # Jest mock implementations
-```
-
-### Testing Patterns (Use Your jest.setup.ts)
-
+## HTTP Client (Axios)
 ```typescript
-// Follow pattern in src/__tests__/jest.setup.ts
-import { jest } from "@jest/globals";
+import axios from 'axios';
 
-describe("HoverProvider", () => {
-  let provider: BusinessContextHoverProvider;
-  let mockContextManager: jest.Mocked<ContextManager>;
-
-  beforeEach(() => {
-    // Use your established mock patterns
-    mockContextManager = createMockContextManager();
-    provider = new BusinessContextHoverProvider(mockContextManager);
+async function callMCPTool(method: string, params: any): Promise<any> {
+  const response = await axios.post('http://localhost:3000/rpc', {
+    jsonrpc: "2.0",
+    method: "tools/call",
+    params: { name: method, arguments: params },
+    id: Date.now()
+  }, {
+    timeout: 5000,
+    headers: { 'Content-Type': 'application/json' }
   });
-
-  // Test structure: Arrange, Act, Assert
-  it("should return hover context for valid TypeScript location", async () => {
-    // Arrange
-    const location = createCodeLocation("DashboardAnalytics.ts", 10, 5);
-    const mockContext = createMockBusinessContext();
-    mockContextManager.getBusinessContext.mockResolvedValue(mockContext);
-
-    // Act
-    const hover = await provider.provideHover(mockDocument, position);
-
-    // Assert
-    expect(hover).toBeDefined();
-    expect(hover?.contents).toContain(mockContext.requirements[0].title);
-  });
-});
+  
+  return response.data.result;
+}
 ```
 
-### Logging & Auditing (Use Your Established Components)
+## Build System
+```bash
+npm run watch      # Development (webpack)
+npm run compile    # Production build
+npm run test       # Jest tests
+npm run lint       # ESLint
 
+# Terminal is already in project directory - NO cd commands needed
+# Use relative paths: ./src/file.ts
+```
+
+## Cursor Integration Patterns
+
+### Context Extraction for Tasks
 ```typescript
-// Use your logger.ts and auditTrail.ts
-import { logger } from "../utils/logger";
-import { auditTrail } from "../utils/auditTrail";
+// Extract focused context for atomic tasks
+interface TaskPromptContext {
+  task: Task;
+  dependencies: string[];        // Just IDs and status
+  requirements: string[];         // 1-2 sentences each
+  acceptanceCriteria: string[];   // Checklist items
+  codeContext: {
+    relevantFiles: string[];      // Essential files only
+    patterns: string[];           // Key patterns to follow
+  };
+}
 
-// Structured logging without sensitive data
-logger.info("Context retrieved", {
-  requestId: uuidv4(),
-  filePath: location.filePath,
-  responseTimeMs: performance.now() - startTime,
-  source: "mock-cache",
-  requirementCount: context.requirements.length,
-});
-
-// Audit user interactions
-auditTrail.logUserAction("hover-request", {
-  filePath: document.fileName,
-  position: `${position.line}:${position.character}`,
-  timestamp: new Date().toISOString(),
-});
+// Use existing services for context extraction
+import { TasksDataService } from './services/TasksDataService';
+import { MarkdownTaskParser } from './services/MarkdownTaskParser';
 ```
 
-### Performance Guidelines (Based on Your Architecture)
+### Prompt Generation Rules
+- Keep prompts atomic and focused
+- Include TDD instructions
+- Reference specific files, not entire directories
+- Limit context to essential information
 
-- **Hover Provider**: <200ms (use MockCache.ts for fast responses)
-- **MCP Server Tools**: <300ms (via SimpleMCPServer.ts)
-- **Status Bar Updates**: <100ms (via statusBar.ts)
-- **Demo Scenarios**: <500ms (via demoScenarios.ts)
-- Use CacheManager.ts for response caching with appropriate TTL
+## Anti-Patterns to Avoid
+- ❌ Generic `any` types
+- ❌ Console.log in production code
+- ❌ Synchronous file operations
+- ❌ Direct file system access in providers
+- ❌ Date objects in API responses (use strings)
+- ❌ Complex nested promises (use async/await)
+- ❌ cd commands in terminal (already in workspace)
+- ❌ Importing from individual files instead of barrel exports
+- ❌ Importing from non-existent paths (e.g., './task-management/types')
+- ❌ Using relative paths that dont match actual directory structure
 
-## VSCode Extension Patterns (Based on Your Components)
+## Spec File References
 
-### Extension Lifecycle (extension.ts Patterns)
+### When to Check Specs
+- **requirements.md**: For acceptance criteria and user stories
+- **design.md**: For architectural patterns and interfaces
+- **tasks.md**: For implementation steps and dependencies
+- **types/index.ts**: For all type definitions
 
+### Implementation Validation
+Every feature must:
+1. Map to a requirement ID from requirements.md
+2. Follow patterns from design.md
+3. Use types from types/index.ts
+4. Complete acceptance criteria (WHEN/THEN format)
+
+## Task Implementation Template
+```typescript
+/**
+ * Task: [Task ID] - [Task Title]
+ * Requirements: [Requirement IDs]
+ * Dependencies: [Task IDs]
+ * Complexity: [low|medium|high]
+ * Time: [15-30 minutes]
+ */
+class Implementation {
+  // 1. Write test first (TDD)
+  // 2. Implement minimum to pass
+  // 3. Refactor if needed
+  // 4. Verify integration
+}
+```
+
+## Documentation Update Requirements
+
+### Post-Task Documentation Updates (MANDATORY)
+
+**After completing ANY task, developers MUST update relevant documentation:**
+
+#### 1. **tasks.md Updates**
+```markdown
+# Update tasks.md after task completion
+- [x] [Task ID] - [Task Title] ✅ COMPLETED
+- [ ] [Next Task ID] - [Next Task Title] (if dependencies are now satisfied)
+- Update task status: not_started → in_progress → completed
+- Add completion timestamp and any blockers encountered
+- Document any deviations from planned approach
+```
+
+#### 2. **design.md Updates**
+```markdown
+# Update design.md if architectural changes were made
+- Document new component interfaces or patterns
+- Update component diagrams if structure changed
+- Add new integration patterns or data flows
+- Document performance improvements or optimizations
+- Update error handling strategies if enhanced
+```
+
+#### 3. **requirements.md Updates**
+```markdown
+# Update requirements.md if acceptance criteria were modified
+- Verify all acceptance criteria are met
+- Document any new requirements discovered during implementation
+- Update user story details if implementation revealed gaps
+- Add new edge cases or scenarios identified
+- Document performance metrics achieved
+```
+
+#### 4. **Implementation Notes**
+```typescript
+/**
+ * Task: [Task ID] - [Task Title] ✅ COMPLETED
+ * Completion Date: [YYYY-MM-DD]
+ * Requirements Met: [Requirement IDs]
+ * Dependencies Satisfied: [Task IDs]
+ * 
+ * Documentation Updated:
+ * - [x] tasks.md - Task status updated
+ * - [x] design.md - [Describe architectural changes]
+ * - [x] requirements.md - [Describe requirement updates]
+ * - [x] [Other relevant docs]
+ * 
+ * Implementation Notes:
+ * - [Key decisions made]
+ * - [Challenges encountered]
+ * - [Performance considerations]
+ * - [Future enhancement opportunities]
+ */
+```
+
+### Documentation Update Checklist
+
+**Before marking any task as complete, verify:**
+
+- [ ] **tasks.md**: Task status updated to "completed" with timestamp
+- [ ] **design.md**: Any new patterns, interfaces, or diagrams documented
+- [ ] **requirements.md**: Acceptance criteria verified and any gaps documented
+- [ ] **Code Comments**: JSDoc comments include requirement IDs and design references
+- [ ] **Test Coverage**: Tests document the implemented behavior
+- [ ] **Integration Points**: Any new integration patterns documented
+
+### Documentation Standards
+
+#### **Update Frequency**
+- **Immediate**: Update tasks.md when task status changes
+- **Before Commit**: Ensure all relevant docs are updated
+- **Before PR**: Verify documentation completeness
+- **After Review**: Incorporate feedback into documentation
+
+#### **Update Quality**
+- **Accuracy**: Documentation must match actual implementation
+- **Completeness**: All changes must be documented
+- **Consistency**: Use established documentation patterns
+- **Traceability**: Link code changes to requirement IDs
+
+#### **Common Documentation Updates**
+
+**For UI Components:**
+```markdown
+# design.md updates
+- Component interface definitions
+- UI/UX patterns and interactions
+- Performance targets and measurements
+- Error handling and user feedback
+- Accessibility considerations
+```
+
+**For Business Logic:**
+```markdown
+# design.md updates
+- Service interface definitions
+- Data flow diagrams
+- Error handling strategies
+- Performance optimization patterns
+- Integration patterns with external systems
+```
+
+**For Testing:**
+```markdown
+# design.md updates
+- Test strategy and coverage requirements
+- Mock data patterns and standards
+- Performance testing approaches
+- Integration testing workflows
+- Test data management strategies
+```
+
+### Documentation Validation
+
+#### **Self-Validation Checklist**
+```typescript
+// Before committing, ask yourself:
+// 1. Does the code match what's documented in design.md?
+// 2. Are all requirements from requirements.md satisfied?
+// 3. Is the task properly marked as complete in tasks.md?
+// 4. Are there any new patterns that should be documented?
+// 5. Have I documented any deviations from the planned approach?
+```
+
+#### **Review Validation**
+```typescript
+// During code review, verify:
+// 1. Documentation updates are included in the PR
+// 2. All relevant spec files have been updated
+// 3. New patterns are properly documented
+// 4. Requirements traceability is maintained
+// 5. Design consistency is preserved
+```
+
+### Anti-Patterns for Documentation
+
+- ❌ **Completing tasks without updating documentation**
+- ❌ **Documenting changes in code comments only**
+- ❌ **Updating one spec file but not others**
+- ❌ **Forgetting to update task status in tasks.md**
+- ❌ **Documenting assumptions instead of actual implementation**
+- ❌ **Missing requirement IDs in code comments**
+- ❌ **Inconsistent documentation patterns across components**
+
+## Component Import Patterns
+
+### Correct Import Paths
+```typescript
+// ✅ Correct: Import from barrel exports
+import { TasksDataService } from './services';
+import { TaskTreeViewProvider } from './tasks/providers';
+import { Task, TaskStatus } from './tasks/types';
+import { BusinessContext } from './types';
+
+// ❌ Incorrect: Import from individual files
+import { TasksDataService } from './services/TasksDataService';
+import { Task } from './tasks/types/taskTypes';
+```
+
+### Real Project Component Examples
+```typescript
+// Real project import examples:
+import { SimpleMCPServer } from './server';
+import { MockDataProvider } from './mock';
+import { demoScenarios } from './demo';
+import { AuditLogger } from './security';
+import { InferenceService } from './ml/InferenceService';
+import { Analytics } from './models/Analytics';
+```
+
+### Service Layer Integration
+```typescript
+// Use established service patterns
+import { TasksDataService } from './services';
+import { MarkdownTaskParser } from './services';
+import { TaskStatusManager } from './services';
+
+// Connect to MCP server via TasksDataService
+const tasksService = new TasksDataService();
+const tasks = await tasksService.getTasks();
+```
+
+### UI Component Integration
+```typescript
+// Use established UI patterns
+import { TaskTreeViewProvider } from './tasks/providers';
+import { TaskDetailCardProvider } from './tasks/providers';
+
+// Register with VSCode extension
+context.subscriptions.push(
+  vscode.window.registerTreeDataProvider('tasks-tree', taskTreeProvider)
+);
+```
+
+## Integration Patterns
+
+### Demo System Integration
+```typescript
+// Demo integration patterns:
+import { demoScenarios } from './demo';
+import { runDemo } from './demo';
+import { sampleFiles } from './demo/sampleFiles';
+
+// Use realistic enterprise scenarios for testing
+const fintechDemo = demoScenarios.getScenario("fintech-payment-processing");
+await runDemo.execute(fintechDemo);
+```
+
+### Security Component Integration
+```typescript
+// Security integration patterns:
+import { AuditLogger } from './security/AuditLogger';
+import { EncryptionUtil } from './security/EncryptionUtil';
+
+// Always audit sensitive operations
+auditLogger.logAccess("task-update", { taskId, userId, timestamp });
+
+// Encrypt sensitive data when needed
+const encryptedData = EncryptionUtil.encrypt(sensitiveBusinessData);
+```
+
+### ML Integration Patterns
+```typescript
+// ML integration patterns:
+import { InferenceService } from './ml/InferenceService';
+
+// Use for fraud detection in PaymentProcessor.ts sample
+const fraudScore = await inferenceService.detectFraud(paymentData);
+```
+
+### Configuration Management
+```typescript
+// Configuration patterns:
+import { loadConfig } from './utils/configLoader';
+import { ExtensionConfig } from './config/extensionConfig';
+
+// Load and validate configuration on startup
+const config = await loadConfig();
+```
+
+### Performance Monitoring Integration
+```typescript
+// Performance monitoring patterns:
+import { Analytics } from './models/Analytics';
+
+// Track performance metrics
+analytics.trackHoverEvent(filePath, position);
+analytics.trackContextRetrieval(businessContext);
+```
+
+## File Size Guidelines
+
+### File Size Awareness
+```typescript
+// File size guidelines (based on actual project):
+// Large files (>500 lines): SimpleMCPServer.ts (1,568 lines)
+// Medium files (200-500 lines): hoverProvider.ts (864 lines), MockDataProvider.ts (647 lines)
+// Small files (<200 lines): Most utility and type files
+
+// Guidelines:
+// - Break down files >500 lines into smaller, focused modules
+// - Keep utility files <100 lines for maintainability
+// - Large files should be architectural components with clear responsibilities
+// - Consider refactoring when files exceed 800 lines
+```
+
+## VSCode Extension Patterns
+
+### Extension Lifecycle
 ```typescript
 // Follow your extension.ts pattern - keep lightweight
 export async function activate(
@@ -210,36 +653,23 @@ export function deactivate(): Thenable<void> | undefined {
 }
 ```
 
-### Status Bar Integration (Use statusBar.ts Pattern)
-
+### Status Bar Integration
 ```typescript
 // Follow your established StatusBarManager pattern
-import { StatusBarManager } from "../ui/statusBar";
+import { StatusBarManager } from "./ui/statusBar";
 
 const statusBar = new StatusBarManager();
 statusBar.updateConnectionStatus("connected");
 statusBar.showHealthMetrics();
 ```
 
-### Configuration Management (Use configLoader.ts + extensionConfig.ts)
+## MCP Server Architecture
 
-```typescript
-// Use your configLoader.ts pattern
-import { loadConfig } from "../utils/configLoader";
-import { ExtensionConfig } from "../config/extensionConfig";
-
-const config = await loadConfig();
-// Validate configuration on startup as per your pattern
-```
-
-## MCP Server Architecture (Follow Your Server Components)
-
-### Server Management (Use SimpleMCPServer.ts + ProcessManager.ts)
-
+### Server Management
 ```typescript
 // Follow your SimpleMCPServer architecture
-import { SimpleMCPServer } from "../server/SimpleMCPServer";
-import { ProcessManager } from "../server/ProcessManager";
+import { SimpleMCPServer } from "./server/SimpleMCPServer";
+import { ProcessManager } from "./server/ProcessManager";
 
 class MCPServerManager {
   private server: SimpleMCPServer;
@@ -257,12 +687,11 @@ class MCPServerManager {
 }
 ```
 
-### Context Management (Use ContextManager.ts Pattern)
-
+### Context Management
 ```typescript
 // Follow your ContextManager.ts established patterns
-import { ContextManager } from "../server/ContextManager";
-import { MockCache } from "../server/MockCache";
+import { ContextManager } from "./server/ContextManager";
+import { MockCache } from "./server/MockCache";
 
 const contextManager = new ContextManager();
 const mockCache = new MockCache();
@@ -271,450 +700,99 @@ const mockCache = new MockCache();
 const businessContext = await contextManager.getBusinessContext(codeLocation);
 ```
 
-### Degraded Mode Handling (Use Your DegradedModeManager.ts)
+## Testing & Mock Data Standards
 
+### HTTP Client Mocking Rules
+- **Response Format**: Mock HTTP responses must match the exact format returned by real APIs
+- **Date Handling**: Use string dates in mock responses, not Date objects
+- **Type Consistency**: Mock data types must match production API response types
+
+### Test Data Creation Guidelines
+- **API-First Approach**: Create mock data that matches the actual API response structure
+- **Date Fields**: Always use ISO 8601 strings for date fields in mock responses
+- **Validation**: Verify mock data structure matches the real API before writing tests
+
+### Example Implementation Pattern
 ```typescript
-// Always implement degraded mode fallbacks using your components
-import { DegradedModeManager } from "../utils/DegradedModeManager";
-import { degradedMode } from "../utils/degradedMode";
-
-if (!(await healthCheck())) {
-  // Use your degraded mode system
-  DegradedModeManager.enableDegradedMode();
-  return degradedMode.getFallbackResponse(request);
-}
-```
-
-## Security & Compliance (Use Your Security Components)
-
-### Audit Logging (Use AuditLogger.ts)
-
-```typescript
-// Follow your AuditLogger.ts patterns
-import { AuditLogger } from "../security/AuditLogger";
-
-const auditLogger = new AuditLogger();
-auditLogger.logAccess("context-request", {
-  userId: "system",
-  resource: filePath,
-  timestamp: new Date(),
-  action: "hover-context-retrieved",
-});
-```
-
-### Encryption (Use EncryptionUtil.ts for Sensitive Data)
-
-```typescript
-// Use your EncryptionUtil for any sensitive data
-import { EncryptionUtil } from "../security/EncryptionUtil";
-
-// Only encrypt if handling sensitive business data
-const encryptedData = EncryptionUtil.encrypt(sensitiveBusinessData);
-```
-
-### Data Protection Patterns
-
-- Use your AuditLogger.ts for all data access tracking
-- Never log sensitive business requirements or stakeholder data
-- Use your EncryptionUtil.ts for any cached sensitive data
-- Follow your established audit trail patterns in auditTrail.ts
-
-## Demo & Integration Patterns (Use Your Demo Components)
-
-### RooCode Integration (Follow rooCodeIntegration.ts)
-
-```typescript
-// Use your established RooCode patterns
-import { RooCodeIntegration } from "../demo/rooCodeIntegration";
-import { rooCodeIntegrationDemo } from "../demo/rooCodeIntegrationDemo";
-
-// Follow your dual-context architecture
-const rooCode = new RooCodeIntegration();
-await rooCode.setupLocalContext(sprintContext);
-await rooCode.setupRemoteContext(deliveryPatterns);
-```
-
-### Demo Scenarios (Use demoScenarios.ts + runDemo.ts)
-
-```typescript
-// Follow your demo orchestration pattern
-import { DemoScenarios } from "../demo/demoScenarios";
-import { runDemo } from "../demo/runDemo";
-
-// Use your predefined enterprise scenarios
-const demo = new DemoScenarios();
-const fintechDemo = demo.getScenario("fintech-payment-processing");
-await runDemo.execute(fintechDemo);
-```
-
-### Sample Files Integration (Use Your demo/sampleFiles/)
-
-```typescript
-// Reference your actual sample files for context mapping
-const sampleFiles = [
-  "DashboardAnalytics.ts", // 479 lines - analytics scenarios
-  "UserService.ts", // 262 lines - user management
-  "PaymentProcessor.ts", // 459 lines - payment processing
-  "FraudDetection.ts", // 51 lines - ML inference
-];
-
-// Map business context to these specific files
-const contextMapping = {
-  "DashboardAnalytics.ts": ["analytics-requirements", "reporting-compliance"],
-  "PaymentProcessor.ts": ["payment-security", "fraud-detection"],
-  "UserService.ts": ["user-management", "data-privacy"],
-};
-```
-
-## Client Architecture (Use Your MCP Client Components)
-
-### Standard MCP Client (Use mcpClient.ts)
-
-```typescript
-// Follow your mcpClient.ts pattern for standard connections
-import { MCPClient } from "../client/mcpClient";
-
-const client = new MCPClient();
-await client.connect(serverEndpoint);
-const response = await client.callTool("get_business_context", params);
-```
-
-### Hybrid MCP Client (Use hybridMCPClient.ts)
-
-```typescript
-// Use your hybrid client for local + remote fallback
-import { HybridMCPClient } from "../client/hybridMCPClient";
-
-const hybridClient = new HybridMCPClient();
-hybridClient.configureLocalFallback(localServer);
-hybridClient.configureRemoteFallback(remoteServer);
-
-// Automatic fallback handling as per your implementation
-const context = await hybridClient.getBusinessContext(location);
-```
-
-## ML & Analytics Integration (Use InferenceService.ts)
-
-### Machine Learning Patterns
-
-```typescript
-// Follow your InferenceService.ts pattern
-import { InferenceService } from "../ml/InferenceService";
-
-const inferenceService = new InferenceService();
-const prediction = await inferenceService.predict(inputData);
-
-// Use for fraud detection in PaymentProcessor.ts sample
-const fraudScore = await inferenceService.detectFraud(paymentData);
-```
-
-### Analytics Integration
-
-```typescript
-// Follow patterns from your Analytics.ts model
-import { Analytics } from "../models/Analytics";
-
-const analytics = new Analytics();
-analytics.trackHoverEvent(filePath, position);
-analytics.trackContextRetrieval(businessContext);
-```
-
-## Debugging & Troubleshooting (Your Codebase Specific)
-
-### Port Management (Use portFinder.ts)
-
-```typescript
-// Use your established port finding logic
-import { findAvailablePort } from "../utils/portFinder";
-
-const port = await findAvailablePort(3000, 3100);
-console.log(`Starting MCP server on port ${port}`);
-```
-
-### Process Debugging (Use ProcessManager.ts)
-
-```typescript
-// Debug server startup issues using your ProcessManager
-import { ProcessManager } from "../server/ProcessManager";
-
-const processManager = new ProcessManager();
-const serverHealth = await processManager.checkServerHealth();
-if (!serverHealth.isHealthy) {
-  console.log("Server issues:", serverHealth.diagnostics);
-}
-```
-
-### Error Context (Use ErrorHandler.ts)
-
-```typescript
-// Use your sophisticated error handling
-import { ErrorHandler } from "../utils/ErrorHandler";
-
-try {
-  // risky operation
-} catch (error) {
-  ErrorHandler.handle(error, {
-    component: "hover-provider",
-    context: { filePath, position },
-    severity: "medium",
-  });
-}
-```
-
-## Import/Export Patterns (Follow Your Index Files)
-
-### Barrel Exports (Use Your index.ts Pattern)
-
-```typescript
-// Follow your barrel export pattern in each directory
-// src/types/index.ts
-export * from "./business";
-export * from "./extension";
-export * from "./jsonrpc";
-
-// src/providers/index.ts
-export { BusinessContextHoverProvider } from "./hoverProvider";
-
-// Import from barrels, not individual files
-import { BusinessContext, Requirement } from "../types";
-import { BusinessContextHoverProvider } from "../providers";
-```
-
-### Module Organization
-
-- Always export through `index.ts` files as you've established
-- Import from barrel exports to maintain loose coupling
-- Keep your established separation: no server imports in providers, etc.
-- Use your `src/types/` as the single source of truth for interfaces
-
-## Build & Dependencies (Based on Your package.json)
-
-### Webpack Build System
-
-```typescript
-// Your project uses webpack - follow these patterns:
-// - Main entry: ./dist/extension.js (not out/extension.js)
-// - Use webpack for bundling, not just tsc compilation
-// - Source maps are enabled via webpack config
-
-// Development commands (use your npm scripts):
-npm run compile     // Webpack build
-npm run watch       // Webpack watch mode
-npm run compile-tsc // TypeScript only (for checking)
-npm run test        // Jest test suite
-npm run lint        // ESLint validation
-npm run package     // Custom packaging script
-```
-
-### HTTP Client Patterns (You Use Axios)
-
-```typescript
-// Use axios for all HTTP JSON-RPC calls (you already have it)
-import axios from "axios";
-
-// Follow your established JSON-RPC pattern
-async function callMCPTool(method: string, params: any): Promise<any> {
-  try {
-    const response = await axios.post(
-      "http://localhost:3000/rpc",
-      {
-        jsonrpc: "2.0",
-        method: "tools/call",
-        params: { name: method, arguments: params },
-        id: Date.now(),
-      },
-      {
-        timeout: 5000, // Use your config timeout setting
-        headers: { "Content-Type": "application/json" },
-      }
-    );
-
-    return response.data.result;
-  } catch (error) {
-    // Use your ErrorHandler for axios errors
-    if (axios.isAxiosError(error)) {
-      ErrorHandler.handle(error, { context: "mcp-client", method });
-    }
-    throw error;
-  }
-}
-```
-
-### Jest Testing Configuration (You Use ts-jest)
-
-```typescript
-// Your jest setup with ts-jest - follow these patterns:
-import { jest } from "@jest/globals";
-
-// Test file naming: *.test.ts (as per your structure)
-// Jest config: uses ts-jest for TypeScript compilation
-// Coverage: Target >80% as per your requirements
-
-describe("ComponentName", () => {
-  // Use your jest.setup.ts for global test configuration
-  beforeEach(() => {
-    jest.clearAllMocks();
-  });
-
-  // Async/await pattern for axios mocks
-  it("should handle HTTP requests properly", async () => {
-    const mockAxios = jest.mocked(axios);
-    mockAxios.post.mockResolvedValue({ data: { result: mockData } });
-
-    const result = await service.callRemoteAPI();
-
-    expect(mockAxios.post).toHaveBeenCalledWith(
-      expect.stringContaining("/rpc"),
-      expect.objectContaining({ jsonrpc: "2.0" }),
-      expect.objectContaining({ timeout: 5000 })
-    );
+// ✅ CORRECT PATTERN
+describe("API Response Testing", () => {
+  it("should handle MCP server response format", async () => {
+    // 1. Create mock data with correct types (string dates)
+    const mockTask = {
+      id: "test-123",
+      createdDate: "2024-01-01T00:00:00.000Z", // String date
+      lastModified: "2024-01-02T00:00:00.000Z", // String date
+    };
+
+    // 2. Mock HTTP response with correct format
+    mockHttpClient.post.mockResolvedValue({
+      data: { jsonrpc: "2.0", result: { task: mockTask } },
+    });
+
+    // 3. Test the actual behavior
+    const result = await service.getTaskById("test-123");
+    expect(result.createdDate).toBe("2024-01-01T00:00:00.000Z");
   });
 });
 ```
 
-### ESLint Configuration (You Use @typescript-eslint)
+## Terminal & Command Execution
 
-```typescript
-// Follow your ESLint rules with @typescript-eslint/parser
-// Rules to enforce in your codebase:
-
-// ✅ Good: Explicit types for function parameters
-function processBusinessContext(context: BusinessContext): Promise<void> {
-  return contextManager.process(context);
-}
-
-// ❌ Avoid: Implicit any parameters
-function processBusinessContext(context) {
-  // ESLint will flag this
-  return contextManager.process(context);
-}
-
-// ✅ Good: Proper async/await with axios
-async function fetchContext(): Promise<BusinessContext> {
-  const response = await axios.get("/api/context");
-  return response.data;
-}
-
-// ❌ Avoid: Promise chains when async/await available
-function fetchContext(): Promise<BusinessContext> {
-  return axios.get("/api/context").then((response) => response.data);
-}
-```
-
-### Configuration System (Your VS Code Settings Schema)
-
-```typescript
-// Use your established configuration schema
-interface AiDMConfig {
-  mcpServer: {
-    port: number; // default: 3000
-    timeout: number; // default: 5000
-    retryAttempts: number; // default: 3
-  };
-  mock: {
-    enabled: boolean; // default: true
-    dataSize: "small" | "medium" | "large"; // default: 'medium'
-    enterprisePatterns: boolean; // default: true
-  };
-  demo: {
-    scenarioComplexity: "basic" | "intermediate" | "advanced";
-    industryVertical:
-      | "financial-services"
-      | "healthcare"
-      | "retail"
-      | "manufacturing"
-      | "technology"
-      | "generic";
-    includeComplianceData: boolean;
-  };
-  ui: {
-    hoverPopupTheme: "default" | "compact" | "detailed";
-    maxRequirementsShown: number; // 1-10, default: 3
-    showProgressBars: boolean;
-  };
-  remote: {
-    enabled: boolean;
-    mcpServerUrl: string;
-    apiKey: string;
-  };
-}
-
-// Access via VS Code configuration API
-const config = vscode.workspace.getConfiguration("aidmVscodeExtension");
-const port = config.get<number>("mcpServer.port", 3000);
-const mockEnabled = config.get<boolean>("mock.enabled", true);
-```
-
-## Node.js & VS Code Version Requirements
-
-### Runtime Environment (Your Engines)
-
-- **Node.js**: >=20.0.0 (use modern Node features, ES2022+ syntax)
-- **VS Code**: ^1.80.0 (use current VS Code API features)
-- **TypeScript**: ^5.1.6 (use latest TS features, avoid experimental ones)
-
-### Modern JavaScript Features (Node 20+)
-
-```typescript
-// ✅ Use modern Node.js 20 features
-const config = await import("./config.json", { assert: { type: "json" } });
-
-// ✅ Use Array.findLast, Object.hasOwn, etc. (Node 20 features)
-const lastRequirement = requirements.findLast((req) => req.priority === "high");
-const hasProperty = Object.hasOwn(context, "requirements");
-
-// ✅ Use top-level await in modules
-await setupMCPServer();
-export const serverReady = true;
-```
-
-## Development Workflow (Based on Your Scripts)
-
-### Development Commands
-
+### Terminal Context Awareness
 ```bash
-# Development cycle (use your npm scripts)
-npm run watch           # Webpack watch during development
-npm run lint           # Check ESLint rules before commit
-npm run test           # Run Jest test suite
-npm run compile        # Production webpack build
-npm run package        # Custom packaging (your script)
+# The terminal is ALREADY in the project workspace
+# Current working directory: ~/[logs]/[workspace]/[repos]/[manual shelf]/aidm-vscode-extension
+# DO NOT add unnecessary `cd` commands before npm scripts
 
-# Debugging workflow
-npm run compile-tsc    # TypeScript-only check for type errors
-code --extensionDevelopmentHost=127.0.0.1:3000  # VS Code extension debugging
+# ✅ Correct: Direct command execution
+npm test -- --testPathPattern="MarkdownTaskParser" --verbose
+npm run lint
+npm run compile
+
+# ❌ Incorrect: Unnecessary cd with unquoted paths (causes "too many arguments" error)
+cd /c/Users/yi.a.cheong/[logs]/[workspace]/[repos]/[manual shelf]/aidm-vscode-extension && npm test
 ```
 
-### File Watching & Hot Reload
+### Test Command Patterns
+```bash
+# Running specific tests (correct format)
+npm test -- --testPathPattern="ComponentName" --verbose
+npm test -- --testNamePattern="should handle hover requests"
+npm test -- src/__tests__/unit/hoverProvider.test.ts
 
+# Running test suites by directory
+npm test -- src/__tests__/unit/
+npm test -- src/__tests__/integration/
+npm test -- src/__tests__/server/
+
+# Full test suite
+npm test
+npm run test
+```
+
+## Performance Optimization
+
+### Extension Bundle Optimization
 ```typescript
-// Your webpack watch picks up changes - structure for fast rebuilds:
-// - Keep business logic in src/server/ (minimal VS Code dependencies)
-// - Keep UI logic in src/providers/, src/ui/ (VS Code specific)
-// - Use src/types/ barrel exports to minimize rebuild cascades
-// - Put heavy mock data in src/mock/ - loaded lazily to speed up builds
+// Your webpack config bundles everything into dist/extension.js
+// Optimization rules:
+// - Minimize dependencies in production bundle
+// - Use axios efficiently (its your only runtime dependency)
+// - Lazy load demo components (src/demo/) only when needed
+// - Cache MockDataProvider responses to reduce bundle parsing time
+
+// Example lazy loading for demo features:
+async function loadDemoComponents() {
+  const { DemoScenarios } = await import("../demo/demoScenarios");
+  const { runDemo } = await import("../demo/runDemo");
+  return { DemoScenarios, runDemo };
+}
 ```
 
-### Packaging & Distribution
-
-```typescript
-// Use your custom package-extension.js script
-// Outputs: Creates .vsix file for distribution
-// Build artifact: dist/extension.js (webpack bundled)
-
-// Ensure these are excluded from package:
-// - src/ directory (source code)
-// - node_modules/ (dependencies bundled by webpack)
-// - __tests__/ directory (test files)
-// - .vscode-test/ (test artifacts)
-```
-
-## Spec File Integration (Reference Your .kiro/specs/ Documents)
+## Spec File Integration
 
 ### When to Reference Spec Files
-
 **ALWAYS reference specs for:**
-
 - New feature development
 - Major architectural changes
 - Component interface modifications
@@ -722,74 +800,19 @@ code --extensionDevelopmentHost=127.0.0.1:3000  # VS Code extension debugging
 - Integration between major components (providers ↔ server ↔ mock)
 
 **Optional for:**
-
 - Bug fixes in existing functionality
 - Performance optimizations
 - Refactoring without behavior changes
 - Pure utility functions
 - Test improvements
 
-### Module-Specific Spec Reference
-
-```typescript
-// When working on HOVER PROVIDER features:
-// → Reference: requirements.md (Requirements 1, 3) + design.md (Hover Provider section)
-// → Focus: 200ms response time, TypeScript-only support, graceful degradation
-
-// When working on MCP SERVER components:
-// → Reference: requirements.md (Requirements 4, 8) + design.md (MCP Protocol Handler)
-// → Focus: AI assistant integration, concurrent requests, tool registration
-
-// When working on DEMO/ROOCODE integration:
-// → Reference: requirements.md (Requirement 8) + design.md (RooCode Dual-Context)
-// → Focus: Local vs remote context, hybrid architecture
-
-// When working on MOCK DATA systems:
-// → Reference: requirements.md (Requirement 6) + design.md (Mock Strategy)
-// → Focus: Realistic enterprise scenarios, configuration switching
-
-// When working on ERROR HANDLING:
-// → Reference: requirements.md (Requirement 5) + design.md (Error Handling)
-// → Focus: Graceful degradation, audit trails, enterprise compliance
-```
-
-### Spec File Guidance for Cursor
-
-```
-When implementing features in this codebase:
-
-1. CHECK requirements.md for the relevant requirement number and acceptance criteria
-2. VERIFY the implementation approach matches design.md patterns
-3. REFERENCE tasks.md for step-by-step implementation guidance
-4. ENSURE the code satisfies specific acceptance criteria from requirements.md
-
-For business logic components (src/server/, src/providers/, src/services/):
-- Always validate against requirements.md acceptance criteria
-- Follow architectural patterns from design.md
-- Implement error handling per Requirement 5 patterns
-
-For UI components (src/ui/, hover popups):
-- Focus on requirements.md user experience criteria
-- Follow design.md performance targets (hover <200ms)
-- Implement graceful degradation per Requirement 5
-
-For demo/integration work (src/demo/, RooCode):
-- Reference Requirement 8 for dual-context patterns
-- Follow design.md hybrid MCP architecture
-- Use tasks.md for step-by-step integration guidance
-
-The spec files provide the "why" behind architectural decisions - use them to understand business context and ensure implementations meet enterprise requirements.
-```
-
 ### Spec-Driven Development Rules
-
 - **Requirements Traceability**: Every major function should map to a requirement ID
-- **Design Compliance**: Follow established patterns in design.md (don't invent new ones)
+- **Design Compliance**: Follow established patterns in design.md (dont invent new ones)
 - **Task Alignment**: Check tasks.md to see if implementation matches planned approach
 - **Acceptance Criteria**: Validate code meets the specific WHEN/THEN criteria from requirements.md
 
 ### Documentation Comments (Reference Specs)
-
 ```typescript
 /**
  * Provides business context hover information for TypeScript files
@@ -810,119 +833,4 @@ class BusinessContextHoverProvider {
     // Implementation here...
   }
 }
-```
-
-## Terminal & Command Execution (Fix Common Issues)
-
-### Terminal Context Awareness
-
-```bash
-# The terminal is ALREADY in the project workspace
-# Current working directory: ~/[logs]/[workspace]/[repos]/[manual shelf]/aidm-vscode-extension
-# DO NOT add unnecessary `cd` commands before npm scripts
-
-# ✅ Correct: Direct command execution
-npm test -- --testPathPattern="MarkdownTaskParser" --verbose
-npm run lint
-npm run compile
-
-# ❌ Incorrect: Unnecessary cd with unquoted paths (causes "too many arguments" error)
-cd /c/Users/yi.a.cheong/[logs]/[workspace]/[repos]/[manual shelf]/aidm-vscode-extension && npm test
-```
-
-### Path Handling Rules
-
-- **Never** add `cd` commands unless explicitly changing to a different directory
-- **Always** quote paths with spaces: `"path with spaces"`
-- **Assume** the terminal is already in the correct workspace directory
-- **Use** relative paths when possible: `./src/file.ts` not absolute paths
-
-### Test Command Patterns (Your Environment)
-
-```bash
-# Running specific tests (correct format)
-npm test -- --testPathPattern="ComponentName" --verbose
-npm test -- --testNamePattern="should handle hover requests"
-npm test -- src/__tests__/unit/hoverProvider.test.ts
-
-# Running test suites by directory
-npm test -- src/__tests__/unit/
-npm test -- src/__tests__/integration/
-npm test -- src/__tests__/server/
-
-# Full test suite
-npm test
-npm run test
-```
-
-### Build & Development Commands
-
-```bash
-# Development workflow (no cd needed)
-npm run watch          # Webpack watch mode
-npm run compile        # Production build
-npm run lint           # ESLint check
-npm run package        # Your custom packaging
-
-# Debugging specific files
-npm run compile-tsc    # TypeScript compilation check
-```
-
-### File Path References
-
-```bash
-# ✅ Correct: Use relative paths from project root
-src/providers/hoverProvider.ts
-src/__tests__/unit/hoverProvider.test.ts
-dist/extension.js
-
-# ❌ Avoid: Absolute paths with spaces
-/c/Users/yi.a.cheong/[logs]/[workspace]/[repos]/[manual shelf]/aidm-vscode-extension/src/file.ts
-```
-
-### VS Code Integration Commands
-
-```bash
-# Extension debugging (when needed)
-code --extensionDevelopmentHost=localhost:3000
-
-# Open specific files (use VS Code's file explorer or Ctrl+P instead of command line)
-# The terminal is for running scripts, not navigation
-```
-
-## Production Deployment Patterns
-
-### Extension Bundle Optimization
-
-```typescript
-// Your webpack config bundles everything into dist/extension.js
-// Optimization rules:
-// - Minimize dependencies in production bundle
-// - Use axios efficiently (it's your only runtime dependency)
-// - Lazy load demo components (src/demo/) only when needed
-// - Cache MockDataProvider responses to reduce bundle parsing time
-
-// Example lazy loading for demo features:
-async function loadDemoComponents() {
-  const { DemoScenarios } = await import("../demo/demoScenarios");
-  const { runDemo } = await import("../demo/runDemo");
-  return { DemoScenarios, runDemo };
-}
-```
-
-### VS Code Extension Distribution
-
-```typescript
-// Your package.json metadata for marketplace:
-// - Update publisher from "aidm-team" to your actual publisher
-// - Update repository URLs from boilerplate
-// - Ensure icon.png exists in resources/
-// - Categories: ["Other", "Machine Learning", "Snippets"] are appropriate
-
-// Commands registered in package.json - all are working:
-"aidm-vscode-extension.showStatus";
-"aidm-vscode-extension.runRooCodeDemo";
-"aidm-vscode-extension.restartServer";
-"aidm-vscode-extension.showDemoPanel";
-// ... (all your commands are properly registered)
 ```

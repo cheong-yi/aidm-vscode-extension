@@ -99,3 +99,16 @@ The Sidebar Taskmaster Dashboard is a new UI module within the enterprise-ai-con
 4. IF a task has no test data THEN the system SHALL display a "No Tests" indicator
 5. WHEN test results change THEN the system SHALL update the display to reflect the current state
 6. IF test failures exist THEN the system SHALL provide a collapsible section showing failing test names and error messages
+
+### Requirement 8
+
+**User Story:** As a developer, I want to click on unexecuted tasks to automatically generate contextual prompts for my AI coding assistant, so that I can begin implementation with proper context without manual research.
+
+#### Acceptance Criteria
+
+1. WHEN I click on a task with status "not_started" THEN the system SHALL extract task context and generate a Cursor-compatible prompt
+2. WHEN a prompt is generated THEN it SHALL include task description, dependencies, requirements mapping, and relevant architectural context
+3. WHEN the prompt is ready THEN the system SHALL trigger Cursor's chat interface with the generated prompt
+4. IF a task is already "in_progress" or "completed" THEN the click SHALL show task details instead of generating a prompt
+5. WHEN context extraction fails THEN the system SHALL show an error message with fallback manual prompt option
+6. IF Cursor is not available THEN the system SHALL copy the prompt to clipboard with a notification
