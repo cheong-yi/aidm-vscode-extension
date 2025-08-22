@@ -10,6 +10,7 @@
 import * as vscode from "vscode";
 import { TaskDetailCardProvider } from "../../tasks/providers/TaskDetailCardProvider";
 import { Task, TaskStatus } from "../../tasks/types";
+import { TestStatus } from "../../tasks/types/taskEnums";
 
 // Mock VSCode modules
 jest.mock("vscode", () => ({
@@ -242,12 +243,12 @@ describe("TaskDetailCardProvider", () => {
   });
 
   describe("Rendering Method Stubs", () => {
-    it("should return placeholder HTML from renderTestFailures", () => {
+    it("should return proper HTML from renderTestFailures", () => {
       const result = provider.renderTestFailures([]);
-      expect(result).toContain("Test failures rendering not yet implemented");
+      expect(result).toContain("No test failures");
     });
 
-    it("should return placeholder HTML from renderExecutableActions", () => {
+    it("should return proper HTML from renderExecutableActions", () => {
       const mockTask: Task = {
         id: "test-1",
         title: "Test Task",
@@ -258,13 +259,14 @@ describe("TaskDetailCardProvider", () => {
         requirements: [],
         createdDate: "2024-01-01T00:00:00.000Z",
         lastModified: "2024-01-01T00:00:00.000Z",
+        isExecutable: false,
       };
 
       const result = provider.renderExecutableActions(mockTask);
-      expect(result).toContain("Executable actions not yet implemented");
+      expect(result).toContain("Task is not executable");
     });
 
-    it("should return placeholder HTML from renderStatusSpecificActions", () => {
+    it("should return proper HTML from renderStatusSpecificActions", () => {
       const mockTask: Task = {
         id: "test-1",
         title: "Test Task",
@@ -278,13 +280,16 @@ describe("TaskDetailCardProvider", () => {
       };
 
       const result = provider.renderStatusSpecificActions(mockTask);
-      expect(result).toContain("Status actions not yet implemented");
+      expect(result).toContain("Generate Prompt");
+      expect(result).toContain("View Requirements");
     });
 
-    it("should return original ISO string from formatRelativeTime", () => {
+    it("should return formatted relative time from formatRelativeTime", () => {
       const isoDate = "2024-01-01T00:00:00.000Z";
       const result = provider.formatRelativeTime(isoDate);
-      expect(result).toBe(isoDate);
+      // The method now returns formatted relative time, not the original ISO string
+      expect(typeof result).toBe("string");
+      expect(result.length).toBeGreaterThan(0);
     });
   });
 
@@ -432,6 +437,431 @@ describe("TaskDetailCardProvider", () => {
         provider.renderExecutableActions(mockTask);
         provider.renderStatusSpecificActions(mockTask);
         provider.formatRelativeTime("2024-01-01T00:00:00.000Z");
+      }).not.toThrow();
+    });
+  });
+
+  describe("HTML Template Generation", () => {
+    it("should generate valid HTML structure for task details", () => {
+      const mockTask: Task = {
+        id: "test-1",
+        title: "Test Task",
+        description: "Test Description",
+        status: TaskStatus.NOT_STARTED,
+        complexity: "low" as any,
+        dependencies: [],
+        requirements: [],
+        createdDate: "2024-01-01T00:00:00.000Z",
+        lastModified: "2024-01-01T00:00:00.000Z",
+        isExecutable: true,
+        estimatedDuration: "15-30 min",
+      };
+
+      // Access private method through any type for testing
+      const html = (provider as any).generateTaskDetailsHTML(mockTask);
+
+      // Verify HTML structure
+      expect(html).toContain("<!DOCTYPE html>");
+      expect(html).toContain('<html lang="en">');
+      expect(html).toContain("<head>");
+      expect(html).toContain("<body>");
+      expect(html).toContain("</body>");
+      expect(html).toContain("</html>");
+    });
+
+    it("should include all required sections in generated HTML", () => {
+      const mockTask: Task = {
+        id: "test-1",
+        title: "Test Task",
+        description: "Test Description",
+        status: TaskStatus.NOT_STARTED,
+        complexity: "low" as any,
+        dependencies: [],
+        requirements: [],
+        createdDate: "2024-01-01T00:00:00.000Z",
+        lastModified: "2024-01-01T00:00:00.000Z",
+      };
+
+      const html = (provider as any).generateTaskDetailsHTML(mockTask);
+
+      // Verify all required sections are present
+      expect(html).toContain("task-header");
+      expect(html).toContain("task-description");
+      expect(html).toContain("task-meta");
+      expect(html).toContain("dependencies");
+      expect(html).toContain("actions");
+    });
+
+    it("should include task header with title, ID, and status", () => {
+      const mockTask: Task = {
+        id: "test-1",
+        title: "Test Task Title",
+        description: "Test Description",
+        status: TaskStatus.IN_PROGRESS,
+        complexity: "medium" as any,
+        dependencies: [],
+        requirements: [],
+        createdDate: "2024-01-01T00:00:00.000Z",
+        lastModified: "2024-01-01T00:00:00.000Z",
+      };
+
+      const html = (provider as any).generateTaskDetailsHTML(mockTask);
+
+      expect(html).toContain("Test Task Title");
+      expect(html).toContain("test-1");
+      expect(html).toContain("in progress");
+    });
+
+    it("should include executable indicator for executable tasks", () => {
+      const mockTask: Task = {
+        id: "test-1",
+        title: "Test Task",
+        description: "Test Description",
+        status: TaskStatus.NOT_STARTED,
+        complexity: "low" as any,
+        dependencies: [],
+        requirements: [],
+        createdDate: "2024-01-01T00:00:00.000Z",
+        lastModified: "2024-01-01T00:00:00.000Z",
+        isExecutable: true,
+      };
+
+      const html = (provider as any).generateTaskDetailsHTML(mockTask);
+
+      expect(html).toContain("🤖");
+      expect(html).toContain("executable-indicator");
+    });
+
+    it("should render dependencies correctly", () => {
+      const mockTask: Task = {
+        id: "test-1",
+        title: "Test Task",
+        description: "Test Description",
+        status: TaskStatus.NOT_STARTED,
+        complexity: "low" as any,
+        dependencies: ["dep-1", "dep-2"],
+        requirements: [],
+        createdDate: "2024-01-01T00:00:00.000Z",
+        lastModified: "2024-01-01T00:00:00.000Z",
+      };
+
+      const html = (provider as any).generateTaskDetailsHTML(mockTask);
+
+      expect(html).toContain("dep-1");
+      expect(html).toContain("dep-2");
+      expect(html).toContain("dependency-tag");
+    });
+
+    it("should show 'None' for tasks without dependencies", () => {
+      const mockTask: Task = {
+        id: "test-1",
+        title: "Test Task",
+        description: "Test Description",
+        status: TaskStatus.NOT_STARTED,
+        complexity: "low" as any,
+        dependencies: [],
+        requirements: [],
+        createdDate: "2024-01-01T00:00:00.000Z",
+        lastModified: "2024-01-01T00:00:00.000Z",
+      };
+
+      const html = (provider as any).generateTaskDetailsHTML(mockTask);
+
+      expect(html).toContain("None");
+    });
+  });
+
+  describe("Test Results Rendering", () => {
+    it("should render test results section when test status exists", () => {
+      const mockTask: Task = {
+        id: "test-1",
+        title: "Test Task",
+        description: "Test Description",
+        status: TaskStatus.COMPLETED,
+        complexity: "low" as any,
+        dependencies: [],
+        requirements: [],
+        createdDate: "2024-01-01T00:00:00.000Z",
+        lastModified: "2024-01-01T00:00:00.000Z",
+        testStatus: {
+          lastRunDate: "2024-01-01T10:00:00.000Z",
+          totalTests: 10,
+          passedTests: 8,
+          failedTests: 2,
+        },
+      };
+
+      const html = (provider as any).generateTaskDetailsHTML(mockTask);
+
+      expect(html).toContain("Test Results");
+      expect(html).toContain("10");
+      expect(html).toContain("8");
+      expect(html).toContain("2");
+    });
+
+    it("should show 'No tests available yet' when no test status", () => {
+      const mockTask: Task = {
+        id: "test-1",
+        title: "Test Task",
+        description: "Test Description",
+        status: TaskStatus.NOT_STARTED,
+        complexity: "low" as any,
+        dependencies: [],
+        requirements: [],
+        createdDate: "2024-01-01T00:00:00.000Z",
+        lastModified: "2024-01-01T00:00:00.000Z",
+      };
+
+      const html = (provider as any).generateTaskDetailsHTML(mockTask);
+
+      expect(html).toContain("No tests available yet");
+    });
+
+    it("should render test failures section when failures exist", () => {
+      const mockTask: Task = {
+        id: "test-1",
+        title: "Test Task",
+        description: "Test Description",
+        status: TaskStatus.COMPLETED,
+        complexity: "low" as any,
+        dependencies: [],
+        requirements: [],
+        createdDate: "2024-01-01T00:00:00.000Z",
+        lastModified: "2024-01-01T00:00:00.000Z",
+        testStatus: {
+          lastRunDate: "2024-01-01T10:00:00.000Z",
+          totalTests: 10,
+          passedTests: 8,
+          failedTests: 2,
+          failingTestsList: [
+            {
+              name: "Test 1",
+              message: "Assertion failed",
+              category: "assertion" as any,
+            },
+          ],
+        },
+      };
+
+      const html = (provider as any).generateTaskDetailsHTML(mockTask);
+
+      expect(html).toContain("Failed Tests (1)");
+      expect(html).toContain("Test 1");
+      expect(html).toContain("Assertion failed");
+    });
+  });
+
+  describe("Action Buttons Rendering", () => {
+    it("should render executable actions for not started executable tasks", () => {
+      const mockTask: Task = {
+        id: "test-1",
+        title: "Test Task",
+        description: "Test Description",
+        status: TaskStatus.NOT_STARTED,
+        complexity: "low" as any,
+        dependencies: [],
+        requirements: [],
+        createdDate: "2024-01-01T00:00:00.000Z",
+        lastModified: "2024-01-01T00:00:00.000Z",
+        isExecutable: true,
+      };
+
+      const html = (provider as any).generateTaskDetailsHTML(mockTask);
+
+      expect(html).toContain("🤖 Execute with Cursor");
+      expect(html).toContain("Generate Prompt");
+      expect(html).toContain("View Requirements");
+    });
+
+    it("should render in-progress actions for in-progress tasks", () => {
+      const mockTask: Task = {
+        id: "test-1",
+        title: "Test Task",
+        description: "Test Description",
+        status: TaskStatus.IN_PROGRESS,
+        complexity: "low" as any,
+        dependencies: [],
+        requirements: [],
+        createdDate: "2024-01-01T00:00:00.000Z",
+        lastModified: "2024-01-01T00:00:00.000Z",
+      };
+
+      const html = (provider as any).generateTaskDetailsHTML(mockTask);
+
+      expect(html).toContain("Continue Work");
+      expect(html).toContain("Mark Complete");
+      expect(html).toContain("View Dependencies");
+    });
+
+    it("should render review actions for review tasks", () => {
+      const mockTask: Task = {
+        id: "test-1",
+        title: "Test Task",
+        description: "Test Description",
+        status: TaskStatus.REVIEW,
+        complexity: "low" as any,
+        dependencies: [],
+        requirements: [],
+        createdDate: "2024-01-01T00:00:00.000Z",
+        lastModified: "2024-01-01T00:00:00.000Z",
+      };
+
+      const html = (provider as any).generateTaskDetailsHTML(mockTask);
+
+      expect(html).toContain("Approve & Complete");
+      expect(html).toContain("Request Changes");
+      expect(html).toContain("View Implementation");
+    });
+
+    it("should render completed task actions with test failure options", () => {
+      const mockTask: Task = {
+        id: "test-1",
+        title: "Test Task",
+        description: "Test Description",
+        status: TaskStatus.COMPLETED,
+        complexity: "low" as any,
+        dependencies: [],
+        requirements: [],
+        createdDate: "2024-01-01T00:00:00.000Z",
+        lastModified: "2024-01-01T00:00:00.000Z",
+        testStatus: {
+          lastRunDate: "2024-01-01T10:00:00.000Z",
+          totalTests: 10,
+          passedTests: 8,
+          failedTests: 2,
+        },
+      };
+
+      const html = (provider as any).generateTaskDetailsHTML(mockTask);
+
+      expect(html).toContain("Fix Failing Tests");
+      expect(html).toContain("View Full Report");
+      expect(html).toContain("Rerun Tests");
+    });
+  });
+
+  describe("Utility Methods", () => {
+    it("should escape HTML special characters correctly", () => {
+      const testCases = [
+        { input: "Test & More", expected: "Test &amp; More" },
+        { input: "Test < More >", expected: "Test &lt; More &gt;" },
+        { input: 'Test "Quote"', expected: "Test &quot;Quote&quot;" },
+        { input: "Test 'Apostrophe'", expected: "Test &#39;Apostrophe&#39;" },
+      ];
+
+      testCases.forEach(({ input, expected }) => {
+        const result = (provider as any).escapeHtml(input);
+        expect(result).toBe(expected);
+      });
+    });
+
+    it("should return empty string for null/undefined input in escapeHtml", () => {
+      expect((provider as any).escapeHtml("")).toBe("");
+      expect((provider as any).escapeHtml(null as any)).toBe("");
+      expect((provider as any).escapeHtml(undefined as any)).toBe("");
+    });
+
+    it("should format relative time correctly", () => {
+      const now = new Date();
+      const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
+      const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+
+      expect(provider.formatRelativeTime(oneHourAgo.toISOString())).toContain(
+        "1 hour ago"
+      );
+      expect(provider.formatRelativeTime(oneDayAgo.toISOString())).toContain(
+        "1 day ago"
+      );
+    });
+
+    it("should return 'Never' for empty date in formatRelativeTime", () => {
+      expect(provider.formatRelativeTime("")).toBe("Never");
+      expect(provider.formatRelativeTime(null as any)).toBe("Never");
+    });
+
+    it("should get correct status display names", () => {
+      const statusMap = {
+        not_started: "not started",
+        in_progress: "in progress",
+        review: "review",
+        completed: "completed",
+        blocked: "blocked",
+        deprecated: "deprecated",
+      };
+
+      Object.entries(statusMap).forEach(([status, expected]) => {
+        const result = (provider as any).getStatusDisplayName(status);
+        expect(result).toBe(expected);
+      });
+    });
+
+    it("should get correct complexity display names", () => {
+      const complexityMap = {
+        low: "Low",
+        medium: "Medium",
+        high: "High",
+      };
+
+      Object.entries(complexityMap).forEach(([complexity, expected]) => {
+        const result = (provider as any).getComplexityDisplayName(complexity);
+        expect(result).toBe(expected);
+      });
+    });
+
+    it("should get correct status CSS classes", () => {
+      const statusClassMap = {
+        not_started: "not-started",
+        in_progress: "in-progress",
+        review: "review",
+        completed: "completed",
+        blocked: "blocked",
+        deprecated: "deprecated",
+      };
+
+      Object.entries(statusClassMap).forEach(([status, expected]) => {
+        const result = (provider as any).getStatusClass(status);
+        expect(result).toBe(expected);
+      });
+    });
+  });
+
+  describe("Error Handling", () => {
+    it("should generate fallback HTML when main template generation fails", () => {
+      const mockTask: Task = {
+        id: "test-1",
+        title: "Test Task",
+        description: "Test Description",
+        status: TaskStatus.NOT_STARTED,
+        complexity: "low" as any,
+        dependencies: [],
+        requirements: [],
+        createdDate: "2024-01-01T00:00:00.000Z",
+        lastModified: "2024-01-01T00:00:00.000Z",
+      };
+
+      const fallbackHtml = (provider as any).generateFallbackHTML(mockTask);
+
+      expect(fallbackHtml).toContain("⚠️ Error loading task details");
+      expect(fallbackHtml).toContain("test-1");
+      expect(fallbackHtml).toContain("Test Task");
+    });
+
+    it("should handle malformed task data gracefully", () => {
+      const malformedTask = {
+        id: "test-1",
+        title: "Test Task",
+        description: "Test Description",
+        status: "invalid_status",
+        complexity: "invalid_complexity",
+        dependencies: null,
+        requirements: [],
+        createdDate: "2024-01-01T00:00:00.000Z",
+        lastModified: "2024-01-01T00:00:00.000Z",
+      } as any;
+
+      // This should not throw and should handle malformed data gracefully
+      expect(() => {
+        (provider as any).generateTaskDetailsHTML(malformedTask);
       }).not.toThrow();
     });
   });

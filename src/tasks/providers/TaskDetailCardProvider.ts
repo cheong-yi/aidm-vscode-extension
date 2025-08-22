@@ -229,9 +229,32 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
    * @returns HTML string for test failures display
    */
   public renderTestFailures(failures: any[]): string {
-    // Implementation will be added in future tasks
-    // For now, return placeholder HTML
-    return `<div class="test-failures">Test failures rendering not yet implemented</div>`;
+    if (!failures || failures.length === 0) {
+      return '<div class="no-failures">No test failures</div>';
+    }
+
+    const failureItems = failures
+      .map(failure => `
+        <div class="failure-item">
+          <div class="failure-name">${this.escapeHtml(failure.name)}</div>
+          <div class="failure-message">${this.escapeHtml(failure.message)}</div>
+        </div>
+      `)
+      .join('');
+
+    return `
+      <div class="failures-section">
+        <div class="failures-header">
+          <svg class="task-expand-icon" viewBox="0 0 16 16" fill="currentColor" width="12" height="12">
+            <path d="m12.14 8.753-5.482 4.796c-.646.566-1.658.106-1.658-.753V3.204a1 1 0 0 1 1.659-.753l5.48 4.796a1 1 0 0 1 0 1.506z"/>
+          </svg>
+          Failed Tests (${failures.length})
+        </div>
+        <div class="failures-list">
+          ${failureItems}
+        </div>
+      </div>
+    `;
   }
 
   /**
@@ -242,9 +265,23 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
    * @returns HTML string for executable actions
    */
   public renderExecutableActions(task: Task): string {
-    // Implementation will be added in future tasks
-    // For now, return placeholder HTML
-    return `<div class="executable-actions">Executable actions not yet implemented</div>`;
+    if (!task.isExecutable) {
+      return '<div class="no-executable-actions">Task is not executable</div>';
+    }
+
+    return `
+      <div class="executable-actions">
+        <button class="action-btn primary" onclick="handleActionClick('executeWithCursor', '${task.id}')">
+          🤖 Execute with Cursor
+        </button>
+        <button class="action-btn" onclick="handleActionClick('generatePrompt', '${task.id}')">
+          Generate Prompt
+        </button>
+        <button class="action-btn" onclick="handleActionClick('viewRequirements', '${task.id}')">
+          View Requirements
+        </button>
+      </div>
+    `;
   }
 
   /**
@@ -255,9 +292,7 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
    * @returns HTML string for status-specific actions
    */
   public renderStatusSpecificActions(task: Task): string {
-    // Implementation will be added in future tasks
-    // For now, return placeholder HTML
-    return `<div class="status-actions">Status actions not yet implemented</div>`;
+    return this.renderActionButtons(task);
   }
 
   /**
@@ -268,9 +303,33 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
    * @returns Formatted relative time string
    */
   public formatRelativeTime(isoDate: string): string {
-    // Implementation will be added in future tasks
-    // For now, return the original ISO string
-    return isoDate;
+    if (!isoDate) {
+      return 'Never';
+    }
+
+    try {
+      const date = new Date(isoDate);
+      const now = new Date();
+      const diffMs = now.getTime() - date.getTime();
+      const diffMinutes = Math.floor(diffMs / (1000 * 60));
+      const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+      const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+      if (diffMinutes < 1) {
+        return 'Just now';
+      } else if (diffMinutes < 60) {
+        return `${diffMinutes} minute${diffMinutes === 1 ? '' : 's'} ago`;
+      } else if (diffHours < 24) {
+        return `${diffHours} hour${diffHours === 1 ? '' : 's'} ago`;
+      } else if (diffDays < 7) {
+        return `${diffDays} day${diffDays === 1 ? '' : 's'} ago`;
+      } else {
+        return date.toLocaleDateString();
+      }
+    } catch (error) {
+      // Fallback to original ISO string if parsing fails
+      return isoDate;
+    }
   }
 
   /**
@@ -281,30 +340,565 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
    * @returns HTML string for task details
    */
   private generateTaskDetailsHTML(task: Task): string {
-    // Implementation will be added in future tasks
-    // For now, return basic HTML structure
+    try {
+      return `
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Task Details - ${task.id}</title>
+          <style>
+            body { 
+              font-family: var(--vscode-font-family); 
+              margin: 0; 
+              padding: 0; 
+              background: #1e1e1e; 
+              color: #cccccc; 
+            }
+            .task-details { 
+              padding: 16px; 
+              background: #2d2d30; 
+              border-top: 1px solid #3e3e42;
+            }
+            .task-header {
+              margin-bottom: 16px;
+              padding-bottom: 12px;
+              border-bottom: 1px solid #3e3e42;
+            }
+            .task-title {
+              font-size: 14px;
+              font-weight: 600;
+              color: #ffffff;
+              margin-bottom: 8px;
+              line-height: 1.3;
+            }
+            .task-id {
+              font-family: 'Courier New', monospace;
+              font-size: 11px;
+              background: #3e3e42;
+              padding: 2px 6px;
+              border-radius: 3px;
+              color: #dcdcaa;
+              display: inline-block;
+              margin-bottom: 8px;
+            }
+            .status-badge {
+              font-size: 10px;
+              padding: 3px 8px;
+              border-radius: 10px;
+              font-weight: 600;
+              display: inline-block;
+              margin-left: 8px;
+            }
+            .status-badge.not-started { background: #4a4a4a; color: #cccccc; }
+            .status-badge.in-progress { background: #569cd6; color: #ffffff; }
+            .status-badge.review { background: #dcdcaa; color: #1e1e1e; }
+            .status-badge.completed { background: #4ec9b0; color: #1e1e1e; }
+            .status-badge.blocked { background: #f48771; color: #1e1e1e; }
+            .status-badge.deprecated { background: #6a6a6a; color: #cccccc; }
+            
+            .task-description {
+              margin-bottom: 16px;
+              font-size: 12px;
+              line-height: 1.4;
+              color: #d4d4d4;
+            }
+            
+            .task-meta {
+              display: grid;
+              grid-template-columns: 1fr 1fr;
+              gap: 12px;
+              margin-bottom: 16px;
+            }
+            .meta-item {
+              font-size: 11px;
+            }
+            .meta-label {
+              color: #969696;
+              margin-bottom: 2px;
+            }
+            .meta-value {
+              color: #ffffff;
+              font-weight: 500;
+            }
+            .complexity-low { color: #4ec9b0; }
+            .complexity-medium { color: #dcdcaa; }
+            .complexity-high { color: #f48771; }
+            
+            .dependencies {
+              margin-bottom: 16px;
+            }
+            .dependencies-title {
+              font-size: 11px;
+              color: #969696;
+              margin-bottom: 6px;
+            }
+            .dependency-list {
+              display: flex;
+              flex-wrap: wrap;
+              gap: 4px;
+            }
+            .dependency-tag {
+              background: #3e3e42;
+              color: #dcdcaa;
+              font-size: 10px;
+              padding: 2px 6px;
+              border-radius: 3px;
+              font-family: 'Courier New', monospace;
+            }
+            
+            .test-results {
+              background: #1e1e1e;
+              border: 1px solid #3e3e42;
+              border-radius: 4px;
+              padding: 12px;
+              margin-bottom: 12px;
+            }
+            .test-header {
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+              margin-bottom: 8px;
+            }
+            .test-title {
+              font-size: 11px;
+              font-weight: 600;
+              color: #ffffff;
+            }
+            .test-date {
+              font-size: 10px;
+              color: #969696;
+            }
+            .test-stats {
+              display: flex;
+              gap: 16px;
+              margin-bottom: 8px;
+            }
+            .test-stat {
+              text-align: center;
+            }
+            .test-stat-value {
+              font-size: 14px;
+              font-weight: 700;
+              margin-bottom: 2px;
+            }
+            .test-stat-label {
+              font-size: 9px;
+              color: #969696;
+              text-transform: uppercase;
+            }
+            .test-passed { color: #4ec9b0; }
+            .test-failed { color: #f48771; }
+            .test-total { color: #dcdcaa; }
+            
+            .failures-section {
+              margin-top: 12px;
+            }
+            .failures-header {
+              font-size: 10px;
+              color: #f48771;
+              font-weight: 600;
+              margin-bottom: 6px;
+              cursor: pointer;
+              display: flex;
+              align-items: center;
+              gap: 4px;
+            }
+            .failures-list {
+              display: none;
+              font-size: 10px;
+              color: #cccccc;
+            }
+            .failures-section.expanded .failures-list {
+              display: block;
+            }
+            .failure-item {
+              background: #2d2d30;
+              border-left: 3px solid #f48771;
+              padding: 6px 8px;
+              margin-bottom: 4px;
+              border-radius: 2px;
+            }
+            .failure-name {
+              font-weight: 500;
+              margin-bottom: 2px;
+            }
+            .failure-message {
+              color: #969696;
+              font-family: 'Courier New', monospace;
+              font-size: 9px;
+            }
+            
+            .no-tests {
+              font-size: 11px;
+              color: #969696;
+              font-style: italic;
+              text-align: center;
+              padding: 8px;
+            }
+            
+            .actions {
+              display: flex;
+              gap: 8px;
+              flex-wrap: wrap;
+            }
+            .action-btn {
+              background: #3e3e42;
+              border: none;
+              color: #cccccc;
+              padding: 6px 12px;
+              border-radius: 3px;
+              font-size: 10px;
+              cursor: pointer;
+              transition: background 0.2s;
+            }
+            .action-btn:hover {
+              background: #4a4a4a;
+            }
+            .action-btn.primary {
+              background: #569cd6;
+              color: #ffffff;
+            }
+            .action-btn.primary:hover {
+              background: #4a86c7;
+            }
+            
+            .section-divider {
+              height: 1px;
+              background: #3e3e42;
+              margin: 12px 0;
+            }
+            
+            .executable-indicator {
+              color: #569cd6;
+              font-size: 12px;
+              margin-left: 4px;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="task-details">
+            <!-- Task Header Section -->
+            <div class="task-header">
+              <div class="task-title">${this.escapeHtml(task.title)}</div>
+              <div>
+                <span class="task-id">${this.escapeHtml(task.id)}</span>
+                <span class="status-badge ${this.getStatusClass(task.status)}">${this.getStatusDisplayName(task.status)}</span>
+                ${task.isExecutable ? '<span class="executable-indicator">🤖</span>' : ''}
+              </div>
+            </div>
+            
+            <!-- Task Description Section -->
+            <div class="task-description">
+              <p>${this.escapeHtml(task.description)}</p>
+            </div>
+            
+            <!-- Metadata Grid Section -->
+            <div class="task-meta">
+              <div class="meta-item">
+                <div class="meta-label">Complexity</div>
+                <div class="meta-value complexity-${task.complexity.toLowerCase()}">${this.getComplexityDisplayName(task.complexity)}</div>
+              </div>
+              <div class="meta-item">
+                <div class="meta-label">Estimated</div>
+                <div class="meta-value">${task.estimatedDuration || 'Not specified'}</div>
+              </div>
+            </div>
+            
+            <!-- Dependencies Section -->
+            <div class="dependencies">
+              <div class="dependencies-title">Dependencies</div>
+              <div class="dependency-list">
+                ${this.renderDependencies(task.dependencies)}
+              </div>
+            </div>
+            
+            <!-- Test Results Section -->
+            ${this.renderTestResultsSection(task)}
+            
+            <!-- Action Buttons Section -->
+            <div class="actions">
+              ${this.renderActionButtons(task)}
+            </div>
+          </div>
+          
+          <script>
+            // Handle failures section expansion
+            function toggleFailures(failuresElement, event) {
+              event.stopPropagation();
+              failuresElement.classList.toggle('expanded');
+            }
+            
+            // Handle action button clicks
+            function handleActionClick(action, taskId) {
+              vscode.postMessage({
+                command: action,
+                taskId: taskId
+              });
+            }
+          </script>
+        </body>
+        </html>
+      `;
+    } catch (error) {
+      console.error("Failed to generate task details HTML:", error);
+      return this.generateFallbackHTML(task);
+    }
+  }
+
+  /**
+   * Generates fallback HTML when main template generation fails
+   * Called when there's an error in the main HTML generation
+   *
+   * @param task - The task to generate fallback HTML for
+   * @returns Fallback HTML string
+   */
+  private generateFallbackHTML(task: Task): string {
     return `
       <!DOCTYPE html>
       <html lang="en">
       <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Task Details</title>
+        <title>Task Details - ${task.id}</title>
         <style>
-          body { font-family: var(--vscode-font-family); padding: 10px; }
-          .task-details { color: var(--vscode-foreground); }
+          body { font-family: var(--vscode-font-family); padding: 10px; background: #1e1e1e; color: #cccccc; }
+          .fallback { text-align: center; padding: 20px; }
+          .error { color: #f48771; margin-bottom: 10px; }
         </style>
       </head>
       <body>
-        <div class="task-details">
-          <h3>Task ${task.id}: ${task.title}</h3>
+        <div class="fallback">
+          <div class="error">⚠️ Error loading task details</div>
+          <h3>Task ${task.id}: ${this.escapeHtml(task.title)}</h3>
           <p>Status: ${task.status}</p>
-          <p>Description: ${task.description}</p>
-          <p>Task details HTML generation not yet implemented</p>
+          <p>Description: ${this.escapeHtml(task.description)}</p>
+          <p>Please try refreshing the view or contact support if the problem persists.</p>
         </div>
       </body>
       </html>
     `;
+  }
+
+  /**
+   * Renders dependencies as HTML tags
+   * Called when generating the dependencies section
+   *
+   * @param dependencies - Array of dependency IDs
+   * @returns HTML string for dependency tags
+   */
+  private renderDependencies(dependencies: string[]): string {
+    if (!dependencies || dependencies.length === 0) {
+      return '<span class="dependency-tag">None</span>';
+    }
+    
+    return dependencies
+      .map(dep => `<span class="dependency-tag">${this.escapeHtml(dep)}</span>`)
+      .join('');
+  }
+
+  /**
+   * Renders test results section with proper structure
+   * Called when generating the test results section
+   *
+   * @param task - The task to render test results for
+   * @returns HTML string for test results section
+   */
+  private renderTestResultsSection(task: Task): string {
+    if (!task.testStatus) {
+      return '<div class="no-tests">No tests available yet</div>';
+    }
+
+    const { testStatus } = task;
+    const hasFailures = testStatus.failingTestsList && testStatus.failingTestsList.length > 0;
+    
+    return `
+      <div class="test-results">
+        <div class="test-header">
+          <div class="test-title">Test Results</div>
+          <div class="test-date">Last run: ${this.formatRelativeTime(testStatus.lastRunDate || '')}</div>
+        </div>
+        <div class="test-stats">
+          <div class="test-stat">
+            <div class="test-stat-value test-total">${testStatus.totalTests}</div>
+            <div class="test-stat-label">Total</div>
+          </div>
+          <div class="test-stat">
+            <div class="test-stat-value test-passed">${testStatus.passedTests}</div>
+            <div class="test-stat-label">Passed</div>
+          </div>
+          <div class="test-stat">
+            <div class="test-stat-value test-failed">${testStatus.failedTests}</div>
+            <div class="test-stat-label">Failed</div>
+          </div>
+        </div>
+        ${hasFailures ? this.renderFailuresSection(testStatus.failingTestsList!) : ''}
+      </div>
+    `;
+  }
+
+  /**
+   * Renders failures section with collapsible structure
+   * Called when rendering test failures for a task
+   *
+   * @param failures - Array of failing test information
+   * @returns HTML string for failures section
+   */
+  private renderFailuresSection(failures: any[]): string {
+    if (!failures || failures.length === 0) {
+      return '';
+    }
+
+    const failureItems = failures
+      .map(failure => `
+        <div class="failure-item">
+          <div class="failure-name">${this.escapeHtml(failure.name)}</div>
+          <div class="failure-message">${this.escapeHtml(failure.message)}</div>
+        </div>
+      `)
+      .join('');
+
+    return `
+      <div class="failures-section" onclick="toggleFailures(this, event)">
+        <div class="failures-header">
+          <svg class="task-expand-icon" viewBox="0 0 16 16" fill="currentColor" width="12" height="12">
+            <path d="m12.14 8.753-5.482 4.796c-.646.566-1.658.106-1.658-.753V3.204a1 1 0 0 1 1.659-.753l5.48 4.796a1 1 0 0 1 0 1.506z"/>
+          </svg>
+          Failed Tests (${failures.length})
+        </div>
+        <div class="failures-list">
+          ${failureItems}
+        </div>
+      </div>
+    `;
+  }
+
+  /**
+   * Renders action buttons based on task status and properties
+   * Called when generating the action buttons section
+   *
+   * @param task - The task to render actions for
+   * @returns HTML string for action buttons
+   */
+  private renderActionButtons(task: Task): string {
+    const buttons: string[] = [];
+
+    switch (task.status) {
+      case 'not_started':
+        if (task.isExecutable) {
+          buttons.push('<button class="action-btn primary" onclick="handleActionClick(\'executeWithCursor\', \'' + task.id + '\')">🤖 Execute with Cursor</button>');
+        }
+        buttons.push('<button class="action-btn" onclick="handleActionClick(\'generatePrompt\', \'' + task.id + '\')">Generate Prompt</button>');
+        buttons.push('<button class="action-btn" onclick="handleActionClick(\'viewRequirements\', \'' + task.id + '\')">View Requirements</button>');
+        break;
+      
+      case 'in_progress':
+        buttons.push('<button class="action-btn primary" onclick="handleActionClick(\'continueWork\', \'' + task.id + '\')">Continue Work</button>');
+        buttons.push('<button class="action-btn" onclick="handleActionClick(\'markComplete\', \'' + task.id + '\')">Mark Complete</button>');
+        buttons.push('<button class="action-btn" onclick="handleActionClick(\'viewDependencies\', \'' + task.id + '\')">View Dependencies</button>');
+        break;
+      
+      case 'review':
+        buttons.push('<button class="action-btn primary" onclick="handleActionClick(\'approveComplete\', \'' + task.id + '\')">Approve & Complete</button>');
+        buttons.push('<button class="action-btn" onclick="handleActionClick(\'requestChanges\', \'' + task.id + '\')">Request Changes</button>');
+        buttons.push('<button class="action-btn" onclick="handleActionClick(\'viewImplementation\', \'' + task.id + '\')">View Implementation</button>');
+        break;
+      
+      case 'completed':
+        if (task.testStatus && task.testStatus.failedTests > 0) {
+          buttons.push('<button class="action-btn" onclick="handleActionClick(\'fixFailingTests\', \'' + task.id + '\')">Fix Failing Tests</button>');
+          buttons.push('<button class="action-btn" onclick="handleActionClick(\'viewFullReport\', \'' + task.id + '\')">View Full Report</button>');
+          buttons.push('<button class="action-btn" onclick="handleActionClick(\'rerunTests\', \'' + task.id + '\')">Rerun Tests</button>');
+        } else {
+          buttons.push('<button class="action-btn" onclick="handleActionClick(\'viewCode\', \'' + task.id + '\')">View Code</button>');
+          buttons.push('<button class="action-btn" onclick="handleActionClick(\'viewTests\', \'' + task.id + '\')">View Tests</button>');
+          buttons.push('<button class="action-btn" onclick="handleActionClick(\'history\', \'' + task.id + '\')">History</button>');
+        }
+        break;
+      
+      case 'blocked':
+        buttons.push('<button class="action-btn" onclick="handleActionClick(\'viewBlockers\', \'' + task.id + '\')">View Blockers</button>');
+        buttons.push('<button class="action-btn" onclick="handleActionClick(\'updateDependencies\', \'' + task.id + '\')">Update Dependencies</button>');
+        buttons.push('<button class="action-btn" onclick="handleActionClick(\'reportIssue\', \'' + task.id + '\')">Report Issue</button>');
+        break;
+      
+      case 'deprecated':
+        buttons.push('<button class="action-btn" onclick="handleActionClick(\'archive\', \'' + task.id + '\')">Archive</button>');
+        buttons.push('<button class="action-btn" onclick="handleActionClick(\'viewHistory\', \'' + task.id + '\')">View History</button>');
+        break;
+      
+      default:
+        buttons.push('<button class="action-btn" onclick="handleActionClick(\'viewDetails\', \'' + task.id + '\')">View Details</button>');
+    }
+
+    return buttons.join('');
+  }
+
+  /**
+   * Gets CSS class for task status styling
+   * Called when generating status badge CSS classes
+   *
+   * @param status - The task status
+   * @returns CSS class name for status styling
+   */
+  private getStatusClass(status: string): string {
+    return status.replace('_', '-');
+  }
+
+  /**
+   * Gets display name for task status
+   * Called when displaying status text in the UI
+   *
+   * @param status - The task status
+   * @returns Human-readable status display name
+   */
+  private getStatusDisplayName(status: string): string {
+    const statusMap: Record<string, string> = {
+      'not_started': 'not started',
+      'in_progress': 'in progress',
+      'review': 'review',
+      'completed': 'completed',
+      'blocked': 'blocked',
+      'deprecated': 'deprecated'
+    };
+    
+    return statusMap[status] || status;
+  }
+
+  /**
+   * Gets display name for task complexity
+   * Called when displaying complexity text in the UI
+   *
+   * @param complexity - The task complexity
+   * @returns Human-readable complexity display name
+   */
+  private getComplexityDisplayName(complexity: string): string {
+    const complexityMap: Record<string, string> = {
+      'low': 'Low',
+      'medium': 'Medium',
+      'high': 'High'
+    };
+    
+    return complexityMap[complexity] || complexity;
+  }
+
+  /**
+   * Escapes HTML special characters to prevent XSS
+   * Called when inserting user content into HTML templates
+   *
+   * @param text - Text to escape
+   * @returns Escaped HTML-safe text
+   */
+  private escapeHtml(text: string): string {
+    if (!text) return '';
+    
+    return text
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
   }
 
   /**
@@ -322,13 +916,46 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>No Task Selected</title>
         <style>
-          body { font-family: var(--vscode-font-family); padding: 10px; }
-          .no-task { color: var(--vscode-foreground); text-align: center; }
+          body { 
+            font-family: var(--vscode-font-family); 
+            margin: 0; 
+            padding: 0; 
+            background: #1e1e1e; 
+            color: #cccccc; 
+          }
+          .no-task { 
+            padding: 40px 20px; 
+            text-align: center; 
+            background: #2d2d30; 
+            border-top: 1px solid #3e3e42;
+            min-height: 200px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+          }
+          .no-task h3 { 
+            color: #ffffff; 
+            margin-bottom: 16px;
+            font-size: 16px;
+          }
+          .no-task p { 
+            color: #d4d4d4; 
+            margin-bottom: 8px;
+            font-size: 13px;
+            line-height: 1.4;
+          }
+          .icon { 
+            font-size: 48px; 
+            margin-bottom: 16px;
+            opacity: 0.7;
+          }
         </style>
       </head>
       <body>
         <div class="no-task">
-          <h3>📋 No Task Selected</h3>
+          <div class="icon">📋</div>
+          <h3>No Task Selected</h3>
           <p>Select a task from the tree view above to see detailed information.</p>
           <p>Click on executable tasks (🤖) to start implementation with AI.</p>
         </div>
