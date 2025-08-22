@@ -87,7 +87,7 @@ This implementation plan breaks down the feature into atomic, TDD-friendly tasks
 
 #### 2.7 Time Formatting Utility
 
-- [d] 2.7.1 Create TimeFormattingUtility class structure
+- [x] 2.7.1 Create TimeFormattingUtility class structure
 
   - Implement formatRelativeTime method for ISO date strings
   - Add formatDuration method for estimated time parsing

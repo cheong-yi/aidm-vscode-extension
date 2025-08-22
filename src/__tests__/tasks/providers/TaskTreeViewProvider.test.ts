@@ -1,13 +1,19 @@
 /**
  * TaskTreeViewProvider Unit Tests
  * Requirements: 3.1.2 - TaskTreeViewProvider class structure with VSCode TreeDataProvider interface
+ * Requirements: 3.2.6 - Implement "No Tasks" state handling
  */
 
 import { jest } from "@jest/globals";
 import * as vscode from "vscode";
-import { TaskTreeViewProvider } from "../TaskTreeViewProvider";
-import { TaskTreeItem } from "../TaskTreeItem";
-import { Task, TaskStatus, TaskComplexity, TaskPriority } from "../../types";
+import { TaskTreeViewProvider } from "../../../tasks/providers/TaskTreeViewProvider";
+import { TaskTreeItem } from "../../../tasks/providers/TaskTreeItem";
+import {
+  Task,
+  TaskStatus,
+  TaskComplexity,
+  TaskPriority,
+} from "../../../tasks/types";
 
 describe("TaskTreeViewProvider", () => {
   let provider: TaskTreeViewProvider;
@@ -44,9 +50,9 @@ describe("TaskTreeViewProvider", () => {
       expect(provider.onDidChangeTreeData).toBeDefined();
     });
 
-    it("should be assignable to TreeDataProvider type", () => {
-      // TypeScript should accept this assignment
-      const treeProvider: vscode.TreeDataProvider<TaskTreeItem> = provider;
+    it("should be assignable to TreeDataProvider type with union type", () => {
+      // TypeScript should accept this assignment with the union type
+      const treeProvider: vscode.TreeDataProvider<any> = provider;
       expect(treeProvider).toBe(provider);
     });
   });
@@ -159,30 +165,98 @@ describe("TaskTreeViewProvider", () => {
     });
   });
 
-  describe("getChildren method", () => {
-    it("should return empty array when getChildren called with no element", async () => {
+  describe("getChildren method - Empty State Handling", () => {
+    it("should return empty state item when no tasks are available", async () => {
       const result = await provider.getChildren();
 
-      expect(result).toEqual([]);
-      expect(Array.isArray(result)).toBe(true);
-      expect(result.length).toBe(0);
+      expect(result).toHaveLength(1);
+      expect(result[0]).toBeDefined();
+      expect(result[0]?.label).toBe("No Tasks Available");
+      expect(result[0]?.contextValue).toBe("empty-state");
     });
 
-    it("should return empty array when getChildren called with element", async () => {
+    it("should return empty state item when getChildren called with element", async () => {
       const result = await provider.getChildren(mockTreeItem);
 
-      expect(result).toEqual([]);
-      expect(Array.isArray(result)).toBe(true);
-      expect(result.length).toBe(0);
+      expect(result).toHaveLength(1);
+      expect(result[0]).toBeDefined();
+      expect(result[0]?.label).toBe("No Tasks Available");
     });
 
-    it("should return Promise<TaskTreeItem[]>", async () => {
+    it("should return Promise with empty state item", async () => {
       const result = provider.getChildren();
 
       expect(result).toBeInstanceOf(Promise);
 
       const resolved = await result;
       expect(Array.isArray(resolved)).toBe(true);
+      expect(resolved).toHaveLength(1);
+      expect(resolved[0]?.contextValue).toBe("empty-state");
+    });
+
+    it("should return empty state item with correct properties", async () => {
+      const result = await provider.getChildren();
+      const emptyStateItem = result[0];
+
+      expect(emptyStateItem).toBeDefined();
+      expect(emptyStateItem?.label).toBe("No Tasks Available");
+      expect(emptyStateItem?.description).toBe(
+        "Select a task from the tree view above to see detailed information."
+      );
+      expect(emptyStateItem?.contextValue).toBe("empty-state");
+      expect(emptyStateItem?.collapsibleState).toBe(
+        vscode.TreeItemCollapsibleState.None
+      );
+      expect(emptyStateItem?.command).toBeDefined();
+      expect(emptyStateItem?.command?.command).toBe(
+        "aidm-vscode-extension.refreshTasks"
+      );
+    });
+  });
+
+  describe("Empty State TreeItem Creation", () => {
+    it("should create empty state item with inbox icon for no-tasks scenario", async () => {
+      const result = await provider.getChildren();
+      const emptyStateItem = result[0];
+
+      expect(emptyStateItem?.iconPath).toBeDefined();
+      // Check if iconPath is a ThemeIcon with "inbox" value
+      if (
+        emptyStateItem?.iconPath &&
+        typeof emptyStateItem.iconPath === "object" &&
+        "id" in emptyStateItem.iconPath
+      ) {
+        expect(emptyStateItem.iconPath.id).toBe("inbox");
+      }
+    });
+
+    it("should create empty state item with refresh command", async () => {
+      const result = await provider.getChildren();
+      const emptyStateItem = result[0];
+
+      expect(emptyStateItem?.command).toBeDefined();
+      expect(emptyStateItem?.command?.command).toBe(
+        "aidm-vscode-extension.refreshTasks"
+      );
+      expect(emptyStateItem?.command?.title).toBe("Refresh Tasks");
+    });
+
+    it("should create empty state item with correct tooltip", async () => {
+      const result = await provider.getChildren();
+      const emptyStateItem = result[0];
+
+      expect(emptyStateItem?.tooltip).toBe(
+        "Select a task from the tree view above to see detailed information."
+      );
+    });
+
+    it("should create empty state item with non-collapsible state", async () => {
+      const result = await provider.getChildren();
+      const emptyStateItem = result[0];
+
+      expect(emptyStateItem?.collapsibleState).toBe(
+        vscode.TreeItemCollapsibleState.None
+      );
     });
   });
 
@@ -237,6 +311,36 @@ describe("TaskTreeViewProvider", () => {
       provider.refresh();
 
       expect(mockListener).toHaveBeenCalledWith(undefined);
+    });
+  });
+
+  describe("Empty State Integration", () => {
+    it("should integrate empty state with VSCode tree view", async () => {
+      const result = await provider.getChildren();
+
+      // Verify empty state provides meaningful user guidance
+      expect(result[0]?.label).toBe("No Tasks Available");
+      expect(result[0]?.description).toContain("Select a task");
+      expect(result[0]?.contextValue).toBe("empty-state");
+    });
+
+    it("should provide actionable empty state with commands", async () => {
+      const result = await provider.getChildren();
+      const emptyStateItem = result[0];
+
+      expect(emptyStateItem?.command).toBeDefined();
+      expect(emptyStateItem?.command?.command).toBe(
+        "aidm-vscode-extension.refreshTasks"
+      );
+      expect(emptyStateItem?.command?.title).toBe("Refresh Tasks");
+    });
+
+    it("should prevent completely blank tree view", async () => {
+      const result = await provider.getChildren();
+
+      expect(result).not.toEqual([]);
+      expect(result).toHaveLength(1);
+      expect(result[0]).toBeDefined();
     });
   });
 });
