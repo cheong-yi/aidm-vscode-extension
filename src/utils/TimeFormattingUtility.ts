@@ -64,12 +64,14 @@ export class TimeFormattingUtility implements TimeFormattingUtility {
       return "invalid date";
     }
 
+    // TEMPORARILY DISABLED FOR TASK 2.7.2 - Core calculation logic
+    // TODO: 2.7.3 - Assess and optimize caching implementation
     // Check cache first for performance
-    const cacheKey = isoDate;
-    const cached = this.relativeTimeCache.get(cacheKey);
-    if (cached && Date.now() - cached.timestamp < this.cacheTTL) {
-      return cached.formatted;
-    }
+    // const cacheKey = isoDate;
+    // const cached = this.relativeTimeCache.get(cacheKey);
+    // if (cached && Date.now() - cached.timestamp < this.cacheTTL) {
+    //   return cached.formatted;
+    // }
 
     try {
       const date = new Date(isoDate);
@@ -92,26 +94,34 @@ export class TimeFormattingUtility implements TimeFormattingUtility {
 
       if (diffMs < 0) {
         // Future date - diffMs is negative, so diffMinutes, diffHours, diffDays are negative
-        // console.log('Future date debug:', { diffMs, diffMinutes, diffHours, diffDays });
-        if (Math.abs(diffMs) < 60000) {
-          // Less than 1 minute (60 seconds)
+        if (Math.abs(diffMs) <= 30000) {
+          // 30 seconds or less (matching task requirement)
           formatted = "in a few seconds";
+        } else if (Math.abs(diffMinutes) < 1) {
+          // 30-59 seconds in future, round up to 1 minute
+          formatted = "in 1 minute";
         } else if (Math.abs(diffMs) < 3600000) {
           // Less than 1 hour (60 minutes)
-          formatted = `in ${Math.abs(diffMinutes)} minutes`;
+          const futureMinutes = Math.abs(diffMinutes);
+          formatted =
+            futureMinutes === 1 ? "in 1 minute" : `in ${futureMinutes} minutes`;
         } else if (Math.abs(diffMs) < 86400000) {
           // Less than 1 day (24 hours)
-          formatted = `in ${Math.abs(diffHours)} hours`;
-        } else {
+          const futureHours = Math.abs(diffHours);
           formatted =
-            Math.abs(diffDays) === 1
-              ? `in 1 day`
-              : `in ${Math.abs(diffDays)} days`;
+            futureHours === 1 ? "in 1 hour" : `in ${futureHours} hours`;
+        } else {
+          const futureDays = Math.abs(diffDays);
+          formatted = futureDays === 1 ? "in 1 day" : `in ${futureDays} days`;
         }
       } else {
         // Past date
-        if (diffSeconds < 60) {
+        if (diffSeconds <= 30) {
+          // 30 seconds or less (matching task requirement)
           formatted = "just now";
+        } else if (diffMinutes < 1) {
+          // 30-59 seconds ago, round up to 1 minute
+          formatted = "1 minute ago";
         } else if (diffMinutes < 60) {
           formatted =
             diffMinutes === 1 ? "1 minute ago" : `${diffMinutes} minutes ago`;
@@ -138,11 +148,13 @@ export class TimeFormattingUtility implements TimeFormattingUtility {
         }
       }
 
+      // TEMPORARILY DISABLED FOR TASK 2.7.2 - Core calculation logic
+      // TODO: 2.7.3 - Assess and optimize caching implementation
       // Cache the result
-      this.relativeTimeCache.set(cacheKey, {
-        formatted,
-        timestamp: Date.now(),
-      });
+      // this.relativeTimeCache.set(cacheKey, {
+      //   formatted,
+      //   timestamp: Date.now(),
+      // });
 
       return formatted;
     } catch (error) {
