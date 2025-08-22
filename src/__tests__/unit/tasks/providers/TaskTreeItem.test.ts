@@ -4,6 +4,7 @@
  * Requirements: 3.1.2 - Add Status Indicator to TaskTreeItem
  * Requirements: 3.1.3 - Add TaskTreeItem collapsible state logic
  * Requirements: 3.1.4 - Add TaskTreeItem tooltip functionality
+ * Requirements: 3.1.5 - Add TaskTreeItem executable state indicators
  * Enhanced for Taskmaster Dashboard: 6.8, 6.9, 7.7
  */
 
@@ -50,7 +51,7 @@ describe("TaskTreeItem", () => {
       expect(treeItem.label).toBe("Task 1.1: Setup Project Structure");
       expect(treeItem.hasChildren).toBe(true); // Updated: task has expandable content
       expect(treeItem.dependencyLevel).toBe(0);
-      expect(treeItem.contextValue).toBe("task");
+      expect(treeItem.contextValue).toBe("executable-task"); // Updated: NOT_STARTED tasks are executable
       expect(treeItem.isExecutable).toBe(true);
       expect(treeItem.estimatedDuration).toBe("15-30 min");
       expect(treeItem.statusDisplayName).toBe("not started");
@@ -66,7 +67,6 @@ describe("TaskTreeItem", () => {
     it("should set isExecutable correctly for not_started tasks", () => {
       const executableTask = {
         ...mockTask,
-        isExecutable: true,
         status: TaskStatus.NOT_STARTED,
       };
       const treeItem = new TaskTreeItem(executableTask, 0);
@@ -76,7 +76,6 @@ describe("TaskTreeItem", () => {
     it("should set isExecutable to false for non-not_started tasks", () => {
       const inProgressTask = {
         ...mockTask,
-        isExecutable: true,
         status: TaskStatus.IN_PROGRESS,
       };
       const treeItem = new TaskTreeItem(inProgressTask, 0);
@@ -105,6 +104,90 @@ describe("TaskTreeItem", () => {
       };
       const treeItem = new TaskTreeItem(taskWithoutStatusName, 0);
       expect(treeItem.statusDisplayName).toBe("not started");
+    });
+  });
+
+  describe("Executable state indicators", () => {
+    it("should set isExecutable to true for NOT_STARTED tasks", () => {
+      const notStartedTask = { ...mockTask, status: TaskStatus.NOT_STARTED };
+      const treeItem = new TaskTreeItem(notStartedTask, 0);
+      expect(treeItem.isExecutable).toBe(true);
+    });
+
+    it("should set isExecutable to false for IN_PROGRESS tasks", () => {
+      const inProgressTask = { ...mockTask, status: TaskStatus.IN_PROGRESS };
+      const treeItem = new TaskTreeItem(inProgressTask, 0);
+      expect(treeItem.isExecutable).toBe(false);
+    });
+
+    it("should set isExecutable to false for COMPLETED tasks", () => {
+      const completedTask = { ...mockTask, status: TaskStatus.COMPLETED };
+      const treeItem = new TaskTreeItem(completedTask, 0);
+      expect(treeItem.isExecutable).toBe(false);
+    });
+
+    it("should set isExecutable to false for REVIEW tasks", () => {
+      const reviewTask = { ...mockTask, status: TaskStatus.REVIEW };
+      const treeItem = new TaskTreeItem(reviewTask, 0);
+      expect(treeItem.isExecutable).toBe(false);
+    });
+
+    it("should set isExecutable to false for BLOCKED tasks", () => {
+      const blockedTask = { ...mockTask, status: TaskStatus.BLOCKED };
+      const treeItem = new TaskTreeItem(blockedTask, 0);
+      expect(treeItem.isExecutable).toBe(false);
+    });
+
+    it("should set isExecutable to false for DEPRECATED tasks", () => {
+      const deprecatedTask = { ...mockTask, status: TaskStatus.DEPRECATED };
+      const treeItem = new TaskTreeItem(deprecatedTask, 0);
+      expect(treeItem.isExecutable).toBe(false);
+    });
+
+    it("should set contextValue to 'executable-task' for executable tasks", () => {
+      const executableTask = { ...mockTask, status: TaskStatus.NOT_STARTED };
+      const treeItem = new TaskTreeItem(executableTask, 0);
+      expect(treeItem.contextValue).toBe("executable-task");
+    });
+
+    it("should set contextValue to 'task' for non-executable tasks", () => {
+      const nonExecutableTask = { ...mockTask, status: TaskStatus.IN_PROGRESS };
+      const treeItem = new TaskTreeItem(nonExecutableTask, 0);
+      expect(treeItem.contextValue).toBe("task");
+    });
+
+    it("should add robot icon to description for executable tasks", () => {
+      const executableTask = { ...mockTask, status: TaskStatus.NOT_STARTED };
+      const treeItem = new TaskTreeItem(executableTask, 0);
+      expect(treeItem.description).toContain("🤖");
+    });
+
+    it("should not add robot icon to description for non-executable tasks", () => {
+      const nonExecutableTask = { ...mockTask, status: TaskStatus.IN_PROGRESS };
+      const treeItem = new TaskTreeItem(nonExecutableTask, 0);
+      expect(treeItem.description).not.toContain("🤖");
+    });
+
+    it("should include robot icon in description with other content for executable tasks", () => {
+      const executableTask = {
+        ...mockTask,
+        status: TaskStatus.NOT_STARTED,
+        estimatedDuration: "15-20 min",
+        testStatus: { totalTests: 5, passedTests: 5, failedTests: 0 },
+      };
+      const treeItem = new TaskTreeItem(executableTask, 0);
+      expect(treeItem.description).toBe("15-20 min • 5/5 passed • 🤖");
+    });
+
+    it("should handle executable tasks with minimal content", () => {
+      const minimalExecutableTask = {
+        ...mockTask,
+        status: TaskStatus.NOT_STARTED,
+        estimatedDuration: undefined,
+        testStatus: undefined,
+      };
+      const treeItem = new TaskTreeItem(minimalExecutableTask, 0);
+      expect(treeItem.description).toBe("🤖");
     });
   });
 
@@ -147,7 +230,7 @@ describe("TaskTreeItem", () => {
         testStatus: { totalTests: 10, passedTests: 8, failedTests: 2 },
       };
       const treeItem = new TaskTreeItem(taskWithBoth, 0);
-      expect(treeItem.description).toBe("20-25 min • 8/10 passed");
+      expect(treeItem.description).toBe("20-25 min • 8/10 passed • 🤖");
     });
 
     it("should generate description with only estimated duration", () => {
@@ -156,7 +239,7 @@ describe("TaskTreeItem", () => {
         estimatedDuration: "15-20 min",
       };
       const treeItem = new TaskTreeItem(taskWithDurationOnly, 0);
-      expect(treeItem.description).toBe("15-20 min");
+      expect(treeItem.description).toBe("15-20 min • 🤖");
     });
 
     it("should generate description with only test summary", () => {
@@ -166,12 +249,13 @@ describe("TaskTreeItem", () => {
         testStatus: { totalTests: 5, passedTests: 5, failedTests: 0 },
       };
       const treeItem = new TaskTreeItem(taskWithTestsOnly, 0);
-      expect(treeItem.description).toBe("5/5 passed");
+      expect(treeItem.description).toBe("5/5 passed • 🤖");
     });
 
     it("should not set description when no additional context available", () => {
       const taskWithoutContext = {
         ...mockTask,
+        status: TaskStatus.IN_PROGRESS, // Make it non-executable
         estimatedDuration: undefined,
         testStatus: undefined,
       };
@@ -371,9 +455,9 @@ describe("TaskTreeItem", () => {
   });
 
   describe("Context value", () => {
-    it('should set contextValue to "task"', () => {
+    it('should set contextValue to "executable-task" for executable tasks', () => {
       const treeItem = new TaskTreeItem(mockTask, 0);
-      expect(treeItem.contextValue).toBe("task");
+      expect(treeItem.contextValue).toBe("executable-task");
     });
   });
 
@@ -534,7 +618,8 @@ describe("TaskTreeItem", () => {
     it("should generate comprehensive tooltip with complete task data", () => {
       const completeTask = {
         ...mockTask,
-        description: "Create directory structure for task management components",
+        description:
+          "Create directory structure for task management components",
         dependencies: ["1.2", "1.3"],
         requirements: ["6.1", "6.2", "6.3"],
         estimatedDuration: "15-30 min",
@@ -687,16 +772,22 @@ Priority: medium`;
     it("should handle long title and description in tooltip", () => {
       const taskWithLongContent = {
         ...mockTask,
-        title: "This is a very long task title that demonstrates how the tooltip handles lengthy text content without breaking the formatting or display",
-        description: "This is an extremely detailed description that provides comprehensive information about the task requirements, implementation details, acceptance criteria, and any additional context that developers might need to understand the full scope of work involved in completing this particular development task successfully.",
+        title:
+          "This is a very long task title that demonstrates how the tooltip handles lengthy text content without breaking the formatting or display",
+        description:
+          "This is an extremely detailed description that provides comprehensive information about the task requirements, implementation details, acceptance criteria, and any additional context that developers might need to understand the full scope of work involved in completing this particular development task successfully.",
       };
 
       const treeItem = new TaskTreeItem(taskWithLongContent, 0);
       const tooltip = treeItem.tooltip as string;
 
       // Should contain the full title and description
-      expect(tooltip).toContain("This is a very long task title that demonstrates how the tooltip handles lengthy text content without breaking the formatting or display");
-      expect(tooltip).toContain("This is an extremely detailed description that provides comprehensive information about the task requirements");
+      expect(tooltip).toContain(
+        "This is a very long task title that demonstrates how the tooltip handles lengthy text content without breaking the formatting or display"
+      );
+      expect(tooltip).toContain(
+        "This is an extremely detailed description that provides comprehensive information about the task requirements"
+      );
     });
 
     it("should format tooltip with proper line breaks and sections", () => {

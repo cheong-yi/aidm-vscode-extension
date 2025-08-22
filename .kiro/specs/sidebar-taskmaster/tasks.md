@@ -42,7 +42,7 @@ This implementation plan breaks down the feature into atomic, TDD-friendly tasks
 - [x] 2.4.1 Add HTTP client setup to TasksDataService
 - [x] 2.4.2 Replace getTasks with real JSON-RPC call
 - [x] 2.4.3 Replace getTaskById with real JSON-RPC call
-- [ ] 2.4.4 Add updateTaskStatus method with JSON-RPC
+- [x] 2.4.4 Add updateTaskStatus method with JSON-RPC
 
 #### 2.5 MCP Server Integration
 
@@ -140,7 +140,7 @@ This implementation plan breaks down the feature into atomic, TDD-friendly tasks
   - Write unit tests for tooltip text generation
   - _Requirements: 2.3_
 
-- [d] 3.1.5 Add TaskTreeItem executable state indicators
+- [x] 3.1.5 Add TaskTreeItem executable state indicators
 
   - Add isExecutable property for not_started tasks
   - Add contextValue for executable tasks ("executable-task")

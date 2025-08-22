@@ -5,6 +5,7 @@
  * Requirements: 3.1.2 - Add Status Indicator to TaskTreeItem
  * Requirements: 3.1.3 - Add TaskTreeItem collapsible state logic
  * Requirements: 3.1.4 - Add TaskTreeItem tooltip functionality
+ * Requirements: 3.1.5 - Add TaskTreeItem executable state indicators
  * Enhanced for Taskmaster Dashboard: 6.8, 6.9, 7.7
  */
 
@@ -35,9 +36,14 @@ export class TaskTreeItem extends vscode.TreeItem {
     this.task = task;
     this.hasChildren = TaskTreeItem.hasExpandableContent(task);
     this.dependencyLevel = dependencyLevel;
-    this.contextValue = "task"; // Changed from "taskItem" to match design requirements
-    this.isExecutable =
-      task.isExecutable === true && task.status === TaskStatus.NOT_STARTED;
+    
+    // Task 3.1.5: Executable state indicators
+    // Determine if task is executable (not_started status)
+    this.isExecutable = task.status === TaskStatus.NOT_STARTED;
+    
+    // Set contextValue for command visibility: "executable-task" vs "task"
+    this.contextValue = this.isExecutable ? "executable-task" : "task";
+    
     this.estimatedDuration = task.estimatedDuration;
     this.statusDisplayName =
       task.statusDisplayName || STATUS_DISPLAY_NAMES[task.status];
@@ -52,6 +58,7 @@ export class TaskTreeItem extends vscode.TreeItem {
     this.iconPath = this.getStatusIcon(task.status);
 
     // Set description to show additional context (estimated duration, test summary)
+    // Task 3.1.5: Add robot icon for executable tasks
     this.description = this.generateDescription();
   }
 
@@ -207,6 +214,7 @@ export class TaskTreeItem extends vscode.TreeItem {
   /**
    * Generate description string for the tree item
    * Shows estimated duration and test summary when available
+   * Task 3.1.5: Adds robot icon (🤖) for executable tasks
    */
   private generateDescription(): string | undefined {
     const parts: string[] = [];
@@ -217,6 +225,11 @@ export class TaskTreeItem extends vscode.TreeItem {
 
     if (this.testSummary && this.testSummary !== "No tests yet") {
       parts.push(this.testSummary);
+    }
+
+    // Task 3.1.5: Add robot icon for executable tasks
+    if (this.isExecutable) {
+      parts.push("🤖");
     }
 
     return parts.length > 0 ? parts.join(" • ") : undefined;
