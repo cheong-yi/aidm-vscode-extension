@@ -3,13 +3,16 @@
  * Requirements: 3.1, 3.2, 6.3
  */
 
-import { TaskStatus } from './taskEnums';
-import { Task, TaskTestStatus } from './taskTypes';
+import {
+  TaskStatus,
+  Task,
+  TestStatus as TaskTestStatus,
+} from "../../types/tasks";
 
 /**
  * Task-specific JSON-RPC request methods
  */
-export type TaskJSONRPCMethod = 
+export type TaskJSONRPCMethod =
   | "tasks/list"
   | "tasks/get"
   | "tasks/update-status"
@@ -45,25 +48,25 @@ export interface TaskJSONRPCParams {
   requirement?: string;
   limit?: number;
   offset?: number;
-  
+
   // tasks/get
   taskId?: string;
-  
+
   // tasks/update-status
   newStatus?: TaskStatus;
-  
+
   // tasks/search
   query?: string;
   filters?: Record<string, any>;
-  
+
   // tasks/create
   task?: Partial<Task>;
-  
+
   // tasks/delete
   force?: boolean;
-  
+
   // tasks/export
-  format?: 'json' | 'csv' | 'markdown';
+  format?: "json" | "csv" | "markdown";
   includeTestResults?: boolean;
 }
 
@@ -81,15 +84,14 @@ export interface TaskJSONRPCResponse {
 /**
  * Task JSON-RPC result types
  */
-export type TaskJSONRPCResult = 
+export type TaskJSONRPCResult =
   | Task
   | Task[]
   | boolean
   | string[]
   | TaskTestStatus
   | TaskListResult
-  | TaskUpdateResult
-  | TaskSearchResult;
+  | TaskUpdateResult;
 
 /**
  * Task list result with pagination
@@ -98,17 +100,11 @@ export interface TaskListResult {
   tasks: Task[];
   pagination: {
     total: number;
-    limit: number;
-    offset: number;
-    hasMore: boolean;
+    page: number;
+    pageSize: number;
+    totalPages: number;
   };
-  summary: {
-    totalTasks: number;
-    completedTasks: number;
-    inProgressTasks: number;
-    blockedTasks: number;
-    testCoverage: number;
-  };
+  filters?: Record<string, any>;
 }
 
 /**
@@ -121,18 +117,6 @@ export interface TaskUpdateResult {
   newStatus: TaskStatus;
   updatedAt: Date;
   validationWarnings?: string[];
-}
-
-/**
- * Task search result
- */
-export interface TaskSearchResult {
-  tasks: Task[];
-  query: string;
-  filters: Record<string, any>;
-  totalResults: number;
-  searchTime: number;
-  relevanceScores?: Record<string, number>;
 }
 
 /**
@@ -169,7 +153,10 @@ export interface TaskJSONRPCMetadata {
  */
 export interface TaskJSONRPCNotification {
   jsonrpc: "2.0";
-  method: "tasks/updated" | "tasks/status-changed" | "tasks/test-results-updated";
+  method:
+    | "tasks/updated"
+    | "tasks/status-changed"
+    | "tasks/test-results-updated";
   params: {
     taskId: string;
     data: any;

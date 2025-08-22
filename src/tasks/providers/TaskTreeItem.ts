@@ -7,7 +7,7 @@
  */
 
 import * as vscode from "vscode";
-import { Task, TaskStatus, STATUS_DISPLAY_NAMES } from "../../types";
+import { Task, TaskStatus, STATUS_DISPLAY_NAMES } from "../types";
 
 export class TaskTreeItem extends vscode.TreeItem {
   public readonly id: string;
@@ -23,11 +23,12 @@ export class TaskTreeItem extends vscode.TreeItem {
   constructor(task: Task, dependencyLevel: number = 0) {
     // Format label as "Task [ID]: [Title]" to match mockup structure
     const formattedLabel = `Task ${task.id}: ${task.title}`;
-    
+
     // Set collapsible state to Collapsed for expandable list behavior matching mockup
-    const collapsibleState = task.dependencies.length > 0 
-      ? vscode.TreeItemCollapsibleState.Collapsed 
-      : vscode.TreeItemCollapsibleState.None;
+    const collapsibleState =
+      task.dependencies.length > 0
+        ? vscode.TreeItemCollapsibleState.Collapsed
+        : vscode.TreeItemCollapsibleState.None;
 
     super(formattedLabel, collapsibleState);
 
@@ -36,9 +37,11 @@ export class TaskTreeItem extends vscode.TreeItem {
     this.hasChildren = task.dependencies.length > 0;
     this.dependencyLevel = dependencyLevel;
     this.contextValue = "task"; // Changed from "taskItem" to match design requirements
-    this.isExecutable = task.isExecutable === true && task.status === TaskStatus.NOT_STARTED;
+    this.isExecutable =
+      task.isExecutable === true && task.status === TaskStatus.NOT_STARTED;
     this.estimatedDuration = task.estimatedDuration;
-    this.statusDisplayName = task.statusDisplayName || STATUS_DISPLAY_NAMES[task.status];
+    this.statusDisplayName =
+      task.statusDisplayName || STATUS_DISPLAY_NAMES[task.status];
 
     // Generate test summary for display
     this.testSummary = this.generateTestSummary(task);
@@ -76,11 +79,11 @@ export class TaskTreeItem extends vscode.TreeItem {
    */
   private generateDescription(): string | undefined {
     const parts: string[] = [];
-    
+
     if (this.estimatedDuration) {
       parts.push(this.estimatedDuration);
     }
-    
+
     if (this.testSummary && this.testSummary !== "No tests yet") {
       parts.push(this.testSummary);
     }
@@ -91,6 +94,13 @@ export class TaskTreeItem extends vscode.TreeItem {
   /**
    * Get appropriate icon for task status
    * Requirements: 3.1.2 - Status indicator for each task status
+   * Icons match mockup color scheme semantically:
+   * - NOT_STARTED: circle-outline (gray)
+   * - IN_PROGRESS: sync~spin (blue)
+   * - REVIEW: eye (yellow)
+   * - COMPLETED: check (green)
+   * - BLOCKED: error (red)
+   * - DEPRECATED: warning (dark)
    */
   private getStatusIcon(status: TaskStatus): vscode.ThemeIcon {
     switch (status) {

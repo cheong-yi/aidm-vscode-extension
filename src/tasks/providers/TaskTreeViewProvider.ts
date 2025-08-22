@@ -7,7 +7,7 @@
 
 import * as vscode from "vscode";
 import { TaskTreeItem } from "./TaskTreeItem";
-import { Task } from "../../types";
+import { Task } from "../types";
 
 /**
  * Custom TreeItem for empty state display

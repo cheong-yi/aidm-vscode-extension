@@ -6,13 +6,13 @@
  */
 
 import { jest } from "@jest/globals";
-import { TaskTreeItem } from "../../../../tasks/providers/TaskTreeItem";
+import { TaskTreeItem } from "../../../tasks/providers/TaskTreeItem";
 import {
   Task,
   TaskStatus,
   TaskComplexity,
   TaskPriority,
-} from "../../../../types/tasks";
+} from "../../../types/tasks";
 import * as vscode from "vscode";
 
 describe("TaskTreeItem", () => {

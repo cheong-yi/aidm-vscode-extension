@@ -3,9 +3,15 @@
  * Requirements: 1.4, 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 4.1, 4.2, 4.3, 4.4, 7.1, 7.2, 7.3, 7.4, 7.5, 7.6
  */
 
-import * as vscode from 'vscode';
-import { TaskStatus } from './taskEnums';
-import { Task, TaskTestStatus, ValidationResult, TaskContext } from './taskTypes';
+import * as vscode from "vscode";
+import {
+  TaskStatus,
+  Task,
+  TestStatus as TaskTestStatus,
+  ValidationResult,
+  TaskErrorResponse,
+} from "../../types/tasks";
+import { TaskContext } from "./taskTypes";
 
 /**
  * Task Status Manager Interface
@@ -18,7 +24,10 @@ export interface TaskStatusManager {
   refreshTasksFromFile(): Promise<void>;
   getTaskDependencies(id: string): Promise<string[]>;
   getTestResults(taskId: string): Promise<TaskTestStatus | null>;
-  validateStatusTransition(currentStatus: TaskStatus, newStatus: TaskStatus): boolean;
+  validateStatusTransition(
+    currentStatus: TaskStatus,
+    newStatus: TaskStatus
+  ): boolean;
   getTasksByStatus(status: TaskStatus): Promise<Task[]>;
   getTasksByPriority(priority: string): Promise<Task[]>;
   getTasksByAssignee(assignee: string): Promise<Task[]>;
@@ -34,7 +43,11 @@ export interface MarkdownTaskParser {
   parseTaskFromMarkdown(markdown: string): Task | null;
   validateTaskData(task: Task): ValidationResult;
   serializeTaskToMarkdown(task: Task): string;
-  updateTaskInFile(filePath: string, taskId: string, updates: Partial<Task>): Promise<boolean>;
+  updateTaskInFile(
+    filePath: string,
+    taskId: string,
+    updates: Partial<Task>
+  ): Promise<boolean>;
   writeTasksToFile(filePath: string, tasks: Task[]): Promise<boolean>;
   getTaskMarkdownTemplate(): string;
 }
@@ -50,13 +63,19 @@ export interface TasksDataService {
   refreshTasks(): Promise<void>;
   getTaskDependencies(id: string): Promise<string[]>;
   getTestResults(taskId: string): Promise<TaskTestStatus | null>;
-  
+
   // Event emitters for UI synchronization
   onTasksUpdated: vscode.EventEmitter<Task[]>;
-  onTaskStatusChanged: vscode.EventEmitter<{ taskId: string; newStatus: TaskStatus }>;
+  onTaskStatusChanged: vscode.EventEmitter<{
+    taskId: string;
+    newStatus: TaskStatus;
+  }>;
   onError: vscode.EventEmitter<TaskErrorResponse>;
-  onTestResultsUpdated: vscode.EventEmitter<{ taskId: string; testStatus: TaskTestStatus }>;
-  
+  onTestResultsUpdated: vscode.EventEmitter<{
+    taskId: string;
+    testStatus: TaskTestStatus;
+  }>;
+
   // Cache management
   clearCache(): void;
   getCacheStatus(): CacheStatus;
@@ -67,7 +86,8 @@ export interface TasksDataService {
  * Task Tree View Provider Interface
  * Manages the VSCode tree view for task display
  */
-export interface TaskTreeViewProvider extends vscode.TreeDataProvider<TaskTreeItem> {
+export interface TaskTreeViewProvider
+  extends vscode.TreeDataProvider<TaskTreeItem> {
   getTreeItem(element: TaskTreeItem): vscode.TreeItem;
   getChildren(element?: TaskTreeItem): Promise<TaskTreeItem[]>;
   refresh(): void;
@@ -88,8 +108,14 @@ export interface TaskDetailCardProvider {
   showNoTaskSelected(): void;
   showError(message: string, details?: string): void;
   onTaskSelected: vscode.EventEmitter<Task>;
-  onStatusChanged: vscode.EventEmitter<{ taskId: string; newStatus: TaskStatus }>;
-  onTestResultsUpdated: vscode.EventEmitter<{ taskId: string; testStatus: TaskTestStatus }>;
+  onStatusChanged: vscode.EventEmitter<{
+    taskId: string;
+    newStatus: TaskStatus;
+  }>;
+  onTestResultsUpdated: vscode.EventEmitter<{
+    taskId: string;
+    testStatus: TaskTestStatus;
+  }>;
   refresh(): void;
 }
 
@@ -124,22 +150,6 @@ export interface TaskCommands {
   reportTaskIssue(taskId: string): void;
   generateTaskCode(taskId: string): void;
   reviewTaskWithRooCode(taskId: string): void;
-}
-
-/**
- * Task Error Response Interface
- * Standardized error response for task operations
- */
-export interface TaskErrorResponse {
-  taskId?: string;
-  operation: 'task_retrieval' | 'status_update' | 'dependency_resolution' | 'test_results' | 'file_operation';
-  error: string;
-  code: string;
-  suggestedAction?: 'retry' | 'manual_update' | 'refresh' | 'clear_cache' | 'check_permissions';
-  retryAfter?: number;
-  userInstructions?: string;
-  technicalDetails?: string;
-  supportContact?: string;
 }
 
 /**

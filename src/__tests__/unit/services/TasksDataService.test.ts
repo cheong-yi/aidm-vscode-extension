@@ -712,7 +712,7 @@ describe("TasksDataService", () => {
         priority: TaskPriority.CRITICAL,
         estimatedDuration: "45-60 min",
         isExecutable: false,
-          statusDisplayName: STATUS_DISPLAY_NAMES[TaskStatus.COMPLETED],
+        statusDisplayName: STATUS_DISPLAY_NAMES[TaskStatus.COMPLETED],
       };
 
       const mockResponse = {
