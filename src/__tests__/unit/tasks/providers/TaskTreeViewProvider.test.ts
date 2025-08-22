@@ -1244,4 +1244,377 @@ describe("TaskTreeViewProvider", () => {
       consoleDebugSpy.mockRestore();
     });
   });
+
+  describe("Task 3.2.9: Click-to-Execute Event Emitter", () => {
+    it("should create EventEmitter correctly in constructor", () => {
+      // Assert: Verify EventEmitter is created and configured
+      expect(provider).toHaveProperty("onTaskClick");
+      expect(typeof provider.onTaskClick).toBe("function");
+
+      // Verify the event emitter is properly set up
+      expect(provider.onTaskClick).toBeDefined();
+    });
+
+    it("should expose onTaskClick as readonly property", () => {
+      // Assert: Verify readonly property exposure
+      expect(provider.onTaskClick).toBeDefined();
+
+      // Verify it's not writable (readonly) - in VSCode, this is enforced at compile time
+      // We can't test readonly at runtime in JavaScript, but we can verify the property exists
+      const originalEvent = provider.onTaskClick;
+      expect(provider.onTaskClick).toBe(originalEvent);
+
+      // Verify the property is accessible and has the expected interface
+      // VSCode Event is a function that can be called to subscribe to events
+      expect(typeof provider.onTaskClick).toBe("function");
+
+      // Test that we can subscribe to the event (this returns a Disposable)
+      const disposable = provider.onTaskClick(() => {});
+      expect(disposable).toHaveProperty("dispose");
+      disposable.dispose();
+    });
+
+    it("should fire click event when triggerTaskClick is called", () => {
+      // Arrange: Create a listener for the event
+      let eventFired = false;
+      let eventData: any = null;
+
+      const disposable = provider.onTaskClick((data) => {
+        eventFired = true;
+        eventData = data;
+      });
+
+      const mockTaskItem = new TaskTreeItem(mockTask);
+
+      // Act: Call triggerTaskClick method
+      provider.triggerTaskClick(mockTaskItem);
+
+      // Assert: Event should be fired with correct payload
+      expect(eventFired).toBe(true);
+      expect(eventData).toBeDefined();
+      expect(eventData.taskId).toBe("test-task-1");
+      expect(eventData.task).toBe(mockTask);
+      expect(eventData.isExecutable).toBe(true);
+
+      // Cleanup
+      disposable.dispose();
+    });
+
+    it("should handle executable task clicks correctly", () => {
+      // Arrange: Create executable task and listener
+      const executableTask: Task = {
+        ...mockTask,
+        id: "executable-task",
+        status: TaskStatus.NOT_STARTED,
+        isExecutable: true,
+      };
+      const executableTaskItem = new TaskTreeItem(executableTask);
+
+      let eventData: any = null;
+      const disposable = provider.onTaskClick((data) => {
+        eventData = data;
+      });
+
+      // Act: Trigger click on executable task
+      provider.triggerTaskClick(executableTaskItem);
+
+      // Assert: Should mark as executable
+      expect(eventData.isExecutable).toBe(true);
+      expect(eventData.taskId).toBe("executable-task");
+      expect(eventData.task.status).toBe(TaskStatus.NOT_STARTED);
+
+      // Cleanup
+      disposable.dispose();
+    });
+
+    it("should handle non-executable task clicks correctly", () => {
+      // Arrange: Create non-executable task and listener
+      const nonExecutableTask: Task = {
+        ...mockTask,
+        id: "non-executable-task",
+        status: TaskStatus.COMPLETED,
+        isExecutable: false,
+      };
+      const nonExecutableTaskItem = new TaskTreeItem(nonExecutableTask);
+
+      let eventData: any = null;
+      const disposable = provider.onTaskClick((data) => {
+        eventData = data;
+      });
+
+      // Act: Trigger click on non-executable task
+      provider.triggerTaskClick(nonExecutableTaskItem);
+
+      // Assert: Should mark as non-executable
+      expect(eventData.isExecutable).toBe(false);
+      expect(eventData.taskId).toBe("non-executable-task");
+      expect(eventData.task.status).toBe(TaskStatus.COMPLETED);
+
+      // Cleanup
+      disposable.dispose();
+    });
+
+    it("should handle tree view selection events correctly", () => {
+      // Arrange: Create listener and mock selection
+      let eventData: any = null;
+      const disposable = provider.onTaskClick((data) => {
+        eventData = data;
+      });
+
+      const mockTaskItem = new TaskTreeItem(mockTask);
+      const selection = [mockTaskItem];
+
+      // Act: Handle tree view selection
+      provider.handleTreeViewSelection(selection);
+
+      // Assert: Should emit click event
+      expect(eventData).toBeDefined();
+      expect(eventData.taskId).toBe("test-task-1");
+      expect(eventData.isExecutable).toBe(true);
+
+      // Cleanup
+      disposable.dispose();
+    });
+
+    it("should ignore empty state tree item selections", () => {
+      // Arrange: Create listener and mock selection with EmptyStateTreeItem
+      let eventFired = false;
+      const disposable = provider.onTaskClick(() => {
+        eventFired = true;
+      });
+
+      // Create an empty state item using the same pattern as the provider
+      const emptyStateItem = {
+        label: "No tasks",
+        description: "No tasks available",
+        contextValue: "empty-state",
+        iconPath: new vscode.ThemeIcon("info"),
+        collapsibleState: vscode.TreeItemCollapsibleState.None,
+        task: undefined, // Empty state items don't have tasks
+      } as any;
+      const selection = [emptyStateItem];
+
+      // Act: Handle tree view selection with empty state item
+      provider.handleTreeViewSelection(selection);
+
+      // Assert: Should not emit click event for empty state items
+      expect(eventFired).toBe(false);
+
+      // Cleanup
+      disposable.dispose();
+    });
+
+    it("should handle multiple selection events correctly", () => {
+      // Arrange: Create listener and multiple selections
+      const events: any[] = [];
+      const disposable = provider.onTaskClick((data) => {
+        events.push(data);
+      });
+
+      const task1 = new TaskTreeItem({ ...mockTask, id: "task-1" });
+      const task2 = new TaskTreeItem({ ...mockTask, id: "task-2" });
+
+      // Act: Handle multiple selections
+      provider.handleTreeViewSelection([task1]);
+      provider.handleTreeViewSelection([task2]);
+
+      // Assert: Should emit events for each selection
+      expect(events).toHaveLength(2);
+      expect(events[0].taskId).toBe("task-1");
+      expect(events[1].taskId).toBe("task-2");
+
+      // Cleanup
+      disposable.dispose();
+    });
+
+    it("should validate task items before processing clicks", () => {
+      // Arrange: Create listener
+      let eventFired = false;
+      const disposable = provider.onTaskClick(() => {
+        eventFired = true;
+      });
+
+      // Act: Try to trigger click with invalid task item
+      provider.triggerTaskClick(null as any);
+
+      // Assert: Should not emit event for invalid items
+      expect(eventFired).toBe(false);
+
+      // Cleanup
+      disposable.dispose();
+    });
+
+    it("should handle click events after disposal gracefully", () => {
+      // Arrange: Create listener and dispose provider
+      let eventFired = false;
+      const disposable = provider.onTaskClick(() => {
+        eventFired = true;
+      });
+      provider.dispose();
+
+      const mockTaskItem = new TaskTreeItem(mockTask);
+
+      // Act: Try to trigger click on disposed provider
+      provider.triggerTaskClick(mockTaskItem);
+
+      // Assert: Should not emit events after disposal
+      expect(eventFired).toBe(false);
+
+      // Cleanup
+      disposable.dispose();
+    });
+
+    it("should handle tree view selection after disposal gracefully", () => {
+      // Arrange: Create listener and dispose provider
+      let eventFired = false;
+      const disposable = provider.onTaskClick(() => {
+        eventFired = true;
+      });
+      provider.dispose();
+
+      const mockTaskItem = new TaskTreeItem(mockTask);
+      const selection = [mockTaskItem];
+
+      // Act: Try to handle selection on disposed provider
+      provider.handleTreeViewSelection(selection);
+
+      // Assert: Should not emit events after disposal
+      expect(eventFired).toBe(false);
+
+      // Cleanup
+      disposable.dispose();
+    });
+
+    it("should correctly identify executable tasks", () => {
+      // Arrange: Create various task states
+      const executableTask: Task = {
+        ...mockTask,
+        status: TaskStatus.NOT_STARTED,
+        isExecutable: true,
+      };
+
+      const nonExecutableTask: Task = {
+        ...mockTask,
+        status: TaskStatus.NOT_STARTED,
+        isExecutable: false,
+      };
+
+      const completedTask: Task = {
+        ...mockTask,
+        status: TaskStatus.COMPLETED,
+        isExecutable: true,
+      };
+
+      // Act & Assert: Check executability
+      expect(provider.isTaskExecutable(executableTask)).toBe(true);
+      expect(provider.isTaskExecutable(nonExecutableTask)).toBe(false);
+      expect(provider.isTaskExecutable(completedTask)).toBe(false);
+    });
+
+    it("should handle errors in isTaskExecutable gracefully", () => {
+      // Arrange: Create invalid task
+      const invalidTask = null as any;
+
+      // Act & Assert: Should handle errors gracefully
+      expect(() => provider.isTaskExecutable(invalidTask)).not.toThrow();
+      expect(provider.isTaskExecutable(invalidTask)).toBe(false);
+    });
+
+    it("should log debug messages during click operations", () => {
+      // Arrange: Spy on console.debug
+      const consoleSpy = jest.spyOn(console, "debug").mockImplementation();
+
+      const mockTaskItem = new TaskTreeItem(mockTask);
+
+      // Act: Trigger task click
+      provider.triggerTaskClick(mockTaskItem);
+
+      // Assert: Debug messages should be logged
+      expect(consoleSpy).toHaveBeenCalledWith(
+        "TaskTreeViewProvider: Task click event emitted:",
+        expect.objectContaining({
+          taskId: "test-task-1",
+          isExecutable: true,
+          status: TaskStatus.NOT_STARTED,
+        })
+      );
+
+      // Cleanup
+      consoleSpy.mockRestore();
+    });
+
+    it("should log errors during click operations", () => {
+      // Arrange: Mock EventEmitter to throw error and spy on console.error
+      const mockEventEmitter = {
+        fire: jest.fn().mockImplementation(() => {
+          throw new Error("Test error");
+        }),
+        event: jest.fn(),
+        dispose: jest.fn(),
+      };
+
+      const consoleSpy = jest.spyOn(console, "error").mockImplementation();
+
+      // Create provider with mocked EventEmitter
+      const providerWithMockEmitter = new TaskTreeViewProvider(
+        mockTasksDataService
+      );
+      (providerWithMockEmitter as any)._onTaskClick = mockEventEmitter;
+
+      const mockTaskItem = new TaskTreeItem(mockTask);
+
+      // Act: Trigger task click
+      providerWithMockEmitter.triggerTaskClick(mockTaskItem);
+
+      // Assert: Error should be logged (the error is caught in handleTaskClick, not triggerTaskClick)
+      expect(consoleSpy).toHaveBeenCalledWith(
+        "TaskTreeViewProvider: Error handling task click:",
+        expect.any(Error)
+      );
+
+      // Cleanup
+      consoleSpy.mockRestore();
+    });
+
+    it("should handle concurrent click events efficiently", () => {
+      // Arrange: Create listener to track events
+      const events: any[] = [];
+      const disposable = provider.onTaskClick((data) => {
+        events.push(data);
+      });
+
+      const task1 = new TaskTreeItem({ ...mockTask, id: "task-1" });
+      const task2 = new TaskTreeItem({ ...mockTask, id: "task-2" });
+      const task3 = new TaskTreeItem({ ...mockTask, id: "task-3" });
+
+      // Act: Make concurrent click calls
+      provider.triggerTaskClick(task1);
+      provider.triggerTaskClick(task2);
+      provider.triggerTaskClick(task3);
+
+      // Assert: All events should be processed
+      expect(events).toHaveLength(3);
+      expect(events[0].taskId).toBe("task-1");
+      expect(events[1].taskId).toBe("task-2");
+      expect(events[2].taskId).toBe("task-3");
+
+      // Cleanup
+      disposable.dispose();
+    });
+
+    it("should maintain event emitter after multiple dispose calls", () => {
+      // Act: Call dispose multiple times
+      provider.dispose();
+      provider.dispose();
+      provider.dispose();
+
+      // Assert: Should handle multiple dispose calls gracefully
+      expect(() =>
+        provider.triggerTaskClick(new TaskTreeItem(mockTask))
+      ).not.toThrow();
+      expect(() =>
+        provider.handleTreeViewSelection([new TaskTreeItem(mockTask)])
+      ).not.toThrow();
+    });
+  });
 });

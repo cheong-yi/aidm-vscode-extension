@@ -6,6 +6,7 @@
  * Task 3.2.3: Connect TaskTreeViewProvider to TasksDataService
  * Task 3.2.7: Add refresh mechanism infrastructure
  * Task 3.2.8: Connect refresh mechanism to TasksDataService events
+ * Task 3.2.9: Add click-to-execute event emitter
  */
 
 import * as vscode from "vscode";
@@ -38,6 +39,16 @@ class EmptyStateTreeItem extends vscode.TreeItem {
 // Union type for all possible tree items
 type TreeItemType = TaskTreeItem | EmptyStateTreeItem;
 
+/**
+ * Task click event payload for UI synchronization and Cursor integration
+ * Task 3.2.9: Click event data structure
+ */
+interface TaskClickEvent {
+  taskId: string;
+  task: Task;
+  isExecutable: boolean; // For Cursor integration detection
+}
+
 export class TaskTreeViewProvider
   implements vscode.TreeDataProvider<TreeItemType>
 {
@@ -52,6 +63,13 @@ export class TaskTreeViewProvider
   public readonly onDidChangeTreeData: vscode.Event<
     TreeItemType | undefined | null
   >;
+
+  /**
+   * Event emitter for task click events
+   * Task 3.2.9: Click-to-execute event emitter for UI synchronization
+   */
+  private readonly _onTaskClick: vscode.EventEmitter<TaskClickEvent>;
+  public readonly onTaskClick: vscode.Event<TaskClickEvent>;
 
   /**
    * TasksDataService dependency for data retrieval
@@ -81,6 +99,10 @@ export class TaskTreeViewProvider
     >();
     this.onDidChangeTreeData = this._onDidChangeTreeData.event;
 
+    // Task 3.2.9: Initialize EventEmitter for task click events
+    this._onTaskClick = new vscode.EventEmitter<TaskClickEvent>();
+    this.onTaskClick = this._onTaskClick.event;
+
     // Task 3.2.8: Setup event listeners for automatic refresh
     this.setupEventListeners();
   }
@@ -103,10 +125,15 @@ export class TaskTreeViewProvider
       );
       this.eventDisposables.push(errorDisposable);
 
-      console.debug("TaskTreeViewProvider: Event listeners connected successfully");
+      console.debug(
+        "TaskTreeViewProvider: Event listeners connected successfully"
+      );
     } catch (error) {
       // Handle event listener setup failures gracefully
-      console.error("TaskTreeViewProvider: Failed to setup event listeners:", error);
+      console.error(
+        "TaskTreeViewProvider: Failed to setup event listeners:",
+        error
+      );
       // Continue without automatic refresh - manual refresh still works
     }
   }
@@ -114,36 +141,45 @@ export class TaskTreeViewProvider
   /**
    * Handle tasks updated event from TasksDataService
    * Task 3.2.8: Automatic refresh when data changes
-   * 
+   *
    * @param tasks Updated tasks array from service
    */
   private handleTasksUpdated(tasks: Task[]): void {
     try {
       if (this.isDisposed) {
-        console.debug("TaskTreeViewProvider: Ignoring tasks update on disposed provider");
+        console.debug(
+          "TaskTreeViewProvider: Ignoring tasks update on disposed provider"
+        );
         return;
       }
 
-      console.debug("TaskTreeViewProvider: Tasks updated, triggering automatic refresh");
-      
+      console.debug(
+        "TaskTreeViewProvider: Tasks updated, triggering automatic refresh"
+      );
+
       // Trigger automatic refresh to update the tree view
       this.refresh();
     } catch (error) {
       // Handle errors in event handler without breaking functionality
-      console.error("TaskTreeViewProvider: Error handling tasks update:", error);
+      console.error(
+        "TaskTreeViewProvider: Error handling tasks update:",
+        error
+      );
     }
   }
 
   /**
    * Handle service error events from TasksDataService
    * Task 3.2.8: Graceful error handling without breaking tree view
-   * 
+   *
    * @param error TaskErrorResponse from service
    */
   private handleServiceError(error: TaskErrorResponse): void {
     try {
       if (this.isDisposed) {
-        console.debug("TaskTreeViewProvider: Ignoring error on disposed provider");
+        console.debug(
+          "TaskTreeViewProvider: Ignoring error on disposed provider"
+        );
         return;
       }
 
@@ -152,19 +188,149 @@ export class TaskTreeViewProvider
         taskId: error.taskId,
         suggestedAction: error.suggestedAction,
         userInstructions: error.userInstructions,
-        technicalDetails: error.technicalDetails
+        technicalDetails: error.technicalDetails,
       });
 
       // Log error details for debugging
       if (error.technicalDetails) {
-        console.debug("TaskTreeViewProvider: Technical error details:", error.technicalDetails);
+        console.debug(
+          "TaskTreeViewProvider: Technical error details:",
+          error.technicalDetails
+        );
       }
 
       // Optionally show error indicator in UI (future enhancement)
       // For now, just log and continue - tree view remains functional with cached data
     } catch (error) {
       // Handle errors in error handler without breaking functionality
-      console.error("TaskTreeViewProvider: Error handling service error:", error);
+      console.error(
+        "TaskTreeViewProvider: Error handling service error:",
+        error
+      );
+    }
+  }
+
+  /**
+   * Handle task click events from tree view selection
+   * Task 3.2.9: Process tree item clicks and emit events for UI synchronization
+   *
+   * @param taskItem TaskTreeItem that was clicked
+   */
+  private handleTaskClick(taskItem: TaskTreeItem): void {
+    try {
+      if (this.isDisposed) {
+        console.debug(
+          "TaskTreeViewProvider: Ignoring task click on disposed provider"
+        );
+        return;
+      }
+
+      // Validate task item before processing
+      if (!taskItem || !taskItem.task) {
+        console.warn("TaskTreeViewProvider: Invalid task item clicked");
+        return;
+      }
+
+      // Determine if task is executable (not_started status)
+      const isExecutable =
+        taskItem.task.status === TaskStatus.NOT_STARTED &&
+        taskItem.task.isExecutable === true;
+
+      // Create click event payload
+      const clickEvent: TaskClickEvent = {
+        taskId: taskItem.task.id,
+        task: taskItem.task,
+        isExecutable: isExecutable,
+      };
+
+      // Emit click event for UI synchronization and Cursor integration
+      this._onTaskClick.fire(clickEvent);
+
+      console.debug("TaskTreeViewProvider: Task click event emitted:", {
+        taskId: clickEvent.taskId,
+        isExecutable: clickEvent.isExecutable,
+        status: clickEvent.task.status,
+      });
+    } catch (error) {
+      // Handle errors in click handler without breaking functionality
+      console.error("TaskTreeViewProvider: Error handling task click:", error);
+    }
+  }
+
+  /**
+   * Public method to trigger task click events programmatically
+   * Task 3.2.9: External trigger for task selection and execution
+   *
+   * @param taskItem TaskTreeItem to trigger click for
+   */
+  public triggerTaskClick(taskItem: TaskTreeItem): void {
+    try {
+      if (this.isDisposed) {
+        console.warn(
+          "TaskTreeViewProvider: Cannot trigger task click on disposed provider"
+        );
+        return;
+      }
+
+      this.handleTaskClick(taskItem);
+    } catch (error) {
+      console.error(
+        "TaskTreeViewProvider: Error triggering task click:",
+        error
+      );
+    }
+  }
+
+  /**
+   * Handle VSCode tree view selection events
+   * Task 3.2.9: Integrate with VSCode tree view for automatic click detection
+   *
+   * @param selection Array of selected tree items
+   */
+  public handleTreeViewSelection(selection: readonly TreeItemType[]): void {
+    try {
+      if (this.isDisposed) {
+        console.debug(
+          "TaskTreeViewProvider: Ignoring selection on disposed provider"
+        );
+        return;
+      }
+
+      // Process only the first selected item (single selection)
+      if (selection && selection.length > 0) {
+        const selectedItem = selection[0];
+
+        // Only process TaskTreeItem clicks, not EmptyStateTreeItem
+        if (selectedItem instanceof TaskTreeItem) {
+          this.handleTaskClick(selectedItem);
+        }
+      }
+    } catch (error) {
+      console.error(
+        "TaskTreeViewProvider: Error handling tree view selection:",
+        error
+      );
+    }
+  }
+
+  /**
+   * Check if a task is executable (eligible for Cursor integration)
+   * Task 3.2.9: Utility method for executable task detection
+   *
+   * @param task Task to check for executability
+   * @returns True if task is executable, false otherwise
+   */
+  public isTaskExecutable(task: Task): boolean {
+    try {
+      return (
+        task.status === TaskStatus.NOT_STARTED && task.isExecutable === true
+      );
+    } catch (error) {
+      console.error(
+        "TaskTreeViewProvider: Error checking task executability:",
+        error
+      );
+      return false;
     }
   }
 
@@ -320,7 +486,7 @@ export class TaskTreeViewProvider
       // Fire event with undefined to refresh entire tree
       // This triggers VSCode to call getChildren() and update the view
       this._onDidChangeTreeData.fire(undefined);
-      
+
       // Log refresh event for debugging (can be removed in production)
       console.debug("TaskTreeViewProvider: Tree refresh triggered");
     } catch (error) {
@@ -332,7 +498,7 @@ export class TaskTreeViewProvider
   /**
    * Refresh specific task item (future enhancement)
    * Task 3.2.7: Infrastructure for targeted refresh
-   * 
+   *
    * @param taskItem Specific task item to refresh
    */
   refreshItem(taskItem: TaskTreeItem): void {
@@ -344,7 +510,10 @@ export class TaskTreeViewProvider
 
       // Fire event with specific item to refresh just that item
       this._onDidChangeTreeData.fire(taskItem);
-      console.debug("TaskTreeViewProvider: Item refresh triggered for:", taskItem.id);
+      console.debug(
+        "TaskTreeViewProvider: Item refresh triggered for:",
+        taskItem.id
+      );
     } catch (error) {
       console.error("TaskTreeViewProvider: Error during item refresh:", error);
     }
@@ -359,7 +528,8 @@ export class TaskTreeViewProvider
     try {
       this.isDisposed = true;
       this._onDidChangeTreeData.dispose();
-      this.eventDisposables.forEach(disposable => disposable.dispose());
+      this._onTaskClick.dispose(); // Dispose the new event emitter
+      this.eventDisposables.forEach((disposable) => disposable.dispose());
       console.debug("TaskTreeViewProvider: Disposed successfully");
     } catch (error) {
       console.error("TaskTreeViewProvider: Error during disposal:", error);

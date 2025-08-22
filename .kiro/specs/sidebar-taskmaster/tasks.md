@@ -210,7 +210,7 @@ This implementation plan breaks down the feature into atomic, TDD-friendly tasks
   - Write unit tests for event listener connections
   - _Requirements: 4.2_
 
-- [ ] 3.2.9 Add click-to-execute event emitter
+- [x] 3.2.9 Add click-to-execute event emitter
 
   - Add onTaskClick event emitter for tree item clicks
   - Handle executable task detection
@@ -226,14 +226,14 @@ This implementation plan breaks down the feature into atomic, TDD-friendly tasks
 
 #### 3.3 Enhanced TaskDetailCardProvider (Expandable Content)
 
-- [d] 3.3.1 Create TaskDetailCardProvider class structure
+- [x] 3.3.1 Create TaskDetailCardProvider class structure
 
   - Implement vscode.WebviewViewProvider interface
   - Add basic resolveWebviewView method (empty content)
   - Write unit tests for provider initialization
   - _Requirements: 2.1, 2.2_
 
-- [ ] 3.3.2 Create comprehensive HTML structure
+- [x] 3.3.2 Create comprehensive HTML structure
 
   - Design complete webview HTML for expandable task details
   - Include task description, metadata grid, test results sections
