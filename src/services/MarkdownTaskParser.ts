@@ -4,7 +4,8 @@
  * Recovery Task 2.1.3: Added parseTasksFromFile method with mock data
  * Recovery Task 2.1.4: Added parseTaskFromMarkdown method for individual task parsing
  * Enhanced Task 2.6.1: Update mock data to include estimatedDuration and enhanced test results
- * Requirements: 3.1-3.6, 4.1-4.4, 7.1-7.6, 6.8, 6.9, 7.7
+ * Enhanced Task 2.6.3: Add realistic ISO timestamp mock data for relative time testing
+ * Requirements: 3.1-3.6, 4.1-4.4, 7.1-7.6, 6.8, 6.9, 7.7, 4.8, 7.9, 9.3
  */
 
 import {
@@ -15,6 +16,7 @@ import {
   STATUS_DISPLAY_NAMES,
 } from "../types/tasks";
 import { FailingTestScenarios } from "../mock/FailingTestScenarios";
+import { TimestampGenerator } from "../mock/TimestampGenerator";
 
 export class MarkdownTaskParser {
   constructor() {
@@ -29,7 +31,8 @@ export class MarkdownTaskParser {
    * @returns Promise<Task[]> - Array of enhanced mock Task objects
    */
   async parseTasksFromFile(filePath: string): Promise<Task[]> {
-    // Enhanced mock tasks with all new fields for Taskmaster Dashboard
+    // Enhanced mock tasks with realistic timestamps for comprehensive relative time testing
+    // Task 2.6.3: Use TimestampGenerator for varied timestamp scenarios
     const mockTasks: Task[] = [
       {
         id: "3.1.1",
@@ -40,8 +43,8 @@ export class MarkdownTaskParser {
         complexity: TaskComplexity.LOW,
         dependencies: [],
         requirements: ["1.1"],
-        createdDate: "2024-08-22T09:00:00Z",
-        lastModified: "2024-08-22T10:30:00Z",
+        createdDate: TimestampGenerator.generateScenarioTimestamp({ name: "two_days", description: "2 days ago", minutesAgo: 2880, expectedRelativeTime: "2 days ago" }),
+        lastModified: TimestampGenerator.generateScenarioTimestamp({ name: "five_hours", description: "5 hours ago", minutesAgo: 300, expectedRelativeTime: "5 hours ago" }),
         assignee: "dev-team",
         estimatedHours: 2,
         actualHours: 1.5,
@@ -51,7 +54,7 @@ export class MarkdownTaskParser {
         tags: ["ui", "foundation"],
         statusDisplayName: STATUS_DISPLAY_NAMES[TaskStatus.COMPLETED],
         testStatus: {
-          lastRunDate: "2024-08-22T10:15:00Z",
+          lastRunDate: TimestampGenerator.generateScenarioTimestamp({ name: "two_hours", description: "2 hours ago", minutesAgo: 120, expectedRelativeTime: "2 hours ago" }),
           totalTests: 8,
           passedTests: 8,
           failedTests: 0,
@@ -68,8 +71,8 @@ export class MarkdownTaskParser {
         complexity: TaskComplexity.LOW,
         dependencies: ["3.1.1"],
         requirements: ["2.2"],
-        createdDate: "2024-08-22T10:00:00Z",
-        lastModified: "2024-08-22T10:00:00Z",
+        createdDate: TimestampGenerator.generateScenarioTimestamp({ name: "yesterday", description: "1 day ago", minutesAgo: 1440, expectedRelativeTime: "1 day ago" }),
+        lastModified: TimestampGenerator.generateScenarioTimestamp({ name: "yesterday", description: "1 day ago", minutesAgo: 1440, expectedRelativeTime: "1 day ago" }),
         assignee: "dev-team",
         estimatedHours: 1,
         actualHours: 0,
@@ -89,8 +92,8 @@ export class MarkdownTaskParser {
         complexity: TaskComplexity.MEDIUM,
         dependencies: ["2.5.1", "2.5.2"],
         requirements: [],
-        createdDate: "2024-08-22T09:00:00Z",
-        lastModified: "2024-08-22T14:45:00Z",
+        createdDate: TimestampGenerator.generateScenarioTimestamp({ name: "three_days", description: "3 days ago", minutesAgo: 4320, expectedRelativeTime: "3 days ago" }),
+        lastModified: TimestampGenerator.generateScenarioTimestamp({ name: "five_hours", description: "5 hours ago", minutesAgo: 300, expectedRelativeTime: "5 hours ago" }),
         assignee: "senior-dev",
         estimatedHours: 4,
         actualHours: 3.5,
@@ -100,7 +103,7 @@ export class MarkdownTaskParser {
         tags: ["mcp", "server", "api"],
         statusDisplayName: STATUS_DISPLAY_NAMES[TaskStatus.COMPLETED],
         testStatus: {
-          lastRunDate: "2024-08-22T13:15:00Z",
+          lastRunDate: TimestampGenerator.generateScenarioTimestamp({ name: "two_hours", description: "2 hours ago", minutesAgo: 120, expectedRelativeTime: "2 hours ago" }),
           totalTests: 18,
           passedTests: 15,
           failedTests: 3,
@@ -131,8 +134,8 @@ export class MarkdownTaskParser {
         complexity: TaskComplexity.MEDIUM,
         dependencies: ["2.2.1", "2.2.2", "2.2.3"],
         requirements: ["6.8", "6.9", "7.7"],
-        createdDate: "2024-08-22T14:00:00Z",
-        lastModified: "2024-08-22T15:30:00Z",
+        createdDate: TimestampGenerator.generateScenarioTimestamp({ name: "one_day", description: "1 day ago", minutesAgo: 1440, expectedRelativeTime: "1 day ago" }),
+        lastModified: TimestampGenerator.generateScenarioTimestamp({ name: "five_hours", description: "5 hours ago", minutesAgo: 300, expectedRelativeTime: "5 hours ago" }),
         assignee: "dev-team",
         estimatedHours: 3,
         actualHours: 1.5,
@@ -142,7 +145,7 @@ export class MarkdownTaskParser {
         tags: ["mock-data", "enhancement", "testing"],
         statusDisplayName: STATUS_DISPLAY_NAMES[TaskStatus.IN_PROGRESS],
         testStatus: {
-          lastRunDate: "2024-08-22T15:00:00Z",
+          lastRunDate: TimestampGenerator.generateScenarioTimestamp({ name: "five_hours", description: "5 hours ago", minutesAgo: 300, expectedRelativeTime: "5 hours ago" }),
           totalTests: 12,
           passedTests: 10,
           failedTests: 2,
@@ -169,8 +172,8 @@ export class MarkdownTaskParser {
         complexity: TaskComplexity.MEDIUM,
         dependencies: ["3.1.1", "3.1.2"],
         requirements: ["6.10", "7.8"],
-        createdDate: "2024-08-22T11:00:00Z",
-        lastModified: "2024-08-22T11:00:00Z",
+        createdDate: TimestampGenerator.generateScenarioTimestamp({ name: "yesterday", description: "1 day ago", minutesAgo: 1440, expectedRelativeTime: "1 day ago" }),
+        lastModified: TimestampGenerator.generateScenarioTimestamp({ name: "yesterday", description: "1 day ago", minutesAgo: 1440, expectedRelativeTime: "1 day ago" }),
         assignee: "dev-team",
         estimatedHours: 6,
         actualHours: 0,
@@ -190,8 +193,8 @@ export class MarkdownTaskParser {
         complexity: TaskComplexity.HIGH,
         dependencies: ["3.2.1", "2.6.1"],
         requirements: ["7.9", "7.10"],
-        createdDate: "2024-08-22T12:00:00Z",
-        lastModified: "2024-08-22T12:00:00Z",
+        createdDate: TimestampGenerator.generateScenarioTimestamp({ name: "yesterday", description: "1 day ago", minutesAgo: 1440, expectedRelativeTime: "1 day ago" }),
+        lastModified: TimestampGenerator.generateScenarioTimestamp({ name: "yesterday", description: "1 day ago", minutesAgo: 1440, expectedRelativeTime: "1 day ago" }),
         assignee: "qa-team",
         estimatedHours: 12,
         actualHours: 0,
@@ -211,8 +214,8 @@ export class MarkdownTaskParser {
         complexity: TaskComplexity.EXTREME,
         dependencies: ["4.1.1", "3.2.1"],
         requirements: ["8.1", "8.2"],
-        createdDate: "2024-08-22T13:00:00Z",
-        lastModified: "2024-08-22T16:00:00Z",
+        createdDate: TimestampGenerator.generateScenarioTimestamp({ name: "yesterday", description: "1 day ago", minutesAgo: 1440, expectedRelativeTime: "1 day ago" }),
+        lastModified: TimestampGenerator.generateScenarioTimestamp({ name: "five_hours", description: "5 hours ago", minutesAgo: 300, expectedRelativeTime: "5 hours ago" }),
         assignee: "performance-team",
         estimatedHours: 20,
         actualHours: 0,
@@ -222,7 +225,7 @@ export class MarkdownTaskParser {
         tags: ["performance", "optimization", "scalability"],
         statusDisplayName: STATUS_DISPLAY_NAMES[TaskStatus.BLOCKED],
         testStatus: {
-          lastRunDate: "2024-08-22T15:30:00Z",
+          lastRunDate: TimestampGenerator.generateScenarioTimestamp({ name: "two_hours", description: "2 hours ago", minutesAgo: 120, expectedRelativeTime: "2 hours ago" }),
           totalTests: 25,
           passedTests: 20,
           failedTests: 5,
@@ -240,8 +243,8 @@ export class MarkdownTaskParser {
         complexity: TaskComplexity.MEDIUM,
         dependencies: ["2.6.1"],
         requirements: ["5.8", "7.7"],
-        createdDate: "2024-08-22T16:00:00Z",
-        lastModified: "2024-08-22T17:30:00Z",
+        createdDate: TimestampGenerator.generateScenarioTimestamp({ name: "five_hours", description: "5 hours ago", minutesAgo: 300, expectedRelativeTime: "5 hours ago" }),
+        lastModified: TimestampGenerator.generateScenarioTimestamp({ name: "two_hours", description: "2 hours ago", minutesAgo: 120, expectedRelativeTime: "2 hours ago" }),
         assignee: "dev-team",
         estimatedHours: 3,
         actualHours: 2.5,
@@ -251,7 +254,7 @@ export class MarkdownTaskParser {
         tags: ["testing", "error-handling", "mock-data"],
         statusDisplayName: STATUS_DISPLAY_NAMES[TaskStatus.COMPLETED],
         testStatus: {
-          lastRunDate: "2024-08-22T17:15:00Z",
+          lastRunDate: TimestampGenerator.generateScenarioTimestamp({ name: "two_hours", description: "2 hours ago", minutesAgo: 120, expectedRelativeTime: "2 hours ago" }),
           totalTests: 22,
           passedTests: 18,
           failedTests: 4,
@@ -269,8 +272,8 @@ export class MarkdownTaskParser {
         complexity: TaskComplexity.MEDIUM,
         dependencies: ["2.6.2", "3.1.1"],
         requirements: ["7.7", "7.8"],
-        createdDate: "2024-08-22T17:00:00Z",
-        lastModified: "2024-08-22T18:00:00Z",
+        createdDate: TimestampGenerator.generateScenarioTimestamp({ name: "five_hours", description: "5 hours ago", minutesAgo: 300, expectedRelativeTime: "5 hours ago" }),
+        lastModified: TimestampGenerator.generateScenarioTimestamp({ name: "five_hours", description: "5 hours ago", minutesAgo: 300, expectedRelativeTime: "5 hours ago" }),
         assignee: "ui-team",
         estimatedHours: 6,
         actualHours: 2,
@@ -280,7 +283,7 @@ export class MarkdownTaskParser {
         tags: ["ui", "test-results", "components"],
         statusDisplayName: STATUS_DISPLAY_NAMES[TaskStatus.IN_PROGRESS],
         testStatus: {
-          lastRunDate: "2024-08-22T17:45:00Z",
+          lastRunDate: TimestampGenerator.generateScenarioTimestamp({ name: "two_hours", description: "2 hours ago", minutesAgo: 120, expectedRelativeTime: "2 hours ago" }),
           totalTests: 15,
           passedTests: 12,
           failedTests: 3,
@@ -298,8 +301,8 @@ export class MarkdownTaskParser {
         complexity: TaskComplexity.HIGH,
         dependencies: ["2.6.2", "3.3.1"],
         requirements: ["7.9", "7.10"],
-        createdDate: "2024-08-22T18:00:00Z",
-        lastModified: "2024-08-22T18:00:00Z",
+        createdDate: TimestampGenerator.generateScenarioTimestamp({ name: "five_hours", description: "5 hours ago", minutesAgo: 300, expectedRelativeTime: "5 hours ago" }),
+        lastModified: TimestampGenerator.generateScenarioTimestamp({ name: "five_hours", description: "5 hours ago", minutesAgo: 300, expectedRelativeTime: "5 hours ago" }),
         assignee: "qa-team",
         estimatedHours: 8,
         actualHours: 0,

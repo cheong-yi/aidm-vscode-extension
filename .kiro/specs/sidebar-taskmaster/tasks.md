@@ -69,7 +69,7 @@ This implementation plan breaks down the feature into atomic, TDD-friendly tasks
   - Write unit tests for test failure data structure
   - _Requirements: 5.8, 7.7_
 
-- [ ] 2.6.3 Add relative timestamp mock data
+- [x] 2.6.3 Add relative timestamp mock data
 
   - Include lastRunDate in ISO format for test results
   - Add createdDate and lastModified to all mock tasks
@@ -128,19 +128,19 @@ This implementation plan breaks down the feature into atomic, TDD-friendly tasks
   - Write unit tests for icon assignment logic
   - _Requirements: 2.2_
 
-- [r] 3.1.3 Add TaskTreeItem collapsible state logic
+- [x] 3.1.3 Add TaskTreeItem collapsible state logic
 
   - Implement collapsibleState based on task hierarchy
   - Write unit tests for collapsible state determination
   - _Requirements: 1.6_
 
-- [ ] 3.1.4 Add TaskTreeItem tooltip functionality
+- [x] 3.1.4 Add TaskTreeItem tooltip functionality
 
   - Add tooltip text with task details and metadata
   - Write unit tests for tooltip text generation
   - _Requirements: 2.3_
 
-- [ ] 3.1.5 Add TaskTreeItem executable state indicators
+- [d] 3.1.5 Add TaskTreeItem executable state indicators
 
   - Add isExecutable property for not_started tasks
   - Add contextValue for executable tasks ("executable-task")
