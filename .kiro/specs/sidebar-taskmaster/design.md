@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Sidebar Taskmaster Dashboard is a new UI module within the enterprise-ai-context-extension that provides developers with an intelligent task management interface. This module leverages the existing MCP server architecture and ContextManager to display tasks from the tasks.md file in a split-panel VSCode sidebar view. The design follows the established patterns of the extension while introducing new UI components for task management and AI assistant integration.
+The Sidebar Taskmaster Dashboard is a new UI module within the enterprise-ai-context-extension that provides developers with an intelligent task management interface. This module leverages the existing MCP server architecture and ContextManager to display tasks from the tasks.md file in an expandable list VSCode sidebar view. The design follows the established patterns of the extension while introducing new UI components for task management and AI assistant integration.
 
 ## Architecture
 
@@ -17,6 +17,7 @@ graph TB
         SB[Status Bar]
         TDS[TasksDataService]
         CIS[CursorIntegrationService]
+        TFU[TimeFormattingUtility]
     end
 
     subgraph "Local MCP Server Process"
@@ -44,6 +45,7 @@ graph TB
 
     EXT --> TDS
     EXT --> CIS
+    EXT --> TFU
     TDS --> MCP : JSON-RPC
     TTV --> EXT
     TDC --> EXT
@@ -112,6 +114,7 @@ interface TaskTreeViewProvider extends vscode.TreeDataProvider<TaskTreeItem> {
   expandNode(taskId: string): void;
   collapseNode(taskId: string): void;
   onTaskClick: vscode.EventEmitter<{ taskId: string; task: Task }>;
+  formatTaskForDisplay(task: Task): TaskTreeItem;
 }
 
 interface TaskTreeItem extends vscode.TreeItem {
@@ -125,6 +128,9 @@ interface TaskTreeItem extends vscode.TreeItem {
   hasChildren: boolean;
   dependencyLevel: number;
   isExecutable: boolean; // true for not_started tasks
+  estimatedDuration?: string; // "15-30 min"
+  testSummary?: string; // "15/18 passed"
+  statusDisplayName: string; // "not started", "in progress"
 }
 ```
 
@@ -135,6 +141,11 @@ interface TaskDetailCardProvider {
   updateTaskDetails(task: Task): void;
   clearDetails(): void;
   showNoTaskSelected(): void;
+  renderTestFailures(failures: FailingTest[]): string;
+  renderExecutableActions(task: Task): string;
+  renderStatusSpecificActions(task: Task): string;
+  formatRelativeTime(isoDate: string): string; // "2 hours ago"
+
   onTaskSelected: vscode.EventEmitter<Task>;
   onStatusChanged: vscode.EventEmitter<{
     taskId: string;
@@ -145,6 +156,16 @@ interface TaskDetailCardProvider {
     testStatus: TestStatus;
   }>;
   onCursorExecuteRequested: vscode.EventEmitter<{ taskId: string }>;
+}
+```
+
+#### Time Formatting Utility
+
+```typescript
+interface TimeFormattingUtility {
+  formatRelativeTime(isoDate: string): string;
+  formatDuration(minutes: number): string;
+  parseEstimatedDuration(duration: string): number; // "15-30 min" -> 22.5
 }
 ```
 
@@ -253,26 +274,35 @@ interface Task {
   complexity: TaskComplexity;
   dependencies: string[];
   requirements: string[];
-  createdDate: Date;
-  lastModified: Date;
+  createdDate: string; // ISO date string
+  lastModified: string; // ISO date string
   assignee?: string;
   estimatedHours?: number;
   actualHours?: number;
+  estimatedDuration?: string; // "15-30 min", "20-25 min"
   testStatus?: TestStatus;
   tags?: string[];
   priority?: TaskPriority;
   implementationNotes?: string[];
   acceptanceCriteria?: string[];
+  isExecutable?: boolean; // For Cursor integration eligibility
 }
 
 interface TestStatus {
-  lastRunDate?: Date;
+  lastRunDate?: string; // ISO date string
   totalTests: number;
   passedTests: number;
   failedTests: number;
-  failingTestsList?: { name: string; message: string; stackTrace?: string }[];
+  failingTestsList?: FailingTest[];
   testSuite?: string;
   coverage?: number;
+}
+
+interface FailingTest {
+  name: string;
+  message: string;
+  stackTrace?: string;
+  category: "assertion" | "type" | "filesystem" | "timeout" | "network";
 }
 
 enum TaskStatus {
@@ -284,19 +314,41 @@ enum TaskStatus {
   DEPRECATED = "deprecated",
 }
 
-enum TaskComplexity {
-  LOW = "low",
-  MEDIUM = "medium",
-  HIGH = "high",
-  EXTREME = "extreme",
-}
+// Status display mapping
+const STATUS_DISPLAY_NAMES: Record<TaskStatus, string> = {
+  [TaskStatus.NOT_STARTED]: "not started",
+  [TaskStatus.IN_PROGRESS]: "in progress",
+  [TaskStatus.REVIEW]: "review",
+  [TaskStatus.COMPLETED]: "completed",
+  [TaskStatus.BLOCKED]: "blocked",
+  [TaskStatus.DEPRECATED]: "deprecated",
+};
 
-enum TaskPriority {
-  LOW = "low",
-  MEDIUM = "medium",
-  HIGH = "high",
-  CRITICAL = "critical",
-}
+// Status-specific action configurations
+const STATUS_ACTIONS: Record<TaskStatus, string[]> = {
+  [TaskStatus.NOT_STARTED]: [
+    "🤖 Execute with Cursor",
+    "Generate Prompt",
+    "View Requirements",
+  ],
+  [TaskStatus.IN_PROGRESS]: [
+    "Continue Work",
+    "Mark Complete",
+    "View Dependencies",
+  ],
+  [TaskStatus.REVIEW]: [
+    "Approve & Complete",
+    "Request Changes",
+    "View Implementation",
+  ],
+  [TaskStatus.COMPLETED]: ["View Code", "View Tests", "History"],
+  [TaskStatus.BLOCKED]: [
+    "View Blockers",
+    "Update Dependencies",
+    "Report Issue",
+  ],
+  [TaskStatus.DEPRECATED]: ["Archive", "View History"],
+};
 ```
 
 #### MarkdownTaskParser
@@ -349,17 +401,18 @@ interface TaskContext {
 
 ### Data Models
 
-#### Task Data Structure
+#### Enhanced Task Data Structure
 
 ```typescript
 interface TaskData {
   tasks: Task[];
   metadata: {
-    lastUpdated: Date;
+    lastUpdated: string; // ISO date string
     totalTasks: number;
     completedTasks: number;
     inProgressTasks: number;
     blockedTasks: number;
+    executableTasks: number; // not_started tasks
     testCoverage: number;
     averageComplexity: TaskComplexity;
   };
@@ -370,11 +423,72 @@ interface TaskData {
     testMappings: Record<string, string[]>;
   };
   performance: {
-    lastRefreshTime: Date;
+    lastRefreshTime: string; // ISO date string
     refreshDuration: number;
     cacheHitRate: number;
   };
 }
+```
+
+#### Mock Data Examples
+
+```typescript
+// Example executable task (not_started)
+const executableTask: Task = {
+  id: "3.1.2",
+  title: "Add TaskTreeItem status indicator property",
+  description:
+    "Add iconPath property with status-based theme icons to TaskTreeItem. Implement logic to assign appropriate icons based on task status.",
+  status: TaskStatus.NOT_STARTED,
+  complexity: TaskComplexity.LOW,
+  estimatedDuration: "15-20 min",
+  dependencies: ["3.1.1", "2.2"],
+  requirements: ["2.2"],
+  createdDate: "2024-08-22T10:00:00Z",
+  lastModified: "2024-08-22T10:00:00Z",
+  isExecutable: true,
+  testStatus: null,
+};
+
+// Example completed task with test failures
+const completedWithFailures: Task = {
+  id: "2.5.3",
+  title: "Add tasks/update-status tool to SimpleMCPServer",
+  description:
+    "Implement the tasks/update-status MCP tool in SimpleMCPServer to handle task status update requests from the VSCode extension.",
+  status: TaskStatus.COMPLETED,
+  complexity: TaskComplexity.MEDIUM,
+  estimatedDuration: "25-30 min",
+  dependencies: ["2.5.1", "2.5.2"],
+  requirements: [],
+  createdDate: "2024-08-22T09:00:00Z",
+  lastModified: "2024-08-22T14:45:00Z",
+  isExecutable: false,
+  testStatus: {
+    lastRunDate: "2024-08-22T13:15:00Z",
+    totalTests: 18,
+    passedTests: 15,
+    failedTests: 3,
+    failingTestsList: [
+      {
+        name: "should validate task status transitions",
+        message: "AssertionError: Expected 400 but got 200",
+        category: "assertion",
+      },
+      {
+        name: "should handle invalid task IDs",
+        message: "TypeError: Cannot read property 'id' of undefined",
+        category: "type",
+      },
+      {
+        name: "should persist status changes",
+        message: "FileSystemError: Permission denied",
+        category: "filesystem",
+      },
+    ],
+    coverage: 85,
+  },
+};
 ```
 
 #### Enhanced JSON-RPC Communication
@@ -413,6 +527,47 @@ interface TaskJSONRPCResponse extends JSONRPCResponse {
 ```
 
 ## UI/UX Design
+
+### Expandable List Layout
+
+**Visual Hierarchy**
+
+- **List Items**: Individual tasks with expandable details
+- **Task Headers**: ID, title, status badge, and expand icon
+- **Expanded Details**: Full description, metadata, test results, actions
+- **Special Indicators**: Executable tasks show blue left border and 🤖 icon
+
+**Enhanced Status Indicators**
+
+- **not started**: Gray badge with 🤖 icon for executable tasks
+- **in progress**: Blue badge with gear icon
+- **review**: Yellow badge with document icon
+- **completed**: Green badge with checkmark
+- **blocked**: Red badge with warning icon
+- **deprecated**: Dark badge with X icon
+
+**Task Information Display**
+
+- Task ID (monospace, colored background)
+- Task Title (truncated with tooltip)
+- Status badge (colored, with display name)
+- Cursor executable indicator (🤖 icon + blue border)
+- Estimated duration in metadata
+- Test status summary badge
+
+**Expandable Content Sections**
+
+1. **Task Description**: Full description text
+2. **Metadata Grid**: Complexity, estimated duration, dependencies
+3. **Test Results**: Expandable section with pass/fail stats and collapsible failures
+4. **Actions**: Status-specific button sets
+
+**Test Results Display**
+
+- Summary stats (Total/Passed/Failed)
+- Last run timestamp ("Last run: 2 hours ago")
+- Collapsible failing tests section
+- Individual failure items with error categorization
 
 ### Split-Panel Layout
 
@@ -719,7 +874,8 @@ interface TaskErrorResponse extends ErrorResponse {
     | "dependency_resolution"
     | "test_results"
     | "cursor_integration"
-    | "context_extraction";
+    | "context_extraction"
+    | "time_formatting";
   suggestedAction?:
     | "retry"
     | "manual_update"
@@ -905,15 +1061,16 @@ interface TaskAuthenticationProvider {
 - **Mock Cache**: Demonstration data for rapid iteration (<50ms)
 - **Test Results Cache**: Test status and coverage data (<150ms)
 - **Context Cache**: Extracted task context for prompt generation (<300ms)
+- **Time Format Cache**: Relative time strings with 1-minute TTL
 
 **UI Performance Optimizations**
 
 - Lazy loading of task details and test results
 - Debounced status updates (300ms delay)
 - Virtual scrolling for large task lists (100+ items)
-- Efficient tree view rendering with item recycling
+- Efficient list rendering with expand/collapse state management
 - Background data prefetching for adjacent tasks
-- Context extraction background processing
+- Cached relative time formatting
 
 ### Response Time Architecture
 
@@ -1034,15 +1191,17 @@ interface TaskmasterConfiguration {
     showTestResults: boolean;
     enableVirtualScrolling: boolean;
     enableCursorIntegration: boolean;
+    showExecutableIndicators: boolean;
   };
   ui: {
-    treeViewHeight: number;
-    detailCardHeight: number;
+    listItemHeight: number;
+    detailsPanelHeight: number;
     statusColors: Record<TaskStatus, string>;
     enableAnimations: boolean;
     showPriorityIndicators: boolean;
     showTestStatus: boolean;
     showAIActions: boolean;
+    relativeTimeFormat: boolean; // "2 hours ago" vs absolute time
   };
   mcp: {
     taskEndpoint: string;
@@ -1056,12 +1215,14 @@ interface TaskmasterConfiguration {
     enableBackgroundRefresh: boolean;
     maxConcurrentRequests: number;
     contextCacheTTL: number;
+    timeFormatCacheTTL: number; // 60 seconds default
   };
   testing: {
     enableTestResults: boolean;
     testDataCacheTTL: number;
     showTestCoverage: boolean;
     enableTestNotifications: boolean;
+    showFailureDetails: boolean;
   };
   ai: {
     cursorIntegration: {
@@ -1101,9 +1262,9 @@ interface TaskmasterConfiguration {
 {
   "contributes": {
     "views": {
-      "explorer": [
+      "taskmaster": [
         {
-          "id": "aidm-vscode-extension.tasks-tree",
+          "id": "aidm-vscode-extension.tasks-list",
           "name": "Tasks",
           "when": "aidm-vscode-extension.enabled"
         }
@@ -1112,9 +1273,9 @@ interface TaskmasterConfiguration {
     "viewsContainers": {
       "activitybar": [
         {
-          "id": "aidm-vscode-extension.taskmaster",
-          "title": "Taskmaster",
-          "icon": "resources/taskmaster-icon.svg"
+          "id": "taskmaster",
+          "title": "Taskmaster Dashboard",
+          "icon": "$(checklist)"
         }
       ]
     },
@@ -1122,7 +1283,8 @@ interface TaskmasterConfiguration {
       {
         "command": "aidm-vscode-extension.refreshTasks",
         "title": "Refresh Tasks",
-        "category": "Taskmaster"
+        "category": "Taskmaster",
+        "icon": "$(refresh)"
       },
       {
         "command": "aidm-vscode-extension.updateTaskStatus",
@@ -1142,11 +1304,22 @@ interface TaskmasterConfiguration {
       {
         "command": "aidm-vscode-extension.executeTaskWithCursor",
         "title": "Execute Task with Cursor",
-        "category": "Taskmaster"
+        "category": "Taskmaster",
+        "icon": "$(robot)"
       },
       {
         "command": "aidm-vscode-extension.generateTaskPrompt",
         "title": "Generate AI Prompt",
+        "category": "Taskmaster"
+      },
+      {
+        "command": "aidm-vscode-extension.expandAllTasks",
+        "title": "Expand All Tasks",
+        "category": "Taskmaster"
+      },
+      {
+        "command": "aidm-vscode-extension.collapseAllTasks",
+        "title": "Collapse All Tasks",
         "category": "Taskmaster"
       }
     ],
@@ -1154,20 +1327,20 @@ interface TaskmasterConfiguration {
       "view/title": [
         {
           "command": "aidm-vscode-extension.refreshTasks",
-          "when": "view == aidm-vscode-extension.tasks-tree",
+          "when": "view == aidm-vscode-extension.tasks-list",
           "group": "navigation"
         }
       ],
       "view/item/context": [
         {
-          "command": "aidm-vscode-extension.updateTaskStatus",
-          "when": "view == aidm-vscode-extension.tasks-tree",
+          "command": "aidm-vscode-extension.executeTaskWithCursor",
+          "when": "view == aidm-vscode-extension.tasks-list && viewItem == executable-task",
           "group": "inline"
         },
         {
-          "command": "aidm-vscode-extension.executeTaskWithCursor",
-          "when": "view == aidm-vscode-extension.tasks-tree && viewItem == executable-task",
-          "group": "inline"
+          "command": "aidm-vscode-extension.updateTaskStatus",
+          "when": "view == aidm-vscode-extension.tasks-list",
+          "group": "status"
         }
       ]
     }
@@ -1175,4 +1348,79 @@ interface TaskmasterConfiguration {
 }
 ```
 
+## Mockup Reference in Design.md
+
+Add this section to your design.md:
+
+```markdown
+## UI Design Reference
+
+### Visual Mockup Specification
+
+The complete UI design for the sidebar is defined in `taskmaster_mockup.html`, which serves as the canonical reference for all visual implementation. This mockup demonstrates:
+
+#### Layout Structure
+
+- Expandable list design (not split panels)
+- Task headers with expand/collapse functionality
+- Accordion behavior (one task expanded at a time)
+- Status badges with proper color coding
+- Metadata grid layout for task details
+
+#### Interactive Elements
+
+- Click-to-expand task headers
+- Collapsible test failure sections
+- Status-specific action buttons
+- Executable task indicators (blue border + 🤖 icon)
+
+#### Visual States
+
+- **not_started**: Gray badge, blue border if executable, 🤖 icon
+- **in_progress**: Blue badge
+- **review**: Yellow badge
+- **completed**: Green badge
+- **blocked**: Red badge
+
+#### Test Results Display
+
+- Summary statistics (total/passed/failed)
+- Relative timestamps ("Last run: 2 hours ago")
+- Collapsible failures section with error categorization
+- Individual failure items with test names and error messages
+
+#### Implementation Requirements
+
+1. **Exact Visual Match**: All components must replicate the mockup styling precisely
+2. **Responsive Design**: Maintain layout integrity across sidebar width changes
+3. **Animation Consistency**: Smooth expand/collapse transitions matching mockup behavior
+4. **Color Scheme Compliance**: Use exact colors and visual hierarchy from mockup
+5. **Typography**: Match font sizes, weights, and spacing from mockup design
+
+### Mockup Integration Guidelines
+
+#### For UI Tasks
+
+- Reference specific line numbers in taskmaster_mockup.html
+- Copy exact CSS class structures and styling patterns
+- Implement identical HTML hierarchy and container nesting
+- Replicate all interactive behaviors and visual feedback
+
+#### For Styling Tasks
+
+- Extract CSS patterns directly from the mockup
+- Maintain consistent spacing, colors, and typography
+- Implement responsive design following mockup breakpoints
+- Ensure visual accessibility while preserving design integrity
+
+#### For Interactive Tasks
+
+- Study click handlers and state management in mockup JavaScript
+- Implement identical expand/collapse behavior patterns
+- Match timing and animation characteristics exactly
+- Replicate user feedback and visual state changes
+
+The mockup serves as both the functional specification and the acceptance criteria for all UI-related implementation tasks.
+
 This enhanced design provides a comprehensive, enterprise-ready foundation for the Taskmaster Dashboard while maintaining consistency with the existing extension architecture. The split-panel approach optimizes screen real estate while providing both high-level overview and detailed task information. The integration with existing MCP server infrastructure ensures seamless operation and future extensibility. The addition of Cursor AI integration, test results integration, enhanced error handling, and performance monitoring makes this a robust solution for enterprise development teams with modern AI-assisted development workflows.
+```

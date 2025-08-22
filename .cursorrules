@@ -475,7 +475,7 @@ class Implementation {
 #### **Self-Validation Checklist**
 ```typescript
 // Before committing, ask yourself:
-// 1. Does the code match what's documented in design.md?
+// 1. Does the code match whats documented in design.md?
 // 2. Are all requirements from requirements.md satisfied?
 // 3. Is the task properly marked as complete in tasks.md?
 // 4. Are there any new patterns that should be documented?
@@ -832,5 +832,233 @@ class BusinessContextHoverProvider {
   ): Promise<Hover | null> {
     // Implementation here...
   }
+}
+```
+
+## Taskmaster Dashboard Implementation Rules (NEW FEATURE)
+
+### Visual Design Compliance (MANDATORY)
+- **Mockup Reference**: taskmaster_mockup.html is the single source of truth for UI design
+- **Exact Visual Match**: All UI components must match the mockup pixel-perfect
+- **CSS Classes**: Use the exact CSS class names and structure from the mockup
+- **Accordion Behavior**: Only one task expanded at a time (lines 350-410 in mockup)
+- **Executable Tasks**: Blue left border + 🤖 icon when `isExecutable: true && status: "not_started"`
+
+### Enhanced Data Structures (REQUIRED)
+```typescript
+// All task implementations must use these enhanced fields
+interface Task {
+  // Core existing fields from your project
+  id: string;
+  title: string;
+  description: string;
+  status: TaskStatus;
+  complexity: TaskComplexity;
+  dependencies: string[];
+  requirements: string[];
+  
+  // MANDATORY enhanced fields
+  estimatedDuration?: string; // "15-30 min" format
+  isExecutable?: boolean; // For Cursor integration
+  createdDate: string; // ISO string only (follow your date rules)
+  lastModified: string; // ISO string only
+  
+  // Enhanced test results
+  testStatus?: {
+    lastRunDate?: string; // ISO format only
+    totalTests: number;
+    passedTests: number;
+    failedTests: number;
+    failingTestsList?: FailingTest[];
+    coverage?: number;
+  }
+}
+
+interface FailingTest {
+  name: string;
+  message: string;
+  category: 'assertion' | 'type' | 'filesystem' | 'timeout' | 'network';
+  stackTrace?: string;
+}
+```
+
+### Time Formatting (MANDATORY)
+- Use TimeFormattingUtility for ALL timestamps (follow your service patterns)
+- Display relative time ("2 hours ago") not absolute dates
+- Fallback to absolute time on formatting errors
+- Cache relative times with 1-minute TTL (follow your performance targets)
+
+### Status Action Mapping (EXACT IMPLEMENTATION)
+```typescript
+const STATUS_ACTIONS = {
+  not_started: ["🤖 Execute with Cursor", "Generate Prompt", "View Requirements"],
+  in_progress: ["Continue Work", "Mark Complete", "View Dependencies"],
+  review: ["Approve & Complete", "Request Changes", "View Implementation"],
+  completed: ["View Code", "View Tests", "History"],
+  blocked: ["View Blockers", "Update Dependencies", "Report Issue"],
+  deprecated: ["Archive", "View History"]
+};
+
+const STATUS_DISPLAY_NAMES = {
+  not_started: "not started",
+  in_progress: "in progress",
+  review: "review",
+  completed: "completed",
+  blocked: "blocked",
+  deprecated: "deprecated"
+};
+```
+
+### Test Results Display Rules
+- Reference mockup lines 280-340 for exact HTML structure
+- Implement collapsible failures section with expand/collapse icons
+- Categorize errors: assertion, type, filesystem, timeout, network
+- Show individual FailingTest items with proper error styling
+- Use your established error handling patterns from ErrorHandler.ts
+
+### File Path Corrections for Taskmaster Tasks
+```typescript
+// ✅ CORRECT: Use your actual project structure
+import { TaskTreeViewProvider } from './tasks/providers';
+import { Task, TaskStatus } from './tasks/types';
+import { TasksDataService } from './services';
+import { TimeFormattingUtility } from './utils'; // If created
+import { ErrorHandler } from './utils/ErrorHandler';
+import { DegradedModeManager } from './utils/DegradedModeManager';
+
+// ❌ INCORRECT: These paths dont exist in your project
+import { TaskTreeViewProvider } from './task-management/ui/TaskTreeViewProvider';
+import { Task } from './task-management/types';
+```
+
+### Taskmaster Performance Targets (Add to your existing targets)
+- Task Tree Display: <300ms (your existing target)
+- Task Detail Expansion: <200ms (new)
+- Time Formatting: <50ms (new)
+- Accordion Animation: <150ms (new)
+- Test Results Rendering: <100ms (new)
+
+### Taskmaster Testing Patterns (Follow your TDD rules)
+```typescript
+// Test structure: Follow your __tests__/ pattern
+describe('TaskTreeViewProvider', () => {
+  it('should display executable tasks with blue border and robot icon', async () => {
+    // Arrange: Use your MockDataProvider patterns
+    const mockTask = {
+      id: "test-1",
+      status: "not_started",
+      isExecutable: true,
+      estimatedDuration: "15-20 min"
+    };
+    
+    // Act: Follow your async/await patterns
+    const treeItem = await provider.getTreeItem(mockTask);
+    
+    // Assert: Verify mockup compliance
+    expect(treeItem.contextValue).toBe("executable-task");
+    expect(treeItem.description).toContain("🤖");
+  });
+});
+```
+
+### Mockup Integration Requirements
+```typescript
+// Every UI task must reference specific mockup sections
+/**
+ * Task: Implement collapsible test failures section
+ * Mockup Reference: lines 350-410 in taskmaster_mockup.html
+ * CSS Classes: .failures-section, .failures-header, .failures-list
+ * Behavior: Click to expand/collapse with icon rotation
+ */
+```
+
+### Taskmaster Error Handling (Use your established patterns)
+```typescript
+// Follow your ErrorHandler and DegradedModeManager patterns
+try {
+  const tasks = await this.tasksDataService.getTasks();
+  return this.renderTaskList(tasks);
+} catch (error) {
+  ErrorHandler.handle(error, { context: 'taskmaster-component' });
+  return DegradedModeManager.getTaskFallback();
+}
+```
+
+### Taskmaster Mock Data (Follow your MockDataProvider patterns)
+```typescript
+// Use your established MockDataProvider approach
+import { MockDataProvider } from './mock/MockDataProvider';
+
+const mockProvider = new MockDataProvider();
+const taskScenario = mockProvider.getTaskScenario("development-workflow");
+
+// Must include enhanced fields in mock data
+const mockTaskWithEnhancements = {
+  ...baseTask,
+  estimatedDuration: "15-30 min",
+  isExecutable: true,
+  testStatus: {
+    lastRunDate: "2024-08-22T14:30:00Z",
+    totalTests: 18,
+    passedTests: 15,
+    failedTests: 3,
+    failingTestsList: [
+      {
+        name: "should validate task status transitions",
+        message: "AssertionError: Expected 400 but got 200",
+        category: "assertion"
+      }
+    ]
+  }
+};
+```
+
+### Taskmaster Documentation Updates (Follow your mandatory patterns)
+```typescript
+/**
+ * Task: [Task ID] - [Task Title] 
+ * Requirements: [Requirement IDs from requirements.md]
+ * Dependencies: [Task IDs from tasks.md]
+ * Mockup Reference: [Specific lines in taskmaster_mockup.html]
+ * 
+ * Documentation Updated:
+ * - [x] tasks.md - Task status updated
+ * - [x] design.md - UI patterns documented
+ * - [x] requirements.md - Acceptance criteria verified
+ */
+```
+
+### Taskmaster Forbidden Patterns (Add to your existing anti-patterns)
+- ❌ UI components that dont match the mockup exactly
+- ❌ Using Date objects instead of ISO strings (follow your existing rule)
+- ❌ Hardcoded status names instead of STATUS_DISPLAY_NAMES mapping
+- ❌ Missing executable task visual indicators
+- ❌ Multiple expanded tasks (violates accordion behavior)
+- ❌ Absolute timestamps instead of relative formatting
+- ❌ Generic error handling without FailingTest categorization
+- ❌ Importing from non-existent task-management paths
+
+### Taskmaster VSCode Integration (Follow your extension.ts patterns)
+```typescript
+// Register taskmaster components in your activate function
+export async function activate(context: vscode.ExtensionContext): Promise<void> {
+  // Follow your existing ProcessManager and StatusBarManager patterns
+  const processManager = new ProcessManager();
+  const statusBarManager = new StatusBarManager();
+  
+  // Add taskmaster providers
+  const taskTreeProvider = new TaskTreeViewProvider(tasksDataService);
+  context.subscriptions.push(
+    vscode.window.registerTreeDataProvider('tasks-list', taskTreeProvider)
+  );
+  
+  // Follow your command registration patterns
+  context.subscriptions.push(
+    vscode.commands.registerCommand('aidm-vscode-extension.executeTaskWithCursor', 
+      async (taskId: string) => {
+        // Implementation with your error handling patterns
+      }
+    )
+  );
 }
 ```

@@ -2,7 +2,7 @@
 
 ## Overview
 
-This implementation plan breaks down the feature into atomic, TDD-friendly tasks. Each task should take 15-30 minutes and implement one focused piece of functionality with its tests. Cursor AI integration is prioritized early to enable AI-assisted development for the remaining tasks.
+This implementation plan breaks down the feature into atomic, TDD-friendly tasks that match the expandable list mockup design. Each task should take 15-30 minutes and implement one focused piece of functionality with its tests. The plan emphasizes enhanced data structures, time formatting, test failure details, and executable task indicators.
 
 ## Implementation Tasks
 
@@ -12,9 +12,9 @@ This implementation plan breaks down the feature into atomic, TDD-friendly tasks
 - [x] 1.2 Define core task type interfaces and enums ✅
 - [x] 1.3 Create task-related JSON-RPC type definitions ✅
 
-### 2. Implement core task data services (RECOVERY MODE)
+### 2. Implement enhanced core task data services
 
-#### 2.1 Foundation Layer
+#### 2.1 Foundation Layer (Enhanced Data Structures)
 
 - [x] 2.1.1 Create basic TasksDataService class structure
 - [x] 2.1.2 Create basic MarkdownTaskParser class structure
@@ -23,7 +23,7 @@ This implementation plan breaks down the feature into atomic, TDD-friendly tasks
 - [x] 2.1.5 Add basic TaskStatusManager class structure
 - [x] 2.1.6 Connect TaskStatusManager to MarkdownTaskParser
 
-#### 2.2 Data Service Layer
+#### 2.2 Enhanced Data Service Layer
 
 - [x] 2.2.1 Add interface definition to TasksDataService
 - [x] 2.2.2 Add getTasks method to TasksDataService (mock data)
@@ -51,16 +51,69 @@ This implementation plan breaks down the feature into atomic, TDD-friendly tasks
 - [x] 2.5.3 Add tasks/update-status tool to SimpleMCPServer
 - [x] 2.5.4 Add remaining MCP tools (refresh, dependencies, test-results)
 
-#### 2.6 Data Contract Validation
+#### 2.6 Enhanced Data Contract Validation
 
-- [ ] 2.6.1 Update mock data to use string dates
-- [ ] 2.6.2 Validate mock response structure matches API
-- [ ] 2.6.3 Add data contract checks to test setup
-- [ ] 2.6.4 Document date format requirements
+- [ ] 2.6.1 Update mock data to include estimatedDuration and enhanced test results
 
-### 3. Implement VSCode UI components
+  - Add estimatedDuration field ("15-30 min" format) to all mock tasks
+  - Include realistic FailingTest objects with proper error categories
+  - Add isExecutable field for not_started tasks
+  - Write unit tests for enhanced mock data structure
+  - _Requirements: 6.8, 6.9, 7.7_
 
-#### 3.1 TaskTreeItem Foundation
+- [ ] 2.6.2 Create comprehensive failing test scenarios
+
+  - Generate mock FailingTest data with assertion, type, filesystem, timeout, network categories
+  - Include realistic error messages matching mockup examples
+  - Add test coverage data to TestStatus objects
+  - Write unit tests for test failure data structure
+  - _Requirements: 5.8, 7.7_
+
+- [ ] 2.6.3 Add relative timestamp mock data
+
+  - Include lastRunDate in ISO format for test results
+  - Add createdDate and lastModified to all mock tasks
+  - Generate timestamps that produce realistic relative times
+  - Write unit tests for timestamp formatting
+  - _Requirements: 4.8, 7.9, 9.3_
+
+- [ ] 2.6.4 Validate enhanced mock response structure matches API
+
+  - Ensure all new fields match design document Task interface
+  - Validate FailingTest structure matches requirements
+  - Test status display name mapping
+  - Write integration tests for data contract compliance
+  - _Requirements: 6.8, 6.9_
+
+#### 2.7 Time Formatting Utility
+
+- [ ] 2.7.1 Create TimeFormattingUtility class structure
+
+  - Implement formatRelativeTime method for ISO date strings
+  - Add formatDuration method for estimated time parsing
+  - Add parseEstimatedDuration method ("15-30 min" → 22.5)
+  - Write unit tests for time formatting utility
+  - _Requirements: 4.8, 9.1, 9.3_
+
+- [ ] 2.7.2 Implement relative time calculation logic
+
+  - Handle seconds, minutes, hours, days, weeks time ranges
+  - Return "just now", "2 minutes ago", "3 hours ago" format
+  - Add fallback to absolute time for formatting failures
+  - Write unit tests for various time ranges
+  - _Requirements: 4.8, 9.3, 9.4_
+
+- [ ] 2.7.3 Add time formatting caching mechanism
+
+  - Cache relative time strings with 1-minute TTL
+  - Implement periodic refresh for displayed times
+  - Add cache invalidation on timestamp updates
+  - Write unit tests for caching behavior
+  - _Requirements: Performance optimization_
+
+### 3. Implement VSCode UI components (Expandable List Design)
+
+#### 3.1 Enhanced TaskTreeItem Foundation
 
 - [x] 3.1.1 Create TaskTreeItem class with basic properties
 
@@ -69,13 +122,13 @@ This implementation plan breaks down the feature into atomic, TDD-friendly tasks
   - Write unit tests for TaskTreeItem creation
   - _Requirements: 1.1, 1.2_
 
-- [ ] 3.1.2 Add TaskTreeItem status indicator property
+- [x] 3.1.2 Add TaskTreeItem status indicator property
 
   - Add iconPath property with status-based theme icons
   - Write unit tests for icon assignment logic
   - _Requirements: 2.2_
 
-- [ ] 3.1.3 Add TaskTreeItem collapsible state logic
+- [x] 3.1.3 Add TaskTreeItem collapsible state logic
 
   - Implement collapsibleState based on task hierarchy
   - Write unit tests for collapsible state determination
@@ -87,22 +140,32 @@ This implementation plan breaks down the feature into atomic, TDD-friendly tasks
   - Write unit tests for tooltip text generation
   - _Requirements: 2.3_
 
-- [ ] 3.1.5 Add TaskTreeItem executable state indicator
+- [ ] 3.1.5 Add TaskTreeItem executable state indicators
+
   - Add isExecutable property for not_started tasks
-  - Add contextValue for executable tasks
+  - Add contextValue for executable tasks ("executable-task")
+  - Add visual indicators (blue border, robot icon in description)
   - Write unit tests for executable state logic
-  - _Requirements: Cursor integration_
+  - _Requirements: 1.8, 8.7_
 
-#### 3.2 TaskTreeViewProvider Foundation
+- [ ] 3.1.6 Add TaskTreeItem enhanced display properties
 
-- [ ] 3.2.1 Create TaskTreeViewProvider class structure
+  - Add estimatedDuration display in tooltip
+  - Add statusDisplayName from STATUS_DISPLAY_NAMES mapping
+  - Add testSummary property ("15/18 passed") for tree display
+  - Write unit tests for enhanced display properties
+  - _Requirements: 9.1, 3.8, 7.3_
+
+#### 3.2 Enhanced TaskTreeViewProvider (List Implementation)
+
+- [x] 3.2.1 Create TaskTreeViewProvider class structure
 
   - Implement vscode.TreeDataProvider interface
   - Add basic getChildren and getTreeItem methods (return empty/mock data)
   - Write unit tests for provider interface compliance
   - _Requirements: 1.3, 1.4_
 
-- [ ] 3.2.2 Implement getTreeItem method
+- [x] 3.2.2 Implement getTreeItem method
 
   - Convert Task objects to TaskTreeItem instances
   - Write unit tests for task-to-tree-item conversion
@@ -114,54 +177,54 @@ This implementation plan breaks down the feature into atomic, TDD-friendly tasks
   - Write unit tests for service connection
   - _Requirements: 2.1_
 
-- [ ] 3.2.4 Implement getChildren for root level tasks only
+- [ ] 3.2.4 Implement flat list getChildren method
 
-  - Return top-level tasks (no parent dependencies)
-  - Write unit tests for root task filtering
+  - Return all tasks as flat list (no hierarchy for expandable list design)
+  - Write unit tests for flat list structure
   - _Requirements: 1.5, 2.1_
 
-- [ ] 3.2.5a Implement basic parent-child dependency detection
+- [ ] 3.2.5 Add task status filtering and display logic
 
-  - Add logic to identify tasks with dependencies
-  - Write unit tests for dependency detection
-  - _Requirements: 1.5, 2.1_
+  - Filter tasks based on status preferences
+  - Apply STATUS_DISPLAY_NAMES mapping for status badges
+  - Add executable task visual indicators
+  - Write unit tests for filtering and display logic
+  - _Requirements: 1.8, 3.8_
 
-- [ ] 3.2.5b Implement hierarchical sorting and nesting logic
-
-  - Handle parent-child relationships in task dependencies
-  - Write unit tests for hierarchy logic
-  - _Requirements: 1.5, 2.1_
-
-- [ ] 3.2.6 Add task status filtering to getChildren
-
-  - Filter tasks based on status (hide completed, etc.)
-  - Write unit tests for status filtering logic
-  - _Requirements: 2.4_
-
-- [ ] 3.2.7 Implement "No Tasks" state handling
+- [ ] 3.2.6 Implement "No Tasks" state handling
 
   - Create empty state tree item when no tasks exist
   - Write unit tests for empty state scenarios
   - _Requirements: 2.5_
 
-- [ ] 3.2.8 Add refresh mechanism infrastructure
+- [ ] 3.2.7 Add refresh mechanism infrastructure
 
   - Add onDidChangeTreeData event emitter
   - Write unit tests for event emitter setup
   - _Requirements: 2.6_
 
-- [ ] 3.2.9 Connect refresh mechanism to data events
+- [ ] 3.2.8 Connect refresh mechanism to data events
 
   - Connect to TasksDataService events for auto-refresh
+  - Maintain expansion state during refresh
   - Write unit tests for event listener connections
-  - _Requirements: 2.6_
+  - _Requirements: 4.2_
 
-- [ ] 3.2.10 Add click-to-execute event emitter
+- [ ] 3.2.9 Add click-to-execute event emitter
+
   - Add onTaskClick event emitter for tree item clicks
+  - Handle executable task detection
   - Write unit tests for click event handling
-  - _Requirements: Cursor integration_
+  - _Requirements: 8.1, 8.7_
 
-#### 3.3 TaskDetailCardProvider Foundation
+- [ ] 3.2.10 Implement accordion expansion behavior
+
+  - Ensure only one task expanded at a time
+  - Add expand/collapse state management
+  - Write unit tests for accordion behavior
+  - _Requirements: 1.6_
+
+#### 3.3 Enhanced TaskDetailCardProvider (Expandable Content)
 
 - [ ] 3.3.1 Create TaskDetailCardProvider class structure
 
@@ -170,973 +233,775 @@ This implementation plan breaks down the feature into atomic, TDD-friendly tasks
   - Write unit tests for provider initialization
   - _Requirements: 2.1, 2.2_
 
-- [ ] 3.3.2a Create HTML skeleton with basic div structure
+- [ ] 3.3.2 Create comprehensive HTML structure
 
-  - Design basic webview HTML container structure
+  - Design complete webview HTML for expandable task details
+  - Include task description, metadata grid, test results sections
+  - Add status-specific action button containers
   - Write unit tests for HTML template generation
-  - _Requirements: 2.3_
+  - _Requirements: 2.1, 2.3_
 
-- [ ] 3.3.2b Add task title and description placeholders
+- [ ] 3.3.3 Implement complete CSS styling
 
-  - Add HTML elements for task title and description display
-  - Write unit tests for placeholder element creation
-  - _Requirements: 2.3_
-
-- [ ] 3.3.2c Add metadata section structure
-
-  - Create HTML structure for complexity, priority, dependencies
-  - Write unit tests for metadata section creation
-  - _Requirements: 2.3_
-
-- [ ] 3.3.3a Add base CSS reset and typography
-
-  - Create CSS foundation with reset and typography rules
+  - Create comprehensive CSS matching mockup design
+  - Include metadata grid layout, test results styling, action buttons
+  - Add responsive design for different sidebar widths
   - Write unit tests for CSS class application
   - _Requirements: 2.4_
 
-- [ ] 3.3.3b Style task header section
+- [ ] 3.3.4 Implement enhanced task metadata display
 
-  - Add CSS styling for title and status sections
-  - Write unit tests for header styling application
-  - _Requirements: 2.4_
+  - Show complexity, estimated duration, dependencies in grid layout
+  - Format estimated duration from "15-30 min" format
+  - Display dependency tags with proper styling
+  - Write unit tests for metadata rendering
+  - _Requirements: 2.1, 9.1_
 
-- [ ] 3.3.3c Style metadata grid layout
+- [ ] 3.3.5 Add comprehensive test results display section
 
-  - Create CSS grid layout for task metadata display
-  - Write unit tests for grid layout rendering
-  - _Requirements: 2.4_
+  - Show test summary stats (total/passed/failed)
+  - Display last run timestamp with relative time formatting
+  - Add test coverage percentage display
+  - Write unit tests for test results rendering
+  - _Requirements: 7.1, 7.3, 7.8, 7.9_
 
-- [ ] 3.3.4 Implement task title and description display
+- [ ] 3.3.6 Implement collapsible test failures section
 
-  - Show task title and description in webview
-  - Write unit tests for content rendering
-  - _Requirements: 2.5_
+  - Create expandable section for failing test details
+  - Show individual FailingTest items with name, message, category
+  - Add error category visual indicators
+  - Write unit tests for failures section behavior
+  - _Requirements: 7.6, 7.7, 5.8_
 
-- [ ] 3.3.5 Add task metadata display section
+- [ ] 3.3.7 Add status-specific action buttons
 
-  - Show complexity, priority, dependencies
-  - Write unit tests for metadata formatting
-  - _Requirements: 7.1_
-
-- [ ] 3.3.6a Create static HTML select element for status
-
-  - Add basic HTML select with status options
-  - Write unit tests for select element creation
-  - _Requirements: 2.6_
-
-- [ ] 3.3.6b Add CSS styling for status dropdown
-
-  - Style the status dropdown with appropriate visual design
-  - Write unit tests for dropdown styling
-  - _Requirements: 2.6_
-
-- [ ] 3.3.6c Add JavaScript for dropdown interaction
-
-  - Implement client-side dropdown interaction logic
-  - Write unit tests for interaction handling
-  - _Requirements: 2.6_
-
-- [ ] 3.3.6d Connect dropdown to webview message API
-
-  - Wire dropdown changes to VSCode webview messaging
-  - Write unit tests for message API integration
-  - _Requirements: 2.6_
-
-- [ ] 3.3.7 Add status dropdown validation logic
-
-  - Implement client-side status transition validation
-  - Write unit tests for validation rules
-  - _Requirements: 7.2_
+  - Implement STATUS_ACTIONS mapping for different task statuses
+  - Render appropriate button sets based on task status
+  - Add Cursor integration buttons for executable tasks
+  - Write unit tests for action button rendering
+  - _Requirements: 3.7, 3.8, 3.9_
 
 - [ ] 3.3.8 Implement webview-to-extension message handling
 
-  - Handle status change messages from webview
+  - Handle action button clicks from webview
+  - Process status change requests
+  - Manage Cursor execution requests
   - Write unit tests for message handling
-  - _Dependencies: 3.3.6d_
-  - _Requirements: 7.2_
+  - _Requirements: 3.1, 8.1_
 
-- [ ] 3.3.9 Add test results display section structure
+- [ ] 3.3.9 Add relative time integration
 
-  - Create test results section HTML and CSS
-  - Write unit tests for test section rendering
-  - _Requirements: 7.3_
+  - Connect to TimeFormattingUtility for timestamp display
+  - Implement periodic time refresh in webview
+  - Handle time formatting failures gracefully
+  - Write unit tests for time formatting integration
+  - _Requirements: 4.8, 9.3, 9.4_
 
-- [ ] 3.3.10 Implement test status indicators
-
-  - Show pass/fail counts and status icons
-  - Write unit tests for test status display
-  - _Requirements: 7.4_
-
-- [ ] 3.3.11 Add failing tests collapsible section
-
-  - Show failing test details in expandable section
-  - Write unit tests for collapsible behavior
-  - _Requirements: 7.4_
-
-- [ ] 3.3.12 Create "no task selected" state
+- [ ] 3.3.10 Create "no task selected" state
 
   - Add placeholder content when no task is selected
+  - Include helpful instructions for task interaction
   - Write unit tests for empty state display
-  - _Requirements: 7.5_
+  - _Requirements: 2.5_
 
-- [ ] 3.3.13 Add action buttons for common operations
-
-  - Create buttons for refresh, edit, history actions
-  - Write unit tests for button rendering
-  - _Requirements: 7.6_
-
-- [ ] 3.3.14 Implement action button click handlers
-
-  - Connect buttons to VSCode commands
-  - Write unit tests for click handler logic
-  - _Requirements: 7.6_
-
-- [ ] 3.3.15 Add Cursor integration section to webview
-  - Create AI assistant actions section with execute button
-  - Write unit tests for AI section rendering
-  - _Requirements: Cursor integration_
-
-#### 3.4 Task Management Commands
+#### 3.4 Enhanced Task Management Commands
 
 - [ ] 3.4.1 Create refreshTasks command structure
 
   - Register command with VSCode command palette
   - Write unit tests for command registration
-  - _Requirements: 3.1, 4.1_
+  - _Requirements: 4.1, 4.6_
 
 - [ ] 3.4.2 Implement refreshTasks command logic
 
   - Connect to TasksDataService.refreshTasks()
+  - Maintain expansion state during refresh
   - Write unit tests for refresh command execution
-  - _Requirements: 3.1, 4.1_
+  - _Requirements: 4.1, 4.6_
 
 - [ ] 3.4.3 Create updateTaskStatus command structure
 
   - Register updateTaskStatus command
   - Write unit tests for command registration
-  - _Requirements: 3.2, 4.2_
+  - _Requirements: 3.1, 3.2_
 
 - [ ] 3.4.4 Implement updateTaskStatus command logic
 
   - Add status validation and TasksDataService integration
+  - Update status display names and action buttons
   - Write unit tests for status update execution
-  - _Requirements: 3.2, 4.2_
+  - _Dependencies: 2.4.4_
+  - _Requirements: 3.1, 3.2, 3.4_
 
-- [ ] 3.4.5 Create viewTestResults command structure
+- [ ] 3.4.5 Create executeTaskWithCursor command structure
 
-  - Register viewTestResults command
+  - Register executeTaskWithCursor command for executable tasks
   - Write unit tests for command registration
-  - _Requirements: 3.3, 4.3_
+  - _Requirements: 8.1, 8.3_
 
-- [ ] 3.4.6 Implement viewTestResults command logic
+- [ ] 3.4.6 Create expandAllTasks and collapseAllTasks commands
 
-  - Show detailed test results in new webview
-  - Write unit tests for test results display
-  - _Requirements: 3.3, 4.3_
-
-- [ ] 3.4.7 Create reportTaskIssue command structure
-
-  - Register reportTaskIssue command
+  - Register commands for bulk expansion control
   - Write unit tests for command registration
-  - _Requirements: 3.4, 4.4_
+  - _Requirements: Usability enhancement_
 
-- [ ] 3.4.8 Implement reportTaskIssue command logic
-
-  - Create issue reporting workflow
-  - Write unit tests for issue reporting
-  - _Requirements: 3.4, 4.4_
-
-- [ ] 3.4.9 Add tree view context menu registration
+- [ ] 3.4.7 Add tree view context menu registration
 
   - Register commands for right-click context menus
+  - Configure visibility for executable tasks
   - Write unit tests for context menu configuration
   - _Requirements: 3.5, 3.6_
 
-- [ ] 3.4.10 Configure command visibility conditions
-  - Set up when clauses for command availability
+- [ ] 3.4.8 Configure enhanced command visibility conditions
+
+  - Set up when clauses for executable tasks ("executable-task")
+  - Configure status-specific command availability
   - Write unit tests for visibility logic
-  - _Requirements: 3.5, 3.6_
+  - _Requirements: 8.7_
 
-### 4. Integrate with existing MCP server infrastructure
+### 4. Enhanced Cursor AI Integration
 
-#### 4.1 Tasks Tool Enhancement
+#### 4.1 Context Extraction Foundation
 
-- [ ] 4.1.1 Extract Tasks Tool class from existing code
+- [ ] 4.1.1 Document Cursor API integration options
 
-  - Create modular Tasks Tool class structure
-  - Write unit tests for tool class isolation
-  - _Requirements: 1.4, 3.1_
-
-- [ ] 4.1.2 Decouple TaskStatusManager from JSON-RPC
-
-  - Separate business logic from communication layer
-  - Write unit tests for decoupling logic
-  - _Requirements: 6.1, 6.2_
-
-- [ ] 4.1.3 Create MCP adapter for Tasks Tool
-  - Implement adapter pattern for MCP integration
-  - Write unit tests for adapter functionality
-  - _Requirements: 6.1, 6.2_
-
-#### 4.2 ContextManager Enhancement
-
-- [ ] 4.2.1 Extend ContextManager interface for tasks
-
-  - Add task-specific method signatures to interface
-  - Write unit tests for interface extensions
-  - _Requirements: 6.1, 6.2_
-
-- [ ] 4.2.2 Implement getTaskContext method
-
-  - Add method for comprehensive task information retrieval
-  - Write unit tests for context retrieval
-  - _Requirements: 6.3, 6.4_
-
-- [ ] 4.2.3 Implement getTasksForFile method
-
-  - Add file-to-task mapping functionality
-  - Write unit tests for file mapping logic
-  - _Requirements: 6.5_
-
-- [ ] 4.2.4 Implement getTasksByStatus method
-
-  - Add status-based task filtering
-  - Write unit tests for status filtering
-  - _Requirements: 6.6_
-
-- [ ] 4.2.5 Implement getTasksByRequirement method
-
-  - Add requirement-based task filtering
-  - Write unit tests for requirement filtering
-  - _Requirements: 6.7_
-
-- [ ] 4.2.6 Implement getTasksByPriority method
-
-  - Add priority-based task filtering
-  - Write unit tests for priority filtering
-  - _Requirements: 6.7_
-
-- [ ] 4.2.7 Implement getTasksByAssignee method
-  - Add assignee-based task filtering
-  - Write unit tests for assignee filtering
-  - _Requirements: 6.7_
-
-#### 4.3 Error Handling Integration
-
-- [ ] 4.3.1 Integrate TasksDataService with ErrorHandler
-
-  - Use existing ErrorHandler for task-related errors
-  - Write unit tests for error handler integration
-  - _Requirements: 5.1, 5.2_
-
-- [ ] 4.3.2 Map task errors to existing error categories
-
-  - Create error mapping for task operations
-  - Write unit tests for error categorization
-  - _Requirements: 5.1, 5.2_
-
-- [ ] 4.3.3 Add DegradedModeManager integration for task operations
-
-  - Implement fallback scenarios for task operations
-  - Write unit tests for degraded mode behavior
-  - _Requirements: 5.3, 5.4_
-
-- [ ] 4.3.4 Add audit logging for task operations
-  - Use existing audit patterns for task state changes
-  - Write unit tests for audit logging
-  - _Requirements: 5.5, 5.6_
-
-### 4.4 Cursor AI Integration (HIGH PRIORITY)
-
-#### 4.4.1 Context Extraction Foundation
-
-- [ ] 4.4.1.1 Research Cursor API integration options
-
-  - Investigate available APIs for triggering Cursor chat
-  - Document findings and integration approach (CLI, commands, file-based)
+  - Research available integration methods (CLI, commands, file-based)
+  - Document findings with specific implementation approach
+  - Test basic Cursor command execution
   - Write validation tests for integration method selection
-  - _Requirements: Cursor integration_
+  - _Requirements: 8.1_
 
-- [ ] 4.4.1.2 Create ContextExtractor service structure
+- [ ] 4.1.2 Create enhanced ContextExtractor service structure
 
   - Design service for extracting context from project files
+  - Include enhanced task data (estimatedDuration, test results)
   - Write unit tests for service initialization
-  - _Requirements: Cursor integration_
+  - _Requirements: 8.2_
 
-- [ ] 4.4.1.3 Implement markdown context extraction
+- [ ] 4.1.3 Implement markdown context extraction
 
   - Extract task details from tasks.md file
+  - Include estimated duration and complexity in context
   - Write unit tests for markdown parsing logic
-  - _Requirements: Cursor integration_
+  - _Requirements: 8.2_
 
-- [ ] 4.4.1.4 Implement requirements context extraction
+- [ ] 4.1.4 Implement requirements context extraction
 
   - Map task IDs to requirements.md sections
+  - Extract acceptance criteria matching task requirements
   - Write unit tests for requirements mapping
-  - _Requirements: Cursor integration_
+  - _Requirements: 8.2_
 
-- [ ] 4.4.1.5 Implement design context extraction
+- [ ] 4.1.5 Implement design context extraction
 
   - Extract relevant architectural context from design.md
+  - Include interface definitions and component specifications
   - Write unit tests for design context parsing
-  - _Requirements: Cursor integration_
+  - _Requirements: 8.2_
 
-- [ ] 4.4.1.6 Implement codebase context extraction
+- [ ] 4.1.6 Implement codebase context extraction
+
   - Analyze existing file structure and patterns
+  - Include related test file patterns
   - Write unit tests for codebase analysis
-  - _Requirements: Cursor integration_
+  - _Requirements: 8.2_
 
-#### 4.4.2 Prompt Generation System
+#### 4.2 Enhanced Prompt Generation System
 
-- [ ] 4.4.2.1 Create prompt template system
+- [ ] 4.2.1 Create enhanced prompt template system
 
-  - Design configurable prompt templates
+  - Design configurable prompt templates with enhanced data
+  - Include estimated duration and complexity modifiers
   - Write unit tests for template engine
-  - _Requirements: Cursor integration_
+  - _Requirements: 8.2_
 
-- [ ] 4.4.2.2 Implement basic prompt generation
+- [ ] 4.2.2 Implement comprehensive prompt generation
 
-  - Generate simple prompts from task context
+  - Generate prompts including all enhanced task metadata
+  - Include test failure context when available
   - Write unit tests for prompt generation logic
-  - _Requirements: Cursor integration_
+  - _Requirements: 8.2_
 
-- [ ] 4.4.2.3 Add complexity-based prompt customization
+- [ ] 4.2.3 Add complexity and duration-based prompt customization
 
-  - Modify prompts based on task complexity
-  - Write unit tests for complexity modifiers
-  - _Requirements: Cursor integration_
+  - Modify prompts based on task complexity and estimated duration
+  - Include appropriate detail level and guidance
+  - Write unit tests for customization logic
+  - _Requirements: 8.2_
 
-- [ ] 4.4.2.4 Add dependency context to prompts
+- [ ] 4.2.4 Add dependency and test context to prompts
 
-  - Include prerequisite task information
-  - Write unit tests for dependency inclusion
-  - _Requirements: Cursor integration_
+  - Include prerequisite task information and completion status
+  - Add existing test patterns and failure information
+  - Write unit tests for context inclusion
+  - _Requirements: 8.2_
 
-- [ ] 4.4.2.5 Add acceptance criteria to prompts
-  - Extract and format acceptance criteria
+- [ ] 4.2.5 Add acceptance criteria and requirements to prompts
+
+  - Extract and format acceptance criteria from requirements
+  - Include mapped requirement sections
   - Write unit tests for criteria formatting
-  - _Requirements: Cursor integration_
+  - _Requirements: 8.2_
 
-#### 4.4.3 Cursor Integration Service
+#### 4.3 Enhanced Cursor Integration Service
 
-- [ ] 4.4.3.1 Create CursorIntegrationService class structure
+- [ ] 4.3.1 Create enhanced CursorIntegrationService class structure
 
-  - Implement service interface with basic methods
+  - Implement service interface with enhanced methods
+  - Include executable task detection logic
   - Write unit tests for service initialization
-  - _Requirements: Cursor integration_
+  - _Requirements: 8.1, 8.7_
 
-- [ ] 4.4.3.2 Implement Cursor availability detection
+- [ ] 4.3.2 Implement Cursor availability detection
 
   - Check if Cursor is installed and accessible
+  - Test different installation patterns
   - Write unit tests for availability checking
-  - _Requirements: Cursor integration_
+  - _Requirements: 8.6_
 
-- [ ] 4.4.3.3 Implement command-based Cursor triggering
+- [ ] 4.3.3 Implement command-based Cursor triggering
 
   - Use VSCode commands to trigger Cursor chat
+  - Include enhanced prompt data
   - Write unit tests for command execution
-  - _Requirements: Cursor integration_
+  - _Requirements: 8.3_
 
-- [ ] 4.4.3.4 Implement CLI-based Cursor triggering
+- [ ] 4.3.4 Implement CLI-based Cursor triggering
 
-  - Execute Cursor CLI commands with prompts
+  - Execute Cursor CLI commands with enhanced prompts
+  - Handle different CLI argument formats
   - Write unit tests for CLI execution
-  - _Requirements: Cursor integration_
+  - _Requirements: 8.3_
 
-- [ ] 4.4.3.5 Implement clipboard fallback mechanism
+- [ ] 4.3.5 Implement enhanced clipboard fallback mechanism
 
-  - Copy prompts to clipboard when Cursor unavailable
+  - Copy enhanced prompts to clipboard when Cursor unavailable
+  - Include user-friendly formatting
   - Write unit tests for clipboard operations
-  - _Requirements: Cursor integration_
+  - _Requirements: 8.6_
 
-- [ ] 4.4.3.6 Add visual feedback for Cursor operations
+- [ ] 4.3.6 Add visual feedback for Cursor operations
+
   - Show loading states and success/failure indicators
+  - Update task status indicators during execution
   - Write unit tests for feedback mechanisms
-  - _Requirements: Cursor integration_
+  - _Requirements: User experience_
 
-#### 4.4.4 UI Integration for Cursor
+#### 4.4 Enhanced UI Integration for Cursor
 
-- [ ] 4.4.4.1 Add executeTaskWithCursor command
+- [ ] 4.4.1 Implement enhanced executeTaskWithCursor command
 
-  - Register command for Cursor execution
+  - Register command for Cursor execution with enhanced data
+  - Include executable task validation
   - Write unit tests for command registration
-  - _Requirements: Cursor integration_
+  - _Requirements: 8.1, 8.7_
 
-- [ ] 4.4.4.2 Connect tree view clicks to Cursor execution
+- [ ] 4.4.2 Connect tree view clicks to enhanced Cursor execution
 
-  - Handle click events on executable tasks
+  - Handle click events on executable tasks with enhanced context
+  - Validate task executable state
   - Write unit tests for click handling
-  - _Dependencies: 3.2.10_
-  - _Requirements: Cursor integration_
+  - _Dependencies: 3.2.9_
+  - _Requirements: 8.1, 8.4_
 
-- [ ] 4.4.4.3 Add Cursor execute button to detail view
+- [ ] 4.4.3 Add enhanced Cursor execute button to detail view
 
-  - Add button to webview for direct execution
+  - Add button to webview for direct execution with enhanced prompts
+  - Include visual indicators for executable state
   - Write unit tests for button integration
-  - _Dependencies: 3.3.15_
-  - _Requirements: Cursor integration_
+  - _Dependencies: 3.3.7_
+  - _Requirements: 8.1, 8.7_
 
-- [ ] 4.4.4.4 Implement generateTaskPrompt command
+- [ ] 4.4.4 Implement generateTaskPrompt command
 
-  - Create command for prompt-only generation
+  - Create command for prompt-only generation with enhanced data
+  - Include clipboard copy functionality
   - Write unit tests for prompt generation command
-  - _Requirements: Cursor integration_
+  - _Requirements: 8.5_
 
-- [ ] 4.4.4.5 Add context validation and error handling
+- [ ] 4.4.5 Add enhanced context validation and error handling
+
   - Validate extracted context before prompt generation
+  - Handle missing or incomplete task data gracefully
   - Write unit tests for validation logic
-  - _Requirements: Cursor integration_
+  - _Requirements: 8.5_
 
-### 5. Implement UI synchronization and state management
+### 5. Implement enhanced UI synchronization and state management
 
-#### 5.1 Event System Foundation
+#### 5.1 Enhanced Event System Foundation
 
-- [ ] 5.1.1 Define TaskUpdateEvent interface
+- [ ] 5.1.1 Define enhanced TaskUpdateEvent interface
 
-  - Create TaskUpdateEvent type definition
+  - Create TaskUpdateEvent type definition with new fields
+  - Include test result and time formatting events
   - Write unit tests for event type structure
-  - _Requirements: 2.1, 3.1_
+  - _Requirements: Enhanced data handling_
 
 - [ ] 5.1.2 Define TaskSyncEvent interface
 
   - Create TaskSyncEvent type definition
+  - Include expansion state synchronization
   - Write unit tests for sync event structure
-  - _Requirements: 2.1, 3.1_
+  - _Requirements: 4.2_
 
-- [ ] 5.1.3 Define TaskErrorEvent interface
+- [ ] 5.1.3 Define enhanced TaskErrorEvent interface
 
-  - Create error event types for task operations
+  - Create error event types for enhanced task operations
+  - Include time formatting and test result errors
   - Write unit tests for error event structure
-  - _Requirements: 2.1, 3.1_
+  - _Requirements: 5.1, 5.2_
 
-- [ ] 5.1.4 Implement event emitters for task updates
+- [ ] 5.1.4 Implement enhanced event emitters for task updates
 
-  - Create EventEmitter instances for task state changes
+  - Create EventEmitter instances for enhanced task state changes
+  - Include test result and executable state changes
   - Write unit tests for event emitter creation
-  - _Requirements: 2.2, 3.2_
+  - _Requirements: Enhanced data handling_
 
-- [ ] 5.1.5 Add event emission on data modifications
+- [ ] 5.1.5 Add event emission on enhanced data modifications
 
-  - Emit events when task data changes
+  - Emit events when task data, test results, or executable state changes
+  - Include time formatting updates
   - Write unit tests for event emission timing
-  - _Requirements: 2.2, 3.2_
+  - _Requirements: Enhanced data handling_
 
-- [ ] 5.1.6 Connect tree view to task events
+- [ ] 5.1.6 Connect tree view to enhanced task events
 
-  - Add event listeners for tree view updates
+  - Add event listeners for enhanced tree view updates
+  - Include executable state and test result changes
   - Write unit tests for tree view event handling
-  - _Requirements: 2.3, 3.3_
+  - _Requirements: Enhanced UI synchronization_
 
-- [ ] 5.1.7 Connect detail view to task events
+- [ ] 5.1.7 Connect detail view to enhanced task events
 
-  - Add event listeners for detail view updates
+  - Add event listeners for enhanced detail view updates
+  - Include time formatting and test result updates
   - Write unit tests for detail view event handling
-  - _Requirements: 2.3, 3.3_
+  - _Requirements: Enhanced UI synchronization_
 
-- [ ] 5.1.8 Implement UI state consistency validation
-  - Add checks for UI-data synchronization
+- [ ] 5.1.8 Implement enhanced UI state consistency validation
+
+  - Add checks for enhanced UI-data synchronization
+  - Include executable state and test result consistency
   - Write unit tests for consistency validation
-  - _Requirements: 2.4, 3.4_
+  - _Requirements: Enhanced data integrity_
 
-#### 5.2 Refresh Functionality
+#### 5.2 Enhanced Refresh Functionality
 
-- [ ] 5.2.1 Create configurable timer infrastructure
+- [ ] 5.2.1 Create enhanced configurable timer infrastructure
 
-  - Implement timer with configurable interval
+  - Implement timer with enhanced refresh capabilities
+  - Include time formatting refresh cycle
   - Write unit tests for timer creation and configuration
-  - _Requirements: 4.1, 5.1_
+  - _Requirements: 4.5, 9.5_
 
-- [ ] 5.2.2 Implement auto-refresh timer logic
+- [ ] 5.2.2 Implement enhanced auto-refresh timer logic
 
   - Set default 5-minute refresh interval
+  - Include periodic time formatting updates (1 minute)
   - Write unit tests for auto-refresh execution
-  - _Requirements: 4.1, 5.1_
+  - _Requirements: 4.5, 9.5_
 
-- [ ] 5.2.3 Add manual refresh command implementation
+- [ ] 5.2.3 Add enhanced manual refresh command implementation
 
-  - Connect refresh command to data reload
+  - Connect refresh command to enhanced data reload
+  - Maintain expansion state and relative time updates
   - Write unit tests for manual refresh execution
-  - _Requirements: 4.2, 5.2_
+  - _Requirements: 4.6_
 
-- [ ] 5.2.4 Add refresh progress indicators
+- [ ] 5.2.4 Add enhanced refresh progress indicators
 
-  - Show progress indicators during refresh operations
+  - Show progress indicators during enhanced refresh operations
+  - Include time formatting update indicators
   - Write unit tests for progress indicator display
-  - _Requirements: 4.2, 5.2_
+  - _Requirements: User experience_
 
-- [ ] 5.2.5 Implement refresh failure handling
+- [ ] 5.2.5 Implement enhanced refresh failure handling
 
   - Handle network errors and service unavailability
+  - Include time formatting fallback mechanisms
   - Write unit tests for failure scenarios
-  - _Requirements: 4.3, 5.3_
+  - _Requirements: 4.7, 9.4_
 
-- [ ] 5.2.6 Add stale data indicators
+- [ ] 5.2.6 Add enhanced stale data indicators
+
   - Display cached data with staleness indicators
+  - Include relative time staleness warnings
   - Write unit tests for staleness display
-  - _Requirements: 4.3, 5.3_
+  - _Requirements: 4.7_
 
-#### 5.3 Performance Monitoring
+### 6. Create enhanced focused test suite
 
-- [ ] 5.3.1 Add response time tracking infrastructure
+#### 6.1 Enhanced Core Component Tests
 
-  - Create timing measurement utilities
-  - Write unit tests for timing functionality
-  - _Requirements: 1.6, 4.1_
+- [ ] 6.1.1 Enhanced TaskTreeItem component test suite
 
-- [ ] 5.3.2 Implement operation timing for task operations
+  - Test constructor, status icons, tooltips, executable state indicators
+  - Test enhanced properties (estimatedDuration, testSummary, statusDisplayName)
+  - Comprehensive test for all enhanced TaskTreeItem functionality
+  - _Requirements: Enhanced UI components_
 
-  - Track timing for all task operations
-  - Write unit tests for operation timing
-  - _Requirements: 1.6, 4.1_
+- [ ] 6.1.2 Enhanced TaskTreeViewProvider component test suite
 
-- [ ] 5.3.3 Create performance metrics collection
+  - Test getTreeItem, getChildren, flat list logic, accordion expansion
+  - Test executable task handling and enhanced refresh behavior
+  - Comprehensive test for enhanced tree view provider functionality
+  - _Requirements: Enhanced UI components_
 
-  - Collect and store performance metrics
-  - Write unit tests for metrics collection
-  - _Requirements: 4.2, 5.1_
+- [ ] 6.1.3 Enhanced TaskDetailCardProvider component test suite
 
-- [ ] 5.3.4 Implement cache hit/miss ratio tracking
+  - Test HTML generation, enhanced data binding, status-specific actions
+  - Test collapsible test failures, time formatting, empty state
+  - Comprehensive test for enhanced detail card functionality
+  - _Requirements: Enhanced UI components_
 
-  - Track cache performance for task data
-  - Write unit tests for cache monitoring
-  - _Requirements: 4.2, 5.1_
+#### 6.2 Enhanced Data Layer Tests
 
-- [ ] 5.3.5 Create performance threshold monitoring
+- [ ] 6.2.1 Enhanced TasksDataService test suite
 
-  - Implement thresholds for performance warnings
-  - Write unit tests for threshold checking
-  - _Requirements: 4.3, 5.2_
+  - Test all API methods with enhanced data structures
+  - Test error handling and enhanced event emission
+  - Comprehensive test for enhanced data service functionality
+  - _Requirements: Enhanced data layer_
 
-- [ ] 5.3.6 Add performance degradation alerts
-  - Show user notifications for performance issues
-  - Write unit tests for alert functionality
-  - _Requirements: 4.3, 5.2_
+- [ ] 6.2.2 Enhanced MarkdownTaskParser test suite
 
-#### 5.4 Offline Scenario Handling (Simplified)
+  - Test file parsing with enhanced task fields
+  - Test validation and enhanced context extraction
+  - Comprehensive test for enhanced parsing functionality
+  - _Requirements: Enhanced data layer_
 
-- [ ] 5.4.1 Create service availability detection
+- [ ] 6.2.3 TimeFormattingUtility test suite
 
-  - Implement connectivity checking for MCP server
-  - Write unit tests for availability detection
-  - _Requirements: 5.1, 5.2_
+  - Test relative time formatting for various time ranges
+  - Test duration parsing and caching mechanisms
+  - Comprehensive test for time formatting functionality
+  - _Requirements: 9.1, 9.3, 9.4_
 
-- [ ] 5.4.2 Implement offline state management
+#### 6.3 Enhanced Cursor Integration Tests
 
-  - Add offline state tracking and UI indicators
-  - Write unit tests for offline state handling
-  - _Requirements: 5.1, 5.2_
+- [ ] 6.3.1 Enhanced CursorIntegrationService test suite
 
-- [ ] 5.4.3 Create local update caching for offline mode
+  - Test enhanced context extraction and prompt generation
+  - Test executable task detection and Cursor triggering
+  - Comprehensive test for enhanced AI integration functionality
+  - _Requirements: Enhanced Cursor integration_
 
-  - Cache task updates when server unavailable
-  - Write unit tests for offline caching
-  - _Requirements: 5.3, 5.4_
+- [ ] 6.3.2 Enhanced ContextExtractor test suite
 
-- [ ] 5.4.4 Implement pending operations queue
+  - Test markdown, requirements, design context extraction with enhanced data
+  - Test enhanced task metadata integration
+  - Comprehensive test for enhanced context extraction
+  - _Requirements: Enhanced Cursor integration_
 
-  - Store pending operations in local queue
-  - Write unit tests for operation queuing
-  - _Requirements: 5.3, 5.4_
+- [ ] 6.3.3 Enhanced prompt generation test suite
 
-- [ ] 5.4.5 Add automatic sync on reconnection
+  - Test template system with enhanced data
+  - Test complexity modifiers and enhanced output formatting
+  - Comprehensive test for enhanced prompt generation
+  - _Requirements: Enhanced Cursor integration_
 
-  - Process sync queue when server returns
-  - Write unit tests for reconnection sync
-  - _Requirements: 5.5, 5.6_
+#### 6.4 Enhanced Command and Integration Tests
 
-- [ ] 5.4.6a Detect conflicts between local and server state
+- [ ] 6.4.1 Enhanced task command test suite
 
-  - Compare local cached state with server state on reconnection
-  - Write unit tests for conflict detection logic
-  - _Requirements: 5.5, 5.6_
+  - Test all task-related commands with enhanced data
+  - Test enhanced Cursor integration commands
+  - Comprehensive test for enhanced command functionality
+  - _Requirements: Enhanced commands_
 
-- [ ] 5.4.6b Implement "server wins" resolution strategy
+- [ ] 6.4.2 Enhanced error handling test suite
 
-  - Use server state as authoritative when conflicts occur
-  - Write unit tests for server-wins resolution
-  - _Requirements: 5.5, 5.6_
+  - Test network errors, enhanced UI error states
+  - Test recovery mechanisms and enhanced Cursor fallbacks
+  - Comprehensive test for enhanced error scenarios
+  - _Requirements: Enhanced error handling_
 
-- [ ] 5.4.6c Add user notification for conflicts
-  - Show user-friendly messages when conflicts are resolved
-  - Write unit tests for conflict notification
-  - _Requirements: 5.5, 5.6_
+- [ ] 6.4.3 Enhanced UI synchronization test suite
 
-### 6. Create focused test suite (Consolidated)
+  - Test tree-to-detail sync with enhanced data
+  - Test event flow, state consistency, and enhanced AI integration updates
+  - Comprehensive test for enhanced UI integration
+  - _Requirements: Enhanced integration_
 
-#### 6.1 Core Component Tests
+#### 6.5 Enhanced Critical Integration Verification
 
-- [ ] 6.1.1 TaskTreeItem component test suite
+- [ ] 6.5.1 Verify enhanced tree selection triggers detail update
 
-  - Test constructor, status icons, tooltips, executable state, and properties
-  - Comprehensive test for all TaskTreeItem functionality
-  - _Requirements: UI components_
-
-- [ ] 6.1.2 TaskTreeViewProvider component test suite
-
-  - Test getTreeItem, getChildren, hierarchy logic, refresh, and click handling
-  - Comprehensive test for tree view provider functionality
-  - _Requirements: UI components_
-
-- [ ] 6.1.3 TaskDetailCardProvider component test suite
-  - Test HTML generation, data binding, status dropdown, empty state, AI integration
-  - Comprehensive test for detail card functionality
-  - _Requirements: UI components_
-
-#### 6.2 Data Layer Tests
-
-- [ ] 6.2.1 TasksDataService test suite
-
-  - Test all API methods, error handling, and event emission
-  - Comprehensive test for data service functionality
-  - _Requirements: Data layer_
-
-- [ ] 6.2.2 MarkdownTaskParser test suite
-
-  - Test file parsing, task extraction, validation, and context extraction
-  - Comprehensive test for parsing functionality
-  - _Requirements: Data layer_
-
-- [ ] 6.2.3 TaskStatusManager test suite
-  - Test status updates, validation, and file persistence
-  - Comprehensive test for status management
-  - _Requirements: Data layer_
-
-#### 6.3 Cursor Integration Tests
-
-- [ ] 6.3.1 CursorIntegrationService test suite
-
-  - Test context extraction, prompt generation, and Cursor triggering
-  - Comprehensive test for AI integration functionality
-  - _Requirements: Cursor integration_
-
-- [ ] 6.3.2 ContextExtractor test suite
-
-  - Test markdown, requirements, design, and codebase context extraction
-  - Comprehensive test for context extraction
-  - _Requirements: Cursor integration_
-
-- [ ] 6.3.3 Prompt generation test suite
-  - Test template system, complexity modifiers, and output formatting
-  - Comprehensive test for prompt generation
-  - _Requirements: Cursor integration_
-
-#### 6.4 Command and Integration Tests
-
-- [ ] 6.4.1 Task command test suite
-
-  - Test all task-related commands including Cursor integration commands
-  - Comprehensive test for command functionality
-  - _Requirements: Commands_
-
-- [ ] 6.4.2 Error handling test suite
-
-  - Test network errors, UI error states, recovery mechanisms, and Cursor fallbacks
-  - Comprehensive test for error scenarios
-  - _Requirements: Error handling_
-
-- [ ] 6.4.3 UI synchronization test suite
-  - Test tree-to-detail sync, event flow, state consistency, and AI integration updates
-  - Comprehensive test for UI integration
-  - _Requirements: Integration_
-
-#### 6.5 Critical Integration Verification
-
-- [ ] 6.5.1 Verify tree selection triggers detail update
-
-  - Test that clicking tree items updates detail panel
+  - Test that clicking tree items updates detail panel with enhanced data
   - Quick verification test (15 min)
-  - _Requirements: Complete functionality_
+  - _Requirements: Enhanced functionality_
 
-- [ ] 6.5.2 Verify status update reflects in tree view
+- [ ] 6.5.2 Verify enhanced status update reflects in tree view
 
-  - Test that status changes appear in tree icons
+  - Test that status changes appear in tree with enhanced indicators
   - Quick verification test (15 min)
-  - _Requirements: Complete functionality_
+  - _Requirements: Enhanced functionality_
 
-- [ ] 6.5.3 Verify status update persists after refresh
+- [ ] 6.5.3 Verify enhanced Cursor integration workflow
 
-  - Test that changes survive data refresh operations
-  - Quick verification test (20 min)
-  - _Requirements: Complete functionality_
-
-- [ ] 6.5.4 Verify Cursor integration workflow
-
-  - Test task click → context extraction → prompt generation → Cursor triggering
+  - Test task click → enhanced context extraction → prompt generation → Cursor triggering
   - Quick verification test (25 min)
-  - _Requirements: Cursor integration_
+  - _Requirements: Enhanced Cursor integration_
 
-- [ ] 6.5.5 Verify Cursor fallback mechanisms
-  - Test clipboard fallback when Cursor unavailable
+- [ ] 6.5.4 Verify enhanced time formatting throughout interface
+
+  - Test relative time display in all UI components
   - Quick verification test (20 min)
-  - _Requirements: Cursor integration_
+  - _Requirements: 9.3, 9.5_
 
-### 7. Wire everything together and final integration
+- [ ] 6.5.5 Verify enhanced test results display and interaction
 
-#### 7.1 Extension Registration
+  - Test collapsible test failures with enhanced error categorization
+  - Quick verification test (20 min)
+  - _Requirements: 7.6, 7.7_
 
-- [ ] 7.1.1 Register task tree view provider in extension
+### 7. Enhanced wire everything together and final integration
 
-  - Add tree view provider to extension.ts
-  - Write integration test for provider registration
-  - _Requirements: VSCode integration_
+#### 7.1 Enhanced Extension Registration
 
-- [ ] 7.1.2 Configure task tree view container
+- [ ] 7.1.1 Register enhanced task tree view provider in extension
 
-  - Add tree view to VSCode sidebar configuration
-  - Write integration test for view container
-  - _Requirements: VSCode integration_
+  - Add enhanced tree view provider to extension.ts
+  - Write integration test for enhanced provider registration
+  - _Requirements: Enhanced VSCode integration_
 
-- [ ] 7.1.3 Register task detail webview provider in extension
+- [ ] 7.1.2 Configure enhanced task tree view container
 
-  - Add webview provider to extension.ts
-  - Write integration test for webview registration
-  - _Requirements: VSCode integration_
+  - Add enhanced tree view to VSCode sidebar configuration
+  - Write integration test for enhanced view container
+  - _Requirements: Enhanced VSCode integration_
 
-- [ ] 7.1.4 Configure task detail webview container
+- [ ] 7.1.3 Register enhanced task detail webview provider in extension
 
-  - Add detail view to task container configuration
-  - Write integration test for webview container
-  - _Requirements: VSCode integration_
+  - Add enhanced webview provider to extension.ts
+  - Write integration test for enhanced webview registration
+  - _Requirements: Enhanced VSCode integration_
 
-- [ ] 7.1.5 Register all task commands in extension
+- [ ] 7.1.4 Initialize enhanced TasksDataService in extension
 
-  - Add all command registrations including Cursor commands
-  - Write integration test for command registration
-  - _Requirements: Command integration_
+  - Create and configure enhanced TasksDataService instance
+  - Write integration test for enhanced service initialization
+  - _Requirements: Enhanced service integration_
 
-- [ ] 7.1.6 Initialize TasksDataService in extension
+- [ ] 7.1.5 Initialize TimeFormattingUtility in extension
 
-  - Create and configure TasksDataService instance
-  - Write integration test for service initialization
-  - _Requirements: Service integration_
+  - Create and configure TimeFormattingUtility instance
+  - Write integration test for time formatting service initialization
+  - _Requirements: Enhanced service integration_
 
-- [ ] 7.1.7 Initialize CursorIntegrationService in extension
+- [ ] 7.1.6 Initialize enhanced CursorIntegrationService in extension
 
-  - Create and configure CursorIntegrationService instance
-  - Write integration test for AI service initialization
-  - _Requirements: Service integration_
+  - Create and configure enhanced CursorIntegrationService instance
+  - Write integration test for enhanced AI service initialization
+  - _Requirements: Enhanced service integration_
 
-- [ ] 7.1.8 Connect event listeners for UI synchronization
+- [ ] 7.1.7 Connect enhanced event listeners for UI synchronization
 
-  - Wire up event listeners between all components
-  - Write integration test for event flow
-  - _Requirements: Service integration_
+  - Wire up enhanced event listeners between all components
+  - Write integration test for enhanced event flow
+  - _Requirements: Enhanced service integration_
 
-- [ ] 7.1.9 Add extension cleanup and disposal
-  - Implement proper resource cleanup on deactivation
-  - Write integration test for cleanup behavior
-  - _Requirements: Service integration_
+- [ ] 7.1.8 Add enhanced extension cleanup and disposal
 
-#### 7.2 Package.json Configuration
+  - Implement proper enhanced resource cleanup on deactivation
+  - Write integration test for enhanced cleanup behavior
+  - _Requirements: Enhanced service integration_
 
-- [ ] 7.2.1 Create taskmaster view container in package.json
+#### 7.2 Enhanced Package.json Configuration
 
-  - Add dedicated activity bar container configuration
-  - Write validation test for package.json structure
-  - _Requirements: VSCode manifest_
+- [ ] 7.2.1 Create enhanced taskmaster view container in package.json
 
-- [ ] 7.2.2 Configure task-tree view contribution
+  - Add dedicated activity bar container configuration with enhanced features
+  - Write validation test for enhanced package.json structure
+  - _Requirements: Enhanced VSCode manifest_
 
-  - Add task tree view configuration
-  - Write validation test for view contribution
-  - _Requirements: VSCode manifest_
+- [ ] 7.2.2 Configure enhanced task-list view contribution
 
-- [ ] 7.2.3 Configure task-detail view contribution
+  - Add enhanced task list view configuration
+  - Write validation test for enhanced view contribution
+  - _Requirements: Enhanced VSCode manifest_
 
-  - Add task detail view configuration
-  - Write validation test for view contribution
-  - _Requirements: VSCode manifest_
+- [ ] 7.2.3 Add all enhanced command contributions
 
-- [ ] 7.2.4 Add all command contributions
+  - Add all enhanced task and Cursor command contributions
+  - Write validation test for all enhanced commands
+  - _Requirements: Enhanced VSCode manifest_
 
-  - Add all task and Cursor command contributions
-  - Write validation test for all commands
-  - _Requirements: VSCode manifest_
+- [ ] 7.2.4 Configure enhanced tree view context menu
 
-- [ ] 7.2.5 Configure tree view context menu
+  - Add enhanced right-click context menu configuration
+  - Write validation test for enhanced context menu setup
+  - _Requirements: Enhanced VSCode manifest_
 
-  - Add right-click context menu configuration including Cursor actions
-  - Write validation test for context menu setup
-  - _Requirements: VSCode manifest_
+- [ ] 7.2.5 Configure enhanced command visibility conditions
 
-- [ ] 7.2.6 Configure command visibility conditions
-  - Set up when clauses for command availability including executable tasks
-  - Write validation test for visibility logic
-  - _Requirements: VSCode manifest_
+  - Set up enhanced when clauses for command availability
+  - Write validation test for enhanced visibility logic
+  - _Requirements: Enhanced VSCode manifest_
 
-#### 7.3 Demo Data and Testing
+#### 7.3 Enhanced Demo Data and Testing
 
-- [ ] 7.3.1 Create simple task hierarchy mock data
+- [ ] 7.3.1 Create realistic enhanced task mock data
 
-  - Generate basic 2-level task structure
-  - Write validation test for data structure
-  - _Requirements: Testing data_
+  - Generate tasks matching mockup examples with all enhanced fields
+  - Write validation test for enhanced data structure
+  - _Requirements: Enhanced testing data_
 
-- [ ] 7.3.2 Add varied task status mock data
+- [ ] 7.3.2 Add comprehensive test results mock data
 
-  - Create tasks with different status values including executable tasks
-  - Write validation test for status variety
-  - _Requirements: Testing data_
+  - Create realistic FailingTest data with proper error categorization
+  - Write validation test for enhanced test data structure
+  - _Requirements: Enhanced testing scenarios_
 
-- [ ] 7.3.3 Add task dependency mock data
+- [ ] 7.3.3 Add enhanced error scenario mock data
 
-  - Create tasks with realistic dependencies
-  - Write validation test for dependency structure
-  - _Requirements: Testing data_
+  - Add data for testing enhanced error conditions
+  - Write validation test for enhanced error scenarios
+  - _Requirements: Enhanced testing scenarios_
 
-- [ ] 7.3.4 Add test results mock data
+- [ ] 7.3.4 Add enhanced large dataset mock data for performance testing
 
-  - Generate test status data for tasks
-  - Write validation test for test data structure
-  - _Requirements: Testing scenarios_
+  - Generate 100+ task dataset with enhanced data structures
+  - Write validation test for enhanced performance data
+  - _Requirements: Enhanced testing scenarios_
 
-- [ ] 7.3.5 Create error scenario mock data
+#### 7.4 Enhanced Final Integration Testing
 
-  - Add data for testing error conditions including Cursor failures
-  - Write validation test for error scenarios
-  - _Requirements: Testing scenarios_
+- [ ] 7.4.1 Test enhanced complete task selection workflow end-to-end
 
-- [ ] 7.3.6 Add large dataset mock data for performance testing
-  - Generate 100+ task dataset with Cursor-executable tasks
-  - Write validation test for performance data
-  - _Requirements: Testing scenarios_
+  - Verify enhanced tree selection → detail display → status update
+  - Test with enhanced VSCode extension environment
+  - _Requirements: Enhanced complete functionality_
 
-#### 7.4 VSCode Extension Lifecycle Management
+- [ ] 7.4.2 Test enhanced Cursor integration workflow end-to-end
 
-- [ ] 7.4.1 Implement extension activation event handlers
+  - Verify enhanced task click → context extraction → prompt generation → Cursor execution
+  - Test with mocked enhanced Cursor environment
+  - _Requirements: Enhanced complete functionality_
 
-  - Add proper activation event handling and component initialization
-  - Write unit tests for activation logic
-  - _Requirements: VSCode integration_
+- [ ] 7.4.3 Test enhanced time formatting workflow end-to-end
 
-- [ ] 7.4.2 Add disposal patterns for event listeners and timers
+  - Verify relative time display throughout interface with periodic updates
+  - Test with various timestamp scenarios
+  - _Requirements: Enhanced complete functionality_
 
-  - Implement proper resource cleanup on deactivation
-  - Write unit tests for disposal logic
-  - _Requirements: VSCode integration_
+- [ ] 7.4.4 Test enhanced test results display workflow end-to-end
 
-- [ ] 7.4.3 Handle workspace change events
+  - Verify collapsible test failures with enhanced error categorization
+  - Test with various test result scenarios
+  - _Requirements: Enhanced complete functionality_
 
-  - Add handlers for workspace folder changes that affect task data
-  - Write unit tests for workspace event handling
-  - _Requirements: VSCode integration_
+- [ ] 7.4.5 Test enhanced performance targets with large datasets
 
-- [ ] 7.4.4 Implement webview state serialization
+  - Verify enhanced response time targets are met
+  - Test with 100+ enhanced task datasets
+  - _Requirements: Enhanced production readiness_
 
-  - Save webview state across VSCode restarts
-  - Write unit tests for state persistence
-  - _Requirements: VSCode integration_
+- [ ] 7.4.6 Verify enhanced integration with existing extension features
 
-- [ ] 7.4.5 Add state restoration on webview recreation
+  - Test that enhanced features don't break existing functionality
+  - Verify enhanced backward compatibility
+  - _Requirements: Enhanced production readiness_
 
-  - Restore webview content when hidden panels are reshown
-  - Write unit tests for state restoration
-  - _Requirements: VSCode integration_
+## Enhanced Development Guidelines
 
-- [ ] 7.4.6 Add error logging with VSCode output channel
-  - Integrate with VSCode's output channel for error reporting
-  - Write unit tests for logging integration
-  - _Requirements: VSCode integration_
-
-#### 7.5 WebView Security
-
-- [ ] 7.5.1 Configure webview CSP headers
-
-  - Set up Content Security Policy for webview security
-  - Write validation tests for CSP configuration
-  - _Requirements: Security_
-
-- [ ] 7.5.2 Implement secure message passing validation
-
-  - Add validation for messages between webview and extension
-  - Write security tests for message validation
-  - _Requirements: Security_
-
-- [ ] 7.5.3 Add input sanitization for task updates
-  - Sanitize user input in webview forms and dropdowns
-  - Write security tests for input sanitization
-  - _Requirements: Security_
-
-#### 7.6 Final Integration Testing
-
-- [ ] 7.6.1 Test complete task selection workflow end-to-end
-
-  - Verify tree selection → detail display → status update
-  - Test with real VSCode extension environment
-  - _Requirements: Complete functionality_
-
-- [ ] 7.6.2 Test Cursor integration workflow end-to-end
-
-  - Verify task click → context extraction → prompt generation → Cursor execution
-  - Test with mocked Cursor environment
-  - _Requirements: Complete functionality_
-
-- [ ] 7.6.3 Test refresh workflow end-to-end
-
-  - Verify manual and auto-refresh functionality
-  - Test with real MCP server communication
-  - _Requirements: Complete functionality_
-
-- [ ] 7.6.4 Test error handling workflow end-to-end
-
-  - Verify error states and recovery including Cursor fallbacks
-  - Test with simulated failure conditions
-  - _Requirements: Complete functionality_
-
-- [ ] 7.6.5 Test performance targets with large datasets
-
-  - Verify response time targets are met including Cursor operations
-  - Test with 100+ task datasets
-  - _Requirements: Production readiness_
-
-- [ ] 7.6.6 Test accessibility and usability standards
-
-  - Verify keyboard navigation and screen reader support
-  - Test user interaction patterns including AI integration
-  - _Requirements: Production readiness_
-
-- [ ] 7.6.7 Verify integration with existing extension features
-  - Test that new features don't break existing functionality
-  - Verify backward compatibility
-  - _Requirements: Production readiness_
-
-## Development Guidelines
-
-### Atomic Task Principles
+### Enhanced Atomic Task Principles
 
 - Each task should take 15-30 minutes maximum
-- Implement one method, class, or focused functionality per task
-- Write focused unit tests for each task (not comprehensive suites)
+- Implement one method, class, or focused functionality per task with enhanced data
+- Write focused unit tests for each task including enhanced data structures
 - Clear dependencies between tasks marked explicitly
 - No task should implement multiple disparate features
+- Always include enhanced data fields in implementations
 
-### TDD Workflow Per Task
+### Enhanced TDD Workflow Per Task
 
-1. Write failing test(s) for the specific functionality
-2. Implement minimum code to make tests pass
-3. Refactor and clean up code
-4. Verify integration with previous tasks
-5. Move to next task only when current is complete
+1. Write failing test(s) for the specific functionality with enhanced data
+2. Implement minimum code to make tests pass including enhanced fields
+3. Refactor and clean up code ensuring enhanced data integrity
+4. Verify integration with previous tasks and enhanced data flow
+5. Move to next task only when current is complete with enhanced validation
 
-### Integration Strategy
+### Enhanced Integration Strategy
 
-- Test integration points as separate tasks
-- Build functionality incrementally
-- Maintain working state after each task
+- Test enhanced integration points as separate tasks
+- Build enhanced functionality incrementally
+- Maintain working state after each enhanced task
 - No orphaned or hanging code at any stage
+- Always validate enhanced data structures
 
-### VSCode Extension Considerations
+### Enhanced VSCode Extension Considerations
 
-- Always test extension activation/deactivation
-- Implement proper resource disposal
-- Handle VSCode context switching gracefully
-- Consider extension startup time impact
-- Test with multiple workspace scenarios
+- Always test enhanced extension activation/deactivation
+- Implement proper enhanced resource disposal
+- Handle enhanced VSCode context switching gracefully
+- Consider enhanced extension startup time impact
+- Test with multiple enhanced workspace scenarios
 
-### Cursor Integration Considerations
+### Enhanced Cursor Integration Considerations
 
-- Always implement fallback mechanisms (clipboard copy)
-- Test with both Cursor available and unavailable scenarios
-- Validate extracted context before prompt generation
-- Handle different Cursor installation patterns
-- Provide clear user feedback for AI operations
+- Always implement enhanced fallback mechanisms (clipboard copy)
+- Test with both enhanced Cursor available and unavailable scenarios
+- Validate enhanced extracted context before prompt generation
+- Handle different enhanced Cursor installation patterns
+- Provide clear enhanced user feedback for AI operations
+
+## Key Refinements for Cursor AI Implementation
+
+### Prompt Engineering Guidelines
+
+**For Each Atomic Task:**
+
+1. **Specific Acceptance Criteria**: Include exact UI mockup references where applicable
+2. **Data Structure Examples**: Provide concrete examples of expected input/output data
+3. **Error Scenarios**: Define specific error cases and expected handling
+4. **Testing Requirements**: Specify exact test cases to write
+5. **Integration Points**: Clearly define how the task connects to existing code
+
+**Enhanced Task Prompt Template:**
+
+```
+# Task Implementation: [Task Title]
+
+## Context
+[Specific context with mockup references]
+
+## Task Description
+- **ID**: [Task ID]
+- **Title**: [Task Title]
+- **Complexity**: [Low/Medium/High]
+- **Dependencies**: [Completed task IDs]
+- **Duration**: 15-20 minutes
+
+## Mockup Reference
+Reference the HTML mockup sections: [specific div classes or UI elements]
+
+## Data Structure Requirements
+[Exact TypeScript interfaces and example data]
+
+## Implementation Details
+[Specific methods, classes, or functionality to implement]
+
+## Acceptance Criteria
+[Numbered list of testable requirements]
+
+## Testing Requirements
+[Specific test cases to implement]
+
+## Files to Modify
+[Exact file paths and modification types]
+
+**Commit Message**: [Concise commit message for the change]
+```
+
+### Critical Success Factors
+
+1. **Mockup Alignment**: Every UI task must reference specific mockup elements
+2. **Data Contract Compliance**: All data structures must match the enhanced Task interface
+3. **Time Formatting Consistency**: All timestamps must use the TimeFormattingUtility
+4. **Executable Task Logic**: Clear rules for when tasks show the 🤖 icon and blue border
+5. **Test Result Integration**: Proper handling of FailingTest objects with error categorization
+6. **Status Action Mapping**: Correct implementation of STATUS_ACTIONS for different task states
+
+These enhanced specifications provide a comprehensive foundation for implementing the expandable list Taskmaster Dashboard that precisely matches your mockup design.
