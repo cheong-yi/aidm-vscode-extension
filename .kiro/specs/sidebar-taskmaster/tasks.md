@@ -61,7 +61,7 @@ This implementation plan breaks down the feature into atomic, TDD-friendly tasks
   - Write unit tests for enhanced mock data structure
   - _Requirements: 6.8, 6.9, 7.7_
 
-- [ ] 2.6.2 Create comprehensive failing test scenarios
+- [x] 2.6.2 Create comprehensive failing test scenarios
 
   - Generate mock FailingTest data with assertion, type, filesystem, timeout, network categories
   - Include realistic error messages matching mockup examples
@@ -122,7 +122,7 @@ This implementation plan breaks down the feature into atomic, TDD-friendly tasks
   - Write unit tests for TaskTreeItem creation
   - _Requirements: 1.1, 1.2_
 
-- [r] 3.1.2 Add TaskTreeItem status indicator property
+- [x] 3.1.2 Add TaskTreeItem status indicator property
 
   - Add iconPath property with status-based theme icons
   - Write unit tests for icon assignment logic

@@ -14,6 +14,7 @@ import {
   TaskPriority,
   STATUS_DISPLAY_NAMES,
 } from "../types/tasks";
+import { FailingTestScenarios } from "../mock/FailingTestScenarios";
 
 export class MarkdownTaskParser {
   constructor() {
@@ -103,27 +104,19 @@ export class MarkdownTaskParser {
           totalTests: 18,
           passedTests: 15,
           failedTests: 3,
-          failingTestsList: [
-            {
-              name: "should validate task status transitions",
-              message: "AssertionError: Expected 400 but got 200",
-              category: "assertion",
-              stackTrace:
-                "at Object.<anonymous> (/test/status-transitions.test.ts:45:12)",
-            },
-            {
-              name: "should handle invalid task IDs",
-              message: "TypeError: Cannot read property 'id' of undefined",
-              category: "type",
-              stackTrace: "at validateTaskId (/src/validation.ts:23:8)",
-            },
-            {
-              name: "should persist status changes",
-              message: "FileSystemError: Permission denied",
-              category: "filesystem",
-              stackTrace: "at writeFile (/src/file-utils.ts:67:15)",
-            },
-          ],
+          failingTestsList: FailingTestScenarios.generateScenariosForCategory(
+            "assertion"
+          )
+            .slice(0, 1)
+            .concat(
+              FailingTestScenarios.generateScenariosForCategory("type").slice(
+                0,
+                1
+              ),
+              FailingTestScenarios.generateScenariosForCategory(
+                "filesystem"
+              ).slice(0, 1)
+            ),
           testSuite: "SimpleMCPServer.test.ts",
           coverage: 85,
         },
@@ -153,24 +146,16 @@ export class MarkdownTaskParser {
           totalTests: 12,
           passedTests: 10,
           failedTests: 2,
-          failingTestsList: [
-            {
-              name: "should validate enhanced mock data structure",
-              message:
-                "AssertionError: Expected 'estimatedDuration' property to exist",
-              category: "assertion",
-              stackTrace:
-                "at Object.<anonymous> (/test/enhanced-mock-data.test.ts:23:8)",
-            },
-            {
-              name: "should handle missing test data gracefully",
-              message:
-                "TypeError: Cannot read property 'failingTestsList' of undefined",
-              category: "type",
-              stackTrace:
-                "at renderTestResults (/src/ui/test-results.ts:45:12)",
-            },
-          ],
+          failingTestsList: FailingTestScenarios.generateScenariosForCategory(
+            "assertion"
+          )
+            .slice(0, 1)
+            .concat(
+              FailingTestScenarios.generateScenariosForCategory("type").slice(
+                0,
+                1
+              )
+            ),
           testSuite: "EnhancedMockData.test.ts",
           coverage: 88,
         },
@@ -241,44 +226,89 @@ export class MarkdownTaskParser {
           totalTests: 25,
           passedTests: 20,
           failedTests: 5,
-          failingTestsList: [
-            {
-              name: "should handle 1000+ tasks without memory issues",
-              message: "TimeoutError: Test exceeded 30 second limit",
-              category: "timeout",
-              stackTrace:
-                "at Object.<anonymous> (/test/performance/large-dataset.test.ts:78:15)",
-            },
-            {
-              name: "should maintain 60fps during scrolling",
-              message: "AssertionError: Expected frame rate >= 60, got 45",
-              category: "assertion",
-              stackTrace:
-                "at measureFrameRate (/test/performance/rendering.test.ts:156:23)",
-            },
-            {
-              name: "should handle network interruptions gracefully",
-              message: "NetworkError: Connection timeout after 5000ms",
-              category: "network",
-              stackTrace: "at fetchTasks (/src/services/tasks.ts:89:12)",
-            },
-            {
-              name: "should validate memory usage limits",
-              message: "AssertionError: Memory usage exceeded 100MB limit",
-              category: "assertion",
-              stackTrace:
-                "at Object.<anonymous> (/test/performance/memory.test.ts:234:18)",
-            },
-            {
-              name: "should handle file system errors",
-              message: "FileSystemError: Disk space exhausted",
-              category: "filesystem",
-              stackTrace: "at writeCacheFile (/src/cache/manager.ts:67:15)",
-            },
-          ],
+          failingTestsList: FailingTestScenarios.generateBalancedScenarios(5),
           testSuite: "Performance.test.ts",
           coverage: 92,
         },
+      },
+      {
+        id: "2.6.2",
+        title: "Create comprehensive failing test scenarios",
+        description:
+          "Create comprehensive failing test scenarios with proper error categorization that matches the expandable list mockup design for test results display. Must cover all 5 error categories with realistic error messages and stack traces.",
+        status: TaskStatus.COMPLETED,
+        complexity: TaskComplexity.MEDIUM,
+        dependencies: ["2.6.1"],
+        requirements: ["5.8", "7.7"],
+        createdDate: "2024-08-22T16:00:00Z",
+        lastModified: "2024-08-22T17:30:00Z",
+        assignee: "dev-team",
+        estimatedHours: 3,
+        actualHours: 2.5,
+        estimatedDuration: "25-30 min",
+        isExecutable: false,
+        priority: TaskPriority.HIGH,
+        tags: ["testing", "error-handling", "mock-data"],
+        statusDisplayName: STATUS_DISPLAY_NAMES[TaskStatus.COMPLETED],
+        testStatus: {
+          lastRunDate: "2024-08-22T17:15:00Z",
+          totalTests: 22,
+          passedTests: 18,
+          failedTests: 4,
+          failingTestsList: FailingTestScenarios.generateBalancedScenarios(4),
+          testSuite: "FailingTestScenarios.test.ts",
+          coverage: 90,
+        },
+      },
+      {
+        id: "3.3.1",
+        title: "Implement test results display component",
+        description:
+          "Create collapsible test results display component that shows test statistics, expandable failure sections, and categorized error display matching the mockup design requirements.",
+        status: TaskStatus.IN_PROGRESS,
+        complexity: TaskComplexity.MEDIUM,
+        dependencies: ["2.6.2", "3.1.1"],
+        requirements: ["7.7", "7.8"],
+        createdDate: "2024-08-22T17:00:00Z",
+        lastModified: "2024-08-22T18:00:00Z",
+        assignee: "ui-team",
+        estimatedHours: 6,
+        actualHours: 2,
+        estimatedDuration: "30-45 min",
+        isExecutable: false,
+        priority: TaskPriority.MEDIUM,
+        tags: ["ui", "test-results", "components"],
+        statusDisplayName: STATUS_DISPLAY_NAMES[TaskStatus.IN_PROGRESS],
+        testStatus: {
+          lastRunDate: "2024-08-22T17:45:00Z",
+          totalTests: 15,
+          passedTests: 12,
+          failedTests: 3,
+          failingTestsList: FailingTestScenarios.generateRandomScenarios(3),
+          testSuite: "TestResultsDisplay.test.ts",
+          coverage: 80,
+        },
+      },
+      {
+        id: "4.2.1",
+        title: "Integration testing for error handling workflows",
+        description:
+          "Develop comprehensive integration tests for error handling workflows including network failures, file system errors, and timeout scenarios to ensure robust error recovery.",
+        status: TaskStatus.NOT_STARTED,
+        complexity: TaskComplexity.HIGH,
+        dependencies: ["2.6.2", "3.3.1"],
+        requirements: ["7.9", "7.10"],
+        createdDate: "2024-08-22T18:00:00Z",
+        lastModified: "2024-08-22T18:00:00Z",
+        assignee: "qa-team",
+        estimatedHours: 8,
+        actualHours: 0,
+        estimatedDuration: "45-60 min",
+        isExecutable: true,
+        priority: TaskPriority.HIGH,
+        tags: ["integration-testing", "error-handling", "workflows"],
+        statusDisplayName: STATUS_DISPLAY_NAMES[TaskStatus.NOT_STARTED],
+        testStatus: undefined,
       },
     ];
 

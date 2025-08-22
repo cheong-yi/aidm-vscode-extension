@@ -77,18 +77,45 @@ describe("MarkdownTaskParser", () => {
       });
     });
 
-    // Test 3: Consistent data
-    it("should return consistent mock data on multiple calls", async () => {
+    // Test 3: Consistent structure (content may vary due to randomization)
+    it("should return consistent structure on multiple calls", async () => {
       const firstCall = await parser.parseTasksFromFile("test1.md");
       const secondCall = await parser.parseTasksFromFile("test2.md");
 
-      expect(firstCall).toEqual(secondCall);
+      // Structure should be consistent
       expect(firstCall.length).toBe(secondCall.length);
 
       // Check that task IDs are consistent
       const firstIds = firstCall.map((t) => t.id).sort();
       const secondIds = secondCall.map((t) => t.id).sort();
       expect(firstIds).toEqual(secondIds);
+
+      // Check that all tasks have the same structure
+      firstCall.forEach((task, index) => {
+        const secondTask = secondCall[index];
+        expect(task.id).toBe(secondTask.id);
+        expect(task.title).toBe(secondTask.title);
+        expect(task.status).toBe(secondTask.status);
+        expect(task.complexity).toBe(secondTask.complexity);
+        expect(task.dependencies).toEqual(secondTask.dependencies);
+        expect(task.requirements).toEqual(secondTask.requirements);
+
+        // Test status structure should be consistent but content may vary due to randomization
+        if (task.testStatus && secondTask.testStatus) {
+          expect(task.testStatus.totalTests).toBe(
+            secondTask.testStatus.totalTests
+          );
+          expect(task.testStatus.passedTests).toBe(
+            secondTask.testStatus.passedTests
+          );
+          expect(task.testStatus.failedTests).toBe(
+            secondTask.testStatus.failedTests
+          );
+          expect(task.testStatus.failingTestsList?.length).toBe(
+            secondTask.testStatus.failingTestsList?.length
+          );
+        }
+      });
     });
 
     // Test 4: Different task statuses

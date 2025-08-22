@@ -11,3 +11,8 @@ export {
   enterpriseScenarios,
   fileContextMappings,
 } from "./sampleData";
+
+export {
+  FailingTestScenarios,
+  FailingTestScenario,
+} from "./FailingTestScenarios";
