@@ -79,11 +79,21 @@ export class TaskTreeViewProvider
    * Required by vscode.TreeDataProvider interface
    * Returns the children of the given element or root items if no element is passed
    *
-   * Task 3.2.3: Now uses TasksDataService for data retrieval
+   * Task 3.2.4: Implement flat list getChildren method
+   * - Root call (element undefined): Returns all tasks as TaskTreeItem[]
+   * - Element call (element provided): Returns empty array for flat list structure
+   *
+   * Task 3.2.3: Uses TasksDataService for data retrieval
    */
   async getChildren(element?: TreeItemType): Promise<TreeItemType[]> {
     try {
-      // Task 3.2.3: Use TasksDataService to retrieve tasks
+      // Task 3.2.4: Flat list implementation
+      // If element is provided, return empty array (no hierarchy)
+      if (element) {
+        return [];
+      }
+
+      // Task 3.2.3: Use TasksDataService to retrieve tasks for root level
       const tasks = await this.tasksDataService.getTasks();
 
       if (tasks.length === 0) {
@@ -91,7 +101,7 @@ export class TaskTreeViewProvider
       }
 
       // Convert tasks to TaskTreeItems for display
-      // This prepares for the next task (flat list implementation)
+      // Task 3.2.4: All tasks are top-level items in flat list structure
       const taskTreeItems = tasks.map((task) => new TaskTreeItem(task));
       return taskTreeItems;
     } catch (error) {

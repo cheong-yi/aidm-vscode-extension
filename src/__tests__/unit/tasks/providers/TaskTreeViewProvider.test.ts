@@ -12,6 +12,7 @@ import {
   TaskComplexity,
   TaskPriority,
 } from "../../../../tasks/types";
+import { TaskTreeItem } from "../../../../tasks/providers/TaskTreeItem";
 
 // Mock TasksDataService
 jest.mock("../../../../services/TasksDataService");
@@ -135,6 +136,139 @@ describe("TaskTreeViewProvider", () => {
       expect(result).toHaveLength(1);
       expect(result[0]).toHaveProperty("contextValue", "empty-state");
       expect(result[0]).toHaveProperty("label", "No Tasks Available");
+    });
+  });
+
+  describe("Task 3.2.4: Flat List getChildren Implementation", () => {
+    it("should return all tasks as top-level items when called with no element (root call)", async () => {
+      // Arrange
+      const multipleTasks: Task[] = [
+        { ...mockTask, id: "task-1", title: "Task 1" },
+        { ...mockTask, id: "task-2", title: "Task 2" },
+        { ...mockTask, id: "task-3", title: "Task 3" },
+      ];
+      mockTasksDataService.getTasks.mockResolvedValue(multipleTasks);
+
+      // Act: Root call (no element parameter)
+      const result = await provider.getChildren();
+
+      // Assert: Should return all tasks as top-level items
+      expect(result).toHaveLength(3);
+      expect(result[0]).toHaveProperty("id", "task-1");
+      expect(result[1]).toHaveProperty("id", "task-2");
+      expect(result[2]).toHaveProperty("id", "task-3");
+
+      // Verify all are TaskTreeItem instances
+      result.forEach((item) => {
+        expect(item).toBeInstanceOf(TaskTreeItem);
+      });
+    });
+
+    it("should return empty array when called with element parameter (flat list structure)", async () => {
+      // Arrange
+      const taskTreeItem = new TaskTreeItem(mockTask);
+
+      // Act: Element call (with element parameter)
+      const result = await provider.getChildren(taskTreeItem);
+
+      // Assert: Should return empty array for flat list design
+      expect(result).toEqual([]);
+      expect(result).toHaveLength(0);
+    });
+
+    it("should maintain flat list structure for all task elements", async () => {
+      // Arrange
+      const multipleTasks: Task[] = [
+        { ...mockTask, id: "task-1" },
+        { ...mockTask, id: "task-2" },
+        { ...mockTask, id: "task-3" },
+      ];
+      mockTasksDataService.getTasks.mockResolvedValue(multipleTasks);
+
+      // Act: Get root tasks first
+      const rootTasks = await provider.getChildren();
+
+      // Then test each task element returns no children
+      const childResults = await Promise.all(
+        rootTasks.map((task) => provider.getChildren(task))
+      );
+
+      // Assert: All element calls return empty arrays
+      childResults.forEach((result) => {
+        expect(result).toEqual([]);
+        expect(result).toHaveLength(0);
+      });
+    });
+
+    it("should preserve enhanced TaskTreeItem properties in flat list conversion", async () => {
+      // Arrange: Task with enhanced properties
+      const enhancedTask: Task = {
+        ...mockTask,
+        id: "enhanced-task",
+        estimatedDuration: "25-30 min",
+        isExecutable: true,
+        testStatus: {
+          totalTests: 10,
+          passedTests: 8,
+          failedTests: 2,
+          lastRunDate: "2024-01-01T12:00:00.000Z",
+        },
+      };
+      mockTasksDataService.getTasks.mockResolvedValue([enhancedTask]);
+
+      // Act
+      const result = await provider.getChildren();
+
+      // Assert: Enhanced properties should be preserved
+      expect(result).toHaveLength(1);
+      const treeItem = result[0] as TaskTreeItem;
+      expect(treeItem.task.estimatedDuration).toBe("25-30 min");
+      expect(treeItem.task.isExecutable).toBe(true);
+      expect(treeItem.task.testStatus?.totalTests).toBe(10);
+      expect(treeItem.isExecutable).toBe(true);
+      expect(treeItem.estimatedDuration).toBe("25-30 min");
+    });
+
+    it("should handle mixed task types correctly in flat list", async () => {
+      // Arrange: Mix of different task statuses and complexities
+      const mixedTasks: Task[] = [
+        {
+          ...mockTask,
+          id: "not-started",
+          status: TaskStatus.NOT_STARTED,
+          complexity: TaskComplexity.LOW,
+        },
+        {
+          ...mockTask,
+          id: "in-progress",
+          status: TaskStatus.IN_PROGRESS,
+          complexity: TaskComplexity.MEDIUM,
+        },
+        {
+          ...mockTask,
+          id: "completed",
+          status: TaskStatus.COMPLETED,
+          complexity: TaskComplexity.HIGH,
+        },
+      ];
+      mockTasksDataService.getTasks.mockResolvedValue(mixedTasks);
+
+      // Act
+      const result = await provider.getChildren();
+
+      // Assert: All tasks should be converted to TaskTreeItems with correct properties
+      expect(result).toHaveLength(3);
+
+      const notStartedItem = result[0] as TaskTreeItem;
+      const inProgressItem = result[1] as TaskTreeItem;
+      const completedItem = result[2] as TaskTreeItem;
+
+      expect(notStartedItem.task.status).toBe(TaskStatus.NOT_STARTED);
+      expect(notStartedItem.isExecutable).toBe(true);
+      expect(inProgressItem.task.status).toBe(TaskStatus.IN_PROGRESS);
+      expect(inProgressItem.isExecutable).toBe(false);
+      expect(completedItem.task.status).toBe(TaskStatus.COMPLETED);
+      expect(completedItem.isExecutable).toBe(false);
     });
   });
 
