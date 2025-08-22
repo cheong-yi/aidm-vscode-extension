@@ -2,10 +2,11 @@
  * TaskTreeItem Class
  * VSCode TreeItem implementation for task display in tree view
  * Requirements: 3.1.1 - TaskTreeItem class with basic properties
+ * Requirements: 3.1.2 - Add Status Indicator to TaskTreeItem
  */
 
-import * as vscode from 'vscode';
-import { Task } from '../../types';
+import * as vscode from "vscode";
+import { Task, TaskStatus } from "../../types";
 
 export class TaskTreeItem extends vscode.TreeItem {
   public readonly id: string;
@@ -21,7 +22,7 @@ export class TaskTreeItem extends vscode.TreeItem {
     this.task = task;
     this.hasChildren = task.dependencies.length > 0;
     this.dependencyLevel = dependencyLevel;
-    this.contextValue = 'taskItem';
+    this.contextValue = "taskItem";
 
     // Set collapsible state based on whether task has dependencies
     if (this.hasChildren) {
@@ -39,22 +40,23 @@ export class TaskTreeItem extends vscode.TreeItem {
 
   /**
    * Get appropriate icon for task status
+   * Requirements: 3.1.2 - Status indicator for each task status
    */
-  private getStatusIcon(status: string): vscode.ThemeIcon | undefined {
+  private getStatusIcon(status: TaskStatus): vscode.ThemeIcon {
     switch (status) {
-      case 'completed':
-        return new vscode.ThemeIcon('check');
-      case 'in_progress':
-        return new vscode.ThemeIcon('sync~spin');
-      case 'review':
-        return new vscode.ThemeIcon('eye');
-      case 'blocked':
-        return new vscode.ThemeIcon('error');
-      case 'deprecated':
-        return new vscode.ThemeIcon('warning');
-      case 'not_started':
+      case TaskStatus.COMPLETED:
+        return new vscode.ThemeIcon("check");
+      case TaskStatus.IN_PROGRESS:
+        return new vscode.ThemeIcon("sync~spin");
+      case TaskStatus.REVIEW:
+        return new vscode.ThemeIcon("eye");
+      case TaskStatus.BLOCKED:
+        return new vscode.ThemeIcon("error");
+      case TaskStatus.DEPRECATED:
+        return new vscode.ThemeIcon("warning");
+      case TaskStatus.NOT_STARTED:
       default:
-        return new vscode.ThemeIcon('circle-outline');
+        return new vscode.ThemeIcon("circle-outline");
     }
   }
 }
