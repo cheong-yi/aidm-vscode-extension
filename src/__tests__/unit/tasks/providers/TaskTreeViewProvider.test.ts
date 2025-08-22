@@ -55,12 +55,12 @@ describe("TaskTreeViewProvider", () => {
       makeJSONRPCCall: jest.fn(),
       onTasksUpdated: {
         fire: jest.fn(),
-        event: jest.fn(),
+        event: jest.fn().mockReturnValue({ dispose: jest.fn() }),
         dispose: jest.fn(),
       } as any,
       onError: {
         fire: jest.fn(),
-        event: jest.fn(),
+        event: jest.fn().mockReturnValue({ dispose: jest.fn() }),
         dispose: jest.fn(),
       } as any,
       dispose: jest.fn(),
@@ -911,6 +911,337 @@ describe("TaskTreeViewProvider", () => {
         expect(treeItem.task.statusDisplayName).toBeDefined();
         expect(typeof treeItem.task.statusDisplayName).toBe("string");
       });
+    });
+  });
+
+  describe("Task 3.2.8: Event Connection to TasksDataService", () => {
+    it("should setup event listeners in constructor", () => {
+      // Arrange: Mock event listener setup
+      const mockEvent = jest.fn().mockReturnValue({ dispose: jest.fn() });
+      mockTasksDataService.onTasksUpdated.event = mockEvent;
+      mockTasksDataService.onError.event = mockEvent;
+
+      // Act: Create new provider instance
+      const newProvider = new TaskTreeViewProvider(mockTasksDataService);
+
+      // Assert: Event listeners should be set up
+      expect(mockEvent).toHaveBeenCalledTimes(2);
+      expect(mockEvent).toHaveBeenCalledWith(expect.any(Function));
+    });
+
+    it("should connect to onTasksUpdated event for automatic refresh", () => {
+      // Arrange: Mock event listener and refresh method
+      const mockEvent = jest.fn().mockReturnValue({ dispose: jest.fn() });
+      mockTasksDataService.onTasksUpdated.event = mockEvent;
+
+      // Act: Create new provider to trigger event listener setup
+      const newProvider = new TaskTreeViewProvider(mockTasksDataService);
+      const refreshSpy = jest
+        .spyOn(newProvider, "refresh")
+        .mockImplementation();
+
+      // Assert: Should connect to onTasksUpdated event
+      expect(mockEvent).toHaveBeenCalledWith(expect.any(Function));
+
+      // Verify the event handler calls refresh
+      const eventHandler = mockEvent.mock.calls[0][0];
+      eventHandler([mockTask]);
+      expect(refreshSpy).toHaveBeenCalled();
+
+      // Cleanup
+      refreshSpy.mockRestore();
+    });
+
+    it("should connect to onError event for error handling", () => {
+      // Arrange: Mock event listener
+      const mockEvent = jest.fn().mockReturnValue({ dispose: jest.fn() });
+      mockTasksDataService.onError.event = mockEvent;
+      const consoleSpy = jest.spyOn(console, "warn").mockImplementation();
+
+      // Act: Create new provider to trigger event listener setup
+      const newProvider = new TaskTreeViewProvider(mockTasksDataService);
+
+      // Assert: Should connect to onError event
+      expect(mockEvent).toHaveBeenCalledWith(expect.any(Function));
+
+      // Verify the event handler logs errors
+      const eventHandler = mockEvent.mock.calls[0][0];
+      const mockError = {
+        operation: "status_update" as const,
+        taskId: "test-task",
+        suggestedAction: "retry" as const,
+        userInstructions: "Test error",
+        technicalDetails: "Technical details",
+      };
+      eventHandler(mockError);
+      expect(consoleSpy).toHaveBeenCalledWith(
+        "TaskTreeViewProvider: Service error received:",
+        mockError
+      );
+
+      // Cleanup
+      consoleSpy.mockRestore();
+    });
+
+    it("should store event disposables for proper cleanup", () => {
+      // Arrange: Mock event listener with disposable
+      const mockDisposable = { dispose: jest.fn() };
+      const mockEvent = jest.fn().mockReturnValue(mockDisposable);
+      mockTasksDataService.onTasksUpdated.event = mockEvent;
+      mockTasksDataService.onError.event = mockEvent;
+
+      // Act: Create new provider
+      const newProvider = new TaskTreeViewProvider(mockTasksDataService);
+
+      // Assert: Event disposables should be stored
+      expect(mockEvent).toHaveBeenCalledTimes(2);
+      expect(mockEvent).toHaveBeenCalledWith(expect.any(Function));
+    });
+
+    it("should handle onTasksUpdated event and trigger refresh", () => {
+      // Arrange: Mock event listener and refresh method
+      const mockEvent = jest.fn().mockReturnValue({ dispose: jest.fn() });
+      mockTasksDataService.onTasksUpdated.event = mockEvent;
+
+      // Act: Create new provider and trigger event
+      const newProvider = new TaskTreeViewProvider(mockTasksDataService);
+      const refreshSpy = jest
+        .spyOn(newProvider, "refresh")
+        .mockImplementation();
+      const eventHandler = mockEvent.mock.calls[0][0];
+      eventHandler([mockTask]);
+
+      // Assert: Refresh should be called automatically
+      expect(refreshSpy).toHaveBeenCalledTimes(1);
+
+      // Cleanup
+      refreshSpy.mockRestore();
+    });
+
+    it("should handle onError event gracefully without breaking functionality", () => {
+      // Arrange: Mock event listener and console methods
+      const mockEvent = jest.fn().mockReturnValue({ dispose: jest.fn() });
+      mockTasksDataService.onError.event = mockEvent;
+      const consoleWarnSpy = jest.spyOn(console, "warn").mockImplementation();
+      const consoleDebugSpy = jest.spyOn(console, "debug").mockImplementation();
+
+      // Act: Create new provider and trigger error event
+      const newProvider = new TaskTreeViewProvider(mockTasksDataService);
+      const eventHandler = mockEvent.mock.calls[0][0];
+      const mockError = {
+        operation: "task_retrieval" as const,
+        taskId: "test-task",
+        suggestedAction: "retry" as const,
+        userInstructions: "Test error",
+        technicalDetails: "Technical details",
+      };
+      eventHandler(mockError);
+
+      // Assert: Error should be logged but not break functionality
+      expect(consoleWarnSpy).toHaveBeenCalledWith(
+        "TaskTreeViewProvider: Service error received:",
+        mockError
+      );
+      expect(consoleDebugSpy).toHaveBeenCalledWith(
+        "TaskTreeViewProvider: Technical error details:",
+        "Technical details"
+      );
+
+      // Cleanup
+      consoleWarnSpy.mockRestore();
+      consoleDebugSpy.mockRestore();
+    });
+
+    it("should ignore events when provider is disposed", () => {
+      // Arrange: Mock event listener and dispose provider
+      const mockEvent = jest.fn().mockReturnValue({ dispose: jest.fn() });
+      mockTasksDataService.onTasksUpdated.event = mockEvent;
+      const consoleDebugSpy = jest.spyOn(console, "debug").mockImplementation();
+
+      // Create new provider and dispose it
+      const newProvider = new TaskTreeViewProvider(mockTasksDataService);
+      newProvider.dispose();
+
+      // Act: Trigger event on disposed provider
+      const eventHandler = mockEvent.mock.calls[0][0];
+      eventHandler([mockTask]);
+
+      // Assert: Should log that events are ignored
+      expect(consoleDebugSpy).toHaveBeenCalledWith(
+        "TaskTreeViewProvider: Ignoring tasks update on disposed provider"
+      );
+
+      // Cleanup
+      consoleDebugSpy.mockRestore();
+    });
+
+    it("should handle event listener setup failures gracefully", () => {
+      // Arrange: Mock event listener to throw error
+      const mockEvent = jest.fn().mockImplementation(() => {
+        throw new Error("Event setup failed");
+      });
+      mockTasksDataService.onTasksUpdated.event = mockEvent;
+      const consoleErrorSpy = jest.spyOn(console, "error").mockImplementation();
+
+      // Act & Assert: Should handle setup failures gracefully
+      expect(
+        () => new TaskTreeViewProvider(mockTasksDataService)
+      ).not.toThrow();
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        "TaskTreeViewProvider: Failed to setup event listeners:",
+        expect.any(Error)
+      );
+
+      // Cleanup
+      consoleErrorSpy.mockRestore();
+    });
+
+    it("should handle event handler errors gracefully", () => {
+      // Arrange: Mock event listener and refresh method to throw error
+      const mockEvent = jest.fn().mockReturnValue({ dispose: jest.fn() });
+      mockTasksDataService.onTasksUpdated.event = mockEvent;
+
+      // Act: Create new provider and trigger event
+      const newProvider = new TaskTreeViewProvider(mockTasksDataService);
+      const refreshSpy = jest
+        .spyOn(newProvider, "refresh")
+        .mockImplementation(() => {
+          throw new Error("Refresh failed");
+        });
+      const consoleErrorSpy = jest.spyOn(console, "error").mockImplementation();
+      const eventHandler = mockEvent.mock.calls[0][0];
+
+      // Assert: Should handle event handler errors gracefully
+      expect(() => eventHandler([mockTask])).not.toThrow();
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        "TaskTreeViewProvider: Error handling tasks update:",
+        expect.any(Error)
+      );
+
+      // Cleanup
+      refreshSpy.mockRestore();
+      consoleErrorSpy.mockRestore();
+    });
+
+    it("should handle multiple event triggers correctly", () => {
+      // Arrange: Mock event listener and refresh method
+      const mockEvent = jest.fn().mockReturnValue({ dispose: jest.fn() });
+      mockTasksDataService.onTasksUpdated.event = mockEvent;
+
+      // Act: Create new provider and trigger multiple events
+      const newProvider = new TaskTreeViewProvider(mockTasksDataService);
+      const refreshSpy = jest
+        .spyOn(newProvider, "refresh")
+        .mockImplementation();
+      const eventHandler = mockEvent.mock.calls[0][0];
+
+      eventHandler([mockTask]);
+      eventHandler([mockTask]);
+      eventHandler([mockTask]);
+
+      // Assert: All events should trigger refresh
+      expect(refreshSpy).toHaveBeenCalledTimes(3);
+
+      // Cleanup
+      refreshSpy.mockRestore();
+    });
+
+    it("should dispose all event listeners on cleanup", () => {
+      // Arrange: Mock event listener with disposable
+      const mockDisposable = { dispose: jest.fn() };
+      const mockEvent = jest.fn().mockReturnValue(mockDisposable);
+      mockTasksDataService.onTasksUpdated.event = mockEvent;
+      mockTasksDataService.onError.event = mockEvent;
+
+      // Act: Create new provider and dispose it
+      const newProvider = new TaskTreeViewProvider(mockTasksDataService);
+      newProvider.dispose();
+
+      // Assert: All event disposables should be disposed
+      expect(mockDisposable.dispose).toHaveBeenCalledTimes(2);
+    });
+
+    it("should maintain refresh functionality after event connection", () => {
+      // Arrange: Mock event listener
+      const mockEvent = jest.fn().mockReturnValue({ dispose: jest.fn() });
+      mockTasksDataService.onTasksUpdated.event = mockEvent;
+      mockTasksDataService.onError.event = mockEvent;
+
+      // Act: Create new provider with event connections
+      const newProvider = new TaskTreeViewProvider(mockTasksDataService);
+
+      // Assert: Manual refresh should still work
+      expect(() => newProvider.refresh()).not.toThrow();
+      expect(() =>
+        newProvider.refreshItem(new TaskTreeItem(mockTask))
+      ).not.toThrow();
+    });
+
+    it("should handle concurrent event triggers efficiently", () => {
+      // Arrange: Mock event listener and refresh method
+      const mockEvent = jest.fn().mockReturnValue({ dispose: jest.fn() });
+      mockTasksDataService.onTasksUpdated.event = mockEvent;
+
+      // Act: Create new provider and trigger concurrent events
+      const newProvider = new TaskTreeViewProvider(mockTasksDataService);
+      const refreshSpy = jest
+        .spyOn(newProvider, "refresh")
+        .mockImplementation();
+      const eventHandler = mockEvent.mock.calls[0][0];
+
+      // Simulate concurrent events
+      const promises = [
+        Promise.resolve().then(() => eventHandler([mockTask])),
+        Promise.resolve().then(() => eventHandler([mockTask])),
+        Promise.resolve().then(() => eventHandler([mockTask])),
+      ];
+
+      // Assert: All concurrent events should be handled
+      return Promise.all(promises).then(() => {
+        expect(refreshSpy).toHaveBeenCalledTimes(3);
+      });
+
+      // Cleanup
+      refreshSpy.mockRestore();
+    });
+
+    it("should preserve expansion state during automatic refresh", () => {
+      // Arrange: Mock event listener and refresh method
+      const mockEvent = jest.fn().mockReturnValue({ dispose: jest.fn() });
+      mockTasksDataService.onTasksUpdated.event = mockEvent;
+
+      // Act: Create new provider and trigger event
+      const newProvider = new TaskTreeViewProvider(mockTasksDataService);
+      const refreshSpy = jest
+        .spyOn(newProvider, "refresh")
+        .mockImplementation();
+      const eventHandler = mockEvent.mock.calls[0][0];
+      eventHandler([mockTask]);
+
+      // Assert: Refresh should be called with undefined to preserve expansion state
+      expect(refreshSpy).toHaveBeenCalledWith();
+
+      // Cleanup
+      refreshSpy.mockRestore();
+    });
+
+    it("should log successful event listener connection", () => {
+      // Arrange: Mock event listener and console debug
+      const mockEvent = jest.fn().mockReturnValue({ dispose: jest.fn() });
+      mockTasksDataService.onTasksUpdated.event = mockEvent;
+      mockTasksDataService.onError.event = mockEvent;
+      const consoleDebugSpy = jest.spyOn(console, "debug").mockImplementation();
+
+      // Act: Create new provider
+      const newProvider = new TaskTreeViewProvider(mockTasksDataService);
+
+      // Assert: Should log successful connection
+      expect(consoleDebugSpy).toHaveBeenCalledWith(
+        "TaskTreeViewProvider: Event listeners connected successfully"
+      );
+
+      // Cleanup
+      consoleDebugSpy.mockRestore();
     });
   });
 });

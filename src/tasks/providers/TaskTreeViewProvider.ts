@@ -5,11 +5,12 @@
  * Requirements: 3.2.6 - Implement "No Tasks" state handling
  * Task 3.2.3: Connect TaskTreeViewProvider to TasksDataService
  * Task 3.2.7: Add refresh mechanism infrastructure
+ * Task 3.2.8: Connect refresh mechanism to TasksDataService events
  */
 
 import * as vscode from "vscode";
 import { TaskTreeItem } from "./TaskTreeItem";
-import { Task, TaskStatus } from "../types";
+import { Task, TaskStatus, TaskErrorResponse } from "../types";
 import { TasksDataService } from "../../services";
 
 /**
@@ -64,6 +65,12 @@ export class TaskTreeViewProvider
    */
   private isDisposed: boolean = false;
 
+  /**
+   * Event listener disposables for proper cleanup
+   * Task 3.2.8: Store disposables for event listener cleanup
+   */
+  private readonly eventDisposables: vscode.Disposable[] = [];
+
   constructor(tasksDataService: TasksDataService) {
     // Task 3.2.3: Store TasksDataService reference
     this.tasksDataService = tasksDataService;
@@ -73,6 +80,92 @@ export class TaskTreeViewProvider
       TreeItemType | undefined | null
     >();
     this.onDidChangeTreeData = this._onDidChangeTreeData.event;
+
+    // Task 3.2.8: Setup event listeners for automatic refresh
+    this.setupEventListeners();
+  }
+
+  /**
+   * Setup event listeners for TasksDataService events
+   * Task 3.2.8: Connect to service events for automatic refresh
+   */
+  private setupEventListeners(): void {
+    try {
+      // Connect to tasks updated event for automatic refresh
+      const tasksUpdatedDisposable = this.tasksDataService.onTasksUpdated.event(
+        this.handleTasksUpdated.bind(this)
+      );
+      this.eventDisposables.push(tasksUpdatedDisposable);
+
+      // Connect to error events for graceful error handling
+      const errorDisposable = this.tasksDataService.onError.event(
+        this.handleServiceError.bind(this)
+      );
+      this.eventDisposables.push(errorDisposable);
+
+      console.debug("TaskTreeViewProvider: Event listeners connected successfully");
+    } catch (error) {
+      // Handle event listener setup failures gracefully
+      console.error("TaskTreeViewProvider: Failed to setup event listeners:", error);
+      // Continue without automatic refresh - manual refresh still works
+    }
+  }
+
+  /**
+   * Handle tasks updated event from TasksDataService
+   * Task 3.2.8: Automatic refresh when data changes
+   * 
+   * @param tasks Updated tasks array from service
+   */
+  private handleTasksUpdated(tasks: Task[]): void {
+    try {
+      if (this.isDisposed) {
+        console.debug("TaskTreeViewProvider: Ignoring tasks update on disposed provider");
+        return;
+      }
+
+      console.debug("TaskTreeViewProvider: Tasks updated, triggering automatic refresh");
+      
+      // Trigger automatic refresh to update the tree view
+      this.refresh();
+    } catch (error) {
+      // Handle errors in event handler without breaking functionality
+      console.error("TaskTreeViewProvider: Error handling tasks update:", error);
+    }
+  }
+
+  /**
+   * Handle service error events from TasksDataService
+   * Task 3.2.8: Graceful error handling without breaking tree view
+   * 
+   * @param error TaskErrorResponse from service
+   */
+  private handleServiceError(error: TaskErrorResponse): void {
+    try {
+      if (this.isDisposed) {
+        console.debug("TaskTreeViewProvider: Ignoring error on disposed provider");
+        return;
+      }
+
+      console.warn("TaskTreeViewProvider: Service error received:", {
+        operation: error.operation,
+        taskId: error.taskId,
+        suggestedAction: error.suggestedAction,
+        userInstructions: error.userInstructions,
+        technicalDetails: error.technicalDetails
+      });
+
+      // Log error details for debugging
+      if (error.technicalDetails) {
+        console.debug("TaskTreeViewProvider: Technical error details:", error.technicalDetails);
+      }
+
+      // Optionally show error indicator in UI (future enhancement)
+      // For now, just log and continue - tree view remains functional with cached data
+    } catch (error) {
+      // Handle errors in error handler without breaking functionality
+      console.error("TaskTreeViewProvider: Error handling service error:", error);
+    }
   }
 
   /**
@@ -266,6 +359,7 @@ export class TaskTreeViewProvider
     try {
       this.isDisposed = true;
       this._onDidChangeTreeData.dispose();
+      this.eventDisposables.forEach(disposable => disposable.dispose());
       console.debug("TaskTreeViewProvider: Disposed successfully");
     } catch (error) {
       console.error("TaskTreeViewProvider: Error during disposal:", error);

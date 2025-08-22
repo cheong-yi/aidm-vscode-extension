@@ -203,7 +203,7 @@ This implementation plan breaks down the feature into atomic, TDD-friendly tasks
   - Write unit tests for event emitter setup
   - _Requirements: 2.6_
 
-- [ ] 3.2.8 Connect refresh mechanism to data events
+- [x] 3.2.8 Connect refresh mechanism to data events
 
   - Connect to TasksDataService events for auto-refresh
   - Maintain expansion state during refresh
@@ -226,7 +226,7 @@ This implementation plan breaks down the feature into atomic, TDD-friendly tasks
 
 #### 3.3 Enhanced TaskDetailCardProvider (Expandable Content)
 
-- [ ] 3.3.1 Create TaskDetailCardProvider class structure
+- [d] 3.3.1 Create TaskDetailCardProvider class structure
 
   - Implement vscode.WebviewViewProvider interface
   - Add basic resolveWebviewView method (empty content)
