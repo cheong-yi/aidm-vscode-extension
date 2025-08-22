@@ -71,7 +71,7 @@ describe("TaskTreeViewProvider", () => {
       expect(result.id).toBe("test-1");
       // Cast back to TaskTreeItem to access custom properties
       expect((result as TaskTreeItem).task).toBe(mockTask);
-      expect(result.label).toBe("Test Task");
+      expect(result.label).toBe("Task test-1: Test Task");
     });
 
     it("should convert a Task object to a TaskTreeItem instance", () => {
@@ -125,7 +125,7 @@ describe("TaskTreeViewProvider", () => {
       const result = provider.getTreeItem(taskTreeItem) as TaskTreeItem;
 
       // Verify property mapping
-      expect(result.label).toBe("Property Mapping Test");
+      expect(result.label).toBe("Task mapping-test: Property Mapping Test");
       expect(result.tooltip).toBe(
         "Testing property mapping between Task and TaskTreeItem"
       );
