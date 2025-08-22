@@ -53,7 +53,7 @@ This implementation plan breaks down the feature into atomic, TDD-friendly tasks
 
 #### 2.6 Enhanced Data Contract Validation
 
-- [ ] 2.6.1 Update mock data to include estimatedDuration and enhanced test results
+- [x] 2.6.1 Update mock data to include estimatedDuration and enhanced test results
 
   - Add estimatedDuration field ("15-30 min" format) to all mock tasks
   - Include realistic FailingTest objects with proper error categories
@@ -87,7 +87,7 @@ This implementation plan breaks down the feature into atomic, TDD-friendly tasks
 
 #### 2.7 Time Formatting Utility
 
-- [ ] 2.7.1 Create TimeFormattingUtility class structure
+- [d] 2.7.1 Create TimeFormattingUtility class structure
 
   - Implement formatRelativeTime method for ISO date strings
   - Add formatDuration method for estimated time parsing
@@ -115,20 +115,20 @@ This implementation plan breaks down the feature into atomic, TDD-friendly tasks
 
 #### 3.1 Enhanced TaskTreeItem Foundation
 
-- [x] 3.1.1 Create TaskTreeItem class with basic properties
+- [r] 3.1.1 Create TaskTreeItem class with basic properties
 
   - Implement TaskTreeItem extending vscode.TreeItem
   - Add basic properties (label, description, contextValue)
   - Write unit tests for TaskTreeItem creation
   - _Requirements: 1.1, 1.2_
 
-- [x] 3.1.2 Add TaskTreeItem status indicator property
+- [r] 3.1.2 Add TaskTreeItem status indicator property
 
   - Add iconPath property with status-based theme icons
   - Write unit tests for icon assignment logic
   - _Requirements: 2.2_
 
-- [x] 3.1.3 Add TaskTreeItem collapsible state logic
+- [r] 3.1.3 Add TaskTreeItem collapsible state logic
 
   - Implement collapsibleState based on task hierarchy
   - Write unit tests for collapsible state determination
