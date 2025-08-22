@@ -6,6 +6,8 @@ The Sidebar Taskmaster Dashboard is a new UI module within the enterprise-ai-con
 
 ## Architecture
 
+**File Structure Note**: Implementation uses existing repo structure (`src/tasks/`, `src/services/`) rather than creating new `src/taskmaster/` directories.
+
 ### High-Level Architecture
 
 ```mermaid
