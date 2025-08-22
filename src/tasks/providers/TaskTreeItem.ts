@@ -37,12 +37,12 @@ export class TaskTreeItem extends vscode.TreeItem {
     this.hasChildren = TaskTreeItem.hasExpandableContent(task);
     this.dependencyLevel = dependencyLevel;
 
-    // Task 3.1.5: Executable state indicators
-    // Determine if task is executable (not_started status)
-    this.isExecutable = task.status === TaskStatus.NOT_STARTED;
+    // Task 3.2.5: Enhanced executable state indicators
+    // Determine if task is executable (NOT_STARTED status AND isExecutable === true)
+    this.isExecutable = TaskTreeItem.isTaskExecutable(task);
 
-    // Set contextValue for command visibility: "executable-task" vs "task"
-    this.contextValue = this.isExecutable ? "executable-task" : "task";
+    // Set contextValue for command visibility: "executable-task" vs "task-item"
+    this.contextValue = this.isExecutable ? "executable-task" : "task-item";
 
     // Task 3.1.6: Enhanced display properties
     this.estimatedDuration = task.estimatedDuration;
@@ -251,6 +251,19 @@ export class TaskTreeItem extends vscode.TreeItem {
     }
 
     return parts.length > 0 ? parts.join(" • ") : undefined;
+  }
+
+  /**
+   * Handle edge cases for executable task detection
+   * Task 3.2.5: Graceful handling of undefined isExecutable property
+   *
+   * @param task The task to check
+   * @returns boolean indicating if task should be treated as executable
+   */
+  private static isTaskExecutable(task: Task): boolean {
+    // Default to false if isExecutable is undefined
+    const isExecutable = task.isExecutable ?? false;
+    return task.status === TaskStatus.NOT_STARTED && isExecutable;
   }
 
   /**

@@ -112,7 +112,7 @@ describe("TaskTreeViewProvider", () => {
       expect(mockTasksDataService.getTasks).toHaveBeenCalledWith();
     });
 
-    it("should convert returned tasks to TaskTreeItems", async () => {
+    it("should convert returned tasks to TaskTreeItems with enhanced status display", async () => {
       // Arrange
       mockTasksDataService.getTasks.mockResolvedValue(mockTasks);
 
@@ -122,7 +122,13 @@ describe("TaskTreeViewProvider", () => {
       // Assert
       expect(result).toHaveLength(1);
       expect(result[0]).toHaveProperty("id", "test-task-1");
-      expect(result[0]).toHaveProperty("task", mockTask);
+
+      // Task 3.2.5: Status filtering adds statusDisplayName property
+      const enhancedMockTask = {
+        ...mockTask,
+        statusDisplayName: "not started",
+      };
+      expect(result[0]).toHaveProperty("task", enhancedMockTask);
     });
 
     it("should handle empty task list by showing no-tasks state", async () => {
@@ -414,6 +420,151 @@ describe("TaskTreeViewProvider", () => {
       expect(results).toHaveLength(3);
       results.forEach((result) => {
         expect(result).toHaveLength(1);
+      });
+    });
+  });
+
+  describe("Task 3.2.5: Status Filtering and Display Logic", () => {
+    it("should apply STATUS_DISPLAY_NAMES mapping to all task statuses", async () => {
+      // Arrange: Tasks with different statuses
+      const tasksWithDifferentStatuses = [
+        { ...mockTask, id: "not-started", status: TaskStatus.NOT_STARTED },
+        { ...mockTask, id: "in-progress", status: TaskStatus.IN_PROGRESS },
+        { ...mockTask, id: "completed", status: TaskStatus.COMPLETED },
+        { ...mockTask, id: "review", status: TaskStatus.REVIEW },
+        { ...mockTask, id: "blocked", status: TaskStatus.BLOCKED },
+        { ...mockTask, id: "deprecated", status: TaskStatus.DEPRECATED },
+      ];
+      mockTasksDataService.getTasks.mockResolvedValue(
+        tasksWithDifferentStatuses
+      );
+
+      // Act
+      const result = await provider.getChildren();
+
+      // Assert: All tasks should have statusDisplayName applied
+      expect(result).toHaveLength(6);
+
+      const notStartedItem = result[0] as TaskTreeItem;
+      const inProgressItem = result[1] as TaskTreeItem;
+      const completedItem = result[2] as TaskTreeItem;
+      const reviewItem = result[3] as TaskTreeItem;
+      const blockedItem = result[4] as TaskTreeItem;
+      const deprecatedItem = result[5] as TaskTreeItem;
+
+      expect(notStartedItem.task.statusDisplayName).toBe("not started");
+      expect(inProgressItem.task.statusDisplayName).toBe("in progress");
+      expect(completedItem.task.statusDisplayName).toBe("completed");
+      expect(reviewItem.task.statusDisplayName).toBe("review");
+      expect(blockedItem.task.statusDisplayName).toBe("blocked");
+      expect(deprecatedItem.task.statusDisplayName).toBe("deprecated");
+    });
+
+    it("should preserve all task data while applying status filtering", async () => {
+      // Arrange: Task with enhanced properties
+      const enhancedTask = {
+        ...mockTask,
+        id: "enhanced-task",
+        estimatedDuration: "25-30 min",
+        isExecutable: true,
+        testStatus: {
+          totalTests: 10,
+          passedTests: 8,
+          failedTests: 2,
+          lastRunDate: "2024-01-01T12:00:00Z",
+        },
+        tags: ["frontend", "ui"],
+        assignee: "John Doe",
+      };
+      mockTasksDataService.getTasks.mockResolvedValue([enhancedTask]);
+
+      // Act
+      const result = await provider.getChildren();
+
+      // Assert: All properties should be preserved
+      expect(result).toHaveLength(1);
+      const treeItem = result[0] as TaskTreeItem;
+
+      // Original properties preserved
+      expect(treeItem.task.id).toBe("enhanced-task");
+      expect(treeItem.task.estimatedDuration).toBe("25-30 min");
+      expect(treeItem.task.isExecutable).toBe(true);
+      expect(treeItem.task.tags).toEqual(["frontend", "ui"]);
+      expect(treeItem.task.assignee).toBe("John Doe");
+
+      // Status display name added
+      expect(treeItem.task.statusDisplayName).toBe("not started");
+    });
+
+    it("should handle edge cases gracefully in status filtering", async () => {
+      // Arrange: Task with missing properties
+      const incompleteTask = {
+        id: "incomplete-task",
+        title: "Incomplete Task",
+        description: "A task with missing properties",
+        status: TaskStatus.NOT_STARTED,
+        complexity: TaskComplexity.LOW,
+        priority: TaskPriority.MEDIUM,
+        dependencies: [],
+        requirements: [],
+        createdDate: "2024-01-01T00:00:00.000Z",
+        lastModified: "2024-01-01T00:00:00.000Z",
+        // Missing: estimatedDuration, isExecutable, testStatus, tags, assignee
+      };
+      mockTasksDataService.getTasks.mockResolvedValue([incompleteTask]);
+
+      // Act
+      const result = await provider.getChildren();
+
+      // Assert: Should handle missing properties gracefully
+      expect(result).toHaveLength(1);
+      const treeItem = result[0] as TaskTreeItem;
+
+      // Status display name should still be applied
+      expect(treeItem.task.statusDisplayName).toBe("not started");
+
+      // Missing properties should be undefined (not cause errors)
+      expect(treeItem.task.estimatedDuration).toBeUndefined();
+      expect(treeItem.task.isExecutable).toBeUndefined();
+      expect(treeItem.task.testStatus).toBeUndefined();
+      expect(treeItem.task.tags).toBeUndefined();
+      expect(treeItem.task.assignee).toBeUndefined();
+    });
+
+    it("should maintain performance with status filtering", async () => {
+      // Arrange: Large number of tasks
+      const largeTaskList = Array.from({ length: 100 }, (_, index) => ({
+        ...mockTask,
+        id: `task-${index}`,
+        status:
+          index % 6 === 0
+            ? TaskStatus.COMPLETED
+            : index % 6 === 1
+            ? TaskStatus.IN_PROGRESS
+            : index % 6 === 2
+            ? TaskStatus.REVIEW
+            : index % 6 === 3
+            ? TaskStatus.BLOCKED
+            : index % 6 === 4
+            ? TaskStatus.DEPRECATED
+            : TaskStatus.NOT_STARTED,
+      }));
+      mockTasksDataService.getTasks.mockResolvedValue(largeTaskList);
+
+      // Act: Measure performance
+      const startTime = Date.now();
+      const result = await provider.getChildren();
+      const endTime = Date.now();
+
+      // Assert: Should complete within reasonable time (< 100ms for 100 tasks)
+      expect(result).toHaveLength(100);
+      expect(endTime - startTime).toBeLessThan(100);
+
+      // All tasks should have statusDisplayName applied
+      result.forEach((item) => {
+        const treeItem = item as TaskTreeItem;
+        expect(treeItem.task.statusDisplayName).toBeDefined();
+        expect(typeof treeItem.task.statusDisplayName).toBe("string");
       });
     });
   });

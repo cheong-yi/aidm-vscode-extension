@@ -146,19 +146,51 @@ describe("TaskTreeItem", () => {
     });
 
     it("should set contextValue to 'executable-task' for executable tasks", () => {
-      const executableTask = { ...mockTask, status: TaskStatus.NOT_STARTED };
+      // Task 3.2.5: Executable tasks need NOT_STARTED status AND isExecutable === true
+      const executableTask = {
+        ...mockTask,
+        status: TaskStatus.NOT_STARTED,
+        isExecutable: true,
+      };
       const treeItem = new TaskTreeItem(executableTask, 0);
       expect(treeItem.contextValue).toBe("executable-task");
     });
 
-    it("should set contextValue to 'task' for non-executable tasks", () => {
+    it("should set contextValue to 'task-item' for non-executable tasks", () => {
       const nonExecutableTask = { ...mockTask, status: TaskStatus.IN_PROGRESS };
       const treeItem = new TaskTreeItem(nonExecutableTask, 0);
-      expect(treeItem.contextValue).toBe("task");
+      expect(treeItem.contextValue).toBe("task-item");
+    });
+
+    it("should set contextValue to 'task-item' for NOT_STARTED tasks without isExecutable flag", () => {
+      // Task 3.2.5: NOT_STARTED tasks without isExecutable flag are not executable
+      const notStartedTask = {
+        ...mockTask,
+        status: TaskStatus.NOT_STARTED,
+        isExecutable: false,
+      };
+      const treeItem = new TaskTreeItem(notStartedTask, 0);
+      expect(treeItem.contextValue).toBe("task-item");
+    });
+
+    it("should set contextValue to 'task-item' for NOT_STARTED tasks with undefined isExecutable", () => {
+      // Task 3.2.5: NOT_STARTED tasks with undefined isExecutable are not executable
+      const notStartedTask = {
+        ...mockTask,
+        status: TaskStatus.NOT_STARTED,
+        isExecutable: undefined,
+      };
+      const treeItem = new TaskTreeItem(notStartedTask, 0);
+      expect(treeItem.contextValue).toBe("task-item");
     });
 
     it("should add robot icon to description for executable tasks", () => {
-      const executableTask = { ...mockTask, status: TaskStatus.NOT_STARTED };
+      // Task 3.2.5: Executable tasks need NOT_STARTED status AND isExecutable === true
+      const executableTask = {
+        ...mockTask,
+        status: TaskStatus.NOT_STARTED,
+        isExecutable: true,
+      };
       const treeItem = new TaskTreeItem(executableTask, 0);
       expect(treeItem.description).toContain("🤖");
     });
@@ -169,10 +201,22 @@ describe("TaskTreeItem", () => {
       expect(treeItem.description).not.toContain("🤖");
     });
 
+    it("should not add robot icon to description for NOT_STARTED tasks without isExecutable flag", () => {
+      // Task 3.2.5: NOT_STARTED tasks without isExecutable flag are not executable
+      const notStartedTask = {
+        ...mockTask,
+        status: TaskStatus.NOT_STARTED,
+        isExecutable: false,
+      };
+      const treeItem = new TaskTreeItem(notStartedTask, 0);
+      expect(treeItem.description).not.toContain("🤖");
+    });
+
     it("should include robot icon in description with other content for executable tasks", () => {
       const executableTask = {
         ...mockTask,
         status: TaskStatus.NOT_STARTED,
+        isExecutable: true,
         estimatedDuration: "15-20 min",
         testStatus: { totalTests: 5, passedTests: 5, failedTests: 0 },
       };
@@ -184,6 +228,7 @@ describe("TaskTreeItem", () => {
       const minimalExecutableTask = {
         ...mockTask,
         status: TaskStatus.NOT_STARTED,
+        isExecutable: true,
         estimatedDuration: undefined,
         testStatus: undefined,
       };
@@ -227,6 +272,8 @@ describe("TaskTreeItem", () => {
     it("should generate description with estimated duration and test summary", () => {
       const taskWithBoth = {
         ...mockTask,
+        status: TaskStatus.NOT_STARTED,
+        isExecutable: true,
         estimatedDuration: "20-25 min",
         testStatus: { totalTests: 10, passedTests: 8, failedTests: 2 },
       };
@@ -237,6 +284,8 @@ describe("TaskTreeItem", () => {
     it("should generate description with only estimated duration", () => {
       const taskWithDurationOnly = {
         ...mockTask,
+        status: TaskStatus.NOT_STARTED,
+        isExecutable: true,
         estimatedDuration: "15-20 min",
       };
       const treeItem = new TaskTreeItem(taskWithDurationOnly, 0);
@@ -246,11 +295,25 @@ describe("TaskTreeItem", () => {
     it("should generate description with only test summary", () => {
       const taskWithTestsOnly = {
         ...mockTask,
+        status: TaskStatus.NOT_STARTED,
+        isExecutable: true,
         estimatedDuration: undefined,
         testStatus: { totalTests: 5, passedTests: 5, failedTests: 0 },
       };
       const treeItem = new TaskTreeItem(taskWithTestsOnly, 0);
       expect(treeItem.description).toBe("5/5 passed • 🤖");
+    });
+
+    it("should generate description without robot icon for non-executable NOT_STARTED tasks", () => {
+      const nonExecutableNotStartedTask = {
+        ...mockTask,
+        status: TaskStatus.NOT_STARTED,
+        isExecutable: false,
+        estimatedDuration: "15-20 min",
+        testStatus: { totalTests: 5, passedTests: 5, failedTests: 0 },
+      };
+      const treeItem = new TaskTreeItem(nonExecutableNotStartedTask, 0);
+      expect(treeItem.description).toBe("15-20 min • 5/5 passed");
     });
 
     it("should not set description when no additional context available", () => {
@@ -262,6 +325,64 @@ describe("TaskTreeItem", () => {
       };
       const treeItem = new TaskTreeItem(taskWithoutContext, 0);
       expect(treeItem.description).toBeUndefined();
+    });
+  });
+
+  describe("Task 3.2.5: Enhanced Executable Task Logic", () => {
+    it("should correctly identify executable tasks with both NOT_STARTED status and isExecutable flag", () => {
+      const executableTask = {
+        ...mockTask,
+        status: TaskStatus.NOT_STARTED,
+        isExecutable: true,
+      };
+      const treeItem = new TaskTreeItem(executableTask, 0);
+      expect(treeItem.isExecutable).toBe(true);
+      expect(treeItem.contextValue).toBe("executable-task");
+    });
+
+    it("should not identify NOT_STARTED tasks as executable without isExecutable flag", () => {
+      const notStartedTask = {
+        ...mockTask,
+        status: TaskStatus.NOT_STARTED,
+        isExecutable: false,
+      };
+      const treeItem = new TaskTreeItem(notStartedTask, 0);
+      expect(treeItem.isExecutable).toBe(false);
+      expect(treeItem.contextValue).toBe("task-item");
+    });
+
+    it("should not identify NOT_STARTED tasks as executable with undefined isExecutable", () => {
+      const notStartedTask = {
+        ...mockTask,
+        status: TaskStatus.NOT_STARTED,
+        isExecutable: undefined,
+      };
+      const treeItem = new TaskTreeItem(notStartedTask, 0);
+      expect(treeItem.isExecutable).toBe(false);
+      expect(treeItem.contextValue).toBe("task-item");
+    });
+
+    it("should not identify tasks with other statuses as executable even with isExecutable flag", () => {
+      const inProgressTask = {
+        ...mockTask,
+        status: TaskStatus.IN_PROGRESS,
+        isExecutable: true,
+      };
+      const treeItem = new TaskTreeItem(inProgressTask, 0);
+      expect(treeItem.isExecutable).toBe(false);
+      expect(treeItem.contextValue).toBe("task-item");
+    });
+
+    it("should handle edge case where isExecutable is explicitly set to false", () => {
+      const explicitlyNonExecutableTask = {
+        ...mockTask,
+        status: TaskStatus.NOT_STARTED,
+        isExecutable: false,
+      };
+      const treeItem = new TaskTreeItem(explicitlyNonExecutableTask, 0);
+      expect(treeItem.isExecutable).toBe(false);
+      expect(treeItem.contextValue).toBe("task-item");
+      expect(treeItem.description).not.toContain("🤖");
     });
   });
 

@@ -8,7 +8,7 @@
 
 import * as vscode from "vscode";
 import { TaskTreeItem } from "./TaskTreeItem";
-import { Task } from "../types";
+import { Task, TaskStatus } from "../types";
 import { TasksDataService } from "../../services";
 
 /**
@@ -100,15 +100,59 @@ export class TaskTreeViewProvider
         return [this.createEmptyStateItem("no-tasks")];
       }
 
-      // Convert tasks to TaskTreeItems for display
+      // Task 3.2.5: Apply status filtering and display logic
+      // Filter tasks based on status and apply STATUS_DISPLAY_NAMES mapping
+      const filteredTasks = this.filterTasksByStatus(tasks);
+
+      // Convert filtered tasks to TaskTreeItems for display
       // Task 3.2.4: All tasks are top-level items in flat list structure
-      const taskTreeItems = tasks.map((task) => new TaskTreeItem(task));
+      const taskTreeItems = filteredTasks.map((task) => new TaskTreeItem(task));
       return taskTreeItems;
     } catch (error) {
       // Task 3.2.3: Handle service errors gracefully
       console.warn("Failed to retrieve tasks from TasksDataService:", error);
       return [this.createEmptyStateItem("error")];
     }
+  }
+
+  /**
+   * Filter tasks based on status and apply STATUS_DISPLAY_NAMES mapping
+   * Task 3.2.5: Status filtering and display logic
+   *
+   * @param tasks Array of tasks to filter
+   * @returns Filtered tasks with enhanced display properties
+   */
+  private filterTasksByStatus(tasks: Task[]): Task[] {
+    return tasks.map((task) => {
+      // Apply STATUS_DISPLAY_NAMES mapping for consistent status display
+      const enhancedTask = {
+        ...task,
+        statusDisplayName: this.getStatusDisplayName(task.status),
+      };
+
+      return enhancedTask;
+    });
+  }
+
+  /**
+   * Get status display name from STATUS_DISPLAY_NAMES mapping
+   * Task 3.2.5: Consistent status badge display
+   *
+   * @param status TaskStatus enum value
+   * @returns Formatted status display name
+   */
+  private getStatusDisplayName(status: TaskStatus): string {
+    // Import STATUS_DISPLAY_NAMES from types
+    const STATUS_DISPLAY_NAMES: Record<TaskStatus, string> = {
+      [TaskStatus.NOT_STARTED]: "not started",
+      [TaskStatus.IN_PROGRESS]: "in progress",
+      [TaskStatus.REVIEW]: "review",
+      [TaskStatus.COMPLETED]: "completed",
+      [TaskStatus.BLOCKED]: "blocked",
+      [TaskStatus.DEPRECATED]: "deprecated",
+    };
+
+    return STATUS_DISPLAY_NAMES[status] || status;
   }
 
   /**
