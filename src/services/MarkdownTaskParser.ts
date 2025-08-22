@@ -3,10 +3,17 @@
  * Recovery Task 2.1.2: Minimal class that compiles and can be instantiated
  * Recovery Task 2.1.3: Added parseTasksFromFile method with mock data
  * Recovery Task 2.1.4: Added parseTaskFromMarkdown method for individual task parsing
- * Requirements: 3.1-3.6, 4.1-4.4, 7.1-7.6
+ * Enhanced Task 2.6.1: Update mock data to include estimatedDuration and enhanced test results
+ * Requirements: 3.1-3.6, 4.1-4.4, 7.1-7.6, 6.8, 6.9, 7.7
  */
 
-import { Task, TaskStatus, TaskComplexity, TaskPriority } from "../types/tasks";
+import {
+  Task,
+  TaskStatus,
+  TaskComplexity,
+  TaskPriority,
+  STATUS_DISPLAY_NAMES,
+} from "../types/tasks";
 
 export class MarkdownTaskParser {
   constructor() {
@@ -14,65 +21,264 @@ export class MarkdownTaskParser {
   }
 
   /**
-   * Parse tasks from a markdown file and return mock Task data
-   * Recovery Task 2.1.3: Returns hardcoded mock data for now
+   * Parse tasks from a markdown file and return enhanced mock Task data
+   * Enhanced Task 2.6.1: Includes estimatedDuration, isExecutable, and enhanced test results
    *
    * @param filePath - Path to the markdown file (ignored for mock implementation)
-   * @returns Promise<Task[]> - Array of mock Task objects
+   * @returns Promise<Task[]> - Array of enhanced mock Task objects
    */
   async parseTasksFromFile(filePath: string): Promise<Task[]> {
-    // Hardcode 3 realistic Task objects with different statuses and properties
+    // Enhanced mock tasks with all new fields for Taskmaster Dashboard
     const mockTasks: Task[] = [
       {
-        id: "task-1",
-        title: "Setup Project Structure",
+        id: "3.1.1",
+        title: "Create TaskTreeItem class with basic properties",
         description:
-          "Create basic project directories and files for the AiDM VSCode extension",
+          "Create TaskTreeItem class extending vscode.TreeItem with basic properties (label, description, contextValue). Implement logic to assign appropriate icons based on task status.",
         status: TaskStatus.COMPLETED,
         complexity: TaskComplexity.LOW,
         dependencies: [],
-        requirements: ["1.1", "1.2"],
-        createdDate: new Date("2024-01-01"),
-        lastModified: new Date("2024-01-02"),
+        requirements: ["1.1"],
+        createdDate: "2024-08-22T09:00:00Z",
+        lastModified: "2024-08-22T10:30:00Z",
         assignee: "dev-team",
         estimatedHours: 2,
         actualHours: 1.5,
+        estimatedDuration: "15-20 min",
+        isExecutable: false,
         priority: TaskPriority.HIGH,
-        tags: ["setup", "foundation"],
+        tags: ["ui", "foundation"],
+        statusDisplayName: STATUS_DISPLAY_NAMES[TaskStatus.COMPLETED],
+        testStatus: {
+          lastRunDate: "2024-08-22T10:15:00Z",
+          totalTests: 8,
+          passedTests: 8,
+          failedTests: 0,
+          testSuite: "TaskTreeItem.test.ts",
+          coverage: 95,
+        },
       },
       {
-        id: "task-2",
-        title: "Implement Data Models",
+        id: "3.1.2",
+        title: "Add TaskTreeItem status indicator property",
         description:
-          "Create core data model interfaces for Task, Requirement, and Business Context",
+          "Add iconPath property with status-based theme icons to TaskTreeItem. Implement logic to assign appropriate icons based on task status.",
+        status: TaskStatus.NOT_STARTED,
+        complexity: TaskComplexity.LOW,
+        dependencies: ["3.1.1"],
+        requirements: ["2.2"],
+        createdDate: "2024-08-22T10:00:00Z",
+        lastModified: "2024-08-22T10:00:00Z",
+        assignee: "dev-team",
+        estimatedHours: 1,
+        actualHours: 0,
+        estimatedDuration: "15-20 min",
+        isExecutable: true,
+        priority: TaskPriority.MEDIUM,
+        tags: ["ui", "status-indicators"],
+        statusDisplayName: STATUS_DISPLAY_NAMES[TaskStatus.NOT_STARTED],
+        testStatus: undefined,
+      },
+      {
+        id: "2.5.3",
+        title: "Add tasks/update-status tool to SimpleMCPServer",
+        description:
+          "Implement the tasks/update-status MCP tool in SimpleMCPServer to handle task status update requests from the VSCode extension.",
+        status: TaskStatus.COMPLETED,
+        complexity: TaskComplexity.MEDIUM,
+        dependencies: ["2.5.1", "2.5.2"],
+        requirements: [],
+        createdDate: "2024-08-22T09:00:00Z",
+        lastModified: "2024-08-22T14:45:00Z",
+        assignee: "senior-dev",
+        estimatedHours: 4,
+        actualHours: 3.5,
+        estimatedDuration: "25-30 min",
+        isExecutable: false,
+        priority: TaskPriority.HIGH,
+        tags: ["mcp", "server", "api"],
+        statusDisplayName: STATUS_DISPLAY_NAMES[TaskStatus.COMPLETED],
+        testStatus: {
+          lastRunDate: "2024-08-22T13:15:00Z",
+          totalTests: 18,
+          passedTests: 15,
+          failedTests: 3,
+          failingTestsList: [
+            {
+              name: "should validate task status transitions",
+              message: "AssertionError: Expected 400 but got 200",
+              category: "assertion",
+              stackTrace:
+                "at Object.<anonymous> (/test/status-transitions.test.ts:45:12)",
+            },
+            {
+              name: "should handle invalid task IDs",
+              message: "TypeError: Cannot read property 'id' of undefined",
+              category: "type",
+              stackTrace: "at validateTaskId (/src/validation.ts:23:8)",
+            },
+            {
+              name: "should persist status changes",
+              message: "FileSystemError: Permission denied",
+              category: "filesystem",
+              stackTrace: "at writeFile (/src/file-utils.ts:67:15)",
+            },
+          ],
+          testSuite: "SimpleMCPServer.test.ts",
+          coverage: 85,
+        },
+      },
+      {
+        id: "2.6.1",
+        title:
+          "Update mock data to include estimatedDuration and enhanced test results",
+        description:
+          "Update existing mock task data in TasksDataService to include estimatedDuration field in '15-30 min' format, add isExecutable property logic for not_started tasks, and create comprehensive FailingTest mock data with proper error categories.",
         status: TaskStatus.IN_PROGRESS,
         complexity: TaskComplexity.MEDIUM,
-        dependencies: ["task-1"],
-        requirements: ["2.1", "2.2", "2.3"],
-        createdDate: new Date("2024-01-02"),
-        lastModified: new Date("2024-01-03"),
-        assignee: "senior-dev",
-        estimatedHours: 8,
-        actualHours: 4,
-        priority: TaskPriority.MEDIUM,
-        tags: ["data-models", "interfaces"],
+        dependencies: ["2.2.1", "2.2.2", "2.2.3"],
+        requirements: ["6.8", "6.9", "7.7"],
+        createdDate: "2024-08-22T14:00:00Z",
+        lastModified: "2024-08-22T15:30:00Z",
+        assignee: "dev-team",
+        estimatedHours: 3,
+        actualHours: 1.5,
+        estimatedDuration: "25-30 min",
+        isExecutable: false,
+        priority: TaskPriority.HIGH,
+        tags: ["mock-data", "enhancement", "testing"],
+        statusDisplayName: STATUS_DISPLAY_NAMES[TaskStatus.IN_PROGRESS],
+        testStatus: {
+          lastRunDate: "2024-08-22T15:00:00Z",
+          totalTests: 12,
+          passedTests: 10,
+          failedTests: 2,
+          failingTestsList: [
+            {
+              name: "should validate enhanced mock data structure",
+              message:
+                "AssertionError: Expected 'estimatedDuration' property to exist",
+              category: "assertion",
+              stackTrace:
+                "at Object.<anonymous> (/test/enhanced-mock-data.test.ts:23:8)",
+            },
+            {
+              name: "should handle missing test data gracefully",
+              message:
+                "TypeError: Cannot read property 'failingTestsList' of undefined",
+              category: "type",
+              stackTrace:
+                "at renderTestResults (/src/ui/test-results.ts:45:12)",
+            },
+          ],
+          testSuite: "EnhancedMockData.test.ts",
+          coverage: 88,
+        },
       },
       {
-        id: "task-3",
-        title: "Design MCP Server Architecture",
+        id: "3.2.1",
+        title: "Implement TimeFormattingUtility for relative timestamps",
         description:
-          "Design the Model Context Protocol server structure and communication patterns",
+          "Create TimeFormattingUtility class to format ISO timestamps as relative time strings (e.g., '2 hours ago', '3 days ago'). Integrate with Taskmaster Dashboard for consistent time display.",
+        status: TaskStatus.NOT_STARTED,
+        complexity: TaskComplexity.MEDIUM,
+        dependencies: ["3.1.1", "3.1.2"],
+        requirements: ["6.10", "7.8"],
+        createdDate: "2024-08-22T11:00:00Z",
+        lastModified: "2024-08-22T11:00:00Z",
+        assignee: "dev-team",
+        estimatedHours: 6,
+        actualHours: 0,
+        estimatedDuration: "30-45 min",
+        isExecutable: true,
+        priority: TaskPriority.MEDIUM,
+        tags: ["utility", "time-formatting", "ui"],
+        statusDisplayName: STATUS_DISPLAY_NAMES[TaskStatus.NOT_STARTED],
+        testStatus: undefined,
+      },
+      {
+        id: "4.1.1",
+        title: "Create comprehensive test suite for Taskmaster Dashboard",
+        description:
+          "Develop comprehensive test coverage for all Taskmaster Dashboard components including unit tests, integration tests, and end-to-end workflow testing.",
         status: TaskStatus.NOT_STARTED,
         complexity: TaskComplexity.HIGH,
-        dependencies: ["task-2"],
-        requirements: ["3.1", "3.2", "3.3", "3.4"],
-        createdDate: new Date("2024-01-03"),
-        lastModified: new Date("2024-01-03"),
-        assignee: "architect",
-        estimatedHours: 16,
+        dependencies: ["3.2.1", "2.6.1"],
+        requirements: ["7.9", "7.10"],
+        createdDate: "2024-08-22T12:00:00Z",
+        lastModified: "2024-08-22T12:00:00Z",
+        assignee: "qa-team",
+        estimatedHours: 12,
         actualHours: 0,
+        estimatedDuration: "45-60 min",
+        isExecutable: true,
         priority: TaskPriority.CRITICAL,
-        tags: ["architecture", "mcp", "protocol"],
+        tags: ["testing", "quality", "coverage"],
+        statusDisplayName: STATUS_DISPLAY_NAMES[TaskStatus.NOT_STARTED],
+        testStatus: undefined,
+      },
+      {
+        id: "5.1.1",
+        title: "Performance optimization for large task lists",
+        description:
+          "Implement virtual scrolling and efficient rendering for task lists with 100+ items. Optimize memory usage and response times for enterprise-scale deployments.",
+        status: TaskStatus.BLOCKED,
+        complexity: TaskComplexity.EXTREME,
+        dependencies: ["4.1.1", "3.2.1"],
+        requirements: ["8.1", "8.2"],
+        createdDate: "2024-08-22T13:00:00Z",
+        lastModified: "2024-08-22T16:00:00Z",
+        assignee: "performance-team",
+        estimatedHours: 20,
+        actualHours: 0,
+        estimatedDuration: "2-3 hours",
+        isExecutable: false,
+        priority: TaskPriority.CRITICAL,
+        tags: ["performance", "optimization", "scalability"],
+        statusDisplayName: STATUS_DISPLAY_NAMES[TaskStatus.BLOCKED],
+        testStatus: {
+          lastRunDate: "2024-08-22T15:30:00Z",
+          totalTests: 25,
+          passedTests: 20,
+          failedTests: 5,
+          failingTestsList: [
+            {
+              name: "should handle 1000+ tasks without memory issues",
+              message: "TimeoutError: Test exceeded 30 second limit",
+              category: "timeout",
+              stackTrace:
+                "at Object.<anonymous> (/test/performance/large-dataset.test.ts:78:15)",
+            },
+            {
+              name: "should maintain 60fps during scrolling",
+              message: "AssertionError: Expected frame rate >= 60, got 45",
+              category: "assertion",
+              stackTrace:
+                "at measureFrameRate (/test/performance/rendering.test.ts:156:23)",
+            },
+            {
+              name: "should handle network interruptions gracefully",
+              message: "NetworkError: Connection timeout after 5000ms",
+              category: "network",
+              stackTrace: "at fetchTasks (/src/services/tasks.ts:89:12)",
+            },
+            {
+              name: "should validate memory usage limits",
+              message: "AssertionError: Memory usage exceeded 100MB limit",
+              category: "assertion",
+              stackTrace:
+                "at Object.<anonymous> (/test/performance/memory.test.ts:234:18)",
+            },
+            {
+              name: "should handle file system errors",
+              message: "FileSystemError: Disk space exhausted",
+              category: "filesystem",
+              stackTrace: "at writeCacheFile (/src/cache/manager.ts:67:15)",
+            },
+          ],
+          testSuite: "Performance.test.ts",
+          coverage: 92,
+        },
       },
     ];
 
@@ -153,8 +359,8 @@ export class MarkdownTaskParser {
         complexity: TaskComplexity.LOW,
         dependencies: [],
         requirements: [id],
-        createdDate: new Date(),
-        lastModified: new Date(),
+        createdDate: new Date().toISOString(),
+        lastModified: new Date().toISOString(),
         priority: TaskPriority.MEDIUM,
       };
     } catch (error) {

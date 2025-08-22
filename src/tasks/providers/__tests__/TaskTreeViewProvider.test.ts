@@ -25,8 +25,8 @@ describe("TaskTreeViewProvider", () => {
       priority: TaskPriority.HIGH,
       dependencies: [],
       requirements: ["req-1", "req-2"],
-      createdDate: new Date(),
-      lastModified: new Date(),
+      createdDate: "2024-01-01T00:00:00Z",
+      lastModified: "2024-01-01T00:00:00Z",
       assignee: "developer",
       estimatedHours: 4,
       tags: ["test", "unit"],
@@ -78,8 +78,8 @@ describe("TaskTreeViewProvider", () => {
         complexity: TaskComplexity.HIGH,
         dependencies: ["task-100"],
         requirements: ["req-1"],
-        createdDate: new Date("2024-01-01"),
-        lastModified: new Date("2024-01-02"),
+        createdDate: "2024-01-01T00:00:00Z",
+        lastModified: "2024-01-02T00:00:00Z",
         priority: TaskPriority.CRITICAL,
         assignee: "developer",
         estimatedHours: 8,
@@ -107,8 +107,8 @@ describe("TaskTreeViewProvider", () => {
         complexity: TaskComplexity.LOW,
         dependencies: [],
         requirements: [],
-        createdDate: new Date("2024-01-01"),
-        lastModified: new Date("2024-01-01"),
+        createdDate: "2024-01-01T00:00:00Z",
+        lastModified: "2024-01-01T00:00:00Z",
         priority: TaskPriority.MEDIUM,
       };
 
@@ -139,8 +139,8 @@ describe("TaskTreeViewProvider", () => {
         complexity: TaskComplexity.MEDIUM,
         dependencies: ["child-1", "child-2"],
         requirements: [],
-        createdDate: new Date("2024-01-01"),
-        lastModified: new Date("2024-01-01"),
+        createdDate: "2024-01-01T00:00:00Z",
+        lastModified: "2024-01-01T00:00:00Z",
         priority: TaskPriority.HIGH,
       };
 

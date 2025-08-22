@@ -17,24 +17,27 @@ export interface Task {
   priority: TaskPriority;
   dependencies: string[];
   requirements: string[];
-  createdDate: Date;
-  lastModified: Date;
+  createdDate: string; // ISO date string for TimeFormattingUtility compatibility
+  lastModified: string; // ISO date string for TimeFormattingUtility compatibility
   assignee?: string;
   estimatedHours?: number;
   actualHours?: number;
+  estimatedDuration?: string; // "15-30 min", "20-25 min" format
+  isExecutable?: boolean; // true for not_started tasks eligible for Cursor integration
   testStatus?: TaskTestStatus;
   tags?: string[];
   parentTaskId?: string;
   subTasks?: string[];
   notes?: string;
-  dueDate?: Date;
+  dueDate?: string; // ISO date string
+  statusDisplayName?: string; // From STATUS_DISPLAY_NAMES mapping
 }
 
 /**
  * Test results associated with a task
  */
 export interface TaskTestStatus {
-  lastRunDate?: Date;
+  lastRunDate?: string; // ISO date string
   totalTests: number;
   passedTests: number;
   failedTests: number;
@@ -53,6 +56,7 @@ export interface FailingTest {
   name: string;
   message: string;
   stackTrace?: string;
+  category: "assertion" | "type" | "filesystem" | "timeout" | "network";
   testFile?: string;
   lineNumber?: number;
   expectedValue?: string;
@@ -80,7 +84,7 @@ export interface TaskContext {
   dependencies: Task[];
   blockers: Task[];
   testResults?: TaskTestStatus;
-  estimatedCompletion?: Date;
+  estimatedCompletion?: string; // ISO date string
   progressPercentage?: number;
 }
 
@@ -98,7 +102,7 @@ export interface TaskData {
  * Task metadata information
  */
 export interface TaskMetadata {
-  lastUpdated: Date;
+  lastUpdated: string; // ISO date string
   totalTasks: number;
   completedTasks: number;
   inProgressTasks: number;

@@ -61,8 +61,8 @@ describe("TaskStatusManager", () => {
           complexity: "low" as any,
           dependencies: [],
           requirements: ["1.1"],
-          createdDate: new Date(),
-          lastModified: new Date(),
+          createdDate: "2024-01-01T00:00:00Z",
+          lastModified: "2024-01-01T00:00:00Z",
         }
       ];
       mockParser.parseTasksFromFile.mockResolvedValue(mockTasks);
@@ -85,8 +85,8 @@ describe("TaskStatusManager", () => {
           complexity: "low" as any,
           dependencies: [],
           requirements: ["1.1", "1.2"],
-          createdDate: new Date("2024-01-01"),
-          lastModified: new Date("2024-01-02"),
+          createdDate: "2024-01-01T00:00:00Z",
+          lastModified: "2024-01-02T00:00:00Z",
           assignee: "dev-team",
           estimatedHours: 2,
           actualHours: 1.5,

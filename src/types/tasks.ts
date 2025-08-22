@@ -1,6 +1,7 @@
 /**
  * Task-related Type Definitions
  * Requirements: 2.1, 3.1-3.6, 4.1-4.4, 7.1-7.6
+ * Enhanced for Taskmaster Dashboard: 6.8, 6.9, 7.7
  */
 
 export interface Task {
@@ -11,24 +12,34 @@ export interface Task {
   complexity: TaskComplexity;
   dependencies: string[];
   requirements: string[];
-  createdDate: Date;
-  lastModified: Date;
+  createdDate: string; // ISO date string for TimeFormattingUtility compatibility
+  lastModified: string; // ISO date string for TimeFormattingUtility compatibility
   assignee?: string;
   estimatedHours?: number;
   actualHours?: number;
+  estimatedDuration?: string; // "15-30 min", "20-25 min" format
+  isExecutable?: boolean; // true for not_started tasks eligible for Cursor integration
   testStatus?: TestStatus;
   tags?: string[];
   priority?: TaskPriority;
+  statusDisplayName?: string; // From STATUS_DISPLAY_NAMES mapping
 }
 
 export interface TestStatus {
-  lastRunDate?: Date;
+  lastRunDate?: string; // ISO date string for TimeFormattingUtility compatibility
   totalTests: number;
   passedTests: number;
   failedTests: number;
-  failingTestsList?: { name: string; message: string; stackTrace?: string }[];
+  failingTestsList?: FailingTest[];
   testSuite?: string;
   coverage?: number;
+}
+
+export interface FailingTest {
+  name: string;
+  message: string;
+  stackTrace?: string;
+  category: "assertion" | "type" | "filesystem" | "timeout" | "network";
 }
 
 export enum TaskStatus {
@@ -53,6 +64,42 @@ export enum TaskPriority {
   HIGH = "high",
   CRITICAL = "critical",
 }
+
+// Status display mapping for UI consistency
+export const STATUS_DISPLAY_NAMES: Record<TaskStatus, string> = {
+  [TaskStatus.NOT_STARTED]: "not started",
+  [TaskStatus.IN_PROGRESS]: "in progress",
+  [TaskStatus.REVIEW]: "review",
+  [TaskStatus.COMPLETED]: "completed",
+  [TaskStatus.BLOCKED]: "blocked",
+  [TaskStatus.DEPRECATED]: "deprecated",
+};
+
+// Status-specific action configurations
+export const STATUS_ACTIONS: Record<TaskStatus, string[]> = {
+  [TaskStatus.NOT_STARTED]: [
+    "🤖 Execute with Cursor",
+    "Generate Prompt",
+    "View Requirements",
+  ],
+  [TaskStatus.IN_PROGRESS]: [
+    "Continue Work",
+    "Mark Complete",
+    "View Dependencies",
+  ],
+  [TaskStatus.REVIEW]: [
+    "Approve & Complete",
+    "Request Changes",
+    "View Implementation",
+  ],
+  [TaskStatus.COMPLETED]: ["View Code", "View Tests", "History"],
+  [TaskStatus.BLOCKED]: [
+    "View Blockers",
+    "Update Dependencies",
+    "Report Issue",
+  ],
+  [TaskStatus.DEPRECATED]: ["Archive", "View History"],
+};
 
 export interface ValidationResult {
   isValid: boolean;

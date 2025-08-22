@@ -70,8 +70,8 @@ describe('Task Types', () => {
         priority: TaskPriority.HIGH,
         dependencies: [],
         requirements: ['6.1', '6.2', '6.3'],
-        createdDate: new Date(),
-        lastModified: new Date(),
+        createdDate: "2024-01-01T00:00:00Z",
+        lastModified: "2024-01-01T00:00:00Z",
         assignee: 'developer',
         estimatedHours: 4,
         tags: ['setup', 'infrastructure']
@@ -88,7 +88,7 @@ describe('Task Types', () => {
   describe('TaskTestStatus interface', () => {
     it('should allow creation of valid test status', () => {
       const testStatus: TaskTestStatus = {
-        lastRunDate: new Date(),
+        lastRunDate: "2024-01-01T00:00:00Z",
         totalTests: 20,
         passedTests: 18,
         failedTests: 2,
@@ -138,8 +138,8 @@ describe('Task Types', () => {
         priority: TaskPriority.MEDIUM,
         dependencies: [],
         requirements: [],
-        createdDate: new Date(),
-        lastModified: new Date()
+        createdDate: "2024-01-01T00:00:00Z",
+        lastModified: "2024-01-01T00:00:00Z"
       };
 
       const context: TaskContext = {

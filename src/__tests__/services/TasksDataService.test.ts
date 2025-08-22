@@ -10,8 +10,8 @@
  */
 
 import { jest } from "@jest/globals";
-import { TasksDataService } from "../TasksDataService";
-import { TaskStatusManager } from "../TaskStatusManager";
+import { TasksDataService } from "../../services/TasksDataService";
+import { TaskStatusManager } from "../../services/TaskStatusManager";
 import {
   Task,
   TaskStatus,
@@ -22,7 +22,7 @@ import {
 import { AxiosInstance } from "axios";
 
 // Mock TaskStatusManager
-jest.mock("../TaskStatusManager");
+jest.mock("../../services/TaskStatusManager");
 
 describe("TasksDataService", () => {
   let service: TasksDataService;
@@ -115,6 +115,409 @@ describe("TasksDataService", () => {
       // This test ensures TypeScript compilation works
       expect(service).toHaveProperty("getTasks");
       expect(service).toHaveProperty("getTaskById");
+    });
+  });
+
+  // Enhanced Task 2.6.1: Enhanced mock data structure tests
+  describe("Enhanced Mock Data Structure", () => {
+    it("should return enhanced mock tasks with estimatedDuration field", async () => {
+      // Arrange - Override mock to simulate HTTP failure for fallback testing
+      const mockPost = (service as any).httpClient.post as jest.Mock;
+      (mockPost as any).mockRejectedValueOnce(new Error("Enhanced data test"));
+
+      const mockTasks: Task[] = [
+        {
+          id: "enhanced-task-1",
+          title: "Enhanced Task with Duration",
+          description: "Task with enhanced fields including estimatedDuration",
+          status: TaskStatus.NOT_STARTED,
+          complexity: TaskComplexity.LOW,
+          dependencies: [],
+          requirements: ["6.8"],
+          createdDate: "2024-08-22T10:00:00Z",
+          lastModified: "2024-08-22T10:00:00Z",
+          estimatedDuration: "15-20 min",
+          isExecutable: true,
+          priority: TaskPriority.MEDIUM,
+          statusDisplayName: STATUS_DISPLAY_NAMES[TaskStatus.NOT_STARTED],
+          testStatus: undefined,
+        },
+      ];
+      mockTaskStatusManager.getTasks.mockResolvedValue(mockTasks);
+
+      // Act
+      const result = await service.getTasks();
+
+      // Assert
+      expect(result).toHaveLength(1);
+      expect(result[0]).toHaveProperty("estimatedDuration", "15-20 min");
+      expect(result[0]).toHaveProperty("isExecutable", true);
+      expect(result[0]).toHaveProperty("statusDisplayName", "not started");
+      expect(result[0]).toHaveProperty("createdDate");
+      expect(typeof result[0].createdDate).toBe("string");
+      expect(result[0].createdDate).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/);
+    });
+
+    it("should handle tasks with comprehensive test results", async () => {
+      // Arrange - Override mock to simulate HTTP failure for fallback testing
+      const mockPost = (service as any).httpClient.post as jest.Mock;
+      (mockPost as any).mockRejectedValueOnce(new Error("Test results test"));
+
+      const mockTasks: Task[] = [
+        {
+          id: "test-results-task",
+          title: "Task with Comprehensive Test Results",
+          description: "Task demonstrating enhanced test status with failures",
+          status: TaskStatus.COMPLETED,
+          complexity: TaskComplexity.MEDIUM,
+          dependencies: ["task-1"],
+          requirements: ["6.9"],
+          createdDate: "2024-08-22T09:00:00Z",
+          lastModified: "2024-08-22T14:00:00Z",
+          estimatedDuration: "25-30 min",
+          isExecutable: false,
+          priority: TaskPriority.HIGH,
+          statusDisplayName: STATUS_DISPLAY_NAMES[TaskStatus.COMPLETED],
+          testStatus: {
+            lastRunDate: "2024-08-22T13:15:00Z",
+            totalTests: 18,
+            passedTests: 15,
+            failedTests: 3,
+            failingTestsList: [
+              {
+                name: "should validate task status transitions",
+                message: "AssertionError: Expected 400 but got 200",
+                category: "assertion",
+                stackTrace: "at Object.<anonymous> (/test/status-transitions.test.ts:45:12)",
+              },
+              {
+                name: "should handle invalid task IDs",
+                message: "TypeError: Cannot read property 'id' of undefined",
+                category: "type",
+                stackTrace: "at validateTaskId (/src/validation.ts:23:8)",
+              },
+              {
+                name: "should persist status changes",
+                message: "FileSystemError: Permission denied",
+                category: "filesystem",
+                stackTrace: "at writeFile (/src/file-utils.ts:67:15)",
+              },
+            ],
+            testSuite: "EnhancedMockData.test.ts",
+            coverage: 85,
+          },
+        },
+      ];
+      mockTaskStatusManager.getTasks.mockResolvedValue(mockTasks);
+
+      // Act
+      const result = await service.getTasks();
+
+      // Assert
+      expect(result).toHaveLength(1);
+      expect(result[0].testStatus).toBeDefined();
+      expect(result[0].testStatus?.totalTests).toBe(18);
+      expect(result[0].testStatus?.passedTests).toBe(15);
+      expect(result[0].testStatus?.failedTests).toBe(3);
+      expect(result[0].testStatus?.failingTestsList).toHaveLength(3);
+      
+      // Verify FailingTest structure
+      const failingTest = result[0].testStatus?.failingTestsList?.[0];
+      expect(failingTest).toHaveProperty("name");
+      expect(failingTest).toHaveProperty("message");
+      expect(failingTest).toHaveProperty("category");
+      expect(failingTest?.category).toBe("assertion");
+      
+      // Verify all error categories are represented
+      const categories = result[0].testStatus?.failingTestsList?.map(ft => ft.category);
+      expect(categories).toContain("assertion");
+      expect(categories).toContain("type");
+      expect(categories).toContain("filesystem");
+    });
+
+    it("should handle tasks with no test data gracefully", async () => {
+      // Arrange - Override mock to simulate HTTP failure for fallback testing
+      const mockPost = (service as any).httpClient.post as jest.Mock;
+      (mockPost as any).mockRejectedValueOnce(new Error("No test data test"));
+
+      const mockTasks: Task[] = [
+        {
+          id: "no-test-task",
+          title: "Task with No Test Data",
+          description: "Task demonstrating graceful handling of missing test status",
+          status: TaskStatus.NOT_STARTED,
+          complexity: TaskComplexity.LOW,
+          dependencies: [],
+          requirements: ["7.7"],
+          createdDate: "2024-08-22T11:00:00Z",
+          lastModified: "2024-08-22T11:00:00Z",
+          estimatedDuration: "10-15 min",
+          isExecutable: true,
+          priority: TaskPriority.LOW,
+          statusDisplayName: STATUS_DISPLAY_NAMES[TaskStatus.NOT_STARTED],
+          testStatus: undefined,
+        },
+      ];
+      mockTaskStatusManager.getTasks.mockResolvedValue(mockTasks);
+
+      // Act
+      const result = await service.getTasks();
+
+      // Assert
+      expect(result).toHaveLength(1);
+      expect(result[0].testStatus).toBeUndefined();
+      expect(result[0]).toHaveProperty("estimatedDuration", "10-15 min");
+      expect(result[0]).toHaveProperty("isExecutable", true);
+    });
+
+    it("should validate executable task indicators correctly", async () => {
+      // Arrange - Override mock to simulate HTTP failure for fallback testing
+      const mockPost = (service as any).httpClient.post as jest.Mock;
+      (mockPost as any).mockRejectedValueOnce(new Error("Executable test"));
+
+      const mockTasks: Task[] = [
+        {
+          id: "executable-task",
+          title: "Executable Task",
+          description: "Task that should be marked as executable",
+          status: TaskStatus.NOT_STARTED,
+          complexity: TaskComplexity.MEDIUM,
+          dependencies: [],
+          requirements: ["6.8"],
+          createdDate: "2024-08-22T12:00:00Z",
+          lastModified: "2024-08-22T12:00:00Z",
+          estimatedDuration: "20-25 min",
+          isExecutable: true,
+          priority: TaskPriority.HIGH,
+          statusDisplayName: STATUS_DISPLAY_NAMES[TaskStatus.NOT_STARTED],
+          testStatus: undefined,
+        },
+        {
+          id: "non-executable-task",
+          title: "Non-Executable Task",
+          description: "Task that should not be marked as executable",
+          status: TaskStatus.IN_PROGRESS,
+          complexity: TaskComplexity.HIGH,
+          dependencies: ["executable-task"],
+          requirements: ["6.9"],
+          createdDate: "2024-08-22T13:00:00Z",
+          lastModified: "2024-08-22T15:00:00Z",
+          estimatedDuration: "45-60 min",
+          isExecutable: false,
+          priority: TaskPriority.CRITICAL,
+          statusDisplayName: STATUS_DISPLAY_NAMES[TaskStatus.IN_PROGRESS],
+          testStatus: {
+            lastRunDate: "2024-08-22T14:30:00Z",
+            totalTests: 12,
+            passedTests: 8,
+            failedTests: 4,
+            failingTestsList: [
+              {
+                name: "should handle complex scenarios",
+                message: "TimeoutError: Test exceeded 30 second limit",
+                category: "timeout",
+              },
+            ],
+            testSuite: "ComplexTask.test.ts",
+            coverage: 75,
+          },
+        },
+      ];
+      mockTaskStatusManager.getTasks.mockResolvedValue(mockTasks);
+
+      // Act
+      const result = await service.getTasks();
+
+      // Assert
+      expect(result).toHaveLength(2);
+      
+      // First task should be executable
+      expect(result[0].status).toBe(TaskStatus.NOT_STARTED);
+      expect(result[0].isExecutable).toBe(true);
+      expect(result[0].statusDisplayName).toBe("not started");
+      
+      // Second task should not be executable
+      expect(result[1].status).toBe(TaskStatus.IN_PROGRESS);
+      expect(result[1].isExecutable).toBe(false);
+      expect(result[1].statusDisplayName).toBe("in progress");
+    });
+
+    it("should handle various estimatedDuration formats", async () => {
+      // Arrange - Override mock to simulate HTTP failure for fallback testing
+      const mockPost = (service as any).httpClient.post as jest.Mock;
+      (mockPost as any).mockRejectedValueOnce(new Error("Duration format test"));
+
+      const mockTasks: Task[] = [
+        {
+          id: "short-duration-task",
+          title: "Short Duration Task",
+          description: "Task with short estimated duration",
+          status: TaskStatus.NOT_STARTED,
+          complexity: TaskComplexity.LOW,
+          dependencies: [],
+          requirements: ["7.7"],
+          createdDate: "2024-08-22T10:00:00Z",
+          lastModified: "2024-08-22T10:00:00Z",
+          estimatedDuration: "5-10 min",
+          isExecutable: true,
+          priority: TaskPriority.LOW,
+          statusDisplayName: STATUS_DISPLAY_NAMES[TaskStatus.NOT_STARTED],
+          testStatus: undefined,
+        },
+        {
+          id: "medium-duration-task",
+          title: "Medium Duration Task",
+          description: "Task with medium estimated duration",
+          status: TaskStatus.IN_PROGRESS,
+          complexity: TaskComplexity.MEDIUM,
+          dependencies: ["short-duration-task"],
+          requirements: ["6.8"],
+          createdDate: "2024-08-22T11:00:00Z",
+          lastModified: "2024-08-22T14:00:00Z",
+          estimatedDuration: "30-45 min",
+          isExecutable: false,
+          priority: TaskPriority.MEDIUM,
+          statusDisplayName: STATUS_DISPLAY_NAMES[TaskStatus.IN_PROGRESS],
+          testStatus: {
+            lastRunDate: "2024-08-22T13:00:00Z",
+            totalTests: 15,
+            passedTests: 12,
+            failedTests: 3,
+            failingTestsList: [
+              {
+                name: "should validate medium complexity scenarios",
+                message: "NetworkError: Connection timeout after 5000ms",
+                category: "network",
+              },
+            ],
+            testSuite: "MediumTask.test.ts",
+            coverage: 80,
+          },
+        },
+        {
+          id: "long-duration-task",
+          title: "Long Duration Task",
+          description: "Task with long estimated duration",
+          status: TaskStatus.NOT_STARTED,
+          complexity: TaskComplexity.HIGH,
+          dependencies: ["medium-duration-task"],
+          requirements: ["6.9"],
+          createdDate: "2024-08-22T12:00:00Z",
+          lastModified: "2024-08-22T12:00:00Z",
+          estimatedDuration: "2-3 hours",
+          isExecutable: true,
+          priority: TaskPriority.HIGH,
+          statusDisplayName: STATUS_DISPLAY_NAMES[TaskStatus.NOT_STARTED],
+          testStatus: undefined,
+        },
+      ];
+      mockTaskStatusManager.getTasks.mockResolvedValue(mockTasks);
+
+      // Act
+      const result = await service.getTasks();
+
+      // Assert
+      expect(result).toHaveLength(3);
+      expect(result[0].estimatedDuration).toBe("5-10 min");
+      expect(result[1].estimatedDuration).toBe("30-45 min");
+      expect(result[2].estimatedDuration).toBe("2-3 hours");
+      
+      // Verify duration correlates with complexity
+      expect(result[0].complexity).toBe(TaskComplexity.LOW);
+      expect(result[1].complexity).toBe(TaskComplexity.MEDIUM);
+      expect(result[2].complexity).toBe(TaskComplexity.HIGH);
+    });
+
+    it("should generate realistic test summaries for UI display", async () => {
+      // Arrange - Override mock to simulate HTTP failure for fallback testing
+      const mockPost = (service as any).httpClient.post as jest.Mock;
+      (mockPost as any).mockRejectedValueOnce(new Error("Test summary test"));
+
+      const mockTasks: Task[] = [
+        {
+          id: "all-passing-task",
+          title: "All Passing Tests Task",
+          description: "Task with all tests passing",
+          status: TaskStatus.COMPLETED,
+          complexity: TaskComplexity.LOW,
+          dependencies: [],
+          requirements: ["7.7"],
+          createdDate: "2024-08-22T09:00:00Z",
+          lastModified: "2024-08-22T11:00:00Z",
+          estimatedDuration: "15-20 min",
+          isExecutable: false,
+          priority: TaskPriority.MEDIUM,
+          statusDisplayName: STATUS_DISPLAY_NAMES[TaskStatus.COMPLETED],
+          testStatus: {
+            lastRunDate: "2024-08-22T10:30:00Z",
+            totalTests: 10,
+            passedTests: 10,
+            failedTests: 0,
+            testSuite: "AllPassing.test.ts",
+            coverage: 100,
+          },
+        },
+        {
+          id: "mixed-results-task",
+          title: "Mixed Test Results Task",
+          description: "Task with some tests passing and some failing",
+          status: TaskStatus.IN_PROGRESS,
+          complexity: TaskComplexity.MEDIUM,
+          dependencies: ["all-passing-task"],
+          requirements: ["6.8"],
+          createdDate: "2024-08-22T10:00:00Z",
+          lastModified: "2024-08-22T15:00:00Z",
+          estimatedDuration: "25-30 min",
+          isExecutable: false,
+          priority: TaskPriority.HIGH,
+          statusDisplayName: STATUS_DISPLAY_NAMES[TaskStatus.IN_PROGRESS],
+          testStatus: {
+            lastRunDate: "2024-08-22T14:00:00Z",
+            totalTests: 20,
+            passedTests: 15,
+            failedTests: 5,
+            failingTestsList: [
+              {
+                name: "should handle edge cases",
+                message: "AssertionError: Expected true but got false",
+                category: "assertion",
+              },
+              {
+                name: "should validate input parameters",
+                message: "TypeError: Parameter 'id' must be a string",
+                category: "type",
+              },
+            ],
+            testSuite: "MixedResults.test.ts",
+            coverage: 75,
+          },
+        },
+      ];
+      mockTaskStatusManager.getTasks.mockResolvedValue(mockTasks);
+
+      // Act
+      const result = await service.getTasks();
+
+      // Assert
+      expect(result).toHaveLength(2);
+      
+      // First task: all passing tests
+      expect(result[0].testStatus?.totalTests).toBe(10);
+      expect(result[0].testStatus?.passedTests).toBe(10);
+      expect(result[0].testStatus?.failedTests).toBe(0);
+      expect(result[0].testStatus?.coverage).toBe(100);
+      
+      // Second task: mixed results
+      expect(result[1].testStatus?.totalTests).toBe(20);
+      expect(result[1].testStatus?.passedTests).toBe(15);
+      expect(result[1].testStatus?.failedTests).toBe(5);
+      expect(result[1].testStatus?.coverage).toBe(75);
+      
+      // Verify failing tests have proper categories
+      const failingTests = result[1].testStatus?.failingTestsList;
+      expect(failingTests).toHaveLength(2);
+      expect(failingTests?.[0].category).toBe("assertion");
+      expect(failingTests?.[1].category).toBe("type");
     });
   });
 
@@ -231,90 +634,6 @@ describe("TasksDataService", () => {
         "TaskStatusManager getTaskById failed"
       );
       expect(mockTaskStatusManager.getTaskById).toHaveBeenCalledWith("test-id");
-    });
-  });
-
-  // Legacy tests for backward compatibility (can be removed after integration is complete)
-  describe("Legacy Mock Data Tests (Deprecated)", () => {
-    it("should return array of valid Task objects via fallback", async () => {
-      // Arrange - Override mock to simulate HTTP failure for fallback testing
-      const mockPost = (service as any).httpClient.post as jest.Mock;
-      (mockPost as any).mockRejectedValueOnce(
-        new Error("Legacy fallback test")
-      );
-
-      const mockTasks: Task[] = [
-        {
-          id: "legacy-task-1",
-          title: "Legacy Task 1",
-          description: "Legacy task for backward compatibility",
-          status: TaskStatus.COMPLETED,
-          complexity: TaskComplexity.LOW,
-          dependencies: [],
-          requirements: ["1.1"],
-          createdDate: "2024-01-01T00:00:00Z",
-          lastModified: "2024-01-02T00:00:00Z",
-          priority: TaskPriority.HIGH,
-          estimatedDuration: "15-20 min",
-          isExecutable: false,
-          statusDisplayName: STATUS_DISPLAY_NAMES[TaskStatus.COMPLETED],
-        },
-      ];
-      mockTaskStatusManager.getTasks.mockResolvedValue(mockTasks);
-
-      // Act
-      const tasks = await service.getTasks();
-
-      // Assert
-      expect(tasks.length).toBeGreaterThan(0);
-      tasks.forEach((task) => {
-        expect(task).toHaveProperty("id");
-        expect(task).toHaveProperty("title");
-        expect(task).toHaveProperty("description");
-        expect(task).toHaveProperty("status");
-        expect(task).toHaveProperty("complexity");
-        expect(task).toHaveProperty("dependencies");
-        expect(task).toHaveProperty("requirements");
-        expect(task).toHaveProperty("createdDate");
-        expect(task).toHaveProperty("lastModified");
-      });
-    });
-
-    it("should return consistent data on multiple calls via fallback", async () => {
-      // Arrange - Override mock to simulate HTTP failure for fallback testing
-      const mockPost = (service as any).httpClient.post as jest.Mock;
-      (mockPost as any).mockRejectedValueOnce(new Error("First call fallback"));
-      (mockPost as any).mockRejectedValueOnce(
-        new Error("Second call fallback")
-      );
-
-      const mockTasks: Task[] = [
-        {
-          id: "consistent-task",
-          title: "Consistent Task",
-          description: "Task that should be consistent across calls",
-          status: TaskStatus.IN_PROGRESS,
-          complexity: TaskComplexity.MEDIUM,
-          dependencies: [],
-          requirements: ["2.1"],
-          createdDate: "2024-01-01T00:00:00Z",
-          lastModified: "2024-01-02T00:00:00Z",
-          priority: TaskPriority.MEDIUM,
-          estimatedDuration: "20-25 min",
-          isExecutable: false,
-          statusDisplayName: STATUS_DISPLAY_NAMES[TaskStatus.IN_PROGRESS],
-        },
-      ];
-      mockTaskStatusManager.getTasks.mockResolvedValue(mockTasks);
-
-      // Act
-      const firstCall = await service.getTasks();
-      const secondCall = await service.getTasks();
-
-      // Assert
-      expect(firstCall).toEqual(secondCall);
-      expect(firstCall.length).toBe(secondCall.length);
-      expect(mockTaskStatusManager.getTasks).toHaveBeenCalledTimes(2);
     });
   });
 
