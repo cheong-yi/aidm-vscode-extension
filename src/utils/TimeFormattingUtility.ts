@@ -1,12 +1,13 @@
 /**
  * TimeFormattingUtility - Time formatting and parsing utilities
- * Task: 2.7.1 - Create TimeFormattingUtility class structure
+ * Task: 2.7.3 - Add time formatting caching mechanism
  * Requirements: 4.8, 9.1, 9.3
  *
  * Provides consistent time formatting for UI components including:
  * - Relative time formatting ("2 hours ago")
  * - Duration formatting ("45 min", "2 hours 30 min")
  * - Estimated duration parsing ("15-30 min" -> 22.5)
+ * - Performance-optimized caching with 1-minute TTL
  */
 
 import { Logger, LogLevel } from "./logger";
@@ -15,17 +16,30 @@ export interface TimeFormattingUtility {
   formatRelativeTime(isoDate: string): string;
   formatDuration(minutes: number): string;
   parseEstimatedDuration(duration: string): number; // "15-30 min" -> 22.5
+
+  // Enhanced caching methods
+  clearCache(): void;
+  getCacheStats(): {
+    hits: number;
+    misses: number;
+    size: number;
+    hitRate: number;
+  };
 }
 
 export class TimeFormattingUtility implements TimeFormattingUtility {
   private logger: Logger;
 
-  // Cache for relative time formatting to improve performance
+  // Enhanced cache for relative time formatting with TTL tracking
   private relativeTimeCache: Map<
     string,
-    { formatted: string; timestamp: number }
+    { formatted: string; timestamp: number; ttl: number }
   > = new Map();
   private readonly cacheTTL = 60000; // 1 minute cache TTL
+
+  // Cache performance tracking
+  private cacheHits = 0;
+  private cacheMisses = 0;
 
   constructor() {
     this.logger = new Logger("TimeFormattingUtility", {
@@ -38,6 +52,7 @@ export class TimeFormattingUtility implements TimeFormattingUtility {
   /**
    * Formats an ISO date string to relative time (e.g., "2 hours ago")
    * Handles invalid dates gracefully by returning the original string
+   * Now includes performance-optimized caching with 1-minute TTL
    *
    * @param isoDate - ISO 8601 date string
    * @returns Human-readable relative time or original string on error
@@ -64,14 +79,28 @@ export class TimeFormattingUtility implements TimeFormattingUtility {
       return "invalid date";
     }
 
-    // TEMPORARILY DISABLED FOR TASK 2.7.2 - Core calculation logic
-    // TODO: 2.7.3 - Assess and optimize caching implementation
-    // Check cache first for performance
-    // const cacheKey = isoDate;
-    // const cached = this.relativeTimeCache.get(cacheKey);
-    // if (cached && Date.now() - cached.timestamp < this.cacheTTL) {
-    //   return cached.formatted;
-    // }
+    // Check cache first for performance optimization
+    const cacheKey = isoDate;
+    const cached = this.relativeTimeCache.get(cacheKey);
+    const now = Date.now();
+
+    if (cached && now - cached.timestamp < cached.ttl) {
+      // Cache hit - return cached value
+      this.cacheHits++;
+      this.logger.debug("Cache hit for relative time formatting", {
+        isoDate,
+        cachedValue: cached.formatted,
+        age: now - cached.timestamp,
+      });
+      return cached.formatted;
+    }
+
+    // Cache miss or expired - calculate and cache
+    this.cacheMisses++;
+    this.logger.debug("Cache miss for relative time formatting", {
+      isoDate,
+      cacheSize: this.relativeTimeCache.size,
+    });
 
     try {
       const date = new Date(isoDate);
@@ -82,8 +111,7 @@ export class TimeFormattingUtility implements TimeFormattingUtility {
         return isoDate; // Return original string as fallback
       }
 
-      const now = new Date();
-      const diffMs = now.getTime() - date.getTime();
+      const diffMs = now - date.getTime();
       const diffSeconds = Math.floor(diffMs / 1000);
       const diffMinutes = Math.floor(diffSeconds / 60);
       const diffHours = Math.floor(diffMinutes / 60);
@@ -148,13 +176,15 @@ export class TimeFormattingUtility implements TimeFormattingUtility {
         }
       }
 
-      // TEMPORARILY DISABLED FOR TASK 2.7.2 - Core calculation logic
-      // TODO: 2.7.3 - Assess and optimize caching implementation
-      // Cache the result
-      // this.relativeTimeCache.set(cacheKey, {
-      //   formatted,
-      //   timestamp: Date.now(),
-      // });
+      // Cache the result with TTL
+      this.relativeTimeCache.set(cacheKey, {
+        formatted,
+        timestamp: now,
+        ttl: this.cacheTTL,
+      });
+
+      // Clean up expired cache entries to prevent memory leaks
+      this.cleanupExpiredCache();
 
       return formatted;
     } catch (error) {
@@ -323,23 +353,66 @@ export class TimeFormattingUtility implements TimeFormattingUtility {
   }
 
   /**
-   * Clears the relative time cache
+   * Clears the relative time cache and resets cache statistics
    * Useful for testing or when cache needs to be refreshed
    */
   clearCache(): void {
     this.relativeTimeCache.clear();
-    this.logger.debug("Relative time cache cleared");
+    this.cacheHits = 0;
+    this.cacheMisses = 0;
+    this.logger.debug("Relative time cache cleared and statistics reset");
   }
 
   /**
    * Gets cache statistics for monitoring
    *
-   * @returns Cache statistics object
+   * @returns Cache statistics object with hits, misses, size, and calculated hit rate
    */
-  getCacheStats(): { size: number; hitRate: number } {
+  getCacheStats(): {
+    hits: number;
+    misses: number;
+    size: number;
+    hitRate: number;
+  } {
     const size = this.relativeTimeCache.size;
-    // Note: In a real implementation, you'd track cache hits/misses
-    // For now, return basic stats
-    return { size, hitRate: 0.8 }; // Estimated hit rate
+    const totalRequests = this.cacheHits + this.cacheMisses;
+    const hitRate = totalRequests > 0 ? this.cacheHits / totalRequests : 0;
+
+    return {
+      hits: this.cacheHits,
+      misses: this.cacheMisses,
+      size,
+      hitRate: Math.round(hitRate * 100) / 100, // Round to 2 decimal places
+    };
+  }
+
+  /**
+   * Cleans up expired cache entries to prevent memory leaks
+   * Called automatically after each cache miss to maintain cache efficiency
+   */
+  private cleanupExpiredCache(): void {
+    const now = Date.now();
+    const expiredKeys: string[] = [];
+
+    // Collect expired keys first to avoid modifying map during iteration
+    this.relativeTimeCache.forEach((entry, key) => {
+      if (now - entry.timestamp >= entry.ttl) {
+        expiredKeys.push(key);
+      }
+    });
+
+    // Remove expired entries
+    expiredKeys.forEach((key) => {
+      this.relativeTimeCache.delete(key);
+      this.logger.debug("Expired cache entry cleared", { key });
+    });
+
+    // Log cleanup summary if entries were removed
+    if (expiredKeys.length > 0) {
+      this.logger.debug("Cache cleanup completed", {
+        expiredEntries: expiredKeys.length,
+        remainingEntries: this.relativeTimeCache.size,
+      });
+    }
   }
 }

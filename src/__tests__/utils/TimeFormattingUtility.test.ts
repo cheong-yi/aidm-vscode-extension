@@ -524,42 +524,188 @@ describe("TimeFormattingUtility", () => {
     });
   });
 
-  describe("Caching behavior (commented out for task 2.7.2)", () => {
-    it("should provide cache statistics", () => {
+  describe("Caching behavior (implemented for task 2.7.3)", () => {
+    it("should provide accurate cache statistics", () => {
       const stats = utility.getCacheStats();
+      expect(stats).toHaveProperty("hits");
+      expect(stats).toHaveProperty("misses");
       expect(stats).toHaveProperty("size");
       expect(stats).toHaveProperty("hitRate");
+      expect(typeof stats.hits).toBe("number");
+      expect(typeof stats.misses).toBe("number");
       expect(typeof stats.size).toBe("number");
       expect(typeof stats.hitRate).toBe("number");
+
+      // Initial state should be zero
+      expect(stats.hits).toBe(0);
+      expect(stats.misses).toBe(0);
+      expect(stats.size).toBe(0);
+      expect(stats.hitRate).toBe(0);
     });
 
-    it("should clear cache completely", () => {
-      // Since caching is commented out for task 2.7.2, the cache will be empty
-      // This test documents the expected behavior when caching is disabled
+    it("should clear cache completely and reset statistics", () => {
+      // First, make some calls to populate cache
+      const isoDate = "2024-08-22T14:00:00Z";
+      utility.formatRelativeTime(isoDate); // First call - cache miss
+      utility.formatRelativeTime(isoDate); // Second call - cache hit
+
       const statsBefore = utility.getCacheStats();
-      expect(statsBefore.size).toBe(0); // Cache is empty when disabled
+      expect(statsBefore.hits).toBeGreaterThan(0);
+      expect(statsBefore.misses).toBeGreaterThan(0);
+      expect(statsBefore.size).toBeGreaterThan(0);
 
       utility.clearCache();
 
       const statsAfter = utility.getCacheStats();
-      expect(statsAfter.size).toBe(0); // Still empty after clearing
+      expect(statsAfter.hits).toBe(0);
+      expect(statsAfter.misses).toBe(0);
+      expect(statsAfter.size).toBe(0);
+      expect(statsAfter.hitRate).toBe(0);
     });
 
-    it("should demonstrate caching behavior when enabled", () => {
-      // This test documents the expected caching behavior for task 2.7.3
+    it("should demonstrate caching behavior with TTL", () => {
       const isoDate = "2024-08-22T14:00:00Z";
 
-      // First call should format
+      // First call should be a cache miss
       const firstResult = utility.formatRelativeTime(isoDate);
       expect(firstResult).toBe("1 hour ago");
 
-      // Second call should also format (since caching is disabled for 2.7.2)
+      // Second call should be a cache hit
       const secondResult = utility.formatRelativeTime(isoDate);
       expect(secondResult).toBe("1 hour ago");
 
-      // Verify cache stats (should be 0 since caching is disabled)
+      // Verify cache stats show hit and miss
       const stats = utility.getCacheStats();
-      expect(stats.size).toBe(0);
+      expect(stats.hits).toBe(1);
+      expect(stats.misses).toBe(1);
+      expect(stats.size).toBe(1);
+      expect(stats.hitRate).toBe(0.5);
+    });
+
+    it("should handle cache hits efficiently", () => {
+      const isoDate = "2024-08-22T14:00:00Z";
+
+      // First call to populate cache
+      utility.formatRelativeTime(isoDate);
+
+      // Multiple cache hits should be fast
+      const startTime = performance.now();
+
+      for (let i = 0; i < 100; i++) {
+        utility.formatRelativeTime(isoDate);
+      }
+
+      const endTime = performance.now();
+      const totalTime = endTime - startTime;
+
+      // Cache hits should be very fast (<5ms total for 100 calls)
+      expect(totalTime).toBeLessThan(5);
+
+      // Verify cache statistics
+      const stats = utility.getCacheStats();
+      expect(stats.hits).toBe(100);
+      expect(stats.misses).toBe(1);
+      expect(stats.hitRate).toBeCloseTo(0.99, 2); // 99% hit rate
+    });
+
+    it("should handle cache misses and recalculations", () => {
+      const isoDate1 = "2024-08-22T14:00:00Z";
+      const isoDate2 = "2024-08-22T13:00:00Z";
+
+      // First call to each date
+      utility.formatRelativeTime(isoDate1);
+      utility.formatRelativeTime(isoDate2);
+
+      // Verify both are cached
+      const statsAfterFirst = utility.getCacheStats();
+      expect(statsAfterFirst.size).toBe(2);
+      expect(statsAfterFirst.misses).toBe(2);
+
+      // Second call to each date should be hits
+      utility.formatRelativeTime(isoDate1);
+      utility.formatRelativeTime(isoDate2);
+
+      const statsAfterSecond = utility.getCacheStats();
+      expect(statsAfterSecond.hits).toBe(2);
+      expect(statsAfterSecond.misses).toBe(2);
+      expect(statsAfterSecond.size).toBe(2);
+    });
+
+    it("should maintain cache size within reasonable limits", () => {
+      // Make multiple unique calls to test cache size management
+      const baseDate = new Date("2024-08-22T15:00:00Z");
+
+      for (let i = 0; i < 50; i++) {
+        const testDate = new Date(baseDate.getTime() + i * 60000); // Each minute apart
+        utility.formatRelativeTime(testDate.toISOString());
+      }
+
+      const stats = utility.getCacheStats();
+      expect(stats.size).toBe(50);
+      expect(stats.misses).toBe(50);
+      expect(stats.hits).toBe(0);
+
+      // Cache should handle reasonable sizes without issues
+      expect(stats.size).toBeLessThanOrEqual(100);
+    });
+
+    it("should handle TTL expiration correctly", () => {
+      const isoDate = "2024-08-22T14:00:00Z";
+
+      // First call - cache miss
+      const firstResult = utility.formatRelativeTime(isoDate);
+      expect(firstResult).toBe("1 hour ago");
+
+      // Second call - cache hit
+      const secondResult = utility.formatRelativeTime(isoDate);
+      expect(secondResult).toBe("1 hour ago");
+
+      // Verify cache hit
+      const statsAfterHit = utility.getCacheStats();
+      expect(statsAfterHit.hits).toBe(1);
+      expect(statsAfterHit.misses).toBe(1);
+
+      // Simulate time passing by 1 minute and 1 second (beyond TTL)
+      const originalDateNow = Date.now;
+      const futureTime = Date.now() + 61000; // 1 minute + 1 second
+      Date.now = jest.fn(() => futureTime);
+
+      // Third call should be cache miss due to TTL expiration
+      const thirdResult = utility.formatRelativeTime(isoDate);
+      expect(thirdResult).toBe("1 hour 1 minutes ago"); // Time has advanced, note plural "minutes"
+
+      // Verify cache miss and new entry
+      const statsAfterExpiration = utility.getCacheStats();
+      expect(statsAfterExpiration.misses).toBe(2); // First call + expired call
+      expect(statsAfterExpiration.hits).toBe(1); // Second call was hit
+
+      // Restore original Date.now
+      Date.now = originalDateNow;
+    });
+
+    it("should provide significant performance improvement with caching", () => {
+      const isoDate = "2024-08-22T14:00:00Z";
+
+      // First call - cache miss (baseline performance)
+      utility.formatRelativeTime(isoDate);
+
+      // Second call - cache hit (cached performance)
+      const startTimeHit = performance.now();
+      utility.formatRelativeTime(isoDate);
+      const endTimeHit = performance.now();
+      const hitTime = endTimeHit - startTimeHit;
+
+      // Cache hit should be very fast
+      expect(hitTime).toBeLessThan(5); // Under 5ms as per performance target
+
+      // Verify cache statistics
+      const stats = utility.getCacheStats();
+      expect(stats.hits).toBe(1);
+      expect(stats.misses).toBe(1);
+      expect(stats.hitRate).toBe(0.5); // 50% hit rate
+
+      // Verify that cache is working by checking size
+      expect(stats.size).toBe(1);
     });
   });
 });
