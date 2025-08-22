@@ -24,8 +24,8 @@ export class TaskTreeItem extends vscode.TreeItem {
   public readonly statusDisplayName: string;
 
   constructor(task: Task, dependencyLevel: number = 0) {
-    // Format label as "Task [ID]: [Title]" to match mockup structure
-    const formattedLabel = `Task ${task.id}: ${task.title}`;
+    // Format label as "[ID]: [Title]" to match mockup structure (without "Task" prefix)
+    const formattedLabel = `${task.id}: ${task.title}`;
 
     // Determine collapsible state based on task content analysis
     const collapsibleState = TaskTreeItem.determineCollapsibleState(task);
@@ -36,14 +36,15 @@ export class TaskTreeItem extends vscode.TreeItem {
     this.task = task;
     this.hasChildren = TaskTreeItem.hasExpandableContent(task);
     this.dependencyLevel = dependencyLevel;
-    
+
     // Task 3.1.5: Executable state indicators
     // Determine if task is executable (not_started status)
     this.isExecutable = task.status === TaskStatus.NOT_STARTED;
-    
+
     // Set contextValue for command visibility: "executable-task" vs "task"
     this.contextValue = this.isExecutable ? "executable-task" : "task";
-    
+
+    // Task 3.1.6: Enhanced display properties
     this.estimatedDuration = task.estimatedDuration;
     this.statusDisplayName =
       task.statusDisplayName || STATUS_DISPLAY_NAMES[task.status];
@@ -65,18 +66,20 @@ export class TaskTreeItem extends vscode.TreeItem {
   /**
    * Determine if task should be collapsible based on content analysis
    * Requirements: 3.1.3 - Collapsible state logic for expandable list design
-   * 
+   *
    * Tasks are collapsible if they have:
    * - Detailed description
    * - Dependencies
    * - Test status
    * - Estimated duration
    * - Tags or other metadata
-   * 
+   *
    * @param task The task to analyze
    * @returns vscode.TreeItemCollapsibleState
    */
-  private static determineCollapsibleState(task: Task): vscode.TreeItemCollapsibleState {
+  private static determineCollapsibleState(
+    task: Task
+  ): vscode.TreeItemCollapsibleState {
     if (TaskTreeItem.hasExpandableContent(task)) {
       return vscode.TreeItemCollapsibleState.Collapsed;
     }
@@ -86,25 +89,28 @@ export class TaskTreeItem extends vscode.TreeItem {
   /**
    * Check if task has expandable content that should be shown in expanded state
    * Requirements: 3.1.3 - hasChildren property logic for expandable content
-   * 
+   *
    * @param task The task to check
    * @returns boolean indicating if task has expandable content
    */
   private static hasExpandableContent(task: Task): boolean {
     // Check for detailed description (more than just basic text)
-    const hasDetailedDescription = task.description && 
-      task.description.trim().length > 20; // Basic threshold for "detailed" content
+    const hasDetailedDescription =
+      task.description && task.description.trim().length > 20; // Basic threshold for "detailed" content
 
     // Check for dependencies
     const hasDependencies = task.dependencies && task.dependencies.length > 0;
 
     // Check for test status
-    const hasTestStatus = task.testStatus && 
-      (task.testStatus.totalTests > 0 || (task.testStatus.failingTestsList && task.testStatus.failingTestsList.length > 0));
+    const hasTestStatus =
+      task.testStatus &&
+      (task.testStatus.totalTests > 0 ||
+        (task.testStatus.failingTestsList &&
+          task.testStatus.failingTestsList.length > 0));
 
     // Check for estimated duration
-    const hasEstimatedDuration = task.estimatedDuration && 
-      task.estimatedDuration.trim().length > 0;
+    const hasEstimatedDuration =
+      task.estimatedDuration && task.estimatedDuration.trim().length > 0;
 
     // Check for tags
     const hasTags = task.tags && task.tags.length > 0;
@@ -113,16 +119,20 @@ export class TaskTreeItem extends vscode.TreeItem {
     const hasRequirements = task.requirements && task.requirements.length > 0;
 
     // Check for assignee
-    const hasAssignee = Boolean(task.assignee && task.assignee.trim().length > 0);
+    const hasAssignee = Boolean(
+      task.assignee && task.assignee.trim().length > 0
+    );
 
     // Task is expandable if it has any of these content types
-    return Boolean(hasDetailedDescription || 
-           hasDependencies || 
-           hasTestStatus || 
-           hasEstimatedDuration || 
-           hasTags || 
-           hasRequirements || 
-           hasAssignee);
+    return Boolean(
+      hasDetailedDescription ||
+        hasDependencies ||
+        hasTestStatus ||
+        hasEstimatedDuration ||
+        hasTags ||
+        hasRequirements ||
+        hasAssignee
+    );
   }
 
   /**
@@ -145,22 +155,25 @@ export class TaskTreeItem extends vscode.TreeItem {
   /**
    * Generate comprehensive tooltip text for task display
    * Requirements: 3.1.4 - Add TaskTreeItem tooltip functionality
-   * 
+   * Enhanced for Task 3.1.6 - Include all enhanced display properties
+   *
    * Tooltip includes:
    * - Task ID and full title
    * - Description (if available)
    * - Status and complexity
    * - Dependencies and requirements (if available)
    * - Estimated duration (if available)
-   * 
+   * - Test results (if available)
+   * - Priority and assignee (if available)
+   *
    * @param task The task to generate tooltip for
    * @returns Formatted tooltip string with task metadata
    */
   private generateTooltipText(task: Task): string {
     const sections: string[] = [];
 
-    // Header: Task ID and Title
-    sections.push(`Task ${task.id}: ${task.title}`);
+    // Header: Task ID and Title (without "Task" prefix to match new label format)
+    sections.push(`${task.id}: ${task.title}`);
 
     // Description section
     if (task.description && task.description.trim().length > 0) {
@@ -168,20 +181,25 @@ export class TaskTreeItem extends vscode.TreeItem {
     }
 
     // Status and complexity section
-    const statusText = task.statusDisplayName || STATUS_DISPLAY_NAMES[task.status] || task.status;
-    const complexityText = task.complexity ? task.complexity.toLowerCase() : 'unknown';
+    const statusText =
+      task.statusDisplayName ||
+      STATUS_DISPLAY_NAMES[task.status] ||
+      task.status;
+    const complexityText = task.complexity
+      ? task.complexity.toLowerCase()
+      : "unknown";
     sections.push(`\nStatus: ${statusText}`);
     sections.push(`Complexity: ${complexityText}`);
 
     // Dependencies section
     if (task.dependencies && task.dependencies.length > 0) {
-      const dependencyList = task.dependencies.join(', ');
+      const dependencyList = task.dependencies.join(", ");
       sections.push(`Dependencies: ${dependencyList}`);
     }
 
     // Requirements section
     if (task.requirements && task.requirements.length > 0) {
-      const requirementList = task.requirements.join(', ');
+      const requirementList = task.requirements.join(", ");
       sections.push(`Requirements: ${requirementList}`);
     }
 
@@ -208,7 +226,7 @@ export class TaskTreeItem extends vscode.TreeItem {
       }
     }
 
-    return sections.join('\n');
+    return sections.join("\n");
   }
 
   /**

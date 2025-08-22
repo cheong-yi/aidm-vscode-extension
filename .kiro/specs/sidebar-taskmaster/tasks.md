@@ -77,7 +77,7 @@ This implementation plan breaks down the feature into atomic, TDD-friendly tasks
   - Write unit tests for timestamp formatting
   - _Requirements: 4.8, 7.9, 9.3_
 
-- [ ] 2.6.4 Validate enhanced mock response structure matches API
+- [x] 2.6.4 Validate enhanced mock response structure matches API
 
   - Ensure all new fields match design document Task interface
   - Validate FailingTest structure matches requirements
@@ -95,7 +95,7 @@ This implementation plan breaks down the feature into atomic, TDD-friendly tasks
   - Write unit tests for time formatting utility
   - _Requirements: 4.8, 9.1, 9.3_
 
-- [ ] 2.7.2 Implement relative time calculation logic
+- [x] 2.7.2 Implement relative time calculation logic
 
   - Handle seconds, minutes, hours, days, weeks time ranges
   - Return "just now", "2 minutes ago", "3 hours ago" format
@@ -103,7 +103,7 @@ This implementation plan breaks down the feature into atomic, TDD-friendly tasks
   - Write unit tests for various time ranges
   - _Requirements: 4.8, 9.3, 9.4_
 
-- [ ] 2.7.3 Add time formatting caching mechanism
+- [x] 2.7.3 Add time formatting caching mechanism
 
   - Cache relative time strings with 1-minute TTL
   - Implement periodic refresh for displayed times
