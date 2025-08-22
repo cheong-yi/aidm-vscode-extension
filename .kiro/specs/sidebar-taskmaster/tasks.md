@@ -177,13 +177,13 @@ This implementation plan breaks down the feature into atomic, TDD-friendly tasks
   - Write unit tests for service connection
   - _Requirements: 2.1_
 
-- [ ] 3.2.4 Implement flat list getChildren method
+- [x] 3.2.4 Implement flat list getChildren method
 
   - Return all tasks as flat list (no hierarchy for expandable list design)
   - Write unit tests for flat list structure
   - _Requirements: 1.5, 2.1_
 
-- [ ] 3.2.5 Add task status filtering and display logic
+- [x] 3.2.5 Add task status filtering and display logic
 
   - Filter tasks based on status preferences
   - Apply STATUS_DISPLAY_NAMES mapping for status badges
@@ -191,13 +191,13 @@ This implementation plan breaks down the feature into atomic, TDD-friendly tasks
   - Write unit tests for filtering and display logic
   - _Requirements: 1.8, 3.8_
 
-- [ ] 3.2.6 Implement "No Tasks" state handling
+- [x] 3.2.6 Implement "No Tasks" state handling
 
   - Create empty state tree item when no tasks exist
   - Write unit tests for empty state scenarios
   - _Requirements: 2.5_
 
-- [ ] 3.2.7 Add refresh mechanism infrastructure
+- [x] 3.2.7 Add refresh mechanism infrastructure
 
   - Add onDidChangeTreeData event emitter
   - Write unit tests for event emitter setup

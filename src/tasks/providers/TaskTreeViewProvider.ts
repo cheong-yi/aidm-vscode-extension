@@ -4,6 +4,7 @@
  * Requirements: 3.1.2 - TaskTreeViewProvider class structure with VSCode TreeDataProvider interface
  * Requirements: 3.2.6 - Implement "No Tasks" state handling
  * Task 3.2.3: Connect TaskTreeViewProvider to TasksDataService
+ * Task 3.2.7: Add refresh mechanism infrastructure
  */
 
 import * as vscode from "vscode";
@@ -42,6 +43,7 @@ export class TaskTreeViewProvider
   /**
    * Event emitter for tree data changes
    * Required by vscode.TreeDataProvider interface
+   * Task 3.2.7: Enhanced refresh mechanism infrastructure
    */
   private readonly _onDidChangeTreeData: vscode.EventEmitter<
     TreeItemType | undefined | null
@@ -56,10 +58,17 @@ export class TaskTreeViewProvider
    */
   private readonly tasksDataService: TasksDataService;
 
+  /**
+   * Flag to track if the provider is disposed
+   * Task 3.2.7: Prevent refresh calls after disposal
+   */
+  private isDisposed: boolean = false;
+
   constructor(tasksDataService: TasksDataService) {
     // Task 3.2.3: Store TasksDataService reference
     this.tasksDataService = tasksDataService;
 
+    // Task 3.2.7: Initialize EventEmitter for refresh mechanism
     this._onDidChangeTreeData = new vscode.EventEmitter<
       TreeItemType | undefined | null
     >();
@@ -205,17 +214,61 @@ export class TaskTreeViewProvider
   /**
    * Fires the onDidChangeTreeData event to refresh the tree view
    * Called when tree data needs to be updated
+   * Task 3.2.7: Enhanced refresh mechanism with error handling
    */
   refresh(): void {
-    // Fire event with undefined to refresh entire tree
-    this._onDidChangeTreeData.fire(undefined);
+    try {
+      // Prevent refresh if provider is disposed
+      if (this.isDisposed) {
+        console.warn("TaskTreeViewProvider: Cannot refresh disposed provider");
+        return;
+      }
+
+      // Fire event with undefined to refresh entire tree
+      // This triggers VSCode to call getChildren() and update the view
+      this._onDidChangeTreeData.fire(undefined);
+      
+      // Log refresh event for debugging (can be removed in production)
+      console.debug("TaskTreeViewProvider: Tree refresh triggered");
+    } catch (error) {
+      // Handle any errors during refresh without breaking functionality
+      console.error("TaskTreeViewProvider: Error during refresh:", error);
+    }
+  }
+
+  /**
+   * Refresh specific task item (future enhancement)
+   * Task 3.2.7: Infrastructure for targeted refresh
+   * 
+   * @param taskItem Specific task item to refresh
+   */
+  refreshItem(taskItem: TaskTreeItem): void {
+    try {
+      if (this.isDisposed) {
+        console.warn("TaskTreeViewProvider: Cannot refresh disposed provider");
+        return;
+      }
+
+      // Fire event with specific item to refresh just that item
+      this._onDidChangeTreeData.fire(taskItem);
+      console.debug("TaskTreeViewProvider: Item refresh triggered for:", taskItem.id);
+    } catch (error) {
+      console.error("TaskTreeViewProvider: Error during item refresh:", error);
+    }
   }
 
   /**
    * Dispose method for cleanup
    * Should be called when the provider is no longer needed
+   * Task 3.2.7: Enhanced disposal with state tracking
    */
   dispose(): void {
-    this._onDidChangeTreeData.dispose();
+    try {
+      this.isDisposed = true;
+      this._onDidChangeTreeData.dispose();
+      console.debug("TaskTreeViewProvider: Disposed successfully");
+    } catch (error) {
+      console.error("TaskTreeViewProvider: Error during disposal:", error);
+    }
   }
 }
