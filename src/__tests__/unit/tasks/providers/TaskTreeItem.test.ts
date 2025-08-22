@@ -6,8 +6,8 @@
  */
 
 import { jest } from "@jest/globals";
-import { TaskTreeItem } from "../TaskTreeItem";
-import { Task, TaskStatus, TaskComplexity, TaskPriority } from "../../types";
+import { TaskTreeItem } from "../../../../tasks/providers/TaskTreeItem";
+import { Task, TaskStatus, TaskComplexity, TaskPriority } from "../../../../tasks/types";
 import * as vscode from "vscode";
 
 describe("TaskTreeItem", () => {

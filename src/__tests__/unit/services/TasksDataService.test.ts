@@ -10,19 +10,19 @@
  */
 
 import { jest } from "@jest/globals";
-import { TasksDataService } from "../TasksDataService";
-import { TaskStatusManager } from "../TaskStatusManager";
+import { TasksDataService } from "../../../services/TasksDataService";
+import { TaskStatusManager } from "../../../services/TaskStatusManager";
 import {
   Task,
   TaskStatus,
   TaskComplexity,
   TaskPriority,
   STATUS_DISPLAY_NAMES,
-} from "../../types/tasks";
+} from "../../../types/tasks";
 import { AxiosInstance } from "axios";
 
 // Mock TaskStatusManager
-jest.mock("../TaskStatusManager");
+jest.mock("../../../services/TaskStatusManager");
 
 describe("TasksDataService", () => {
   let service: TasksDataService;
@@ -712,7 +712,7 @@ describe("TasksDataService", () => {
         priority: TaskPriority.CRITICAL,
         estimatedDuration: "45-60 min",
         isExecutable: false,
-        statusDisplayName: STATUS_DISPLAY_NAMES[TaskStatus.COMPLETED],
+          statusDisplayName: STATUS_DISPLAY_NAMES[TaskStatus.COMPLETED],
       };
 
       const mockResponse = {

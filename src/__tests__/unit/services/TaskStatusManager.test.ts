@@ -6,9 +6,9 @@
  */
 
 import { jest } from "@jest/globals";
-import { TaskStatusManager } from "../TaskStatusManager";
-import { MarkdownTaskParser } from "../MarkdownTaskParser";
-import { Task, TaskStatus } from "../../types/tasks";
+import { TaskStatusManager } from "../../../services/TaskStatusManager";
+import { MarkdownTaskParser } from "../../../services/MarkdownTaskParser";
+import { Task, TaskStatus } from "../../../types/tasks";
 
 describe("TaskStatusManager", () => {
   let manager: TaskStatusManager;

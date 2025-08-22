@@ -4,11 +4,11 @@
  * Recovery Task 2.2.4: Updated to provide required TaskStatusManager dependency
  */
 
-import { TasksDataService } from "../TasksDataService";
-import { TaskStatusManager } from "../TaskStatusManager";
+import { TasksDataService } from "../../../services/TasksDataService";
+import { TaskStatusManager } from "../../../services/TaskStatusManager";
 
 // Mock TaskStatusManager for simple tests
-jest.mock("../TaskStatusManager");
+jest.mock("../../../services/TaskStatusManager");
 
 describe("TasksDataService Simple Import", () => {
   it("should be importable directly from file", () => {

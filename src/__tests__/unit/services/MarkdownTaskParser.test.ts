@@ -7,13 +7,13 @@
  */
 
 import { jest } from "@jest/globals";
-import { MarkdownTaskParser } from "../MarkdownTaskParser";
+import { MarkdownTaskParser } from "../../../services/MarkdownTaskParser";
 import {
   Task,
   TaskStatus,
   TaskComplexity,
   TaskPriority,
-} from "../../types/tasks";
+} from "../../../types/tasks";
 
 describe("MarkdownTaskParser", () => {
   let parser: MarkdownTaskParser;

@@ -5,7 +5,7 @@
  */
 
 import { jest } from '@jest/globals';
-import { TaskFileWatcher } from '../TaskFileWatcher';
+import { TaskFileWatcher } from '../../../services/TaskFileWatcher';
 
 // Mock vscode module
 jest.mock('vscode', () => {
