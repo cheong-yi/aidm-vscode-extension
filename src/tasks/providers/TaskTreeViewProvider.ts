@@ -7,6 +7,7 @@
  * Task 3.2.7: Add refresh mechanism infrastructure
  * Task 3.2.8: Connect refresh mechanism to TasksDataService events
  * Task 3.2.9: Add click-to-execute event emitter
+ * Task 3.2.10: Implement accordion expansion behavior
  */
 
 import * as vscode from "vscode";
@@ -88,6 +89,13 @@ export class TaskTreeViewProvider
    * Task 3.2.8: Store disposables for event listener cleanup
    */
   private readonly eventDisposables: vscode.Disposable[] = [];
+
+  /**
+   * Track which task is currently expanded for accordion behavior
+   * Task 3.2.10: Accordion expansion state management
+   * Only one task can be expanded at a time
+   */
+  private expandedTaskId: string | null = null;
 
   constructor(tasksDataService: TasksDataService) {
     // Task 3.2.3: Store TasksDataService reference
@@ -335,12 +343,183 @@ export class TaskTreeViewProvider
   }
 
   /**
+   * Expand a task node with accordion behavior
+   * Task 3.2.10: Accordion expansion behavior - only one task expanded at a time
+   * Expanding task A will automatically collapse currently expanded task B
+   *
+   * @param taskId ID of the task to expand
+   */
+  public expandNode(taskId: string): void {
+    try {
+      if (this.isDisposed) {
+        console.debug(
+          "TaskTreeViewProvider: Cannot expand node on disposed provider"
+        );
+        return;
+      }
+
+      // Validate taskId
+      if (!taskId || typeof taskId !== "string") {
+        console.warn(
+          "TaskTreeViewProvider: Invalid taskId provided to expandNode:",
+          taskId
+        );
+        return;
+      }
+
+      // If the same task is already expanded, do nothing
+      if (this.expandedTaskId === taskId) {
+        console.debug("TaskTreeViewProvider: Task already expanded:", taskId);
+        return;
+      }
+
+      // Set the new expanded task (accordion behavior)
+      this.setExpandedTask(taskId);
+
+      // Trigger tree refresh to update visual state
+      this.refresh();
+
+      console.debug(
+        "TaskTreeViewProvider: Task expanded with accordion behavior:",
+        {
+          expandedTaskId: taskId,
+          previousExpandedTaskId: this.expandedTaskId,
+        }
+      );
+    } catch (error) {
+      console.error("TaskTreeViewProvider: Error expanding node:", error);
+    }
+  }
+
+  /**
+   * Collapse the currently expanded task node
+   * Task 3.2.10: Accordion collapse behavior
+   * Collapsing expanded task sets expandedTaskId to null
+   *
+   * @param taskId ID of the task to collapse (optional, defaults to currently expanded)
+   */
+  public collapseNode(taskId?: string): void {
+    try {
+      if (this.isDisposed) {
+        console.debug(
+          "TaskTreeViewProvider: Cannot collapse node on disposed provider"
+        );
+        return;
+      }
+
+      // If no taskId provided, collapse currently expanded task
+      const targetTaskId = taskId || this.expandedTaskId;
+
+      if (!targetTaskId) {
+        console.debug("TaskTreeViewProvider: No task to collapse");
+        return;
+      }
+
+      // Validate taskId
+      if (typeof targetTaskId !== "string") {
+        console.warn(
+          "TaskTreeViewProvider: Invalid taskId provided to collapseNode:",
+          targetTaskId
+        );
+        return;
+      }
+
+      // Only collapse if the task is actually expanded
+      if (this.expandedTaskId === targetTaskId) {
+        this.setExpandedTask(null);
+
+        // Trigger tree refresh to update visual state
+        this.refresh();
+
+        console.debug("TaskTreeViewProvider: Task collapsed:", targetTaskId);
+      } else {
+        console.debug(
+          "TaskTreeViewProvider: Task not expanded, cannot collapse:",
+          targetTaskId
+        );
+      }
+    } catch (error) {
+      console.error("TaskTreeViewProvider: Error collapsing node:", error);
+    }
+  }
+
+  /**
+   * Set the expanded task state with accordion behavior
+   * Task 3.2.10: Private helper method for state management
+   * Ensures only one task can be expanded at a time
+   *
+   * @param taskId ID of the task to expand, or null to collapse all
+   */
+  private setExpandedTask(taskId: string | null): void {
+    try {
+      // Store the previous expanded task for logging
+      const previousExpandedTaskId = this.expandedTaskId;
+
+      // Set the new expanded task (accordion behavior)
+      this.expandedTaskId = taskId;
+
+      console.debug("TaskTreeViewProvider: Expansion state updated:", {
+        previousExpandedTaskId,
+        newExpandedTaskId: taskId,
+        accordionBehavior: "Only one task expanded at a time",
+      });
+    } catch (error) {
+      console.error(
+        "TaskTreeViewProvider: Error setting expanded task:",
+        error
+      );
+      // Reset to safe state on error
+      this.expandedTaskId = null;
+    }
+  }
+
+  /**
+   * Get the currently expanded task ID
+   * Task 3.2.10: Public accessor for expansion state
+   *
+   * @returns ID of currently expanded task, or null if none expanded
+   */
+  public getExpandedTaskId(): string | null {
+    return this.expandedTaskId;
+  }
+
+  /**
+   * Check if a specific task is currently expanded
+   * Task 3.2.10: Utility method for expansion state checking
+   *
+   * @param taskId ID of the task to check
+   * @returns True if the task is expanded, false otherwise
+   */
+  public isTaskExpanded(taskId: string): boolean {
+    return this.expandedTaskId === taskId;
+  }
+
+  /**
    * Required by vscode.TreeDataProvider interface
    * Returns the TreeItem representation of the given element
+   * Task 3.2.10: Enhanced to reflect accordion expansion state
    */
   getTreeItem(element: TreeItemType): vscode.TreeItem {
-    // Return the element as-is since both extend TreeItem
-    return element;
+    try {
+      // For TaskTreeItem elements, update collapsible state based on expansion state
+      if (element instanceof TaskTreeItem) {
+        // Check if this task should be expanded based on accordion state
+        if (this.expandedTaskId === element.id) {
+          // Task is expanded - set to expanded state
+          element.collapsibleState = vscode.TreeItemCollapsibleState.Expanded;
+        } else {
+          // Task is collapsed - set to collapsed state
+          element.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
+        }
+      }
+
+      // Return the element with updated collapsible state
+      return element;
+    } catch (error) {
+      console.error("TaskTreeViewProvider: Error in getTreeItem:", error);
+      // Return element as-is on error
+      return element;
+    }
   }
 
   /**
