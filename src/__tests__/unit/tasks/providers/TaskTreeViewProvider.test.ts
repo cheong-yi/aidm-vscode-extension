@@ -4,6 +4,7 @@
  * Requirements: 3.1.2, 3.2.6, 3.2.3
  */
 
+import * as vscode from "vscode";
 import { TaskTreeViewProvider } from "../../../../tasks/providers/TaskTreeViewProvider";
 import { TasksDataService } from "../../../../services/TasksDataService";
 import {
@@ -141,7 +142,57 @@ describe("TaskTreeViewProvider", () => {
       // Assert
       expect(result).toHaveLength(1);
       expect(result[0]).toHaveProperty("contextValue", "empty-state");
-      expect(result[0]).toHaveProperty("label", "No Tasks Available");
+      expect(result[0]).toHaveProperty("label", "No tasks available");
+      expect(result[0]).toHaveProperty(
+        "description",
+        "Tasks will appear here when loaded"
+      );
+
+      // Verify empty state has correct icon and is not collapsible
+      const emptyStateItem = result[0] as any;
+      expect(emptyStateItem.iconPath).toBeDefined();
+      expect(emptyStateItem.collapsibleState).toBe(
+        vscode.TreeItemCollapsibleState.None
+      );
+    });
+
+    it("should transition from empty state to populated state correctly", async () => {
+      // Arrange: Start with empty state
+      mockTasksDataService.getTasks.mockResolvedValue([]);
+      const emptyResult = await provider.getChildren();
+      expect(emptyResult).toHaveLength(1);
+      expect(emptyResult[0]).toHaveProperty("contextValue", "empty-state");
+
+      // Act: Now return populated data
+      mockTasksDataService.getTasks.mockResolvedValue(mockTasks);
+      const populatedResult = await provider.getChildren();
+
+      // Assert: Should now show tasks instead of empty state
+      expect(populatedResult).toHaveLength(1);
+      expect(populatedResult[0]).toBeInstanceOf(TaskTreeItem);
+      expect(populatedResult[0]).toHaveProperty("id", "test-task-1");
+    });
+
+    it("should set correct contextValue for empty state styling", async () => {
+      // Arrange
+      mockTasksDataService.getTasks.mockResolvedValue([]);
+
+      // Act
+      const result = await provider.getChildren();
+
+      // Assert: contextValue should be "empty-state" for CSS styling
+      expect(result[0]).toHaveProperty("contextValue", "empty-state");
+
+      // Verify the empty state item has all required properties
+      const emptyStateItem = result[0] as any;
+      expect(emptyStateItem.label).toBe("No tasks available");
+      expect(emptyStateItem.description).toBe(
+        "Tasks will appear here when loaded"
+      );
+      expect(emptyStateItem.contextValue).toBe("empty-state");
+      expect(emptyStateItem.collapsibleState).toBe(
+        vscode.TreeItemCollapsibleState.None
+      );
     });
   });
 

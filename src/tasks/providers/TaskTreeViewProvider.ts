@@ -169,11 +169,10 @@ export class TaskTreeViewProvider
     let command: vscode.Command | undefined;
 
     if (scenario === "no-tasks") {
-      label = "No Tasks Available";
-      description =
-        "Select a task from the tree view above to see detailed information.";
+      label = "No tasks available";
+      description = "Tasks will appear here when loaded";
       contextValue = "empty-state";
-      iconPath = new vscode.ThemeIcon("inbox");
+      iconPath = new vscode.ThemeIcon("info");
       command = {
         command: "aidm-vscode-extension.refreshTasks",
         title: "Refresh Tasks",
