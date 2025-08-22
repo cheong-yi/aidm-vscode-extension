@@ -1026,4 +1026,408 @@ describe("TasksDataService", () => {
       expect(mockTaskStatusManager.updateTaskStatus).toHaveBeenCalledTimes(1);
     });
   });
+
+  // Task 2.6.4: Enhanced Mock Data Contract Validation Tests
+  describe("Enhanced Mock Data Contract Validation", () => {
+    it("should validate enhanced Task fields in MCP server responses", async () => {
+      // Arrange: Create mock response with enhanced Task fields
+      const enhancedTask: Task = {
+        id: "enhanced-task-1",
+        title: "Enhanced Task with All Fields",
+        description: "Task with enhanced properties for contract validation",
+        status: TaskStatus.NOT_STARTED,
+        complexity: TaskComplexity.MEDIUM,
+        dependencies: ["task-0"],
+        requirements: ["REQ-001"],
+        createdDate: "2024-01-01T00:00:00.000Z",
+        lastModified: "2024-01-02T00:00:00.000Z",
+        estimatedDuration: "20-30 min",
+        isExecutable: true,
+        statusDisplayName: STATUS_DISPLAY_NAMES[TaskStatus.NOT_STARTED],
+        testStatus: {
+          lastRunDate: "2024-01-01T12:00:00.000Z",
+          totalTests: 15,
+          passedTests: 12,
+          failedTests: 3,
+          coverage: 80,
+          failingTestsList: [
+            {
+              name: "should validate task status transitions",
+              message: "AssertionError: Expected 400 but got 200",
+              category: "assertion",
+            },
+          ],
+        },
+      };
+
+      const mockPost = (service as any).httpClient.post as jest.Mock;
+      (mockPost as any).mockResolvedValueOnce({
+        data: {
+          jsonrpc: "2.0",
+          id: 1,
+          result: {
+            content: [{ text: JSON.stringify({ tasks: [enhancedTask] }) }],
+          },
+        },
+      });
+
+      // Act
+      const result = await service.getTasks();
+
+      // Assert: Should successfully parse enhanced Task structure
+      expect(result).toHaveLength(1);
+      expect(result[0]).toEqual(enhancedTask);
+      expect(result[0].estimatedDuration).toBe("20-30 min");
+      expect(result[0].isExecutable).toBe(true);
+      expect(result[0].statusDisplayName).toBe("not started");
+      expect(result[0].testStatus?.failingTestsList).toHaveLength(1);
+      expect(result[0].testStatus?.failingTestsList?.[0].category).toBe("assertion");
+    });
+
+    it("should validate FailingTest structure in test results", async () => {
+      // Arrange: Create mock response with detailed test failures
+      const taskWithTestFailures: Task = {
+        id: "test-failures-task",
+        title: "Task with Test Failures",
+        description: "Task demonstrating FailingTest structure validation",
+        status: TaskStatus.COMPLETED,
+        complexity: TaskComplexity.HIGH,
+        dependencies: [],
+        requirements: [],
+        createdDate: "2024-01-01T00:00:00.000Z",
+        lastModified: "2024-01-03T00:00:00.000Z",
+        testStatus: {
+          lastRunDate: "2024-01-03T10:00:00.000Z",
+          totalTests: 25,
+          passedTests: 20,
+          failedTests: 5,
+          coverage: 75,
+          failingTestsList: [
+            {
+              name: "should handle network timeouts",
+              message: "TimeoutError: Request timed out after 5000ms",
+              category: "timeout",
+              stackTrace: "at NetworkService.request (network.js:45:12)",
+            },
+            {
+              name: "should validate file permissions",
+              message: "FileSystemError: Permission denied",
+              category: "filesystem",
+            },
+            {
+              name: "should parse JSON responses",
+              message: "SyntaxError: Unexpected token in JSON",
+              category: "type",
+            },
+          ],
+        },
+      };
+
+      const mockPost = (service as any).httpClient.post as jest.Mock;
+      (mockPost as any).mockResolvedValueOnce({
+        data: {
+          jsonrpc: "2.0",
+          id: 1,
+          result: { task: taskWithTestFailures },
+        },
+      });
+
+      // Act
+      const result = await service.getTaskById("test-failures-task");
+
+      // Assert: Should successfully parse FailingTest structure
+      expect(result).toEqual(taskWithTestFailures);
+      expect(result?.testStatus?.failingTestsList).toHaveLength(3);
+      
+      // Validate each failing test category
+      const categories = result?.testStatus?.failingTestsList?.map(ft => ft.category) || [];
+      expect(categories).toContain("timeout");
+      expect(categories).toContain("filesystem");
+      expect(categories).toContain("type");
+      
+      // Validate stackTrace is optional
+      const withStackTrace = result?.testStatus?.failingTestsList?.find(ft => ft.stackTrace);
+      const withoutStackTrace = result?.testStatus?.failingTestsList?.find(ft => !ft.stackTrace);
+      expect(withStackTrace?.stackTrace).toBeDefined();
+      expect(withoutStackTrace?.stackTrace).toBeUndefined();
+    });
+
+    it("should validate STATUS_DISPLAY_NAMES mapping in responses", async () => {
+      // Arrange: Create tasks with different statuses to test display names
+      const tasksWithDifferentStatuses: Task[] = [
+        {
+          id: "status-1",
+          title: "Not Started Task",
+          description: "Task with not_started status",
+          status: TaskStatus.NOT_STARTED,
+          complexity: TaskComplexity.LOW,
+          dependencies: [],
+          requirements: [],
+          createdDate: "2024-01-01T00:00:00.000Z",
+          lastModified: "2024-01-01T00:00:00.000Z",
+          statusDisplayName: STATUS_DISPLAY_NAMES[TaskStatus.NOT_STARTED],
+        },
+        {
+          id: "status-2",
+          title: "In Progress Task",
+          description: "Task with in_progress status",
+          status: TaskStatus.IN_PROGRESS,
+          complexity: TaskComplexity.MEDIUM,
+          dependencies: [],
+          requirements: [],
+          createdDate: "2024-01-01T00:00:00.000Z",
+          lastModified: "2024-01-02T00:00:00.000Z",
+          statusDisplayName: STATUS_DISPLAY_NAMES[TaskStatus.IN_PROGRESS],
+        },
+        {
+          id: "status-3",
+          title: "Completed Task",
+          description: "Task with completed status",
+          status: TaskStatus.COMPLETED,
+          complexity: TaskComplexity.HIGH,
+          dependencies: [],
+          requirements: [],
+          createdDate: "2024-01-01T00:00:00.000Z",
+          lastModified: "2024-01-03T00:00:00.000Z",
+          statusDisplayName: STATUS_DISPLAY_NAMES[TaskStatus.COMPLETED],
+        },
+      ];
+
+      const mockPost = (service as any).httpClient.post as jest.Mock;
+      (mockPost as any).mockResolvedValueOnce({
+        data: {
+          jsonrpc: "2.0",
+          id: 1,
+          result: {
+            content: [{ text: JSON.stringify({ tasks: tasksWithDifferentStatuses }) }],
+          },
+        },
+      });
+
+      // Act
+      const result = await service.getTasks();
+
+      // Assert: Should successfully parse status display names
+      expect(result).toHaveLength(3);
+      expect(result[0].statusDisplayName).toBe("not started");
+      expect(result[1].statusDisplayName).toBe("in progress");
+      expect(result[2].statusDisplayName).toBe("completed");
+      
+      // Validate display names match expected format
+      result.forEach(task => {
+        expect(task.statusDisplayName).toMatch(/^[a-z\s]+$/);
+        expect(task.statusDisplayName).toBe(STATUS_DISPLAY_NAMES[task.status]);
+      });
+    });
+
+    it("should validate ISO date string format in all date fields", async () => {
+      // Arrange: Create task with various date formats
+      const taskWithDates: Task = {
+        id: "date-validation-task",
+        title: "Date Validation Task",
+        description: "Task for testing ISO date string validation",
+        status: TaskStatus.IN_PROGRESS,
+        complexity: TaskComplexity.MEDIUM,
+        dependencies: [],
+        requirements: [],
+        createdDate: "2024-01-01T00:00:00.000Z",
+        lastModified: "2024-01-15T14:30:45.123Z",
+        testStatus: {
+          lastRunDate: "2024-01-15T16:45:30Z",
+          totalTests: 10,
+          passedTests: 8,
+          failedTests: 2,
+          coverage: 80,
+        },
+      };
+
+      const mockPost = (service as any).httpClient.post as jest.Mock;
+      (mockPost as any).mockResolvedValueOnce({
+        data: {
+          jsonrpc: "2.0",
+          id: 1,
+          result: { task: taskWithDates },
+        },
+      });
+
+      // Act
+      const result = await service.getTaskById("date-validation-task");
+
+      // Assert: Should successfully parse ISO date strings
+      expect(result).toEqual(taskWithDates);
+      
+      // Validate date formats
+      expect(result?.createdDate).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{3})?Z$/);
+      expect(result?.lastModified).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{3})?Z$/);
+      expect(result?.testStatus?.lastRunDate).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/);
+      
+      // Validate dates are actually valid
+      expect(() => new Date(result?.createdDate || "")).not.toThrow();
+      expect(() => new Date(result?.lastModified || "")).not.toThrow();
+      if (result?.testStatus?.lastRunDate) {
+        expect(() => new Date(result.testStatus!.lastRunDate!)).not.toThrow();
+      }
+    });
+
+    it("should validate isExecutable logic for not_started tasks", async () => {
+      // Arrange: Create not_started tasks with different isExecutable values
+      const executableTasks: Task[] = [
+        {
+          id: "executable-1",
+          title: "Executable Task 1",
+          description: "not_started task that is executable",
+          status: TaskStatus.NOT_STARTED,
+          complexity: TaskComplexity.LOW,
+          dependencies: [],
+          requirements: [],
+          createdDate: "2024-01-01T00:00:00.000Z",
+          lastModified: "2024-01-01T00:00:00.000Z",
+          isExecutable: true, // Should be true for not_started
+        },
+        {
+          id: "executable-2",
+          title: "Executable Task 2",
+          description: "not_started task that is executable",
+          status: TaskStatus.NOT_STARTED,
+          complexity: TaskComplexity.LOW,
+          dependencies: [],
+          requirements: [],
+          createdDate: "2024-01-01T00:00:00.000Z",
+          lastModified: "2024-01-01T00:00:00.000Z",
+          isExecutable: true, // Should be true for not_started
+        },
+      ];
+
+      const mockPost = (service as any).httpClient.post as jest.Mock;
+      (mockPost as any).mockResolvedValueOnce({
+        data: {
+          jsonrpc: "2.0",
+          id: 1,
+          result: {
+            content: [{ text: JSON.stringify({ tasks: executableTasks }) }],
+          },
+        },
+      });
+
+      // Act
+      const result = await service.getTasks();
+
+      // Assert: Should successfully parse isExecutable logic
+      expect(result).toHaveLength(2);
+      result.forEach(task => {
+        expect(task.status).toBe(TaskStatus.NOT_STARTED);
+        expect(task.isExecutable).toBe(true);
+        // not_started tasks should typically be executable for Cursor integration
+        expect(task.isExecutable).toBe(true);
+      });
+    });
+
+    it("should validate JSON-RPC response format compliance", async () => {
+      // Arrange: Create mock response with proper JSON-RPC structure
+      const mockResponse = {
+        data: {
+          jsonrpc: "2.0",
+          id: 12345,
+          result: {
+            content: [
+              {
+                text: JSON.stringify({
+                  tasks: [
+                    {
+                      id: "jsonrpc-test",
+                      title: "JSON-RPC Format Test",
+                      description: "Task for testing JSON-RPC response format",
+                      status: TaskStatus.COMPLETED,
+                      complexity: TaskComplexity.LOW,
+                      dependencies: [],
+                      requirements: [],
+                      createdDate: "2024-01-01T00:00:00.000Z",
+                      lastModified: "2024-01-01T00:00:00.000Z",
+                    },
+                  ],
+                }),
+              },
+            ],
+          },
+        },
+      };
+
+      const mockPost = (service as any).httpClient.post as jest.Mock;
+      (mockPost as any).mockResolvedValueOnce(mockResponse);
+
+      // Act
+      const result = await service.getTasks();
+
+      // Assert: Should successfully parse JSON-RPC response format
+      expect(result).toHaveLength(1);
+      expect(result[0].id).toBe("jsonrpc-test");
+      expect(result[0].title).toBe("JSON-RPC Format Test");
+      
+      // Validate response structure matches MCP server format
+      expect(mockResponse.data.jsonrpc).toBe("2.0");
+      expect(typeof mockResponse.data.id).toBe("number");
+      expect(Array.isArray(mockResponse.data.result.content)).toBe(true);
+      expect(mockResponse.data.result.content[0].text).toBeDefined();
+    });
+
+    it("should handle malformed FailingTest objects gracefully", async () => {
+      // Arrange: Create task with malformed test failures
+      const taskWithMalformedTests: Task = {
+        id: "malformed-tests-task",
+        title: "Task with Malformed Test Failures",
+        description: "Task demonstrating graceful handling of malformed FailingTest objects",
+        status: TaskStatus.COMPLETED,
+        complexity: TaskComplexity.MEDIUM,
+        dependencies: [],
+        requirements: [],
+        createdDate: "2024-01-01T00:00:00.000Z",
+        lastModified: "2024-01-02T00:00:00.000Z",
+        testStatus: {
+          lastRunDate: "2024-01-02T12:00:00.000Z",
+          totalTests: 20,
+          passedTests: 18,
+          failedTests: 2,
+          coverage: 90,
+          failingTestsList: [
+            {
+              name: "Valid Test Failure",
+              message: "Assertion failed",
+              category: "assertion",
+            },
+            {
+              // Missing required fields - should be handled gracefully
+              name: "Malformed Test",
+              // Missing: message, category
+            } as any,
+          ],
+        },
+      };
+
+      const mockPost = (service as any).httpClient.post as jest.Mock;
+      (mockPost as any).mockResolvedValueOnce({
+        data: {
+          jsonrpc: "2.0",
+          id: 1,
+          result: { task: taskWithMalformedTests },
+        },
+      });
+
+      // Act
+      const result = await service.getTaskById("malformed-tests-task");
+
+      // Assert: Should handle malformed data gracefully
+      expect(result).toBeDefined();
+      expect(result?.testStatus?.failingTestsList).toHaveLength(2);
+      
+      // First test should be valid
+      expect(result?.testStatus?.failingTestsList?.[0].name).toBe("Valid Test Failure");
+      expect(result?.testStatus?.failingTestsList?.[0].category).toBe("assertion");
+      
+      // Second test should be present but may have undefined fields
+      expect(result?.testStatus?.failingTestsList?.[1].name).toBe("Malformed Test");
+      // Note: In a real implementation, you might want to filter out malformed tests
+      // or provide default values, but for now we're just testing that the service
+      // doesn't crash when encountering malformed data
+    });
+  });
 });
