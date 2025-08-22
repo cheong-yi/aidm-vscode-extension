@@ -67,6 +67,96 @@ describe("TaskTreeViewProvider", () => {
       expect((result as TaskTreeItem).task).toBe(mockTask);
       expect(result.label).toBe("Test Task");
     });
+
+    it("should convert a Task object to a TaskTreeItem instance", () => {
+      // Create a mock Task object
+      const mockTaskData: Task = {
+        id: "task-123",
+        title: "Sample Task",
+        description: "A sample task for testing",
+        status: TaskStatus.IN_PROGRESS,
+        complexity: TaskComplexity.HIGH,
+        dependencies: ["task-100"],
+        requirements: ["req-1"],
+        createdDate: new Date("2024-01-01"),
+        lastModified: new Date("2024-01-02"),
+        priority: TaskPriority.CRITICAL,
+        assignee: "developer",
+        estimatedHours: 8,
+        tags: ["frontend", "ui"],
+      };
+
+      // Create a TaskTreeItem from the mock task
+      const taskTreeItem = new TaskTreeItem(mockTaskData);
+
+      // Call getTreeItem with the TaskTreeItem
+      const result = provider.getTreeItem(taskTreeItem);
+
+      // Verify the result is a TaskTreeItem instance
+      expect(result).toBeInstanceOf(TaskTreeItem);
+      expect(result).toBe(taskTreeItem);
+    });
+
+    it("should correctly map Task properties to TaskTreeItem properties", () => {
+      // Create a mock Task with specific properties
+      const mockTaskData: Task = {
+        id: "mapping-test",
+        title: "Property Mapping Test",
+        description: "Testing property mapping between Task and TaskTreeItem",
+        status: TaskStatus.COMPLETED,
+        complexity: TaskComplexity.LOW,
+        dependencies: [],
+        requirements: [],
+        createdDate: new Date("2024-01-01"),
+        lastModified: new Date("2024-01-01"),
+        priority: TaskPriority.MEDIUM,
+      };
+
+      // Create a TaskTreeItem from the mock task
+      const taskTreeItem = new TaskTreeItem(mockTaskData);
+
+      // Call getTreeItem
+      const result = provider.getTreeItem(taskTreeItem) as TaskTreeItem;
+
+      // Verify property mapping
+      expect(result.label).toBe("Property Mapping Test");
+      expect(result.tooltip).toBe(
+        "Testing property mapping between Task and TaskTreeItem"
+      );
+      expect(result.id).toBe("mapping-test");
+      expect(result.task).toBe(mockTaskData);
+      expect(result.task.status).toBe(TaskStatus.COMPLETED);
+      expect(result.task.complexity).toBe(TaskComplexity.LOW);
+    });
+
+    it("should handle TaskTreeItem with dependencies correctly", () => {
+      // Create a mock Task with dependencies
+      const mockTaskWithDeps: Task = {
+        id: "parent-task",
+        title: "Parent Task",
+        description: "A task with dependencies",
+        status: TaskStatus.NOT_STARTED,
+        complexity: TaskComplexity.MEDIUM,
+        dependencies: ["child-1", "child-2"],
+        requirements: [],
+        createdDate: new Date("2024-01-01"),
+        lastModified: new Date("2024-01-01"),
+        priority: TaskPriority.HIGH,
+      };
+
+      // Create a TaskTreeItem from the mock task
+      const taskTreeItem = new TaskTreeItem(mockTaskWithDeps);
+
+      // Call getTreeItem
+      const result = provider.getTreeItem(taskTreeItem) as TaskTreeItem;
+
+      // Verify dependency-related properties
+      expect(result.hasChildren).toBe(true);
+      expect(result.collapsibleState).toBe(
+        vscode.TreeItemCollapsibleState.Collapsed
+      );
+      expect(result.task.dependencies).toEqual(["child-1", "child-2"]);
+    });
   });
 
   describe("getChildren method", () => {
