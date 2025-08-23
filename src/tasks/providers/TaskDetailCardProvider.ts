@@ -241,14 +241,265 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
   /**
    * Shows the "no task selected" state in the webview
    * Called when no task is selected or when initializing the provider
+   * Task 3.3.10: Enhanced empty state with helpful instructions and quick actions
    */
   public showNoTaskSelected(): void {
     try {
       if (this.webview && this.webview.visible) {
-        this.webview.webview.html = this.generateNoTaskSelectedHTML();
+        // Generate enhanced empty state HTML with helpful content
+        const emptyStateHTML = this.generateEmptyStateHTML();
+        this.webview.webview.html = emptyStateHTML;
       }
     } catch (error) {
       console.error("Failed to show no task selected state:", error);
+      // Fallback to minimal empty state if enhanced generation fails
+      this.showFallbackEmptyState();
+    }
+  }
+
+  /**
+   * Generates comprehensive HTML content for empty state display
+   * Task 3.3.10: Enhanced empty state with user guidance and quick actions
+   *
+   * @returns Complete HTML string for empty state with helpful content
+   */
+  public generateEmptyStateHTML(): string {
+    try {
+      return `
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>No Task Selected - Taskmaster Dashboard</title>
+          <style>
+            ${this.generateCSS()}
+            ${this.generateEmptyStateCSS()}
+          </style>
+        </head>
+        <body>
+          <div class="no-task-selected">
+            <!-- Visual Icon for Empty State -->
+            <div class="empty-state-icon">📋</div>
+            
+            <!-- Main Title -->
+            <h2 class="empty-state-title">No Task Selected</h2>
+            
+            <!-- Primary Instructions -->
+            <p class="empty-instructions">
+              Select a task from the tree view above to see detailed information and available actions.
+            </p>
+            
+            <!-- Helpful Tips Section -->
+            <div class="helpful-tips">
+              <h3 class="tips-title">Getting Started:</h3>
+              <ul class="tips-list">
+                <li>Click on any task in the tree view to see its details</li>
+                <li>Look for tasks marked with 🤖 that can be executed with AI assistance</li>
+                <li>Use the refresh button if tasks don't appear</li>
+                <li>Check task dependencies and requirements before starting</li>
+              </ul>
+            </div>
+            
+            <!-- Quick Actions Section -->
+            <div class="quick-actions">
+              <button class="action-btn primary" onclick="handleQuickAction('refresh')">
+                🔄 Refresh Tasks
+              </button>
+              <button class="action-btn secondary" onclick="handleQuickAction('viewAll')">
+                📋 View All Tasks
+              </button>
+              <button class="action-btn secondary" onclick="handleQuickAction('help')">
+                ❓ Show Help
+              </button>
+            </div>
+            
+            <!-- Additional Information -->
+            <div class="empty-state-info">
+              <p class="info-text">
+                The Taskmaster Dashboard helps you manage development tasks with AI assistance. 
+                Select a task to get started with implementation, testing, or review.
+              </p>
+            </div>
+          </div>
+          
+          <script>
+            // Acquire VSCode API for webview communication
+            const vscode = acquireVsCodeApi();
+            
+            // Handle quick action button clicks
+            function handleQuickAction(action) {
+              vscode.postMessage({
+                command: 'quick-action',
+                data: { action }
+              });
+            }
+            
+            // Initialize empty state webview
+            document.addEventListener('DOMContentLoaded', function() {
+              console.log('TaskDetailCardProvider empty state initialized');
+              
+              // Add hover effects for action buttons
+              const actionButtons = document.querySelectorAll('.action-btn');
+              actionButtons.forEach(button => {
+                button.addEventListener('mouseenter', function() {
+                  this.style.transform = 'translateY(-2px)';
+                });
+                
+                button.addEventListener('mouseleave', function() {
+                  this.style.transform = 'translateY(0)';
+                });
+              });
+            });
+          </script>
+        </body>
+        </html>
+      `;
+    } catch (error) {
+      console.error("Failed to generate empty state HTML:", error);
+      return this.generateFallbackEmptyStateHTML();
+    }
+  }
+
+  /**
+   * Renders helpful instructions for users in the empty state
+   * Task 3.3.10: Generate instructional content for task interaction
+   *
+   * @returns HTML string for helpful instructions section
+   */
+  public renderHelpfulInstructions(): string {
+    try {
+      return `
+        <div class="helpful-tips">
+          <h3 class="tips-title">Getting Started:</h3>
+          <ul class="tips-list">
+            <li>Click on any task in the tree view to see its details</li>
+            <li>Look for tasks marked with 🤖 that can be executed with AI assistance</li>
+            <li>Use the refresh button if tasks don't appear</li>
+            <li>Check task dependencies and requirements before starting</li>
+            <li>Review test results and failure details for completed tasks</li>
+            <li>Use status actions to update task progress</li>
+          </ul>
+        </div>
+      `;
+    } catch (error) {
+      console.error("Failed to render helpful instructions:", error);
+      return '<div class="helpful-tips"><p>Select a task to get started</p></div>';
+    }
+  }
+
+  /**
+   * Renders quick action buttons for the empty state
+   * Task 3.3.10: Generate action buttons for empty state functionality
+   *
+   * @returns HTML string for quick action buttons
+   */
+  public renderQuickActions(): string {
+    try {
+      return `
+        <div class="quick-actions">
+          <button class="action-btn primary" onclick="handleQuickAction('refresh')">
+            🔄 Refresh Tasks
+          </button>
+          <button class="action-btn secondary" onclick="handleQuickAction('viewAll')">
+            📋 View All Tasks
+          </button>
+          <button class="action-btn secondary" onclick="handleQuickAction('help')">
+            ❓ Show Help
+          </button>
+          <button class="action-btn secondary" onclick="handleQuickAction('settings')">
+            ⚙️ Settings
+          </button>
+        </div>
+      `;
+    } catch (error) {
+      console.error("Failed to render quick actions:", error);
+      return '<div class="quick-actions"><p>Actions unavailable</p></div>';
+    }
+  }
+
+  /**
+   * Generates fallback empty state HTML when main generation fails
+   * Task 3.3.10: Graceful degradation for empty state display
+   *
+   * @returns Fallback HTML string for empty state
+   */
+  private generateFallbackEmptyStateHTML(): string {
+    return `
+      <!DOCTYPE html>
+      <html lang="en">
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>No Task Selected</title>
+        <style>
+          ${this.generateCSS()}
+          .fallback-empty { 
+            text-align: center; 
+            padding: 40px 20px; 
+            color: var(--vscode-descriptionForeground, #969696);
+          }
+          .fallback-icon { 
+            font-size: 48px; 
+            margin-bottom: 16px;
+            opacity: 0.7;
+          }
+          .fallback-title { 
+            color: var(--vscode-foreground, #ffffff); 
+            margin-bottom: 16px;
+            font-size: 16px;
+          }
+          .fallback-text { 
+            color: var(--vscode-descriptionForeground, #d4d4d4); 
+            margin-bottom: 8px;
+            font-size: 13px;
+            line-height: 1.4;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="fallback-empty">
+          <div class="fallback-icon">📋</div>
+          <h3 class="fallback-title">No Task Selected</h3>
+          <p class="fallback-text">Select a task from the tree view above to see detailed information.</p>
+          <p class="fallback-text">Please try refreshing the view or contact support if the problem persists.</p>
+        </div>
+        
+        <script>
+          const vscode = acquireVsCodeApi();
+          document.addEventListener('DOMContentLoaded', function() {
+            console.log('TaskDetailCardProvider fallback empty state initialized');
+          });
+        </script>
+      </body>
+      </html>
+    `;
+  }
+
+  /**
+   * Shows fallback empty state when enhanced empty state generation fails
+   * Task 3.3.10: Error handling for empty state display
+   */
+  private showFallbackEmptyState(): void {
+    try {
+      if (this.webview && this.webview.visible) {
+        const fallbackHTML = this.generateFallbackEmptyStateHTML();
+        this.webview.webview.html = fallbackHTML;
+      }
+    } catch (error) {
+      console.error("Failed to show fallback empty state:", error);
+      // Last resort: show minimal content
+      if (this.webview && this.webview.visible) {
+        this.webview.webview.html = `
+          <!DOCTYPE html>
+          <html><body>
+            <div style="padding: 20px; text-align: center; color: #969696;">
+              <h3>No Task Selected</h3>
+              <p>Select a task to get started</p>
+            </div>
+          </body></html>
+        `;
+      }
     }
   }
 
@@ -2050,6 +2301,11 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
           }
           break;
 
+        // Task 3.3.10: Handle quick action messages from empty state
+        case "quick-action":
+          this.handleQuickAction(message.data?.action);
+          break;
+
         // Legacy command support for backward compatibility
         case "executeWithCursor":
           if (message.taskId) {
@@ -2169,6 +2425,14 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
 
       // Validate action for action-button messages
       if (message.command === "action-button") {
+        const action = message.data?.action;
+        if (!action || typeof action !== "string") {
+          return false;
+        }
+      }
+
+      // Task 3.3.10: Validate action for quick-action messages
+      if (message.command === "quick-action") {
         const action = message.data?.action;
         if (!action || typeof action !== "string") {
           return false;
@@ -2751,5 +3015,334 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
    */
   public getTimeRefreshInterval(): NodeJS.Timeout | null {
     return this.timeRefreshInterval;
+  }
+
+  /**
+   * Generates CSS styling specifically for empty state components
+   * Task 3.3.10: Empty state styling for consistent visual presentation
+   *
+   * @returns CSS string for empty state styling
+   */
+  private generateEmptyStateCSS(): string {
+    return `
+      /* Empty State Styling */
+      .no-task-selected {
+        text-align: center;
+        padding: 40px 20px;
+        background: var(--vscode-panel-background, #2d2d30);
+        border-top: 1px solid var(--vscode-panel-border, #3e3e42);
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+      }
+
+      .empty-state-icon {
+        font-size: 48px;
+        margin-bottom: 16px;
+        opacity: 0.8;
+        animation: fadeInUp 0.6s ease-out;
+      }
+
+      .empty-state-title {
+        color: var(--vscode-foreground, #ffffff);
+        margin-bottom: 16px;
+        font-size: 18px;
+        font-weight: 600;
+        animation: fadeInUp 0.6s ease-out 0.1s both;
+      }
+
+      .empty-instructions {
+        color: var(--vscode-descriptionForeground, #d4d4d4);
+        margin-bottom: 24px;
+        font-size: 14px;
+        line-height: 1.5;
+        max-width: 400px;
+        animation: fadeInUp 0.6s ease-out 0.2s both;
+      }
+
+      /* Helpful Tips Section */
+      .helpful-tips {
+        text-align: left;
+        margin: 24px 0;
+        padding: 20px;
+        background: var(--vscode-textBlockQuote-background, #2d2d30);
+        border: 1px solid var(--vscode-panel-border, #3e3e42);
+        border-radius: 6px;
+        max-width: 450px;
+        width: 100%;
+        animation: fadeInUp 0.6s ease-out 0.3s both;
+      }
+
+      .tips-title {
+        color: var(--vscode-foreground, #ffffff);
+        margin-bottom: 12px;
+        font-size: 14px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      .tips-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+      }
+
+      .tips-list li {
+        color: var(--vscode-descriptionForeground, #d4d4d4);
+        margin-bottom: 8px;
+        font-size: 13px;
+        line-height: 1.4;
+        padding-left: 20px;
+        position: relative;
+      }
+
+      .tips-list li:before {
+        content: "•";
+        color: var(--vscode-button-background, #569cd6);
+        font-weight: bold;
+        position: absolute;
+        left: 0;
+      }
+
+      .tips-list li:last-child {
+        margin-bottom: 0;
+      }
+
+      /* Quick Actions Section */
+      .quick-actions {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+        justify-content: center;
+        margin: 24px 0;
+        animation: fadeInUp 0.6s ease-out 0.4s both;
+      }
+
+      .quick-actions .action-btn {
+        min-width: 120px;
+        padding: 10px 16px;
+        font-size: 12px;
+        font-weight: 500;
+        border-radius: 4px;
+        transition: all 0.2s ease;
+        cursor: pointer;
+        border: 1px solid transparent;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+      }
+
+      .quick-actions .action-btn.primary {
+        background: var(--vscode-button-background, #569cd6);
+        color: var(--vscode-button-foreground, #ffffff);
+        border-color: var(--vscode-button-background, #569cd6);
+      }
+
+      .quick-actions .action-btn.primary:hover {
+        background: var(--vscode-button-hoverBackground, #4a86c7);
+        border-color: var(--vscode-button-hoverBackground, #4a86c7);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(86, 156, 214, 0.3);
+      }
+
+      .quick-actions .action-btn.secondary {
+        background: var(--vscode-panel-border, #3e3e42);
+        color: var(--vscode-foreground, #cccccc);
+        border-color: var(--vscode-panel-border, #3e3e42);
+      }
+
+      .quick-actions .action-btn.secondary:hover {
+        background: var(--vscode-panel-border, #4a4a4a);
+        border-color: var(--vscode-focusBorder, #007acc);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 122, 204, 0.2);
+      }
+
+      .quick-actions .action-btn:active {
+        transform: translateY(0);
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+      }
+
+      /* Additional Information Section */
+      .empty-state-info {
+        margin-top: 24px;
+        padding: 16px;
+        background: var(--vscode-editor-background, #1e1e1e);
+        border: 1px solid var(--vscode-panel-border, #3e3e42);
+        border-radius: 6px;
+        max-width: 450px;
+        width: 100%;
+        animation: fadeInUp 0.6s ease-out 0.5s both;
+      }
+
+      .info-text {
+        color: var(--vscode-descriptionForeground, #969696);
+        font-size: 12px;
+        line-height: 1.4;
+        text-align: center;
+        margin: 0;
+        font-style: italic;
+      }
+
+      /* Animations */
+      @keyframes fadeInUp {
+        from {
+          opacity: 0;
+          transform: translateY(20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      /* Responsive Design */
+      @media (max-width: 400px) {
+        .no-task-selected {
+          padding: 24px 16px;
+        }
+        
+        .empty-state-icon {
+          font-size: 36px;
+        }
+        
+        .empty-state-title {
+          font-size: 16px;
+        }
+        
+        .empty-instructions {
+          font-size: 13px;
+        }
+        
+        .helpful-tips {
+          padding: 16px;
+          margin: 16px 0;
+        }
+        
+        .quick-actions {
+          gap: 8px;
+        }
+        
+        .quick-actions .action-btn {
+          min-width: 100px;
+          padding: 8px 12px;
+          font-size: 11px;
+        }
+      }
+
+      /* Focus Management for Accessibility */
+      .quick-actions .action-btn:focus {
+        outline: 2px solid var(--vscode-focusBorder, #007acc);
+        outline-offset: 2px;
+      }
+
+      /* Print Styles */
+      @media print {
+        .quick-actions {
+          display: none;
+        }
+        
+        .no-task-selected {
+          background: white;
+          color: black;
+          border: none;
+        }
+      }
+    `;
+  }
+
+  /**
+   * Handles quick action requests from the empty state
+   * Task 3.3.10: Process quick action button clicks from empty state
+   *
+   * @param action - The quick action to perform
+   */
+  private handleQuickAction(action: string): void {
+    try {
+      if (!action) {
+        console.warn("Invalid quick action request:", { action });
+        return;
+      }
+
+      // Route quick action to appropriate handler
+      switch (action) {
+        case "refresh":
+          this.handleRefreshTasks();
+          break;
+        case "viewAll":
+          this.handleViewAllTasks();
+          break;
+        case "help":
+          this.handleShowHelp();
+          break;
+        case "settings":
+          this.handleShowSettings();
+          break;
+        default:
+          console.log("Unknown quick action:", action);
+      }
+    } catch (error) {
+      console.error("Failed to handle quick action:", error);
+    }
+  }
+
+  /**
+   * Handles refresh tasks quick action
+   * Task 3.3.10: Refresh task list functionality
+   */
+  private handleRefreshTasks(): void {
+    try {
+      console.log("Refresh tasks requested");
+      // Future implementation: Trigger task list refresh
+      // This could emit an event or call a service method
+    } catch (error) {
+      console.error("Failed to refresh tasks:", error);
+    }
+  }
+
+  /**
+   * Handles view all tasks quick action
+   * Task 3.3.10: View all tasks functionality
+   */
+  private handleViewAllTasks(): void {
+    try {
+      console.log("View all tasks requested");
+      // Future implementation: Show all tasks view
+      // This could open a new panel or expand the tree view
+    } catch (error) {
+      console.error("Failed to view all tasks:", error);
+    }
+  }
+
+  /**
+   * Handles show help quick action
+   * Task 3.3.10: Show help functionality
+   */
+  private handleShowHelp(): void {
+    try {
+      console.log("Show help requested");
+      // Future implementation: Display help documentation
+      // This could open help panel or show documentation
+    } catch (error) {
+      console.error("Failed to show help:", error);
+    }
+  }
+
+  /**
+   * Handles show settings quick action
+   * Task 3.3.10: Show settings functionality
+   */
+  private handleShowSettings(): void {
+    try {
+      console.log("Show settings requested");
+      // Future implementation: Open settings panel
+      // This could open VSCode settings or extension settings
+    } catch (error) {
+      console.error("Failed to show settings:", error);
+    }
   }
 }

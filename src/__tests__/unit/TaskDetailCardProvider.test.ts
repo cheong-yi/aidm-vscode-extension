@@ -3390,4 +3390,358 @@ describe("TaskDetailCardProvider", () => {
       clearIntervalSpy.mockRestore();
     });
   });
+
+  describe("Empty State Functionality (Task 3.3.10)", () => {
+    it("should show enhanced empty state when no task is selected", () => {
+      // Mock the webview for testing
+      (provider as any).webview = mockWebviewView;
+      (provider as any).webview.visible = true;
+
+      // Mock console.error to prevent test output pollution
+      const consoleSpy = jest.spyOn(console, "error").mockImplementation();
+
+      // Call showNoTaskSelected
+      expect(() => {
+        provider.showNoTaskSelected();
+      }).not.toThrow();
+
+      // Verify webview HTML was set
+      expect(mockWebviewView.webview.html).toBeDefined();
+      expect(mockWebviewView.webview.html.length).toBeGreaterThan(0);
+
+      consoleSpy.mockRestore();
+    });
+
+    it("should generate comprehensive empty state HTML with all required sections", () => {
+      const emptyStateHTML = provider.generateEmptyStateHTML();
+
+      // Verify HTML structure
+      expect(emptyStateHTML).toContain("<!DOCTYPE html>");
+      expect(emptyStateHTML).toContain('<html lang="en">');
+      expect(emptyStateHTML).toContain("<head>");
+      expect(emptyStateHTML).toContain("<body>");
+      expect(emptyStateHTML).toContain("</body>");
+      expect(emptyStateHTML).toContain("</html>");
+
+      // Verify empty state content
+      expect(emptyStateHTML).toContain("no-task-selected");
+      expect(emptyStateHTML).toContain("empty-state-icon");
+      expect(emptyStateHTML).toContain("empty-state-title");
+      expect(emptyStateHTML).toContain("empty-instructions");
+      expect(emptyStateHTML).toContain("helpful-tips");
+      expect(emptyStateHTML).toContain("quick-actions");
+      expect(emptyStateHTML).toContain("empty-state-info");
+    });
+
+    it("should include helpful instructions in empty state", () => {
+      const instructionsHTML = provider.renderHelpfulInstructions();
+
+      // Verify instructions structure
+      expect(instructionsHTML).toContain("helpful-tips");
+      expect(instructionsHTML).toContain("tips-title");
+      expect(instructionsHTML).toContain("tips-list");
+
+      // Verify helpful content
+      expect(instructionsHTML).toContain("Getting Started:");
+      expect(instructionsHTML).toContain("Click on any task in the tree view");
+      expect(instructionsHTML).toContain("Look for tasks marked with 🤖");
+      expect(instructionsHTML).toContain("Use the refresh button");
+      expect(instructionsHTML).toContain("Check task dependencies");
+    });
+
+    it("should render quick action buttons for empty state", () => {
+      const quickActionsHTML = provider.renderQuickActions();
+
+      // Verify quick actions structure
+      expect(quickActionsHTML).toContain("quick-actions");
+      expect(quickActionsHTML).toContain("action-btn");
+
+      // Verify action buttons
+      expect(quickActionsHTML).toContain("🔄 Refresh Tasks");
+      expect(quickActionsHTML).toContain("📋 View All Tasks");
+      expect(quickActionsHTML).toContain("❓ Show Help");
+      expect(quickActionsHTML).toContain("⚙️ Settings");
+
+      // Verify button classes
+      expect(quickActionsHTML).toContain('class="action-btn primary"');
+      expect(quickActionsHTML).toContain('class="action-btn secondary"');
+    });
+
+    it("should include JavaScript functionality in empty state", () => {
+      const emptyStateHTML = provider.generateEmptyStateHTML();
+
+      // Verify JavaScript functions
+      expect(emptyStateHTML).toContain("const vscode = acquireVsCodeApi()");
+      expect(emptyStateHTML).toContain("function handleQuickAction(action)");
+      expect(emptyStateHTML).toContain("vscode.postMessage");
+      expect(emptyStateHTML).toContain("command: 'quick-action'");
+
+      // Verify event handling
+      expect(emptyStateHTML).toContain(
+        "document.addEventListener('DOMContentLoaded'"
+      );
+      expect(emptyStateHTML).toContain("addEventListener('mouseenter'");
+      expect(emptyStateHTML).toContain("addEventListener('mouseleave'");
+    });
+
+    it("should include CSS styling for empty state components", () => {
+      const emptyStateHTML = provider.generateEmptyStateHTML();
+
+      // Verify CSS is included
+      expect(emptyStateHTML).toContain("<style>");
+      expect(emptyStateHTML).toContain("</style>");
+
+      // Verify CSS classes are referenced
+      expect(emptyStateHTML).toContain(".no-task-selected");
+      expect(emptyStateHTML).toContain(".empty-state-icon");
+      expect(emptyStateHTML).toContain(".helpful-tips");
+      expect(emptyStateHTML).toContain(".quick-actions");
+    });
+
+    it("should handle empty state generation errors gracefully", () => {
+      // Mock generateEmptyStateHTML to throw an error
+      jest.spyOn(provider, "generateEmptyStateHTML").mockImplementation(() => {
+        throw new Error("HTML generation failed");
+      });
+
+      // Mock console.error to prevent test output pollution
+      const consoleSpy = jest.spyOn(console, "error").mockImplementation();
+
+      // Mock the webview for testing
+      (provider as any).webview = mockWebviewView;
+      (provider as any).webview.visible = true;
+
+      // This should not throw and should show fallback empty state
+      expect(() => {
+        provider.showNoTaskSelected();
+      }).not.toThrow();
+
+      // Verify error was logged
+      expect(consoleSpy).toHaveBeenCalledWith(
+        "Failed to show no task selected state:",
+        expect.any(Error)
+      );
+
+      consoleSpy.mockRestore();
+    });
+
+    it("should generate fallback empty state HTML when main generation fails", () => {
+      const fallbackHTML = (provider as any).generateFallbackEmptyStateHTML();
+
+      // Verify fallback HTML structure
+      expect(fallbackHTML).toContain("<!DOCTYPE html>");
+      expect(fallbackHTML).toContain('<html lang="en">');
+      expect(fallbackHTML).toContain("fallback-empty");
+      expect(fallbackHTML).toContain("fallback-icon");
+      expect(fallbackHTML).toContain("fallback-title");
+      expect(fallbackHTML).toContain("fallback-text");
+
+      // Verify fallback content
+      expect(fallbackHTML).toContain("📋");
+      expect(fallbackHTML).toContain("No Task Selected");
+      expect(fallbackHTML).toContain("Select a task from the tree view above");
+    });
+
+    it("should show fallback empty state when enhanced state fails", () => {
+      // Mock the webview for testing
+      (provider as any).webview = mockWebviewView;
+      (provider as any).webview.visible = true;
+
+      // Mock console.error to prevent test output pollution
+      const consoleSpy = jest.spyOn(console, "error").mockImplementation();
+
+      // This should not throw and should show fallback state
+      expect(() => {
+        (provider as any).showFallbackEmptyState();
+      }).not.toThrow();
+
+      // Verify webview HTML was set
+      expect(mockWebviewView.webview.html).toBeDefined();
+      expect(mockWebviewView.webview.html.length).toBeGreaterThan(0);
+
+      consoleSpy.mockRestore();
+    });
+
+    it("should handle quick action messages correctly", () => {
+      // Mock console.log and console.error to prevent test output pollution
+      const consoleLogSpy = jest.spyOn(console, "log").mockImplementation();
+      const consoleErrorSpy = jest.spyOn(console, "error").mockImplementation();
+
+      // Test valid quick actions
+      const validActions = ["refresh", "viewAll", "help", "settings"];
+      validActions.forEach((action) => {
+        expect(() => {
+          (provider as any).handleQuickAction(action);
+        }).not.toThrow();
+      });
+
+      // Test invalid quick action
+      expect(() => {
+        (provider as any).handleQuickAction("");
+      }).not.toThrow();
+
+      expect(() => {
+        (provider as any).handleQuickAction(null as any);
+      }).not.toThrow();
+
+      consoleLogSpy.mockRestore();
+      consoleErrorSpy.mockRestore();
+    });
+
+    it("should handle specific quick action types correctly", () => {
+      // Mock console.log to prevent test output pollution
+      const consoleLogSpy = jest.spyOn(console, "log").mockImplementation();
+
+      // Test refresh tasks action
+      expect(() => {
+        (provider as any).handleRefreshTasks();
+      }).not.toThrow();
+
+      // Test view all tasks action
+      expect(() => {
+        (provider as any).handleViewAllTasks();
+      }).not.toThrow();
+
+      // Test show help action
+      expect(() => {
+        (provider as any).handleShowHelp();
+      }).not.toThrow();
+
+      // Test show settings action
+      expect(() => {
+        (provider as any).handleShowSettings();
+      }).not.toThrow();
+
+      consoleLogSpy.mockRestore();
+    });
+
+    it("should validate quick-action message structure correctly", () => {
+      // Test valid quick-action messages
+      const validQuickActionMessages = [
+        { command: "quick-action", data: { action: "refresh" } },
+        { command: "quick-action", data: { action: "viewAll" } },
+        { command: "quick-action", data: { action: "help" } },
+        { command: "quick-action", data: { action: "settings" } },
+      ];
+
+      validQuickActionMessages.forEach((message) => {
+        expect((provider as any).isValidMessage(message)).toBe(true);
+      });
+
+      // Test invalid quick-action messages
+      const invalidQuickActionMessages = [
+        { command: "quick-action", data: { action: "" } }, // Empty action
+        { command: "quick-action", data: { action: null } }, // Null action
+        { command: "quick-action", data: {} }, // Missing action
+        { command: "quick-action" }, // Missing data
+        { command: "quick-action", data: { action: 123 } }, // Wrong type
+      ];
+
+      invalidQuickActionMessages.forEach((message) => {
+        expect((provider as any).isValidMessage(message)).toBe(false);
+      });
+    });
+
+    it("should include proper error handling for quick action failures", () => {
+      // Mock console.log and console.error to prevent test output pollution
+      const consoleLogSpy = jest.spyOn(console, "log").mockImplementation();
+      const consoleErrorSpy = jest.spyOn(console, "error").mockImplementation();
+
+      // Test that errors in quick action handlers are caught
+      expect(() => {
+        (provider as any).handleQuickAction("unknown-action");
+      }).not.toThrow();
+
+      // Verify unknown action was logged
+      expect(consoleLogSpy).toHaveBeenCalledWith(
+        "Unknown quick action:",
+        "unknown-action"
+      );
+
+      // Verify no error was logged since this is not an error condition
+      expect(consoleErrorSpy).not.toHaveBeenCalled();
+
+      consoleLogSpy.mockRestore();
+      consoleErrorSpy.mockRestore();
+    });
+
+    it("should maintain backward compatibility with existing empty state methods", () => {
+      // Verify that the old generateNoTaskSelectedHTML method still exists
+      expect(typeof (provider as any).generateNoTaskSelectedHTML).toBe(
+        "function"
+      );
+
+      // Verify that showNoTaskSelected still works
+      expect(typeof provider.showNoTaskSelected).toBe("function");
+
+      // Mock the webview for testing
+      (provider as any).webview = mockWebviewView;
+      (provider as any).webview.visible = true;
+
+      // This should not throw
+      expect(() => {
+        provider.showNoTaskSelected();
+      }).not.toThrow();
+    });
+
+    it("should provide comprehensive user guidance in empty state", () => {
+      const emptyStateHTML = provider.generateEmptyStateHTML();
+
+      // Verify user guidance content
+      expect(emptyStateHTML).toContain(
+        "Select a task from the tree view above"
+      );
+      expect(emptyStateHTML).toContain("Getting Started:");
+      expect(emptyStateHTML).toContain(
+        "Click on any task in the tree view to see its details"
+      );
+      expect(emptyStateHTML).toContain(
+        "Look for tasks marked with 🤖 that can be executed with AI assistance"
+      );
+      expect(emptyStateHTML).toContain(
+        "Use the refresh button if tasks don't appear"
+      );
+      expect(emptyStateHTML).toContain(
+        "Check task dependencies and requirements before starting"
+      );
+
+      // Verify additional information
+      expect(emptyStateHTML).toContain(
+        "The Taskmaster Dashboard helps you manage development tasks with AI assistance"
+      );
+      expect(emptyStateHTML).toContain(
+        "Select a task to get started with implementation, testing, or review"
+      );
+    });
+
+    it("should include responsive design considerations in empty state", () => {
+      const emptyStateHTML = provider.generateEmptyStateHTML();
+
+      // Verify responsive design elements
+      expect(emptyStateHTML).toContain("@media (max-width: 400px)");
+      expect(emptyStateHTML).toContain("padding: 24px 16px");
+      expect(emptyStateHTML).toContain("font-size: 36px");
+      expect(emptyStateHTML).toContain("min-width: 100px");
+    });
+
+    it("should include accessibility features in empty state", () => {
+      const emptyStateHTML = provider.generateEmptyStateHTML();
+
+      // Verify accessibility features
+      expect(emptyStateHTML).toContain(":focus");
+      expect(emptyStateHTML).toContain("outline:");
+      expect(emptyStateHTML).toContain("outline-offset:");
+      expect(emptyStateHTML).toContain("transition:");
+    });
+
+    it("should include print styles for empty state", () => {
+      const emptyStateHTML = provider.generateEmptyStateHTML();
+
+      // Verify print styles
+      expect(emptyStateHTML).toContain("@media print");
+      expect(emptyStateHTML).toContain("display: none");
+      expect(emptyStateHTML).toContain("background: white");
+      expect(emptyStateHTML).toContain("color: black");
+    });
+  });
 });
