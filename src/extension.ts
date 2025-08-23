@@ -519,6 +519,48 @@ export async function activate(
       console.error("❌ updateTaskStatus command failed:", error);
     }
 
+    // Register execute task with Cursor command - Task 4.4.1c
+    try {
+      const executeTaskWithCursorCommand = vscode.commands.registerCommand(
+        getCommandId("executeTaskWithCursor"),
+        async (taskId: string) => {
+          if (!taskId) {
+            vscode.window.showErrorMessage("Task ID is required");
+            return;
+          }
+          try {
+            const task = await tasksDataService.getTaskById(taskId);
+            if (!task) {
+              vscode.window.showErrorMessage(`Task ${taskId} not found`);
+              return;
+            }
+            if (!task.isExecutable) {
+              vscode.window.showErrorMessage(
+                `Task ${taskId} is not executable`
+              );
+              return;
+            }
+            // Placeholder implementation - copy task info to clipboard
+            const taskInfo = `Task ${task.id}: ${task.title}\n\nDescription: ${task.description}`;
+            await vscode.env.clipboard.writeText(taskInfo);
+            vscode.window.showInformationMessage(
+              `Task info copied to clipboard. Cursor integration coming soon!`
+            );
+          } catch (error) {
+            vscode.window.showErrorMessage(
+              `Error executing task: ${
+                error instanceof Error ? error.message : "Unknown error"
+              }`
+            );
+          }
+        }
+      );
+      context.subscriptions.push(executeTaskWithCursorCommand);
+      console.log("✅ executeTaskWithCursor command registered");
+    } catch (error) {
+      console.error("❌ executeTaskWithCursor command failed:", error);
+    }
+
     // Register configuration change listener
     try {
       const configChangeDisposable = vscode.workspace.onDidChangeConfiguration(
