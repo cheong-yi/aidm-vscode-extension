@@ -18,15 +18,27 @@ import {
   MarkdownTaskParser,
   TaskStatusManager,
 } from "./services";
-import { TaskStatus } from "./types/tasks";
+import { TaskStatus, Task } from "./types/tasks";
 import { TaskDetailCardProvider } from "./tasks/providers/TaskDetailCardProvider";
+import { TaskTreeViewProvider } from "./tasks/providers";
 import { TimeFormattingUtility } from "./utils";
+
+/**
+ * Task click event payload for UI synchronization and Cursor integration
+ * Task 4.1.4: Event data structure for task selection
+ */
+interface TaskClickEvent {
+  taskId: string;
+  task: Task;
+  isExecutable: boolean; // For Cursor integration detection
+}
 
 let mcpClient: MCPClient;
 let statusBarManager: StatusBarManagerImpl;
 let processManager: ProcessManager;
 let tasksDataService: TasksDataService;
 let taskDetailProvider: TaskDetailCardProvider;
+let taskTreeViewProvider: TaskTreeViewProvider;
 let timeFormattingUtility: TimeFormattingUtility;
 
 export async function activate(
@@ -265,8 +277,61 @@ export async function activate(
         if (taskDetailProvider) {
           taskDetailProvider.dispose();
         }
+        if (taskTreeViewProvider) {
+          taskTreeViewProvider.dispose();
+        }
       },
     });
+
+    console.log(
+      "=== ACTIVATION STEP 8.10: Initializing TaskTreeViewProvider ==="
+    );
+    try {
+      taskTreeViewProvider = new TaskTreeViewProvider(tasksDataService);
+      console.log("✅ TaskTreeViewProvider initialized");
+    } catch (error) {
+      console.error("❌ TaskTreeViewProvider initialization failed:", error);
+      // Continue without tree view provider
+    }
+
+    console.log(
+      "=== ACTIVATION STEP 8.11: Wiring UI synchronization events ==="
+    );
+    try {
+      // Wire TaskTreeViewProvider selection to TaskDetailCardProvider updates
+      const taskClickSubscription = taskTreeViewProvider.onTaskClick(
+        (event: TaskClickEvent) => {
+          try {
+            taskDetailProvider.updateTaskDetails(event.task);
+          } catch (error) {
+            console.error("Error updating task details:", error);
+            vscode.window.showErrorMessage("Failed to update task details");
+          }
+        }
+      );
+
+      // Connect TasksDataService events to both UI providers for data synchronization
+      const tasksUpdatedSubscription = tasksDataService.onTasksUpdated.event(
+        (tasks: Task[]) => {
+          try {
+            taskTreeViewProvider.refresh();
+          } catch (error) {
+            console.error("Error refreshing task tree:", error);
+          }
+        }
+      );
+
+      // Add all subscriptions for proper cleanup
+      context.subscriptions.push(
+        taskClickSubscription,
+        tasksUpdatedSubscription
+      );
+
+      console.log("✅ UI synchronization events wired successfully");
+    } catch (error) {
+      console.error("❌ UI synchronization event wiring failed:", error);
+      // Continue without event synchronization
+    }
 
     console.log("=== ACTIVATION STEP 9: Connecting status listeners ===");
     // Connect process manager status to status bar
@@ -847,6 +912,11 @@ export async function deactivate() {
     // Dispose tasks data service if it exists
     if (tasksDataService) {
       tasksDataService.dispose();
+    }
+
+    // Dispose task tree view provider if it exists
+    if (taskTreeViewProvider) {
+      taskTreeViewProvider.dispose();
     }
 
     // Dispose MCP client if it exists
