@@ -241,7 +241,7 @@ This implementation plan breaks down the feature into atomic, TDD-friendly tasks
   - Write unit tests for HTML template generation
   - _Requirements: 2.1, 2.3_
 
-- [ ] 3.3.3 Implement complete CSS styling
+- [x] 3.3.3 Implement complete CSS styling
 
   - Create comprehensive CSS matching mockup design
   - Include metadata grid layout, test results styling, action buttons
@@ -249,7 +249,7 @@ This implementation plan breaks down the feature into atomic, TDD-friendly tasks
   - Write unit tests for CSS class application
   - _Requirements: 2.4_
 
-- [ ] 3.3.4 Implement enhanced task metadata display
+- [x] 3.3.4 Implement enhanced task metadata display
 
   - Show complexity, estimated duration, dependencies in grid layout
   - Format estimated duration from "15-30 min" format
@@ -257,7 +257,7 @@ This implementation plan breaks down the feature into atomic, TDD-friendly tasks
   - Write unit tests for metadata rendering
   - _Requirements: 2.1, 9.1_
 
-- [ ] 3.3.5 Add comprehensive test results display section
+- [x] 3.3.5 Add comprehensive test results display section
 
   - Show test summary stats (total/passed/failed)
   - Display last run timestamp with relative time formatting
@@ -265,7 +265,7 @@ This implementation plan breaks down the feature into atomic, TDD-friendly tasks
   - Write unit tests for test results rendering
   - _Requirements: 7.1, 7.3, 7.8, 7.9_
 
-- [ ] 3.3.6 Implement collapsible test failures section
+- [x] 3.3.6 Implement collapsible test failures section
 
   - Create expandable section for failing test details
   - Show individual FailingTest items with name, message, category
@@ -273,7 +273,7 @@ This implementation plan breaks down the feature into atomic, TDD-friendly tasks
   - Write unit tests for failures section behavior
   - _Requirements: 7.6, 7.7, 5.8_
 
-- [ ] 3.3.7 Add status-specific action buttons
+- [x] 3.3.7 Add status-specific action buttons
 
   - Implement STATUS_ACTIONS mapping for different task statuses
   - Render appropriate button sets based on task status
@@ -281,7 +281,7 @@ This implementation plan breaks down the feature into atomic, TDD-friendly tasks
   - Write unit tests for action button rendering
   - _Requirements: 3.7, 3.8, 3.9_
 
-- [ ] 3.3.8 Implement webview-to-extension message handling
+- [x] 3.3.8 Implement webview-to-extension message handling
 
   - Handle action button clicks from webview
   - Process status change requests

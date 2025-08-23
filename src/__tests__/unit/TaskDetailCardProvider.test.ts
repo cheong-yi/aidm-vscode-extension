@@ -363,6 +363,551 @@ describe("TaskDetailCardProvider", () => {
     });
   });
 
+  describe("Enhanced Webview Message Handling", () => {
+    it("should setup message handling correctly", () => {
+      // Mock webview and console.error
+      const mockWebview = {
+        onDidReceiveMessage: jest.fn(),
+      } as unknown as vscode.Webview;
+      const consoleSpy = jest.spyOn(console, "error").mockImplementation();
+
+      // Test setupMessageHandling
+      expect(() => {
+        (provider as any).setupMessageHandling(mockWebview);
+      }).not.toThrow();
+
+      // Verify message listener was set up
+      expect(mockWebview.onDidReceiveMessage).toHaveBeenCalled();
+
+      consoleSpy.mockRestore();
+    });
+
+    it("should validate message structure correctly", () => {
+      // Test valid messages
+      const validMessages = [
+        {
+          command: "status-change",
+          data: { taskId: "test-1", newStatus: TaskStatus.IN_PROGRESS },
+        },
+        { command: "cursor-execute", data: { taskId: "test-1" } },
+        {
+          command: "action-button",
+          data: { action: "🤖 Execute with Cursor", taskId: "test-1" },
+        },
+        { command: "execute-cursor", taskId: "test-1" },
+        { command: "generate-prompt", taskId: "test-1" },
+      ];
+
+      validMessages.forEach((message) => {
+        expect((provider as any).isValidMessage(message)).toBe(true);
+      });
+
+      // Test invalid messages
+      const invalidMessages = [
+        null,
+        undefined,
+        {},
+        { command: null },
+        { command: "status-change" }, // Missing data
+        { command: "status-change", data: { taskId: "test-1" } }, // Missing newStatus
+        {
+          command: "status-change",
+          data: { taskId: "test-1", newStatus: "invalid-status" },
+        }, // Invalid status
+        { command: "action-button", data: { action: "", taskId: "test-1" } }, // Empty action
+        { command: "cursor-execute", data: { taskId: "" } }, // Empty taskId
+      ];
+
+      invalidMessages.forEach((message) => {
+        expect((provider as any).isValidMessage(message)).toBe(false);
+      });
+    });
+
+    it("should handle status change messages correctly", () => {
+      // Mock console.warn and console.log
+      const consoleWarnSpy = jest.spyOn(console, "warn").mockImplementation();
+      const consoleLogSpy = jest.spyOn(console, "log").mockImplementation();
+
+      // Set up current task
+      const mockTask: Task = {
+        id: "test-1",
+        title: "Test Task",
+        description: "Test Description",
+        status: TaskStatus.NOT_STARTED,
+        complexity: "low" as any,
+        priority: TaskPriority.MEDIUM,
+        dependencies: [],
+        requirements: [],
+        createdDate: "2024-01-01T00:00:00.000Z",
+        lastModified: "2024-01-01T00:00:00.000Z",
+      };
+      (provider as any).currentTask = mockTask;
+
+      // Test valid status change
+      expect(() => {
+        (provider as any).handleStatusChange("test-1", TaskStatus.IN_PROGRESS);
+      }).not.toThrow();
+
+      // Test invalid task ID
+      expect(() => {
+        (provider as any).handleStatusChange(
+          "invalid-task",
+          TaskStatus.IN_PROGRESS
+        );
+      }).not.toThrow();
+
+      // Test invalid status transition
+      expect(() => {
+        (provider as any).handleStatusChange("test-1", TaskStatus.COMPLETED);
+      }).not.toThrow();
+
+      // Test missing parameters
+      expect(() => {
+        (provider as any).handleStatusChange("", TaskStatus.IN_PROGRESS);
+      }).not.toThrow();
+
+      expect(() => {
+        (provider as any).handleStatusChange("test-1", null as any);
+      }).not.toThrow();
+
+      consoleWarnSpy.mockRestore();
+      consoleLogSpy.mockRestore();
+    });
+
+    it("should handle Cursor execution messages correctly", () => {
+      // Mock console.warn and console.log
+      const consoleWarnSpy = jest.spyOn(console, "warn").mockImplementation();
+      const consoleLogSpy = jest.spyOn(console, "log").mockImplementation();
+
+      // Set up executable task
+      const mockTask: Task = {
+        id: "test-1",
+        title: "Test Task",
+        description: "Test Description",
+        status: TaskStatus.NOT_STARTED,
+        complexity: "low" as any,
+        priority: TaskPriority.MEDIUM,
+        dependencies: [],
+        requirements: [],
+        createdDate: "2024-01-01T00:00:00.000Z",
+        lastModified: "2024-01-01T00:00:00.000Z",
+        isExecutable: true,
+      };
+      (provider as any).currentTask = mockTask;
+
+      // Test valid Cursor execution
+      expect(() => {
+        (provider as any).handleCursorExecution("test-1");
+      }).not.toThrow();
+
+      // Test invalid task ID
+      expect(() => {
+        (provider as any).handleCursorExecution("invalid-task");
+      }).not.toThrow();
+
+      // Test non-executable task
+      const nonExecutableTask = { ...mockTask, isExecutable: false };
+      (provider as any).currentTask = nonExecutableTask;
+      expect(() => {
+        (provider as any).handleCursorExecution("test-1");
+      }).not.toThrow();
+
+      // Test non-NOT_STARTED task
+      const inProgressTask = { ...mockTask, status: TaskStatus.IN_PROGRESS };
+      (provider as any).currentTask = inProgressTask;
+      expect(() => {
+        (provider as any).handleCursorExecution("test-1");
+      }).not.toThrow();
+
+      // Test missing task ID
+      expect(() => {
+        (provider as any).handleCursorExecution("");
+      }).not.toThrow();
+
+      consoleWarnSpy.mockRestore();
+      consoleLogSpy.mockRestore();
+    });
+
+    it("should handle action button messages correctly", () => {
+      // Mock console.warn and console.log
+      const consoleWarnSpy = jest.spyOn(console, "warn").mockImplementation();
+      const consoleLogSpy = jest.spyOn(console, "log").mockImplementation();
+
+      // Set up current task
+      const mockTask: Task = {
+        id: "test-1",
+        title: "Test Task",
+        description: "Test Description",
+        status: TaskStatus.NOT_STARTED,
+        complexity: "low" as any,
+        priority: "medium" as any,
+        dependencies: [],
+        requirements: [],
+        createdDate: "2024-01-01T00:00:00.000Z",
+        lastModified: "2024-01-01T00:00:00.000Z",
+        isExecutable: true,
+      };
+      (provider as any).currentTask = mockTask;
+
+      // Test Cursor execution action
+      expect(() => {
+        (provider as any).handleActionButton(
+          "🤖 Execute with Cursor",
+          "test-1"
+        );
+      }).not.toThrow();
+
+      // Test other action types
+      expect(() => {
+        (provider as any).handleActionButton("Generate Prompt", "test-1");
+      }).not.toThrow();
+
+      // Test invalid parameters
+      expect(() => {
+        (provider as any).handleActionButton("", "test-1");
+      }).not.toThrow();
+
+      expect(() => {
+        (provider as any).handleActionButton("Generate Prompt", "");
+      }).not.toThrow();
+
+      // Test non-current task
+      expect(() => {
+        (provider as any).handleActionButton("Generate Prompt", "invalid-task");
+      }).not.toThrow();
+
+      consoleWarnSpy.mockRestore();
+      consoleLogSpy.mockRestore();
+    });
+
+    it("should validate status transitions correctly", () => {
+      // Test valid transitions
+      expect(
+        (provider as any).isValidStatusTransition(
+          TaskStatus.NOT_STARTED,
+          TaskStatus.IN_PROGRESS
+        )
+      ).toBe(true);
+      expect(
+        (provider as any).isValidStatusTransition(
+          TaskStatus.NOT_STARTED,
+          TaskStatus.BLOCKED
+        )
+      ).toBe(true);
+      expect(
+        (provider as any).isValidStatusTransition(
+          TaskStatus.IN_PROGRESS,
+          TaskStatus.REVIEW
+        )
+      ).toBe(true);
+      expect(
+        (provider as any).isValidStatusTransition(
+          TaskStatus.IN_PROGRESS,
+          TaskStatus.COMPLETED
+        )
+      ).toBe(true);
+      expect(
+        (provider as any).isValidStatusTransition(
+          TaskStatus.REVIEW,
+          TaskStatus.COMPLETED
+        )
+      ).toBe(true);
+
+      // Test invalid transitions
+      expect(
+        (provider as any).isValidStatusTransition(
+          TaskStatus.NOT_STARTED,
+          TaskStatus.COMPLETED
+        )
+      ).toBe(false);
+      expect(
+        (provider as any).isValidStatusTransition(
+          TaskStatus.NOT_STARTED,
+          TaskStatus.REVIEW
+        )
+      ).toBe(false);
+      expect(
+        (provider as any).isValidStatusTransition(
+          TaskStatus.COMPLETED,
+          TaskStatus.NOT_STARTED
+        )
+      ).toBe(false);
+      expect(
+        (provider as any).isValidStatusTransition(
+          TaskStatus.DEPRECATED,
+          TaskStatus.IN_PROGRESS
+        )
+      ).toBe(false);
+
+      // Test edge cases
+      expect(
+        (provider as any).isValidStatusTransition(
+          TaskStatus.NOT_STARTED,
+          "invalid-status" as any
+        )
+      ).toBe(false);
+    });
+
+    it("should handle new structured message formats", () => {
+      // Mock console.warn and console.log
+      const consoleWarnSpy = jest.spyOn(console, "warn").mockImplementation();
+      const consoleLogSpy = jest.spyOn(console, "log").mockImplementation();
+
+      // Set up current task
+      const mockTask: Task = {
+        id: "test-1",
+        title: "Test Task",
+        description: "Test Description",
+        status: TaskStatus.NOT_STARTED,
+        complexity: "low" as any,
+        priority: TaskPriority.MEDIUM,
+        dependencies: [],
+        requirements: [],
+        createdDate: "2024-01-01T00:00:00.000Z",
+        lastModified: "2024-01-01T00:00:00.000Z",
+        isExecutable: true,
+      };
+      (provider as any).currentTask = mockTask;
+
+      // Test status-change message
+      const statusChangeMessage = {
+        command: "status-change",
+        data: { taskId: "test-1", newStatus: TaskStatus.IN_PROGRESS },
+      };
+      expect(() => {
+        (provider as any).handleWebviewMessage(statusChangeMessage);
+      }).not.toThrow();
+
+      // Test cursor-execute message
+      const cursorExecuteMessage = {
+        command: "cursor-execute",
+        data: { taskId: "test-1" },
+      };
+      expect(() => {
+        (provider as any).handleWebviewMessage(cursorExecuteMessage);
+      }).not.toThrow();
+
+      // Test action-button message
+      const actionButtonMessage = {
+        command: "action-button",
+        data: { action: "🤖 Execute with Cursor", taskId: "test-1" },
+      };
+      expect(() => {
+        (provider as any).handleWebviewMessage(actionButtonMessage);
+      }).not.toThrow();
+
+      consoleWarnSpy.mockRestore();
+      consoleLogSpy.mockRestore();
+    });
+
+    it("should reject invalid structured messages", () => {
+      // Mock console.warn
+      const consoleWarnSpy = jest.spyOn(console, "warn").mockImplementation();
+
+      // Test invalid structured messages
+      const invalidStructuredMessages = [
+        { command: "status-change", data: { taskId: "test-1" } }, // Missing newStatus
+        {
+          command: "status-change",
+          data: { newStatus: TaskStatus.IN_PROGRESS },
+        }, // Missing taskId
+        {
+          command: "status-change",
+          data: { taskId: "test-1", newStatus: "invalid-status" },
+        }, // Invalid status
+        { command: "cursor-execute", data: { taskId: "" } }, // Empty taskId
+        { command: "action-button", data: { action: "", taskId: "test-1" } }, // Empty action
+        { command: "action-button", data: { action: "Generate Prompt" } }, // Missing taskId
+      ];
+
+      invalidStructuredMessages.forEach((message) => {
+        expect((provider as any).isValidMessage(message)).toBe(false);
+      });
+
+      consoleWarnSpy.mockRestore();
+    });
+
+    it("should maintain backward compatibility with legacy message formats", () => {
+      // Mock console.warn and console.log
+      const consoleWarnSpy = jest.spyOn(console, "warn").mockImplementation();
+      const consoleLogSpy = jest.spyOn(console, "log").mockImplementation();
+
+      // Set up current task
+      const mockTask: Task = {
+        id: "test-1",
+        title: "Test Task",
+        description: "Test Description",
+        status: TaskStatus.NOT_STARTED,
+        complexity: "low" as any,
+        priority: TaskPriority.MEDIUM,
+        dependencies: [],
+        requirements: [],
+        createdDate: "2024-01-01T00:00:00.000Z",
+        lastModified: "2024-01-01T00:00:00.000Z",
+        isExecutable: true,
+      };
+      (provider as any).currentTask = mockTask;
+
+      // Test legacy message formats
+      const legacyMessages = [
+        { command: "executeWithCursor", taskId: "test-1" },
+        {
+          command: "updateStatus",
+          taskId: "test-1",
+          newStatus: TaskStatus.IN_PROGRESS,
+        },
+        { command: "generate-prompt", taskId: "test-1" },
+        { command: "view-requirements", taskId: "test-1" },
+      ];
+
+      legacyMessages.forEach((message) => {
+        expect(() => {
+          (provider as any).handleWebviewMessage(message);
+        }).not.toThrow();
+      });
+
+      consoleWarnSpy.mockRestore();
+      consoleLogSpy.mockRestore();
+    });
+
+    it("should include JavaScript message handling functions in HTML template", () => {
+      const mockTask: Task = {
+        id: "test-1",
+        title: "Test Task",
+        description: "Test Description",
+        status: TaskStatus.NOT_STARTED,
+        complexity: "low" as any,
+        priority: TaskPriority.MEDIUM,
+        dependencies: [],
+        requirements: [],
+        createdDate: "2024-01-01T00:00:00.000Z",
+        lastModified: "2024-01-01T00:00:00.000Z",
+        isExecutable: true,
+      };
+
+      const html = (provider as any).generateTaskDetailsHTML(mockTask);
+
+      // Verify JavaScript functions are included
+      expect(html).toContain("const vscode = acquireVsCodeApi()");
+      expect(html).toContain("function handleStatusChange(taskId, newStatus)");
+      expect(html).toContain("function handleCursorExecute(taskId)");
+      expect(html).toContain("function handleActionButton(action, taskId)");
+      expect(html).toContain("function handleActionClick(action, taskId)");
+      expect(html).toContain("vscode.postMessage");
+    });
+
+    it("should include proper message structure in JavaScript functions", () => {
+      const mockTask: Task = {
+        id: "test-1",
+        title: "Test Task",
+        description: "Test Description",
+        status: TaskStatus.NOT_STARTED,
+        complexity: "low" as any,
+        priority: TaskPriority.MEDIUM,
+        dependencies: [],
+        requirements: [],
+        createdDate: "2024-01-01T00:00:00.000Z",
+        lastModified: "2024-01-01T00:00:00.000Z",
+        isExecutable: true,
+      };
+
+      const html = (provider as any).generateTaskDetailsHTML(mockTask);
+
+      // Verify message structure for status change
+      expect(html).toContain("command: 'status-change'");
+      expect(html).toContain("data: { taskId, newStatus }");
+
+      // Verify message structure for Cursor execution
+      expect(html).toContain("command: 'cursor-execute'");
+      expect(html).toContain("data: { taskId }");
+
+      // Verify message structure for action button
+      expect(html).toContain("command: 'action-button'");
+      expect(html).toContain("data: { action, taskId }");
+    });
+
+    it("should include event delegation for action buttons", () => {
+      const mockTask: Task = {
+        id: "test-1",
+        title: "Test Task",
+        description: "Test Description",
+        status: TaskStatus.NOT_STARTED,
+        complexity: "low" as any,
+        priority: TaskPriority.MEDIUM,
+        dependencies: [],
+        requirements: [],
+        createdDate: "2024-01-01T00:00:00.000Z",
+        lastModified: "2024-01-01T00:00:00.000Z",
+        isExecutable: true,
+      };
+
+      const html = (provider as any).generateTaskDetailsHTML(mockTask);
+
+      // Verify event delegation is set up
+      expect(html).toContain("document.addEventListener('click'");
+      expect(html).toContain("event.target.closest('.action-btn')");
+      expect(html).toContain("getAttribute('data-action')");
+      expect(html).toContain("getAttribute('data-task-id')");
+    });
+
+    it("should include initialization code for message handling", () => {
+      const mockTask: Task = {
+        id: "test-1",
+        title: "Test Task",
+        description: "Test Description",
+        status: TaskStatus.NOT_STARTED,
+        complexity: "low" as any,
+        priority: TaskPriority.MEDIUM,
+        dependencies: [],
+        requirements: [],
+        createdDate: "2024-01-01T00:00:00.000Z",
+        lastModified: "2024-01-01T00:00:00.000Z",
+        isExecutable: true,
+      };
+
+      const html = (provider as any).generateTaskDetailsHTML(mockTask);
+
+      // Verify initialization code
+      expect(html).toContain("document.addEventListener('DOMContentLoaded'");
+      expect(html).toContain(
+        "TaskDetailCardProvider webview initialized with message handling"
+      );
+    });
+
+    it("should include JavaScript in no-task-selected HTML", () => {
+      const html = (provider as any).generateNoTaskSelectedHTML();
+
+      // Verify JavaScript is included even when no task is selected
+      expect(html).toContain("const vscode = acquireVsCodeApi()");
+      expect(html).toContain(
+        "TaskDetailCardProvider webview initialized (no task selected)"
+      );
+    });
+
+    it("should include JavaScript in fallback HTML", () => {
+      const mockTask: Task = {
+        id: "test-1",
+        title: "Test Task",
+        description: "Test Description",
+        status: TaskStatus.NOT_STARTED,
+        complexity: "low" as any,
+        priority: TaskPriority.MEDIUM,
+        dependencies: [],
+        requirements: [],
+        createdDate: "2024-01-01T00:00:00.000Z",
+        lastModified: "2024-01-01T00:00:00.000Z",
+      };
+
+      const html = (provider as any).generateFallbackHTML(mockTask);
+
+      // Verify JavaScript is included even in fallback state
+      expect(html).toContain("const vscode = acquireVsCodeApi()");
+      expect(html).toContain(
+        "TaskDetailCardProvider webview initialized (fallback state)"
+      );
+    });
+  });
+
   describe("Resource Cleanup", () => {
     it("should dispose of all resources correctly", () => {
       // Mock console.error and console.warn to prevent test output pollution
@@ -532,7 +1077,7 @@ describe("TaskDetailCardProvider", () => {
         description: "Test Description",
         status: TaskStatus.NOT_STARTED,
         complexity: "low" as any,
-        priority: TaskPriority.MEDIUM,
+        priority: "medium" as any,
         dependencies: [],
         requirements: [],
         createdDate: "2024-01-01T00:00:00.000Z",
@@ -1135,7 +1680,7 @@ describe("TaskDetailCardProvider", () => {
         TaskStatus.DEPRECATED,
       ];
 
-      allStatuses.forEach(status => {
+      allStatuses.forEach((status) => {
         const actions = provider.getActionsForStatus(status);
         expect(actions.length).toBeGreaterThan(0);
         expect(Array.isArray(actions)).toBe(true);
@@ -1150,8 +1695,11 @@ describe("TaskDetailCardProvider", () => {
 
   describe("Action Button Helper Methods", () => {
     it("should render individual buttons with proper data attributes", () => {
-      const buttonHtml = provider.renderButton("🤖 Execute with Cursor", "test-1");
-      
+      const buttonHtml = provider.renderButton(
+        "🤖 Execute with Cursor",
+        "test-1"
+      );
+
       expect(buttonHtml).toContain('data-action="execute-cursor"');
       expect(buttonHtml).toContain('data-task-id="test-1"');
       expect(buttonHtml).toContain('class="action-btn cursor-btn"');
@@ -1160,11 +1708,11 @@ describe("TaskDetailCardProvider", () => {
 
     it("should render regular buttons without cursor styling", () => {
       const buttonHtml = provider.renderButton("Generate Prompt", "test-1");
-      
+
       expect(buttonHtml).toContain('data-action="generate-prompt"');
       expect(buttonHtml).toContain('data-task-id="test-1"');
       expect(buttonHtml).toContain('class="action-btn"');
-      expect(buttonHtml).not.toContain('cursor-btn');
+      expect(buttonHtml).not.toContain("cursor-btn");
     });
 
     it("should correctly identify executable actions", () => {
@@ -1187,9 +1735,15 @@ describe("TaskDetailCardProvider", () => {
         isExecutable: false,
       };
 
-      expect(provider.isExecutableAction("🤖 Execute with Cursor", executableTask)).toBe(true);
-      expect(provider.isExecutableAction("🤖 Execute with Cursor", nonExecutableTask)).toBe(false);
-      expect(provider.isExecutableAction("Generate Prompt", executableTask)).toBe(false);
+      expect(
+        provider.isExecutableAction("🤖 Execute with Cursor", executableTask)
+      ).toBe(true);
+      expect(
+        provider.isExecutableAction("🤖 Execute with Cursor", nonExecutableTask)
+      ).toBe(false);
+      expect(
+        provider.isExecutableAction("Generate Prompt", executableTask)
+      ).toBe(false);
     });
 
     it("should generate correct action keys for all actions", () => {
@@ -1213,10 +1767,10 @@ describe("TaskDetailCardProvider", () => {
         "Update Dependencies",
         "Report Issue",
         "Archive",
-        "View History"
+        "View History",
       ];
 
-      testActions.forEach(action => {
+      testActions.forEach((action) => {
         const actionKey = (provider as any).getActionKey(action);
         expect(actionKey).toBeDefined();
         expect(typeof actionKey).toBe("string");
@@ -1252,8 +1806,12 @@ describe("TaskDetailCardProvider", () => {
         isExecutable: false,
       };
 
-      const executableHtml = (provider as any).generateTaskDetailsHTML(executableTask);
-      const nonExecutableHtml = (provider as any).generateTaskDetailsHTML(nonExecutableTask);
+      const executableHtml = (provider as any).generateTaskDetailsHTML(
+        executableTask
+      );
+      const nonExecutableHtml = (provider as any).generateTaskDetailsHTML(
+        nonExecutableTask
+      );
 
       // Executable task should have Cursor button
       expect(executableHtml).toContain("🤖 Execute with Cursor");

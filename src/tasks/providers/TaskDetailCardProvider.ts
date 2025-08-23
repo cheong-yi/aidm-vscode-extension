@@ -167,13 +167,7 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
       });
 
       // Handle webview messages from JavaScript content
-      webviewView.webview.onDidReceiveMessage(
-        (message) => {
-          this.handleWebviewMessage(message);
-        },
-        undefined,
-        this.disposables
-      );
+      this.setupMessageHandling(webviewView.webview);
     } catch (error) {
       // Log error and continue without webview functionality
       console.error("Failed to resolve webview view:", error);
@@ -524,6 +518,9 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
           </div>
           
           <script>
+            // Acquire VSCode API for webview communication
+            const vscode = acquireVsCodeApi();
+            
             // Handle failures section expansion with smooth animations
             function toggleFailures(failuresElement, event) {
               event.stopPropagation();
@@ -552,25 +549,43 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
               }
             }
             
-            // Handle action button clicks
-            function handleActionClick(action, taskId) {
+            // Enhanced message handling functions
+            function handleStatusChange(taskId, newStatus) {
               vscode.postMessage({
-                command: action,
-                taskId: taskId
+                command: 'status-change',
+                data: { taskId, newStatus }
               });
             }
             
-            // Add event delegation for action buttons
+            function handleCursorExecute(taskId) {
+              vscode.postMessage({
+                command: 'cursor-execute',
+                data: { taskId }
+              });
+            }
+            
+            function handleActionButton(action, taskId) {
+              vscode.postMessage({
+                command: 'action-button',
+                data: { action, taskId }
+              });
+            }
+            
+            // Legacy action button click handler for backward compatibility
+            function handleActionClick(action, taskId) {
+              // Use new structured message format
+              handleActionButton(action, taskId);
+            }
+            
+            // Add event delegation for action buttons with enhanced message handling
             document.addEventListener('click', function(event) {
               const button = event.target.closest('.action-btn');
               if (button) {
                 const action = button.getAttribute('data-action');
                 const taskId = button.getAttribute('data-task-id');
                 if (action && taskId) {
-                  vscode.postMessage({
-                    command: action,
-                    taskId: taskId
-                  });
+                  // Use new structured message format
+                  handleActionButton(action, taskId);
                 }
               }
             });
@@ -590,6 +605,9 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
                   expandIcon.style.transform = 'rotate(0deg)';
                 }
               });
+              
+              // Set up any additional initialization needed for message handling
+              console.log('TaskDetailCardProvider webview initialized with message handling');
             });
           </script>
         </body>
@@ -1359,6 +1377,16 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
           <p>Description: ${this.escapeHtml(task.description)}</p>
           <p>Please try refreshing the view or contact support if the problem persists.</p>
         </div>
+        
+        <script>
+          // Acquire VSCode API for webview communication (fallback state)
+          const vscode = acquireVsCodeApi();
+          
+          // Initialize webview with message handling capability
+          document.addEventListener('DOMContentLoaded', function() {
+            console.log('TaskDetailCardProvider webview initialized (fallback state)');
+          });
+        </script>
       </body>
       </html>
     `;
@@ -1844,6 +1872,16 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
           <p>Select a task from the tree view above to see detailed information.</p>
           <p>Click on executable tasks (🤖) to start implementation with AI.</p>
         </div>
+        
+        <script>
+          // Acquire VSCode API for webview communication (even when no task selected)
+          const vscode = acquireVsCodeApi();
+          
+          // Initialize webview with message handling capability
+          document.addEventListener('DOMContentLoaded', function() {
+            console.log('TaskDetailCardProvider webview initialized (no task selected)');
+          });
+        </script>
       </body>
       </html>
     `;
@@ -1857,7 +1895,28 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
    */
   private handleWebviewMessage(message: any): void {
     try {
+      // Validate message structure before processing
+      if (!this.isValidMessage(message)) {
+        console.warn("Invalid webview message received:", message);
+        return;
+      }
+
       switch (message.command) {
+        case "status-change":
+          this.handleStatusChange(
+            message.data?.taskId,
+            message.data?.newStatus
+          );
+          break;
+
+        case "cursor-execute":
+          this.handleCursorExecution(message.data?.taskId);
+          break;
+
+        case "action-button":
+          this.handleActionButton(message.data?.action, message.data?.taskId);
+          break;
+
         case "execute-cursor":
           if (message.taskId) {
             this._onCursorExecuteRequested.fire({
@@ -2026,6 +2085,276 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
       }
     } catch (error) {
       console.error("Failed to handle webview message:", error);
+    }
+  }
+
+  /**
+   * Sets up webview message handling for bidirectional communication
+   * Called during webview initialization to configure message listeners
+   *
+   * @param webview - The webview instance to configure message handling for
+   */
+  private setupMessageHandling(webview: vscode.Webview): void {
+    try {
+      // Configure message listener for webview communication
+      webview.onDidReceiveMessage(
+        (message) => {
+          this.handleWebviewMessage(message);
+        },
+        undefined,
+        this.disposables
+      );
+    } catch (error) {
+      console.error("Failed to setup message handling:", error);
+    }
+  }
+
+  /**
+   * Validates webview message structure and content
+   * Called before processing any webview message to prevent errors
+   *
+   * @param message - The message to validate
+   * @returns True if message is valid and can be processed
+   */
+  private isValidMessage(message: any): boolean {
+    try {
+      // Check if message exists and has required structure
+      if (!message || typeof message !== "object") {
+        return false;
+      }
+
+      // Check if message has command property
+      if (!message.command || typeof message.command !== "string") {
+        return false;
+      }
+
+      // Validate message data structure for structured messages
+      if (message.data && typeof message.data !== "object") {
+        return false;
+      }
+
+      // Validate taskId for messages that require it
+      const requiresTaskId = [
+        "status-change",
+        "cursor-execute",
+        "action-button",
+        "execute-cursor",
+        "generate-prompt",
+        "view-requirements",
+        "continue-work",
+        "mark-complete",
+        "view-dependencies",
+        "approve-complete",
+        "request-changes",
+        "view-implementation",
+        "view-code",
+        "view-tests",
+        "history",
+        "fix-failing-tests",
+        "view-full-report",
+        "rerun-tests",
+        "view-blockers",
+        "update-dependencies",
+        "report-issue",
+        "archive",
+        "view-history",
+      ];
+
+      if (requiresTaskId.includes(message.command)) {
+        const taskId = message.data?.taskId || message.taskId;
+        if (!taskId || typeof taskId !== "string") {
+          return false;
+        }
+      }
+
+      // Validate status for status-change messages
+      if (message.command === "status-change") {
+        const newStatus = message.data?.newStatus;
+        if (!newStatus || !Object.values(TaskStatus).includes(newStatus)) {
+          return false;
+        }
+      }
+
+      // Validate action for action-button messages
+      if (message.command === "action-button") {
+        const action = message.data?.action;
+        if (!action || typeof action !== "string") {
+          return false;
+        }
+      }
+
+      return true;
+    } catch (error) {
+      console.error("Error validating message:", error);
+      return false;
+    }
+  }
+
+  /**
+   * Handles status change requests from the webview
+   * Called when user requests to change task status via webview
+   *
+   * @param taskId - The ID of the task to update
+   * @param newStatus - The new status to set for the task
+   */
+  private handleStatusChange(taskId: string, newStatus: TaskStatus): void {
+    try {
+      if (!taskId || !newStatus) {
+        console.warn("Invalid status change request:", { taskId, newStatus });
+        return;
+      }
+
+      // Validate that the task exists and can be updated
+      if (!this.currentTask || this.currentTask.id !== taskId) {
+        console.warn("Status change requested for non-current task:", taskId);
+        return;
+      }
+
+      // Validate status transition (basic validation)
+      if (!this.isValidStatusTransition(this.currentTask.status, newStatus)) {
+        console.warn("Invalid status transition:", {
+          from: this.currentTask.status,
+          to: newStatus,
+          taskId,
+        });
+        return;
+      }
+
+      // Emit status change event for extension integration
+      this._onStatusChanged.fire({
+        taskId: taskId,
+        newStatus: newStatus,
+      });
+
+      console.log(`Status change requested for task ${taskId}: ${newStatus}`);
+    } catch (error) {
+      console.error("Failed to handle status change:", error);
+    }
+  }
+
+  /**
+   * Handles Cursor execution requests from the webview
+   * Called when user requests Cursor AI integration for a task
+   *
+   * @param taskId - The ID of the task to execute with Cursor
+   */
+  private handleCursorExecution(taskId: string): void {
+    try {
+      if (!taskId) {
+        console.warn("Invalid Cursor execution request:", { taskId });
+        return;
+      }
+
+      // Validate that the task exists and is executable
+      if (!this.currentTask || this.currentTask.id !== taskId) {
+        console.warn(
+          "Cursor execution requested for non-current task:",
+          taskId
+        );
+        return;
+      }
+
+      if (!this.currentTask.isExecutable) {
+        console.warn(
+          "Cursor execution requested for non-executable task:",
+          taskId
+        );
+        return;
+      }
+
+      if (this.currentTask.status !== TaskStatus.NOT_STARTED) {
+        console.warn(
+          "Cursor execution requested for non-NOT_STARTED task:",
+          taskId
+        );
+        return;
+      }
+
+      // Emit Cursor execution event for extension integration
+      this._onCursorExecuteRequested.fire({
+        taskId: taskId,
+      });
+
+      console.log(`Cursor execution requested for task ${taskId}`);
+    } catch (error) {
+      console.error("Failed to handle Cursor execution:", error);
+    }
+  }
+
+  /**
+   * Handles action button clicks from the webview
+   * Called when user clicks various action buttons in the webview
+   *
+   * @param action - The action string that was clicked
+   * @param taskId - The ID of the task the action applies to
+   */
+  private handleActionButton(action: string, taskId: string): void {
+    try {
+      if (!action || !taskId) {
+        console.warn("Invalid action button request:", { action, taskId });
+        return;
+      }
+
+      // Validate that the task exists
+      if (!this.currentTask || this.currentTask.id !== taskId) {
+        console.warn("Action button clicked for non-current task:", {
+          action,
+          taskId,
+        });
+        return;
+      }
+
+      // Route action to appropriate handler based on action type
+      if (action.includes("🤖") || action.includes("Execute with Cursor")) {
+        this.handleCursorExecution(taskId);
+      } else if (action.includes("Status") || action.includes("status")) {
+        // Handle status-related actions (future implementation)
+        console.log("Status action clicked:", { action, taskId });
+      } else {
+        // Handle other action types (future implementation)
+        console.log("Action button clicked:", { action, taskId });
+      }
+    } catch (error) {
+      console.error("Failed to handle action button:", error);
+    }
+  }
+
+  /**
+   * Validates if a status transition is allowed
+   * Called to ensure status changes follow business rules
+   *
+   * @param currentStatus - The current status of the task
+   * @param newStatus - The proposed new status
+   * @returns True if the status transition is valid
+   */
+  private isValidStatusTransition(
+    currentStatus: TaskStatus,
+    newStatus: TaskStatus
+  ): boolean {
+    try {
+      // Basic status transition validation
+      const validTransitions: Record<TaskStatus, TaskStatus[]> = {
+        [TaskStatus.NOT_STARTED]: [TaskStatus.IN_PROGRESS, TaskStatus.BLOCKED],
+        [TaskStatus.IN_PROGRESS]: [
+          TaskStatus.REVIEW,
+          TaskStatus.BLOCKED,
+          TaskStatus.COMPLETED,
+        ],
+        [TaskStatus.REVIEW]: [
+          TaskStatus.COMPLETED,
+          TaskStatus.IN_PROGRESS,
+          TaskStatus.BLOCKED,
+        ],
+        [TaskStatus.COMPLETED]: [TaskStatus.IN_PROGRESS, TaskStatus.DEPRECATED],
+        [TaskStatus.BLOCKED]: [TaskStatus.NOT_STARTED, TaskStatus.IN_PROGRESS],
+        [TaskStatus.DEPRECATED]: [TaskStatus.NOT_STARTED],
+      };
+
+      const allowedTransitions = validTransitions[currentStatus] || [];
+      return allowedTransitions.includes(newStatus);
+    } catch (error) {
+      console.error("Error validating status transition:", error);
+      return false;
     }
   }
 
