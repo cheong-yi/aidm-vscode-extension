@@ -1707,4 +1707,211 @@ describe("TaskDetailCardProvider", () => {
       });
     });
   });
+
+  describe("Enhanced Test Failures Rendering", () => {
+    it("should render collapsible failures section with proper HTML structure", () => {
+      const mockFailures = [
+        {
+          name: "should validate task status transitions",
+          message: "AssertionError: Expected 400 but got 200",
+          category: "assertion",
+        },
+        {
+          name: "should handle invalid task IDs",
+          message: "TypeError: Cannot read property 'id' of undefined",
+          category: "type",
+        },
+      ];
+
+      const result = provider.renderCollapsibleFailures(mockFailures);
+
+      // Verify HTML structure
+      expect(result).toContain("failures-section");
+      expect(result).toContain("failures-header");
+      expect(result).toContain("failures-list");
+      expect(result).toContain("Failed Tests (2)");
+      expect(result).toContain('onclick="toggleFailures(this, event)"');
+    });
+
+    it("should render individual failure items with error categorization", () => {
+      const mockFailure = {
+        name: "should validate task status transitions",
+        message: "AssertionError: Expected 400 but got 200",
+        category: "assertion",
+        stackTrace: "at Object.<anonymous> (test.js:15:10)",
+      };
+
+      const result = provider.renderFailureItem(mockFailure);
+
+      // Verify failure item structure
+      expect(result).toContain("failure-item assertion");
+      expect(result).toContain("failure-header");
+      expect(result).toContain("failure-category-icon");
+      expect(result).toContain("failure-category-badge");
+      expect(result).toContain("should validate task status transitions");
+      expect(result).toContain("AssertionError: Expected 400 but got 200");
+      expect(result).toContain("assertion");
+      expect(result).toContain("failure-stacktrace");
+      // Note: HTML is escaped, so check for escaped version
+      expect(result).toContain("at Object.&lt;anonymous&gt; (test.js:15:10)");
+    });
+
+    it("should handle failure items without stack trace", () => {
+      const mockFailure = {
+        name: "should handle invalid task IDs",
+        message: "TypeError: Cannot read property 'id' of undefined",
+        category: "type",
+      };
+
+      const result = provider.renderFailureItem(mockFailure);
+
+      // Verify no stack trace section
+      expect(result).not.toContain("failure-stacktrace");
+      expect(result).toContain("type");
+    });
+
+    it("should return appropriate icons for each error category", () => {
+      const categoryIconMap = {
+        assertion: "❌",
+        type: "🔍",
+        filesystem: "💾",
+        timeout: "⏰",
+        network: "🌐",
+      };
+
+      Object.entries(categoryIconMap).forEach(([category, expectedIcon]) => {
+        const result = provider.getCategoryIcon(category);
+        expect(result).toBe(expectedIcon);
+      });
+    });
+
+    it("should return unknown icon for invalid categories", () => {
+      const result = provider.getCategoryIcon("invalid_category");
+      expect(result).toBe("❓");
+    });
+
+    it("should return appropriate colors for each error category", () => {
+      const categoryColorMap = {
+        assertion: "#f48771",
+        type: "#dcdcaa",
+        filesystem: "#569cd6",
+        timeout: "#d7ba7d",
+        network: "#c586c0",
+      };
+
+      Object.entries(categoryColorMap).forEach(([category, expectedColor]) => {
+        const result = provider.getCategoryColor(category);
+        expect(result).toBe(expectedColor);
+      });
+    });
+
+    it("should return unknown color for invalid categories", () => {
+      const result = provider.getCategoryColor("invalid_category");
+      expect(result).toBe("#6a6a6a");
+    });
+
+    it("should handle empty failures array gracefully", () => {
+      const result = provider.renderCollapsibleFailures([]);
+      expect(result).toBe("");
+    });
+
+    it("should handle undefined failures gracefully", () => {
+      const result = provider.renderCollapsibleFailures(undefined as any);
+      expect(result).toBe("");
+    });
+
+    it("should handle failures with missing category gracefully", () => {
+      const mockFailure = {
+        name: "should handle missing category",
+        message: "Some error message",
+        // Missing category
+      };
+
+      const result = provider.renderFailureItem(mockFailure);
+
+      // Should use "unknown" category as fallback
+      expect(result).toContain("failure-item unknown");
+      expect(result).toContain("❓");
+      expect(result).toContain("unknown");
+    });
+
+    it("should handle failures with missing message gracefully", () => {
+      const mockFailure = {
+        name: "should handle missing message",
+        category: "assertion",
+        // Missing message
+      };
+
+      const result = provider.renderFailureItem(mockFailure);
+
+      // Should handle missing message gracefully
+      expect(result).toContain("should handle missing message");
+      expect(result).toContain("assertion");
+    });
+
+    it("should integrate with existing renderTestFailures method", () => {
+      const mockFailures = [
+        {
+          name: "should validate task status transitions",
+          message: "AssertionError: Expected 400 but got 200",
+          category: "assertion",
+        },
+      ];
+
+      const result = provider.renderTestFailures(mockFailures);
+
+      // Should use the enhanced collapsible rendering
+      expect(result).toContain("failures-section");
+      expect(result).toContain('onclick="toggleFailures(this, event)"');
+      expect(result).toContain("failure-item assertion");
+    });
+
+    it("should show 'No test failures' for empty failures in renderTestFailures", () => {
+      const result = provider.renderTestFailures([]);
+      expect(result).toContain("No test failures");
+    });
+
+    it("should maintain backward compatibility with existing test failures display", () => {
+      const mockTask: Task = {
+        id: "test-1",
+        title: "Test Task",
+        description: "Test Description",
+        status: TaskStatus.COMPLETED,
+        complexity: "low" as any,
+        priority: TaskPriority.MEDIUM,
+        dependencies: [],
+        requirements: [],
+        createdDate: "2024-01-01T00:00:00.000Z",
+        lastModified: "2024-01-01T00:00:00.000Z",
+        testStatus: {
+          lastRunDate: "2024-01-01T10:00:00.000Z",
+          totalTests: 10,
+          passedTests: 8,
+          failedTests: 2,
+          failingTestsList: [
+            {
+              name: "should validate task status transitions",
+              message: "AssertionError: Expected 400 but got 200",
+              category: "assertion",
+            },
+            {
+              name: "should handle invalid task IDs",
+              message: "TypeError: Cannot read property 'id' of undefined",
+              category: "type",
+            },
+          ],
+          status: TestStatusEnum.PARTIAL,
+        },
+      };
+
+      const html = (provider as any).generateTaskDetailsHTML(mockTask);
+
+      // Verify enhanced failures section is present
+      expect(html).toContain("Failed Tests (2)");
+      expect(html).toContain("failure-item assertion");
+      expect(html).toContain("failure-item type");
+      expect(html).toContain("❌");
+      expect(html).toContain("🔍");
+    });
+  });
 });

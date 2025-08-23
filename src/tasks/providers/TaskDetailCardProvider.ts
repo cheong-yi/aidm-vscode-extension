@@ -232,7 +232,7 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
   }
 
   /**
-   * Renders test failures in HTML format
+   * Renders test failures in HTML format with collapsible functionality
    * Called when displaying test results for a task
    *
    * @param failures - Array of failing test information
@@ -243,19 +243,27 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
       return '<div class="no-failures">No test failures</div>';
     }
 
+    return this.renderCollapsibleFailures(failures);
+  }
+
+  /**
+   * Renders collapsible failures section with enhanced error categorization
+   * Called when displaying test failures with expand/collapse functionality
+   *
+   * @param failures - Array of FailingTest objects
+   * @returns HTML string for collapsible failures section
+   */
+  public renderCollapsibleFailures(failures: any[]): string {
+    if (!failures || failures.length === 0) {
+      return "";
+    }
+
     const failureItems = failures
-      .map(
-        (failure) => `
-        <div class="failure-item">
-          <div class="failure-name">${this.escapeHtml(failure.name)}</div>
-          <div class="failure-message">${this.escapeHtml(failure.message)}</div>
-        </div>
-      `
-      )
+      .map((failure) => this.renderFailureItem(failure))
       .join("");
 
     return `
-      <div class="failures-section">
+      <div class="failures-section" onclick="toggleFailures(this, event)">
         <div class="failures-header">
           <svg class="task-expand-icon" viewBox="0 0 16 16" fill="currentColor" width="12" height="12">
             <path d="m12.14 8.753-5.482 4.796c-.646.566-1.658.106-1.658-.753V3.204a1 1 0 0 1 1.659-.753l5.48 4.796a1 1 0 0 1 0 1.506z"/>
@@ -267,6 +275,77 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
         </div>
       </div>
     `;
+  }
+
+  /**
+   * Renders individual failure item with error categorization
+   * Called when displaying individual failing test details
+   *
+   * @param failure - FailingTest object to render
+   * @returns HTML string for individual failure item
+   */
+  public renderFailureItem(failure: any): string {
+    const category = failure.category || "unknown";
+    const categoryIcon = this.getCategoryIcon(category);
+    const categoryColor = this.getCategoryColor(category);
+
+    return `
+      <div class="failure-item ${category}" style="border-left-color: ${categoryColor}">
+        <div class="failure-header">
+          <span class="failure-category-icon">${categoryIcon}</span>
+          <span class="failure-category-badge">${category}</span>
+        </div>
+        <div class="failure-name">${this.escapeHtml(failure.name)}</div>
+        <div class="failure-message">${this.escapeHtml(failure.message)}</div>
+        ${
+          failure.stackTrace
+            ? `<div class="failure-stacktrace">${this.escapeHtml(
+                failure.stackTrace
+              )}</div>`
+            : ""
+        }
+      </div>
+    `;
+  }
+
+  /**
+   * Gets appropriate icon for error category
+   * Called when displaying error category visual indicators
+   *
+   * @param category - Error category string
+   * @returns Icon string for the category
+   */
+  public getCategoryIcon(category: string): string {
+    const iconMap: Record<string, string> = {
+      assertion: "❌",
+      type: "🔍",
+      filesystem: "💾",
+      timeout: "⏰",
+      network: "🌐",
+      unknown: "❓",
+    };
+
+    return iconMap[category] || iconMap.unknown;
+  }
+
+  /**
+   * Gets appropriate color for error category
+   * Called when styling error category visual indicators
+   *
+   * @param category - Error category string
+   * @returns CSS color value for the category
+   */
+  public getCategoryColor(category: string): string {
+    const colorMap: Record<string, string> = {
+      assertion: "#f48771", // Red for assertion failures
+      type: "#dcdcaa", // Yellow for type errors
+      filesystem: "#569cd6", // Blue for filesystem issues
+      timeout: "#d7ba7d", // Orange for timeouts
+      network: "#c586c0", // Purple for network issues
+      unknown: "#6a6a6a", // Gray for unknown categories
+    };
+
+    return colorMap[category] || colorMap.unknown;
   }
 
   /**
@@ -445,10 +524,32 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
           </div>
           
           <script>
-            // Handle failures section expansion
+            // Handle failures section expansion with smooth animations
             function toggleFailures(failuresElement, event) {
               event.stopPropagation();
-              failuresElement.classList.toggle('expanded');
+              
+              const failuresList = failuresElement.querySelector('.failures-list');
+              const expandIcon = failuresElement.querySelector('.task-expand-icon');
+              
+              if (failuresElement.classList.contains('expanded')) {
+                // Collapse
+                failuresElement.classList.remove('expanded');
+                if (failuresList) {
+                  failuresList.style.display = 'none';
+                }
+                if (expandIcon) {
+                  expandIcon.style.transform = 'rotate(0deg)';
+                }
+              } else {
+                // Expand
+                failuresElement.classList.add('expanded');
+                if (failuresList) {
+                  failuresList.style.display = 'block';
+                }
+                if (expandIcon) {
+                  expandIcon.style.transform = 'rotate(90deg)';
+                }
+              }
             }
             
             // Handle action button clicks
@@ -458,6 +559,23 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
                 taskId: taskId
               });
             }
+            
+            // Initialize failures sections on page load
+            document.addEventListener('DOMContentLoaded', function() {
+              const failuresSections = document.querySelectorAll('.failures-section');
+              failuresSections.forEach(section => {
+                // Ensure all sections start collapsed
+                section.classList.remove('expanded');
+                const failuresList = section.querySelector('.failures-list');
+                if (failuresList) {
+                  failuresList.style.display = 'none';
+                }
+                const expandIcon = section.querySelector('.task-expand-icon');
+                if (expandIcon) {
+                  expandIcon.style.transform = 'rotate(0deg)';
+                }
+              });
+            });
           </script>
         </body>
         </html>
@@ -839,20 +957,92 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
       .failure-item {
         background: var(--vscode-panel-background, #2d2d30);
         border-left: 3px solid #f48771;
-        padding: 6px 8px;
-        margin-bottom: 4px;
-        border-radius: 2px;
-        transition: background-color 0.2s;
+        padding: 8px 10px;
+        margin-bottom: 6px;
+        border-radius: 3px;
+        transition: all 0.2s;
+        position: relative;
       }
 
       .failure-item:hover {
         background: var(--vscode-panel-border, #3e3e42);
+        transform: translateX(2px);
+      }
+
+      .failure-header {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin-bottom: 6px;
+      }
+
+      .failure-category-icon {
+        font-size: 12px;
+        display: inline-block;
+        width: 16px;
+        text-align: center;
+      }
+
+      .failure-category-badge {
+        background: var(--vscode-panel-border, #3e3e42);
+        color: var(--vscode-foreground, #cccccc);
+        font-size: 8px;
+        padding: 2px 6px;
+        border-radius: 8px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        font-weight: 600;
+        border: 1px solid transparent;
+        transition: border-color 0.2s;
+      }
+
+      .failure-item:hover .failure-category-badge {
+        border-color: var(--vscode-focusBorder, #007acc);
+      }
+
+      /* Error category specific styling */
+      .failure-item.assertion .failure-category-badge {
+        background: rgba(244, 135, 113, 0.2);
+        color: #f48771;
+        border-color: #f48771;
+      }
+
+      .failure-item.type .failure-category-badge {
+        background: rgba(220, 220, 170, 0.2);
+        color: #dcdcaa;
+        border-color: #dcdcaa;
+      }
+
+      .failure-item.filesystem .failure-category-badge {
+        background: rgba(86, 156, 214, 0.2);
+        color: #569cd6;
+        border-color: #569cd6;
+      }
+
+      .failure-item.timeout .failure-category-badge {
+        background: rgba(215, 186, 125, 0.2);
+        color: #d7ba7d;
+        border-color: #d7ba7d;
+      }
+
+      .failure-item.network .failure-category-badge {
+        background: rgba(197, 134, 192, 0.2);
+        color: #c586c0;
+        border-color: #c586c0;
+      }
+
+      .failure-item.unknown .failure-category-badge {
+        background: rgba(106, 106, 106, 0.2);
+        color: #6a6a6a;
+        border-color: #6a6a6a;
       }
 
       .failure-name {
         font-weight: 500;
-        margin-bottom: 2px;
+        margin-bottom: 4px;
         color: var(--vscode-foreground, #ffffff);
+        font-size: 11px;
+        line-height: 1.3;
       }
 
       .failure-message {
@@ -860,6 +1050,23 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
         font-family: 'Courier New', monospace;
         font-size: 9px;
         word-break: break-word;
+        line-height: 1.4;
+        margin-bottom: 4px;
+      }
+
+      .failure-stacktrace {
+        color: var(--vscode-descriptionForeground, #6a6a6a);
+        font-family: 'Courier New', monospace;
+        font-size: 8px;
+        word-break: break-word;
+        line-height: 1.3;
+        background: var(--vscode-editor-background, #1e1e1e);
+        padding: 4px 6px;
+        border-radius: 2px;
+        border-left: 2px solid var(--vscode-panel-border, #3e3e42);
+        margin-top: 4px;
+        max-height: 80px;
+        overflow-y: auto;
       }
 
       /* No tests state */
@@ -1008,6 +1215,34 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
       /* Smooth transitions for all interactive elements */
       * {
         transition: background-color 0.2s, border-color 0.2s, color 0.2s;
+      }
+
+      /* Enhanced transitions for failures section */
+      .failures-section {
+        transition: all 0.3s ease-in-out;
+      }
+
+      .failures-list {
+        transition: all 0.3s ease-in-out;
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+
+      .failures-section.expanded .failures-list {
+        opacity: 1;
+        transform: translateY(0);
+      }
+
+      .task-expand-icon {
+        transition: transform 0.3s ease-in-out;
+      }
+
+      .failure-item {
+        transition: all 0.2s ease-in-out;
+      }
+
+      .failure-category-badge {
+        transition: all 0.2s ease-in-out;
       }
 
       /* Print styles */
@@ -1252,30 +1487,8 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
       return "";
     }
 
-    const failureItems = failures
-      .map(
-        (failure) => `
-        <div class="failure-item">
-          <div class="failure-name">${this.escapeHtml(failure.name)}</div>
-          <div class="failure-message">${this.escapeHtml(failure.message)}</div>
-        </div>
-      `
-      )
-      .join("");
-
-    return `
-      <div class="failures-section" onclick="toggleFailures(this, event)">
-        <div class="failures-header">
-          <svg class="task-expand-icon" viewBox="0 0 16 16" fill="currentColor" width="12" height="12">
-            <path d="m12.14 8.753-5.482 4.796c-.646.566-1.658.106-1.658-.753V3.204a1 1 0 0 1 1.659-.753l5.48 4.796a1 1 0 0 1 0 1.506z"/>
-          </svg>
-          Failed Tests (${failures.length})
-        </div>
-        <div class="failures-list">
-          ${failureItems}
-        </div>
-      </div>
-    `;
+    // Use the enhanced collapsible failures rendering
+    return this.renderCollapsibleFailures(failures);
   }
 
   /**
