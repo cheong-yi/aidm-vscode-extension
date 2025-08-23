@@ -295,6 +295,22 @@ export async function activate(
     }
 
     console.log(
+      "=== ACTIVATION STEP 8.10.5: Registering TaskTreeViewProvider with VSCode ==="
+    );
+    try {
+      // Register TaskTreeViewProvider with VSCode's tree data provider API
+      const treeViewDisposable = vscode.window.registerTreeDataProvider(
+        "aidm-vscode-extension.tasks-tree",
+        taskTreeViewProvider
+      );
+      context.subscriptions.push(treeViewDisposable);
+      console.log("✅ TaskTreeViewProvider registered with VSCode");
+    } catch (error) {
+      console.error("❌ TaskTreeViewProvider registration failed:", error);
+      // Continue without tree view provider
+    }
+
+    console.log(
       "=== ACTIVATION STEP 8.11: Wiring UI synchronization events ==="
     );
     try {

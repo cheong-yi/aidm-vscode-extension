@@ -176,6 +176,15 @@ This implementation plan breaks down the feature into atomic, TDD-friendly tasks
   - _Requirements: Event synchronization_
   - _Duration: 20-25 minutes_
 
+- [ ] 4.1.5 Connect TaskTreeViewProvider to TaskDetailCardProvider event synchronization
+
+  - Wire TaskTreeViewProvider.onTaskClick event to TaskDetailCardProvider.updateTaskDetails
+  - Handle task selection events to update detail panel with selected task data
+  - Implement proper event cleanup to prevent memory leaks
+  - Write unit tests for event flow from tree selection to detail display
+  - _Requirements: UI synchronization, expandable list user experience_
+  - _Duration: 20-25 minutes_
+
 #### 4.2 Mock Data Generation (CRITICAL BLOCKER 2)
 
 - [x] 4.2.1a: Add getTasks() method returning 3 basic Task objects (10 min)
