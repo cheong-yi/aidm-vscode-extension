@@ -246,6 +246,28 @@ describe("Extension", () => {
       expect(mockTask.dependencies).toEqual([]);
       expect(mockTask.requirements).toEqual([]);
     });
+
+    it("should register tree view with correct ID matching package.json", () => {
+      // This test verifies that the tree view is registered with the correct ID
+      // that matches the package.json contributions configuration
+
+      // Arrange: Mock the registerTreeDataProvider API
+      const mockRegisterTreeDataProvider = jest
+        .fn()
+        .mockReturnValue({ dispose: jest.fn() });
+      jest
+        .spyOn(vscode.window, "registerTreeDataProvider")
+        .mockImplementation(mockRegisterTreeDataProvider);
+
+      // Act: Activate the extension
+      activate(mockContext);
+
+      // Assert: Verify that the tree view was registered with the correct ID
+      expect(mockRegisterTreeDataProvider).toHaveBeenCalledWith(
+        "aidm-vscode-extension.tasks-list",
+        expect.any(Object) // TaskTreeViewProvider instance
+      );
+    });
   });
 
   describe("deactivate", () => {

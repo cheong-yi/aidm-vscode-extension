@@ -25,6 +25,9 @@ export const window = {
   registerWebviewViewProvider: jest.fn(() => ({
     dispose: jest.fn(),
   })),
+  registerTreeDataProvider: jest.fn(() => ({
+    dispose: jest.fn(),
+  })),
 };
 
 export const workspace = {

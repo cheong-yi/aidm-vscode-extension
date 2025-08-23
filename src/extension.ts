@@ -300,7 +300,7 @@ export async function activate(
     try {
       // Register TaskTreeViewProvider with VSCode's tree data provider API
       const treeViewDisposable = vscode.window.registerTreeDataProvider(
-        "aidm-vscode-extension.tasks-tree",
+        "aidm-vscode-extension.tasks-list",
         taskTreeViewProvider
       );
       context.subscriptions.push(treeViewDisposable);
