@@ -253,12 +253,12 @@ This implementation plan breaks down the feature into atomic, TDD-friendly tasks
   - Reference the taskmaster container
   - Test: VSCode recognizes view contribution
 
-- [ ] 4.3.1c: Add view visibility and ordering properties (7 min)
+- [x] 4.3.1c: Add view visibility and ordering properties (7 min)
 
   - Add when clause and group ordering
   - Test: View appears in correct sidebar location
 
-- [ ] 4.3.2 Add all taskmaster command contributions to package.json
+- [x] 4.3.2 Add all taskmaster command contributions to package.json
 
   - Define refreshTasks, updateTaskStatus, executeTaskWithCursor commands
   - Add proper titles, categories, and icons for each command

@@ -106,6 +106,37 @@
         "command": "aidm-vscode-extension.version",
         "title": "Show Extension Version",
         "category": "AiDM"
+      },
+      {
+        "command": "aidm-vscode-extension.refreshTasks",
+        "title": "Refresh Tasks",
+        "category": "Taskmaster",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "aidm-vscode-extension.updateTaskStatus",
+        "title": "Update Task Status",
+        "category": "Taskmaster",
+        "icon": "$(edit)"
+      },
+      {
+        "command": "aidm-vscode-extension.executeTaskWithCursor",
+        "title": "Execute Task with Cursor",
+        "category": "Taskmaster",
+        "icon": "$(robot)",
+        "when": "view == aidm-vscode-extension.tasks-list && viewItem == executable-task"
+      },
+      {
+        "command": "aidm-vscode-extension.generateTaskPrompt",
+        "title": "Generate Task Prompt",
+        "category": "Taskmaster",
+        "icon": "$(code)"
+      },
+      {
+        "command": "aidm-vscode-extension.viewTestResults",
+        "title": "View Test Results",
+        "category": "Taskmaster",
+        "icon": "$(beaker)"
       }
     ],
     "configuration": {
