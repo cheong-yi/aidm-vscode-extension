@@ -20,7 +20,7 @@ describe("TaskStatusManager", () => {
       parseTasksFromFile: jest.fn(),
       parseTaskFromMarkdown: jest.fn(),
     } as jest.Mocked<MarkdownTaskParser>;
-    
+
     manager = new TaskStatusManager(mockParser);
   });
 
@@ -59,11 +59,12 @@ describe("TaskStatusManager", () => {
           description: "Test Description",
           status: TaskStatus.NOT_STARTED,
           complexity: "low" as any,
+          priority: "medium" as any,
           dependencies: [],
           requirements: ["1.1"],
           createdDate: "2024-01-01T00:00:00Z",
           lastModified: "2024-01-01T00:00:00Z",
-        }
+        },
       ];
       mockParser.parseTasksFromFile.mockResolvedValue(mockTasks);
 
@@ -83,6 +84,7 @@ describe("TaskStatusManager", () => {
           description: "Create basic project directories and files",
           status: TaskStatus.COMPLETED,
           complexity: "low" as any,
+          priority: "high" as any,
           dependencies: [],
           requirements: ["1.1", "1.2"],
           createdDate: "2024-01-01T00:00:00Z",
@@ -90,9 +92,8 @@ describe("TaskStatusManager", () => {
           assignee: "dev-team",
           estimatedHours: 2,
           actualHours: 1.5,
-          priority: "high" as any,
           tags: ["setup", "foundation"],
-        }
+        },
       ];
       mockParser.parseTasksFromFile.mockResolvedValue(mockTasks);
 

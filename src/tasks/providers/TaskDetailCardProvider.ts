@@ -280,7 +280,7 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
         <body>
           <div class="no-task-selected">
             <!-- Visual Icon for Empty State -->
-            <div class="empty-state-icon">📋</div>
+            <div class="empty-state-icon">Clipboard</div>
             
             <!-- Main Title -->
             <h2 class="empty-state-title">No Task Selected</h2>
@@ -295,7 +295,7 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
               <h3 class="tips-title">Getting Started:</h3>
               <ul class="tips-list">
                 <li>Click on any task in the tree view to see its details</li>
-                <li>Look for tasks marked with 🤖 that can be executed with AI assistance</li>
+                <li>Look for tasks marked with Robot that can be executed with AI assistance</li>
                 <li>Use the refresh button if tasks don't appear</li>
                 <li>Check task dependencies and requirements before starting</li>
               </ul>
@@ -304,13 +304,16 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
             <!-- Quick Actions Section -->
             <div class="quick-actions">
               <button class="action-btn primary" onclick="handleQuickAction('refresh')">
-                🔄 Refresh Tasks
+                Refresh Refresh Tasks
               </button>
               <button class="action-btn secondary" onclick="handleQuickAction('viewAll')">
-                📋 View All Tasks
+                Clipboard View All Tasks
               </button>
               <button class="action-btn secondary" onclick="handleQuickAction('help')">
-                ❓ Show Help
+                Question Show Help
+              </button>
+              <button class="action-btn secondary" onclick="handleQuickAction('settings')">
+                Settings Settings
               </button>
             </div>
             
@@ -374,7 +377,7 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
           <h3 class="tips-title">Getting Started:</h3>
           <ul class="tips-list">
             <li>Click on any task in the tree view to see its details</li>
-            <li>Look for tasks marked with 🤖 that can be executed with AI assistance</li>
+            <li>Look for tasks marked with Robot that can be executed with AI assistance</li>
             <li>Use the refresh button if tasks don't appear</li>
             <li>Check task dependencies and requirements before starting</li>
             <li>Review test results and failure details for completed tasks</li>
@@ -399,16 +402,16 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
       return `
         <div class="quick-actions">
           <button class="action-btn primary" onclick="handleQuickAction('refresh')">
-            🔄 Refresh Tasks
+            Refresh Refresh Tasks
           </button>
           <button class="action-btn secondary" onclick="handleQuickAction('viewAll')">
-            📋 View All Tasks
+            Clipboard View All Tasks
           </button>
           <button class="action-btn secondary" onclick="handleQuickAction('help')">
-            ❓ Show Help
+            Question Show Help
           </button>
           <button class="action-btn secondary" onclick="handleQuickAction('settings')">
-            ⚙️ Settings
+            Settings Settings
           </button>
         </div>
       `;
@@ -459,7 +462,7 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
       </head>
       <body>
         <div class="fallback-empty">
-          <div class="fallback-icon">📋</div>
+          <div class="fallback-icon">Clipboard</div>
           <h3 class="fallback-title">No Task Selected</h3>
           <p class="fallback-text">Select a task from the tree view above to see detailed information.</p>
           <p class="fallback-text">Please try refreshing the view or contact support if the problem persists.</p>
@@ -589,12 +592,12 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
    */
   public getCategoryIcon(category: string): string {
     const iconMap: Record<string, string> = {
-      assertion: "❌",
-      type: "🔍",
-      filesystem: "💾",
-      timeout: "⏰",
-      network: "🌐",
-      unknown: "❓",
+      assertion: "Failed",
+      type: "Search",
+      filesystem: "Save",
+      timeout: "Timer",
+      network: "Network",
+      unknown: "Question",
     };
 
     return iconMap[category] || iconMap.unknown;
@@ -635,7 +638,7 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
     return `
       <div class="executable-actions">
         <button class="action-btn primary" onclick="handleActionClick('executeWithCursor', '${task.id}')">
-          🤖 Execute with Cursor
+          Robot Execute with Cursor
         </button>
         <button class="action-btn" onclick="handleActionClick('generatePrompt', '${task.id}')">
           Generate Prompt
@@ -727,7 +730,7 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
                 )}">${this.getStatusDisplayName(task.status)}</span>
                 ${
                   task.isExecutable
-                    ? '<span class="executable-indicator">🤖</span>'
+                    ? '<span class="executable-indicator">Robot</span>'
                     : ""
                 }
               </div>
@@ -1645,7 +1648,7 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
       </head>
       <body>
         <div class="fallback">
-          <div class="error">⚠️ Error loading task details</div>
+          <div class="error">Warning Error loading task details</div>
           <h3>Task ${task.id}: ${this.escapeHtml(task.title)}</h3>
           <p>Status: ${task.status}</p>
           <p>Description: ${this.escapeHtml(task.description)}</p>
@@ -1773,14 +1776,14 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
       }
 
       if (passedTests === totalTests) {
-        return `${passedTests}/${totalTests} passed ✅`;
+        return `${passedTests}/${totalTests} passed Success`;
       }
 
       if (passedTests === 0) {
-        return `${passedTests}/${totalTests} passed ❌`;
+        return `${passedTests}/${totalTests} passed Failed`;
       }
 
-      return `${passedTests}/${totalTests} passed ⚠️`;
+      return `${passedTests}/${totalTests} passed Warning`;
     } catch (error) {
       console.warn("Failed to format test summary:", error);
       return "Test summary unavailable";
@@ -1883,10 +1886,10 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
    * @returns True if the action is executable (Cursor integration)
    */
   public isExecutableAction(action: string, task: Task): boolean {
-    // Only "🤖 Execute with Cursor" action is executable
+    // Only "Robot Execute with Cursor" action is executable
     // Task must be NOT_STARTED and have isExecutable = true
     return (
-      action.includes("🤖") &&
+      action.includes("Robot") &&
       task.status === "not_started" &&
       task.isExecutable === true
     );
@@ -1901,7 +1904,7 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
    */
   private getActionKey(action: string): string {
     const actionKeyMap: Record<string, string> = {
-      "🤖 Execute with Cursor": "execute-cursor",
+      "Robot Execute with Cursor": "robot-execute-with-cursor",
       "Generate Prompt": "generate-prompt",
       "View Requirements": "view-requirements",
       "Continue Work": "continue-work",
@@ -1944,7 +1947,7 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
 
       // Filter out Cursor action for non-executable tasks
       if (task.status === "not_started" && !task.isExecutable) {
-        actions = actions.filter((action) => !action.includes("🤖"));
+        actions = actions.filter((action) => !action.includes("Robot"));
       }
 
       // Special handling for completed tasks with test failures
@@ -2110,10 +2113,10 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
       </head>
       <body>
         <div class="no-task">
-          <div class="icon">📋</div>
+          <div class="icon">Clipboard</div>
           <h3>No Task Selected</h3>
           <p>Select a task from the tree view above to see detailed information.</p>
-          <p>Click on executable tasks (🤖) to start implementation with AI.</p>
+          <p>Click on executable tasks (Robot) to start implementation with AI.</p>
         </div>
         
         <script>
@@ -2561,7 +2564,7 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
       }
 
       // Route action to appropriate handler based on action type
-      if (action.includes("🤖") || action.includes("Execute with Cursor")) {
+      if (action.includes("Robot") || action.includes("Execute with Cursor")) {
         this.handleCursorExecution(taskId);
       } else if (action.includes("Status") || action.includes("status")) {
         // Handle status-related actions (future implementation)

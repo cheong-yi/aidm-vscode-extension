@@ -77,9 +77,59 @@ export class DegradedModeManager {
   ): Promise<BusinessContext | null> {
     const cacheKey = this.getCacheKey(codeLocation);
 
-    try {
-      // Try primary provider first
-      if (this.currentMode === DegradedModeLevel.NORMAL) {
+    // If in offline mode, return null (no fallbacks available)
+    if (this.currentMode === DegradedModeLevel.OFFLINE) {
+      await this.auditLogger.logEvent({
+        action: "degraded_mode.business_context_offline",
+        category: AuditCategory.SYSTEM_EVENT,
+        severity: AuditSeverity.HIGH,
+        outcome: AuditOutcome.FAILURE,
+        metadata: {
+          codeLocation,
+          currentMode: this.currentMode,
+          reason: "Operating in offline mode - no fallbacks available",
+        },
+      });
+      return null;
+    }
+
+    // If in minimal mode, try only cache fallback (no primary provider, no static fallback)
+    if (this.currentMode === DegradedModeLevel.MINIMAL) {
+      if (this.config.cacheEnabled) {
+        const cached = this.fallbackCache.get(cacheKey);
+        if (cached && this.isCacheValid(cached.timestamp)) {
+          await this.auditLogger.logEvent({
+            action: "degraded_mode.business_context_cache_hit",
+            category: AuditCategory.SYSTEM_EVENT,
+            severity: AuditSeverity.MEDIUM,
+            outcome: AuditOutcome.PARTIAL,
+            metadata: {
+              codeLocation,
+              currentMode: this.currentMode,
+              reason: "Using cached data in minimal mode",
+            },
+          });
+          return cached.data;
+        }
+      }
+      
+      await this.auditLogger.logEvent({
+        action: "degraded_mode.business_context_minimal_no_cache",
+        category: AuditCategory.SYSTEM_EVENT,
+        severity: AuditSeverity.MEDIUM,
+        outcome: AuditOutcome.FAILURE,
+        metadata: {
+          codeLocation,
+          currentMode: this.currentMode,
+          reason: "No cached data available in minimal mode",
+        },
+      });
+      return null;
+    }
+
+    // In normal or partial mode, try primary provider first
+    if (this.currentMode === DegradedModeLevel.NORMAL) {
+      try {
         const result = await primaryProvider();
 
         // Cache successful result
@@ -91,23 +141,23 @@ export class DegradedModeManager {
         }
 
         return result;
-      }
-    } catch (error) {
-      await this.auditLogger.logError(
-        "degraded_mode.primary_provider_failed",
-        error instanceof Error ? error : new Error(String(error)),
-        {
-          codeLocation,
-          currentMode: this.currentMode,
-        },
-        AuditSeverity.HIGH
-      );
+      } catch (error) {
+        await this.auditLogger.logError(
+          "degraded_mode.primary_provider_failed",
+          error instanceof Error ? error : new Error(String(error)),
+          {
+            codeLocation,
+            currentMode: this.currentMode,
+          },
+          AuditSeverity.HIGH
+        );
 
-      // Update service health
-      this.updateServiceHealth("dataProvider", false);
+        // Update service health
+        this.updateServiceHealth("dataProvider", false);
+      }
     }
 
-    // Try fallback mechanisms
+    // Try fallback mechanisms (for both normal and partial modes)
     return await this.getFallbackBusinessContext(codeLocation, cacheKey);
   }
 
@@ -120,8 +170,59 @@ export class DegradedModeManager {
   ): Promise<any | null> {
     const cacheKey = `requirement_${requirementId}`;
 
-    try {
-      if (this.currentMode === DegradedModeLevel.NORMAL) {
+    // If in offline mode, return null (no fallbacks available)
+    if (this.currentMode === DegradedModeLevel.OFFLINE) {
+      await this.auditLogger.logEvent({
+        action: "degraded_mode.requirement_offline",
+        category: AuditCategory.SYSTEM_EVENT,
+        severity: AuditSeverity.HIGH,
+        outcome: AuditOutcome.FAILURE,
+        metadata: {
+          requirementId,
+          currentMode: this.currentMode,
+          reason: "Operating in offline mode - no fallbacks available",
+        },
+      });
+      return null;
+    }
+
+    // If in minimal mode, try only cache fallback (no primary provider, no static fallback)
+    if (this.currentMode === DegradedModeLevel.MINIMAL) {
+      if (this.config.cacheEnabled) {
+        const cached = this.fallbackCache.get(cacheKey);
+        if (cached && this.isCacheValid(cached.timestamp)) {
+          await this.auditLogger.logEvent({
+            action: "degraded_mode.requirement_cache_hit",
+            category: AuditCategory.SYSTEM_EVENT,
+            severity: AuditSeverity.MEDIUM,
+            outcome: AuditOutcome.PARTIAL,
+            metadata: {
+              requirementId,
+              currentMode: this.currentMode,
+              reason: "Using cached data in minimal mode",
+            },
+          });
+          return cached.data;
+        }
+      }
+      
+      await this.auditLogger.logEvent({
+        action: "degraded_mode.requirement_minimal_no_cache",
+        category: AuditCategory.SYSTEM_EVENT,
+        severity: AuditSeverity.MEDIUM,
+        outcome: AuditOutcome.FAILURE,
+        metadata: {
+          requirementId,
+          currentMode: this.currentMode,
+          reason: "No cached data available in minimal mode",
+        },
+      });
+      return null;
+    }
+
+    // In normal or partial mode, try primary provider first
+    if (this.currentMode === DegradedModeLevel.NORMAL) {
+      try {
         const result = await primaryProvider();
 
         if (this.config.cacheEnabled) {
@@ -132,20 +233,20 @@ export class DegradedModeManager {
         }
 
         return result;
+      } catch (error) {
+        await this.auditLogger.logError(
+          "degraded_mode.requirement_provider_failed",
+          error instanceof Error ? error : new Error(String(error)),
+          {
+            requirementId,
+            currentMode: this.currentMode,
+          },
+          AuditSeverity.HIGH
+        );
       }
-    } catch (error) {
-      await this.auditLogger.logError(
-        "degraded_mode.requirement_provider_failed",
-        error instanceof Error ? error : new Error(String(error)),
-        {
-          requirementId,
-          currentMode: this.currentMode,
-        },
-        AuditSeverity.HIGH
-      );
     }
 
-    // Try fallback mechanisms
+    // Try fallback mechanisms (for both normal and partial modes)
     return await this.getFallbackRequirement(requirementId, cacheKey);
   }
 
@@ -317,6 +418,252 @@ export class DegradedModeManager {
         finalMode: this.currentMode,
       },
     });
+  }
+
+  /**
+   * Execute operation with degradation handling and fallback
+   */
+  executeWithDegradation<T>(
+    operation: () => Promise<T>,
+    fallback: () => Promise<T>,
+    context?: { component: string; operation: string }
+  ): Promise<T> {
+    // If in degraded mode, skip primary operation and use fallback
+    if (this.currentMode !== DegradedModeLevel.NORMAL) {
+      this.auditLogger.logEvent({
+        action: "degraded_mode.fallback_used",
+        category: AuditCategory.SYSTEM_EVENT,
+        severity: AuditSeverity.MEDIUM,
+        outcome: AuditOutcome.PARTIAL,
+        metadata: {
+          component: context?.component || "unknown",
+          operation: context?.operation || "unknown",
+          currentMode: this.currentMode,
+          reason: "Operating in degraded mode",
+        },
+      });
+
+      return fallback();
+    }
+
+    // Try primary operation first
+    return operation().catch(async (error) => {
+      // Log the failure
+      await this.auditLogger.logError(
+        "degraded_mode.operation_failed",
+        error instanceof Error ? error : new Error(String(error)),
+        {
+          component: context?.component || "unknown",
+          operation: context?.operation || "unknown",
+          currentMode: this.currentMode,
+        },
+        AuditSeverity.MEDIUM
+      );
+
+      // Use fallback
+      this.auditLogger.logEvent({
+        action: "degraded_mode.fallback_triggered",
+        category: AuditCategory.SYSTEM_EVENT,
+        severity: AuditSeverity.MEDIUM,
+        outcome: AuditOutcome.PARTIAL,
+        metadata: {
+          component: context?.component || "unknown",
+          operation: context?.operation || "unknown",
+          error: error instanceof Error ? error.message : String(error),
+        },
+      });
+
+      return fallback();
+    });
+  }
+
+  /**
+   * Force degradation to a specific level
+   */
+  async forceDegradationLevel(
+    level: DegradedModeLevel,
+    reason: string
+  ): Promise<void> {
+    const previousMode = this.currentMode;
+    this.currentMode = level;
+
+    // Update service health based on degradation level
+    if (level === DegradedModeLevel.OFFLINE) {
+      this.serviceHealth = {
+        mcpServer: false,
+        dataProvider: false,
+        cache: false,
+        auditLogger: false,
+      };
+    } else if (level === DegradedModeLevel.MINIMAL) {
+      this.serviceHealth = {
+        mcpServer: false,
+        dataProvider: false,
+        cache: true,
+        auditLogger: true,
+      };
+    } else if (level === DegradedModeLevel.PARTIAL) {
+      this.serviceHealth = {
+        mcpServer: false,
+        dataProvider: true,
+        cache: true,
+        auditLogger: true,
+      };
+    }
+
+    await this.auditLogger.logEvent({
+      action: "degraded_mode.level_forced",
+      category: AuditCategory.SYSTEM_EVENT,
+      severity: AuditSeverity.HIGH,
+      outcome: AuditOutcome.SUCCESS,
+      metadata: {
+        previousMode,
+        newMode: level,
+        reason,
+        forced: true,
+        serviceHealth: this.serviceHealth,
+      },
+    });
+
+    this.notifyStatusChange();
+  }
+
+  /**
+   * Attempt to recover from degraded mode
+   */
+  async attemptRecovery(): Promise<boolean> {
+    const previousMode = this.currentMode;
+
+    try {
+      // Perform health checks
+      const healthStatus = await this.performHealthChecks();
+
+      // Evaluate if we can recover
+      const healthyServices =
+        Object.values(healthStatus).filter(Boolean).length;
+      const totalServices = Object.keys(healthStatus).length;
+
+      if (healthyServices === totalServices) {
+        this.currentMode = DegradedModeLevel.NORMAL;
+        this.serviceHealth = {
+          mcpServer: true,
+          dataProvider: true,
+          cache: true,
+          auditLogger: true,
+        };
+
+        await this.auditLogger.logEvent({
+          action: "degraded_mode.recovery_successful",
+          category: AuditCategory.SYSTEM_EVENT,
+          severity: AuditSeverity.MEDIUM,
+          outcome: AuditOutcome.SUCCESS,
+          metadata: {
+            previousMode,
+            newMode: this.currentMode,
+            healthStatus,
+          },
+        });
+
+        this.notifyStatusChange();
+        return true;
+      } else if (healthyServices >= totalServices * 0.75) {
+        this.currentMode = DegradedModeLevel.PARTIAL;
+      } else if (healthyServices >= totalServices * 0.5) {
+        this.currentMode = DegradedModeLevel.MINIMAL;
+      } else {
+        this.currentMode = DegradedModeLevel.OFFLINE;
+      }
+
+      // Update service health based on health check results
+      this.serviceHealth = healthStatus;
+
+      await this.auditLogger.logEvent({
+        action: "degraded_mode.recovery_partial",
+        category: AuditCategory.SYSTEM_EVENT,
+        severity: AuditSeverity.MEDIUM,
+        outcome: AuditOutcome.PARTIAL,
+        metadata: {
+          previousMode,
+          newMode: this.currentMode,
+          healthStatus,
+        },
+      });
+
+      this.notifyStatusChange();
+      return false;
+    } catch (error) {
+      await this.auditLogger.logError(
+        "degraded_mode.recovery_failed",
+        error instanceof Error ? error : new Error(String(error)),
+        {
+          previousMode,
+          currentMode: this.currentMode,
+        },
+        AuditSeverity.HIGH
+      );
+
+      return false;
+    }
+  }
+
+  /**
+   * Get current degradation state
+   */
+  getCurrentState(): {
+    level: DegradedModeLevel;
+    isActive: boolean;
+    lastError?: Error;
+    serviceHealth: ServiceHealth;
+  } {
+    return {
+      level: this.currentMode,
+      isActive: this.currentMode !== DegradedModeLevel.NORMAL,
+      serviceHealth: { ...this.serviceHealth },
+    };
+  }
+
+  /**
+   * Perform health checks on all services
+   */
+  async performHealthChecks(): Promise<ServiceHealth> {
+    const healthStatus: ServiceHealth = {
+      mcpServer: true,
+      dataProvider: true,
+      cache: true,
+      auditLogger: true,
+    };
+
+    try {
+      // Check MCP server health (simplified check)
+      // In a real implementation, this would make an actual health check request
+      healthStatus.mcpServer = this.serviceHealth.mcpServer;
+
+      // Check data provider health
+      healthStatus.dataProvider = this.serviceHealth.dataProvider;
+
+      // Check cache health
+      healthStatus.cache = this.config.cacheEnabled;
+
+      // Check audit logger health
+      healthStatus.auditLogger = this.auditLogger !== null;
+    } catch (error) {
+      // If health checks fail, assume all services are unhealthy
+      healthStatus.mcpServer = false;
+      healthStatus.dataProvider = false;
+      healthStatus.cache = false;
+      healthStatus.auditLogger = false;
+
+      await this.auditLogger.logError(
+        "degraded_mode.health_check_failed",
+        error instanceof Error ? error : new Error(String(error)),
+        {
+          currentMode: this.currentMode,
+        },
+        AuditSeverity.HIGH
+      );
+    }
+
+    return healthStatus;
   }
 
   /**

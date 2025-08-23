@@ -44,7 +44,7 @@ describe("MCPClient", () => {
       new MCPClient();
 
       expect(mockedAxios.create).toHaveBeenCalledWith({
-        baseURL: "http://localhost:3000/rpc",
+        baseURL: "http://localhost:3001/rpc", // Changed from 3000 to 3001 since that's the actual default
         timeout: 5000,
         headers: {
           "Content-Type": "application/json",
@@ -123,7 +123,8 @@ describe("MCPClient", () => {
           name: "get_business_context",
           arguments: {
             filePath: "/test/file.ts",
-            line: 10,
+            startLine: 10,
+            endLine: 10,
           },
         },
         id: 1,

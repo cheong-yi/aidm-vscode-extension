@@ -16,6 +16,7 @@ import {
   TaskStatus,
   TaskComplexity,
   TaskPriority,
+  TestStatusEnum,
 } from "../../../../types/tasks";
 import * as vscode from "vscode";
 
@@ -192,13 +193,13 @@ describe("TaskTreeItem", () => {
         isExecutable: true,
       };
       const treeItem = new TaskTreeItem(executableTask, 0);
-      expect(treeItem.description).toContain("🤖");
+      expect(treeItem.description).toContain("Robot");
     });
 
     it("should not add robot icon to description for non-executable tasks", () => {
       const nonExecutableTask = { ...mockTask, status: TaskStatus.IN_PROGRESS };
       const treeItem = new TaskTreeItem(nonExecutableTask, 0);
-      expect(treeItem.description).not.toContain("🤖");
+      expect(treeItem.description).not.toContain("Robot");
     });
 
     it("should not add robot icon to description for NOT_STARTED tasks without isExecutable flag", () => {
@@ -209,7 +210,7 @@ describe("TaskTreeItem", () => {
         isExecutable: false,
       };
       const treeItem = new TaskTreeItem(notStartedTask, 0);
-      expect(treeItem.description).not.toContain("🤖");
+      expect(treeItem.description).not.toContain("Robot");
     });
 
     it("should include robot icon in description with other content for executable tasks", () => {
@@ -218,10 +219,15 @@ describe("TaskTreeItem", () => {
         status: TaskStatus.NOT_STARTED,
         isExecutable: true,
         estimatedDuration: "15-20 min",
-        testStatus: { totalTests: 5, passedTests: 5, failedTests: 0 },
+        testStatus: {
+          totalTests: 5,
+          passedTests: 5,
+          failedTests: 0,
+          status: TestStatusEnum.PASSING,
+        },
       };
       const treeItem = new TaskTreeItem(executableTask, 0);
-      expect(treeItem.description).toBe("15-20 min • 5/5 passed • 🤖");
+      expect(treeItem.description).toBe("15-20 min • 5/5 passed • Robot");
     });
 
     it("should handle executable tasks with minimal content", () => {
@@ -233,7 +239,7 @@ describe("TaskTreeItem", () => {
         testStatus: undefined,
       };
       const treeItem = new TaskTreeItem(minimalExecutableTask, 0);
-      expect(treeItem.description).toBe("🤖");
+      expect(treeItem.description).toBe("Robot");
     });
   });
 
@@ -261,7 +267,12 @@ describe("TaskTreeItem", () => {
     it("should show 'No tests yet' for tasks with empty test status", () => {
       const taskWithEmptyTests = {
         ...mockTask,
-        testStatus: { totalTests: 0, passedTests: 0, failedTests: 0 },
+        testStatus: {
+          totalTests: 0,
+          passedTests: 0,
+          failedTests: 0,
+          status: TestStatusEnum.NOT_RUN,
+        },
       };
       const treeItem = new TaskTreeItem(taskWithEmptyTests, 0);
       expect(treeItem.testSummary).toBe("No tests yet");
@@ -275,10 +286,15 @@ describe("TaskTreeItem", () => {
         status: TaskStatus.NOT_STARTED,
         isExecutable: true,
         estimatedDuration: "20-25 min",
-        testStatus: { totalTests: 10, passedTests: 8, failedTests: 2 },
+        testStatus: {
+          totalTests: 10,
+          passedTests: 8,
+          failedTests: 2,
+          status: TestStatusEnum.PARTIAL,
+        },
       };
       const treeItem = new TaskTreeItem(taskWithBoth, 0);
-      expect(treeItem.description).toBe("20-25 min • 8/10 passed • 🤖");
+      expect(treeItem.description).toBe("20-25 min • 8/10 passed • Robot");
     });
 
     it("should generate description with only estimated duration", () => {
@@ -289,7 +305,7 @@ describe("TaskTreeItem", () => {
         estimatedDuration: "15-20 min",
       };
       const treeItem = new TaskTreeItem(taskWithDurationOnly, 0);
-      expect(treeItem.description).toBe("15-20 min • 🤖");
+      expect(treeItem.description).toBe("15-20 min • Robot");
     });
 
     it("should generate description with only test summary", () => {
@@ -298,10 +314,15 @@ describe("TaskTreeItem", () => {
         status: TaskStatus.NOT_STARTED,
         isExecutable: true,
         estimatedDuration: undefined,
-        testStatus: { totalTests: 5, passedTests: 5, failedTests: 0 },
+        testStatus: {
+          totalTests: 5,
+          passedTests: 5,
+          failedTests: 0,
+          status: TestStatusEnum.PASSING,
+        },
       };
       const treeItem = new TaskTreeItem(taskWithTestsOnly, 0);
-      expect(treeItem.description).toBe("5/5 passed • 🤖");
+      expect(treeItem.description).toBe("5/5 passed • Robot");
     });
 
     it("should generate description without robot icon for non-executable NOT_STARTED tasks", () => {
@@ -310,7 +331,12 @@ describe("TaskTreeItem", () => {
         status: TaskStatus.NOT_STARTED,
         isExecutable: false,
         estimatedDuration: "15-20 min",
-        testStatus: { totalTests: 5, passedTests: 5, failedTests: 0 },
+        testStatus: {
+          totalTests: 5,
+          passedTests: 5,
+          failedTests: 0,
+          status: TestStatusEnum.PASSING,
+        },
       };
       const treeItem = new TaskTreeItem(nonExecutableNotStartedTask, 0);
       expect(treeItem.description).toBe("15-20 min • 5/5 passed");
@@ -382,7 +408,7 @@ describe("TaskTreeItem", () => {
       const treeItem = new TaskTreeItem(explicitlyNonExecutableTask, 0);
       expect(treeItem.isExecutable).toBe(false);
       expect(treeItem.contextValue).toBe("task-item");
-      expect(treeItem.description).not.toContain("🤖");
+      expect(treeItem.description).not.toContain("Robot");
     });
   });
 
@@ -1082,15 +1108,30 @@ Priority: medium`;
     it("should calculate testSummary correctly for various test scenarios", () => {
       const testScenarios = [
         {
-          testStatus: { totalTests: 10, passedTests: 8, failedTests: 2 },
+          testStatus: {
+            totalTests: 10,
+            passedTests: 8,
+            failedTests: 2,
+            status: TestStatusEnum.PARTIAL,
+          },
           expected: "8/10 passed",
         },
         {
-          testStatus: { totalTests: 5, passedTests: 5, failedTests: 0 },
+          testStatus: {
+            totalTests: 5,
+            passedTests: 5,
+            failedTests: 0,
+            status: TestStatusEnum.PASSING,
+          },
           expected: "5/5 passed",
         },
         {
-          testStatus: { totalTests: 0, passedTests: 0, failedTests: 0 },
+          testStatus: {
+            totalTests: 0,
+            passedTests: 0,
+            failedTests: 0,
+            status: TestStatusEnum.NOT_RUN,
+          },
           expected: "No tests yet",
         },
         {
@@ -1110,7 +1151,12 @@ Priority: medium`;
     it("should include test summary in description when available", () => {
       const taskWithTests = {
         ...mockTask,
-        testStatus: { totalTests: 15, passedTests: 12, failedTests: 3 },
+        testStatus: {
+          totalTests: 15,
+          passedTests: 12,
+          failedTests: 3,
+          status: TestStatusEnum.PARTIAL,
+        },
       };
       const treeItem = new TaskTreeItem(taskWithTests, 0);
 
@@ -1120,7 +1166,12 @@ Priority: medium`;
     it("should not include test summary in description when no tests", () => {
       const taskWithoutTests = {
         ...mockTask,
-        testStatus: { totalTests: 0, passedTests: 0, failedTests: 0 },
+        testStatus: {
+          totalTests: 0,
+          passedTests: 0,
+          failedTests: 0,
+          status: TestStatusEnum.NOT_RUN,
+        },
       };
       const treeItem = new TaskTreeItem(taskWithoutTests, 0);
 
@@ -1138,6 +1189,7 @@ Priority: medium`;
           passedTests: 18,
           failedTests: 2,
           lastRunDate: "2024-01-01T10:00:00Z",
+          status: TestStatusEnum.PARTIAL,
         },
       };
       const treeItem = new TaskTreeItem(enhancedTask, 0);

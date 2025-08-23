@@ -7,11 +7,15 @@ import * as vscode from "vscode";
 import {
   TaskStatus,
   Task,
-  TestStatus as TaskTestStatus,
+  TestStatus,
   ValidationResult,
   TaskErrorResponse,
+  TaskContext,
 } from "../../types/tasks";
-import { TaskContext } from "./taskTypes";
+
+// ============================================================================
+// TASK STATUS MANAGER INTERFACE
+// ============================================================================
 
 /**
  * Task Status Manager Interface
@@ -23,7 +27,7 @@ export interface TaskStatusManager {
   updateTaskStatus(id: string, status: TaskStatus): Promise<boolean>;
   refreshTasksFromFile(): Promise<void>;
   getTaskDependencies(id: string): Promise<string[]>;
-  getTestResults(taskId: string): Promise<TaskTestStatus | null>;
+  getTestResults(taskId: string): Promise<TestStatus | null>;
   validateStatusTransition(
     currentStatus: TaskStatus,
     newStatus: TaskStatus
@@ -33,6 +37,10 @@ export interface TaskStatusManager {
   getTasksByAssignee(assignee: string): Promise<Task[]>;
   getTasksByRequirement(requirementId: string): Promise<Task[]>;
 }
+
+// ============================================================================
+// MARKDOWN TASK PARSER INTERFACE
+// ============================================================================
 
 /**
  * Markdown Task Parser Interface
@@ -52,6 +60,10 @@ export interface MarkdownTaskParser {
   getTaskMarkdownTemplate(): string;
 }
 
+// ============================================================================
+// TASKS DATA SERVICE INTERFACE
+// ============================================================================
+
 /**
  * Tasks Data Service Interface
  * Manages extension-side data operations and MCP communication
@@ -62,7 +74,7 @@ export interface TasksDataService {
   updateTaskStatus(id: string, status: TaskStatus): Promise<boolean>;
   refreshTasks(): Promise<void>;
   getTaskDependencies(id: string): Promise<string[]>;
-  getTestResults(taskId: string): Promise<TaskTestStatus | null>;
+  getTestResults(taskId: string): Promise<TestStatus | null>;
 
   // Event emitters for UI synchronization
   onTasksUpdated: vscode.EventEmitter<Task[]>;
@@ -73,7 +85,7 @@ export interface TasksDataService {
   onError: vscode.EventEmitter<TaskErrorResponse>;
   onTestResultsUpdated: vscode.EventEmitter<{
     taskId: string;
-    testStatus: TaskTestStatus;
+    testStatus: TestStatus;
   }>;
 
   // Cache management
@@ -81,6 +93,10 @@ export interface TasksDataService {
   getCacheStatus(): CacheStatus;
   isOnline(): boolean;
 }
+
+// ============================================================================
+// TASK TREE VIEW PROVIDER INTERFACE
+// ============================================================================
 
 /**
  * Task Tree View Provider Interface
@@ -98,6 +114,10 @@ export interface TaskTreeViewProvider
   getSelectedTask(): TaskTreeItem | undefined;
 }
 
+// ============================================================================
+// TASK DETAIL CARD PROVIDER INTERFACE
+// ============================================================================
+
 /**
  * Task Detail Card Provider Interface
  * Manages the detailed task information display
@@ -114,10 +134,14 @@ export interface TaskDetailCardProvider {
   }>;
   onTestResultsUpdated: vscode.EventEmitter<{
     taskId: string;
-    testStatus: TaskTestStatus;
+    testStatus: TestStatus;
   }>;
   refresh(): void;
 }
+
+// ============================================================================
+// TASK TREE ITEM INTERFACE
+// ============================================================================
 
 /**
  * Task Tree Item Interface
@@ -137,6 +161,10 @@ export interface TaskTreeItem extends vscode.TreeItem {
   testStatus?: string;
 }
 
+// ============================================================================
+// TASK COMMANDS INTERFACE
+// ============================================================================
+
 /**
  * Task Commands Interface
  * Defines available task management commands
@@ -152,6 +180,10 @@ export interface TaskCommands {
   reviewTaskWithRooCode(taskId: string): void;
 }
 
+// ============================================================================
+// CACHE STATUS INTERFACE
+// ============================================================================
+
 /**
  * Cache Status Interface
  * Information about the current cache state
@@ -164,6 +196,10 @@ export interface CacheStatus {
   maxSize: number;
   ttl: number;
 }
+
+// ============================================================================
+// TASK CONTEXT MANAGER INTERFACE
+// ============================================================================
 
 /**
  * Task Context Manager Interface

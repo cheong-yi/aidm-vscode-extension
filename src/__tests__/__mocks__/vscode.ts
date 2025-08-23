@@ -32,11 +32,18 @@ export const workspace = {
   })),
   onDidChangeConfiguration: jest.fn(),
   workspaceFolders: [],
+  openTextDocument: jest.fn().mockResolvedValue({
+    uri: { scheme: "file", fsPath: "/test/file.ts" },
+    fileName: "file.ts",
+    languageId: "typescript",
+    lineCount: 10,
+    getText: jest.fn().mockReturnValue("export class TestService {}"),
+  }),
 };
 
 export const commands = {
   registerCommand: jest.fn(),
-  executeCommand: jest.fn(),
+  executeCommand: jest.fn().mockResolvedValue([]),
 };
 
 export const languages = {
@@ -60,6 +67,11 @@ export const ConfigurationTarget = {
   Global: 1,
   Workspace: 2,
   WorkspaceFolder: 3,
+};
+
+export const Uri = {
+  file: jest.fn((path: string) => ({ scheme: "file", fsPath: path })),
+  parse: jest.fn((uri: string) => ({ scheme: "file", fsPath: uri })),
 };
 
 export class ThemeColor {
@@ -92,10 +104,21 @@ export class MarkdownString {
   }
 }
 
-export class CancellationToken {
-  public isCancellationRequested: boolean = false;
-  public onCancellationRequested = jest.fn();
+// Mock CancellationToken constructor function
+export const CancellationToken = jest.fn().mockImplementation(() => ({
+  isCancellationRequested: false,
+  onCancellationRequested: jest.fn(),
+}));
+
+// Also export as a class for tests that use 'new'
+export class CancellationTokenClass {
+  isCancellationRequested = false;
+  onCancellationRequested = jest.fn();
 }
+
+// Make CancellationToken work as both a function and a class
+(CancellationToken as any).prototype = CancellationTokenClass.prototype;
+Object.setPrototypeOf(CancellationToken, CancellationTokenClass);
 
 export class TreeItem {
   public label: string;
@@ -151,11 +174,6 @@ export const TreeItemCollapsibleState = {
   Expanded: 2,
 };
 
-export const Uri = {
-  file: jest.fn((path: string) => ({ fsPath: path, path })),
-  parse: jest.fn(),
-};
-
 export const ExtensionContext = {
   subscriptions: [],
   workspaceState: {
@@ -175,4 +193,28 @@ export {
   workspace as vscode_workspace,
   commands as vscode_commands,
   languages as vscode_languages,
+};
+
+// Default export for tests that import * as vscode
+export default {
+  window,
+  workspace,
+  commands,
+  languages,
+  StatusBarAlignment,
+  DiagnosticSeverity,
+  ConfigurationTarget,
+  Uri,
+  ThemeColor,
+  Position,
+  Range,
+  Hover,
+  MarkdownString,
+  CancellationToken,
+  CancellationTokenClass,
+  TreeItem,
+  ThemeIcon,
+  EventEmitter,
+  TreeItemCollapsibleState,
+  ExtensionContext,
 };

@@ -458,7 +458,7 @@ describe("TaskDetailCardProvider", () => {
         { command: "cursor-execute", data: { taskId: "test-1" } },
         {
           command: "action-button",
-          data: { action: "🤖 Execute with Cursor", taskId: "test-1" },
+          data: { action: "Robot Execute with Cursor", taskId: "test-1" },
         },
         { command: "execute-cursor", taskId: "test-1" },
         { command: "generate-prompt", taskId: "test-1" },
@@ -618,7 +618,7 @@ describe("TaskDetailCardProvider", () => {
       // Test Cursor execution action
       expect(() => {
         (provider as any).handleActionButton(
-          "🤖 Execute with Cursor",
+          "Robot Execute with Cursor",
           "test-1"
         );
       }).not.toThrow();
@@ -756,7 +756,7 @@ describe("TaskDetailCardProvider", () => {
       // Test action-button message
       const actionButtonMessage = {
         command: "action-button",
-        data: { action: "🤖 Execute with Cursor", taskId: "test-1" },
+        data: { action: "Robot Execute with Cursor", taskId: "test-1" },
       };
       expect(() => {
         (provider as any).handleWebviewMessage(actionButtonMessage);
@@ -1019,6 +1019,7 @@ describe("TaskDetailCardProvider", () => {
       );
 
       consoleWarnSpy.mockRestore();
+      errorProvider.dispose();
     });
   });
 
@@ -1153,7 +1154,7 @@ describe("TaskDetailCardProvider", () => {
 
       const html = (provider as any).generateTaskDetailsHTML(mockTask);
 
-      expect(html).toContain("🤖");
+      expect(html).toContain("Robot");
       expect(html).toContain("executable-indicator");
     });
 
@@ -1321,7 +1322,7 @@ describe("TaskDetailCardProvider", () => {
 
       // Verify test results section structure
       expect(html).toContain("Test Results");
-      expect(html).toContain("15/18 passed ⚠️");
+      expect(html).toContain("15/18 passed Warning");
       expect(html).toContain("85% coverage");
       expect(html).toContain("Suite: unit-tests");
       expect(html).toContain("Failed Tests (2)");
@@ -1337,7 +1338,7 @@ describe("TaskDetailCardProvider", () => {
         failedTests: 0,
       };
       expect((provider as any).formatTestSummary(allPassing)).toBe(
-        "10/10 passed ✅"
+        "10/10 passed Success"
       );
 
       // Test all failing
@@ -1347,7 +1348,7 @@ describe("TaskDetailCardProvider", () => {
         failedTests: 5,
       };
       expect((provider as any).formatTestSummary(allFailing)).toBe(
-        "0/5 passed ❌"
+        "0/5 passed Failed"
       );
 
       // Test partial passing
@@ -1357,7 +1358,7 @@ describe("TaskDetailCardProvider", () => {
         failedTests: 2,
       };
       expect((provider as any).formatTestSummary(partialPassing)).toBe(
-        "6/8 passed ⚠️"
+        "6/8 passed Warning"
       );
 
       // Test zero tests
@@ -1651,7 +1652,7 @@ describe("TaskDetailCardProvider", () => {
 
       const html = (provider as any).generateTaskDetailsHTML(mockTask);
 
-      expect(html).toContain("🤖 Execute with Cursor");
+      expect(html).toContain("Robot Execute with Cursor");
       expect(html).toContain("Generate Prompt");
       expect(html).toContain("View Requirements");
     });
@@ -1787,7 +1788,7 @@ describe("TaskDetailCardProvider", () => {
 
       // Verify that getActionsForStatus returns correct actions
       const actions = provider.getActionsForStatus(TaskStatus.NOT_STARTED);
-      expect(actions).toContain("🤖 Execute with Cursor");
+      expect(actions).toContain("Robot Execute with Cursor");
       expect(actions).toContain("Generate Prompt");
       expect(actions).toContain("View Requirements");
     });
@@ -1818,14 +1819,14 @@ describe("TaskDetailCardProvider", () => {
   describe("Action Button Helper Methods", () => {
     it("should render individual buttons with proper data attributes", () => {
       const buttonHtml = provider.renderButton(
-        "🤖 Execute with Cursor",
+        "Robot Execute with Cursor",
         "test-1"
       );
 
-      expect(buttonHtml).toContain('data-action="execute-cursor"');
+      expect(buttonHtml).toContain('data-action="robot-execute-with-cursor"');
       expect(buttonHtml).toContain('data-task-id="test-1"');
       expect(buttonHtml).toContain('class="action-btn cursor-btn"');
-      expect(buttonHtml).toContain("🤖 Execute with Cursor");
+      expect(buttonHtml).toContain("Robot Execute with Cursor");
     });
 
     it("should render regular buttons without cursor styling", () => {
@@ -1858,10 +1859,13 @@ describe("TaskDetailCardProvider", () => {
       };
 
       expect(
-        provider.isExecutableAction("🤖 Execute with Cursor", executableTask)
+        provider.isExecutableAction("Robot Execute with Cursor", executableTask)
       ).toBe(true);
       expect(
-        provider.isExecutableAction("🤖 Execute with Cursor", nonExecutableTask)
+        provider.isExecutableAction(
+          "Robot Execute with Cursor",
+          nonExecutableTask
+        )
       ).toBe(false);
       expect(
         provider.isExecutableAction("Generate Prompt", executableTask)
@@ -1870,7 +1874,7 @@ describe("TaskDetailCardProvider", () => {
 
     it("should generate correct action keys for all actions", () => {
       const testActions = [
-        "🤖 Execute with Cursor",
+        "Robot Execute with Cursor",
         "Generate Prompt",
         "View Requirements",
         "Continue Work",
@@ -1936,11 +1940,11 @@ describe("TaskDetailCardProvider", () => {
       );
 
       // Executable task should have Cursor button
-      expect(executableHtml).toContain("🤖 Execute with Cursor");
+      expect(executableHtml).toContain("Robot Execute with Cursor");
       expect(executableHtml).toContain('class="action-btn cursor-btn"');
 
       // Non-executable task should not have Cursor button
-      expect(nonExecutableHtml).not.toContain("🤖 Execute with Cursor");
+      expect(nonExecutableHtml).not.toContain("Robot Execute with Cursor");
       expect(nonExecutableHtml).toContain("Generate Prompt");
       expect(nonExecutableHtml).toContain("View Requirements");
     });
@@ -1962,7 +1966,7 @@ describe("TaskDetailCardProvider", () => {
 
       const html = (provider as any).generateTaskDetailsHTML(inProgressTask);
 
-      expect(html).not.toContain("🤖 Execute with Cursor");
+      expect(html).not.toContain("Robot Execute with Cursor");
       expect(html).toContain("Continue Work");
       expect(html).toContain("Mark Complete");
       expect(html).toContain("View Dependencies");
@@ -1988,7 +1992,7 @@ describe("TaskDetailCardProvider", () => {
       const html = (provider as any).generateTaskDetailsHTML(mockTask);
 
       // Verify data attributes are present
-      expect(html).toContain('data-action="execute-cursor"');
+      expect(html).toContain('data-action="robot-execute-with-cursor"');
       expect(html).toContain('data-action="generate-prompt"');
       expect(html).toContain('data-action="view-requirements"');
       expect(html).toContain('data-task-id="test-1"');
@@ -2160,7 +2164,7 @@ describe("TaskDetailCardProvider", () => {
 
       const fallbackHtml = (provider as any).generateFallbackHTML(mockTask);
 
-      expect(fallbackHtml).toContain("⚠️ Error loading task details");
+      expect(fallbackHtml).toContain("Warning Error loading task details");
       expect(fallbackHtml).toContain("test-1");
       expect(fallbackHtml).toContain("Test Task");
     });
@@ -2769,11 +2773,11 @@ describe("TaskDetailCardProvider", () => {
 
     it("should return appropriate icons for each error category", () => {
       const categoryIconMap = {
-        assertion: "❌",
-        type: "🔍",
-        filesystem: "💾",
-        timeout: "⏰",
-        network: "🌐",
+        assertion: "Failed",
+        type: "Search",
+        filesystem: "Save",
+        timeout: "Timer",
+        network: "Network",
       };
 
       Object.entries(categoryIconMap).forEach(([category, expectedIcon]) => {
@@ -2784,7 +2788,7 @@ describe("TaskDetailCardProvider", () => {
 
     it("should return unknown icon for invalid categories", () => {
       const result = provider.getCategoryIcon("invalid_category");
-      expect(result).toBe("❓");
+      expect(result).toBe("Question");
     });
 
     it("should return appropriate colors for each error category", () => {
@@ -2828,7 +2832,7 @@ describe("TaskDetailCardProvider", () => {
 
       // Should use "unknown" category as fallback
       expect(result).toContain("failure-item unknown");
-      expect(result).toContain("❓");
+      expect(result).toContain("Question");
       expect(result).toContain("unknown");
     });
 
@@ -2907,8 +2911,8 @@ describe("TaskDetailCardProvider", () => {
       expect(html).toContain("Failed Tests (2)");
       expect(html).toContain("failure-item assertion");
       expect(html).toContain("failure-item type");
-      expect(html).toContain("❌");
-      expect(html).toContain("🔍");
+      expect(html).toContain("Failed");
+      expect(html).toContain("Search");
     });
   });
 
@@ -3075,13 +3079,24 @@ describe("TaskDetailCardProvider", () => {
   });
 
   describe("Periodic Time Refresh Mechanism (Task 3.3.9)", () => {
+    let originalInterval: NodeJS.Timeout | null = null;
+
     beforeEach(() => {
+      // Store the original interval before enabling fake timers
+      originalInterval = (provider as any).timeRefreshInterval;
+
       // Mock setInterval and clearInterval
       jest.useFakeTimers();
     });
 
     afterEach(() => {
+      // Restore real timers first
       jest.useRealTimers();
+
+      // Restore the original interval and ensure it's properly cleaned up
+      if (originalInterval) {
+        (provider as any).timeRefreshInterval = originalInterval;
+      }
     });
 
     it("should setup periodic time refresh mechanism on initialization", () => {
@@ -3121,6 +3136,12 @@ describe("TaskDetailCardProvider", () => {
 
       // Verify refresh method was called
       expect(refreshSpy).toHaveBeenCalled();
+
+      // Clean up the additional timer that was created
+      if ((provider as any).timeRefreshInterval) {
+        clearInterval((provider as any).timeRefreshInterval);
+        (provider as any).timeRefreshInterval = null;
+      }
 
       // Clean up
       jest.useRealTimers();
@@ -3374,6 +3395,9 @@ describe("TaskDetailCardProvider", () => {
       // Create a new provider without interval
       const newProvider = new TaskDetailCardProvider(mockTimeFormattingUtility);
 
+      // Store the original interval to restore it later
+      const originalInterval = (newProvider as any).timeRefreshInterval;
+
       // Ensure no interval is set
       (newProvider as any).timeRefreshInterval = null;
 
@@ -3388,6 +3412,10 @@ describe("TaskDetailCardProvider", () => {
 
       // Clean up
       clearIntervalSpy.mockRestore();
+
+      // Restore the original interval and dispose properly
+      (newProvider as any).timeRefreshInterval = originalInterval;
+      newProvider.dispose();
     });
   });
 
@@ -3444,7 +3472,7 @@ describe("TaskDetailCardProvider", () => {
       // Verify helpful content
       expect(instructionsHTML).toContain("Getting Started:");
       expect(instructionsHTML).toContain("Click on any task in the tree view");
-      expect(instructionsHTML).toContain("Look for tasks marked with 🤖");
+      expect(instructionsHTML).toContain("Look for tasks marked with Robot");
       expect(instructionsHTML).toContain("Use the refresh button");
       expect(instructionsHTML).toContain("Check task dependencies");
     });
@@ -3457,10 +3485,10 @@ describe("TaskDetailCardProvider", () => {
       expect(quickActionsHTML).toContain("action-btn");
 
       // Verify action buttons
-      expect(quickActionsHTML).toContain("🔄 Refresh Tasks");
-      expect(quickActionsHTML).toContain("📋 View All Tasks");
-      expect(quickActionsHTML).toContain("❓ Show Help");
-      expect(quickActionsHTML).toContain("⚙️ Settings");
+      expect(quickActionsHTML).toContain("Refresh Refresh Tasks");
+      expect(quickActionsHTML).toContain("Clipboard View All Tasks");
+      expect(quickActionsHTML).toContain("Question Show Help");
+      expect(quickActionsHTML).toContain("Settings Settings");
 
       // Verify button classes
       expect(quickActionsHTML).toContain('class="action-btn primary"');
@@ -3537,7 +3565,7 @@ describe("TaskDetailCardProvider", () => {
       expect(fallbackHTML).toContain("fallback-text");
 
       // Verify fallback content
-      expect(fallbackHTML).toContain("📋");
+      expect(fallbackHTML).toContain("Clipboard");
       expect(fallbackHTML).toContain("No Task Selected");
       expect(fallbackHTML).toContain("Select a task from the tree view above");
     });
@@ -3696,7 +3724,7 @@ describe("TaskDetailCardProvider", () => {
         "Click on any task in the tree view to see its details"
       );
       expect(emptyStateHTML).toContain(
-        "Look for tasks marked with 🤖 that can be executed with AI assistance"
+        "Look for tasks marked with Robot that can be executed with AI assistance"
       );
       expect(emptyStateHTML).toContain(
         "Use the refresh button if tasks don't appear"

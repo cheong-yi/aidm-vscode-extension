@@ -17,6 +17,7 @@ import {
   TaskStatus,
   TaskComplexity,
   TaskPriority,
+  TestStatusEnum,
   STATUS_DISPLAY_NAMES,
 } from "../../../types/tasks";
 import { AxiosInstance } from "axios";
@@ -1037,6 +1038,7 @@ describe("TasksDataService", () => {
         description: "Task with enhanced properties for contract validation",
         status: TaskStatus.NOT_STARTED,
         complexity: TaskComplexity.MEDIUM,
+        priority: TaskPriority.MEDIUM,
         dependencies: ["task-0"],
         requirements: ["REQ-001"],
         createdDate: "2024-01-01T00:00:00.000Z",
@@ -1050,6 +1052,7 @@ describe("TasksDataService", () => {
           passedTests: 12,
           failedTests: 3,
           coverage: 80,
+          status: TestStatusEnum.PARTIAL,
           failingTestsList: [
             {
               name: "should validate task status transitions",
@@ -1081,7 +1084,9 @@ describe("TasksDataService", () => {
       expect(result[0].isExecutable).toBe(true);
       expect(result[0].statusDisplayName).toBe("not started");
       expect(result[0].testStatus?.failingTestsList).toHaveLength(1);
-      expect(result[0].testStatus?.failingTestsList?.[0].category).toBe("assertion");
+      expect(result[0].testStatus?.failingTestsList?.[0].category).toBe(
+        "assertion"
+      );
     });
 
     it("should validate FailingTest structure in test results", async () => {
@@ -1092,6 +1097,7 @@ describe("TasksDataService", () => {
         description: "Task demonstrating FailingTest structure validation",
         status: TaskStatus.COMPLETED,
         complexity: TaskComplexity.HIGH,
+        priority: TaskPriority.MEDIUM,
         dependencies: [],
         requirements: [],
         createdDate: "2024-01-01T00:00:00.000Z",
@@ -1102,6 +1108,7 @@ describe("TasksDataService", () => {
           passedTests: 20,
           failedTests: 5,
           coverage: 75,
+          status: TestStatusEnum.PARTIAL,
           failingTestsList: [
             {
               name: "should handle network timeouts",
@@ -1138,16 +1145,21 @@ describe("TasksDataService", () => {
       // Assert: Should successfully parse FailingTest structure
       expect(result).toEqual(taskWithTestFailures);
       expect(result?.testStatus?.failingTestsList).toHaveLength(3);
-      
+
       // Validate each failing test category
-      const categories = result?.testStatus?.failingTestsList?.map(ft => ft.category) || [];
+      const categories =
+        result?.testStatus?.failingTestsList?.map((ft) => ft.category) || [];
       expect(categories).toContain("timeout");
       expect(categories).toContain("filesystem");
       expect(categories).toContain("type");
-      
+
       // Validate stackTrace is optional
-      const withStackTrace = result?.testStatus?.failingTestsList?.find(ft => ft.stackTrace);
-      const withoutStackTrace = result?.testStatus?.failingTestsList?.find(ft => !ft.stackTrace);
+      const withStackTrace = result?.testStatus?.failingTestsList?.find(
+        (ft) => ft.stackTrace
+      );
+      const withoutStackTrace = result?.testStatus?.failingTestsList?.find(
+        (ft) => !ft.stackTrace
+      );
       expect(withStackTrace?.stackTrace).toBeDefined();
       expect(withoutStackTrace?.stackTrace).toBeUndefined();
     });
@@ -1161,6 +1173,7 @@ describe("TasksDataService", () => {
           description: "Task with not_started status",
           status: TaskStatus.NOT_STARTED,
           complexity: TaskComplexity.LOW,
+          priority: TaskPriority.MEDIUM,
           dependencies: [],
           requirements: [],
           createdDate: "2024-01-01T00:00:00.000Z",
@@ -1173,6 +1186,7 @@ describe("TasksDataService", () => {
           description: "Task with in_progress status",
           status: TaskStatus.IN_PROGRESS,
           complexity: TaskComplexity.MEDIUM,
+          priority: TaskPriority.MEDIUM,
           dependencies: [],
           requirements: [],
           createdDate: "2024-01-01T00:00:00.000Z",
@@ -1185,6 +1199,7 @@ describe("TasksDataService", () => {
           description: "Task with completed status",
           status: TaskStatus.COMPLETED,
           complexity: TaskComplexity.HIGH,
+          priority: TaskPriority.MEDIUM,
           dependencies: [],
           requirements: [],
           createdDate: "2024-01-01T00:00:00.000Z",
@@ -1199,7 +1214,9 @@ describe("TasksDataService", () => {
           jsonrpc: "2.0",
           id: 1,
           result: {
-            content: [{ text: JSON.stringify({ tasks: tasksWithDifferentStatuses }) }],
+            content: [
+              { text: JSON.stringify({ tasks: tasksWithDifferentStatuses }) },
+            ],
           },
         },
       });
@@ -1212,9 +1229,9 @@ describe("TasksDataService", () => {
       expect(result[0].statusDisplayName).toBe("not started");
       expect(result[1].statusDisplayName).toBe("in progress");
       expect(result[2].statusDisplayName).toBe("completed");
-      
+
       // Validate display names match expected format
-      result.forEach(task => {
+      result.forEach((task) => {
         expect(task.statusDisplayName).toMatch(/^[a-z\s]+$/);
         expect(task.statusDisplayName).toBe(STATUS_DISPLAY_NAMES[task.status]);
       });
@@ -1228,6 +1245,7 @@ describe("TasksDataService", () => {
         description: "Task for testing ISO date string validation",
         status: TaskStatus.IN_PROGRESS,
         complexity: TaskComplexity.MEDIUM,
+        priority: TaskPriority.MEDIUM,
         dependencies: [],
         requirements: [],
         createdDate: "2024-01-01T00:00:00.000Z",
@@ -1238,6 +1256,8 @@ describe("TasksDataService", () => {
           passedTests: 8,
           failedTests: 2,
           coverage: 80,
+
+          status: TestStatusEnum.PARTIAL,
         },
       };
 
@@ -1255,12 +1275,18 @@ describe("TasksDataService", () => {
 
       // Assert: Should successfully parse ISO date strings
       expect(result).toEqual(taskWithDates);
-      
+
       // Validate date formats
-      expect(result?.createdDate).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{3})?Z$/);
-      expect(result?.lastModified).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{3})?Z$/);
-      expect(result?.testStatus?.lastRunDate).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/);
-      
+      expect(result?.createdDate).toMatch(
+        /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{3})?Z$/
+      );
+      expect(result?.lastModified).toMatch(
+        /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{3})?Z$/
+      );
+      expect(result?.testStatus?.lastRunDate).toMatch(
+        /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/
+      );
+
       // Validate dates are actually valid
       expect(() => new Date(result?.createdDate || "")).not.toThrow();
       expect(() => new Date(result?.lastModified || "")).not.toThrow();
@@ -1278,6 +1304,7 @@ describe("TasksDataService", () => {
           description: "not_started task that is executable",
           status: TaskStatus.NOT_STARTED,
           complexity: TaskComplexity.LOW,
+          priority: TaskPriority.MEDIUM,
           dependencies: [],
           requirements: [],
           createdDate: "2024-01-01T00:00:00.000Z",
@@ -1290,6 +1317,7 @@ describe("TasksDataService", () => {
           description: "not_started task that is executable",
           status: TaskStatus.NOT_STARTED,
           complexity: TaskComplexity.LOW,
+          priority: TaskPriority.MEDIUM,
           dependencies: [],
           requirements: [],
           createdDate: "2024-01-01T00:00:00.000Z",
@@ -1314,7 +1342,7 @@ describe("TasksDataService", () => {
 
       // Assert: Should successfully parse isExecutable logic
       expect(result).toHaveLength(2);
-      result.forEach(task => {
+      result.forEach((task) => {
         expect(task.status).toBe(TaskStatus.NOT_STARTED);
         expect(task.isExecutable).toBe(true);
         // not_started tasks should typically be executable for Cursor integration
@@ -1339,6 +1367,7 @@ describe("TasksDataService", () => {
                       description: "Task for testing JSON-RPC response format",
                       status: TaskStatus.COMPLETED,
                       complexity: TaskComplexity.LOW,
+                      priority: TaskPriority.MEDIUM,
                       dependencies: [],
                       requirements: [],
                       createdDate: "2024-01-01T00:00:00.000Z",
@@ -1362,7 +1391,7 @@ describe("TasksDataService", () => {
       expect(result).toHaveLength(1);
       expect(result[0].id).toBe("jsonrpc-test");
       expect(result[0].title).toBe("JSON-RPC Format Test");
-      
+
       // Validate response structure matches MCP server format
       expect(mockResponse.data.jsonrpc).toBe("2.0");
       expect(typeof mockResponse.data.id).toBe("number");
@@ -1375,9 +1404,11 @@ describe("TasksDataService", () => {
       const taskWithMalformedTests: Task = {
         id: "malformed-tests-task",
         title: "Task with Malformed Test Failures",
-        description: "Task demonstrating graceful handling of malformed FailingTest objects",
+        description:
+          "Task demonstrating graceful handling of malformed FailingTest objects",
         status: TaskStatus.COMPLETED,
         complexity: TaskComplexity.MEDIUM,
+        priority: TaskPriority.MEDIUM,
         dependencies: [],
         requirements: [],
         createdDate: "2024-01-01T00:00:00.000Z",
@@ -1387,6 +1418,7 @@ describe("TasksDataService", () => {
           totalTests: 20,
           passedTests: 18,
           failedTests: 2,
+          status: TestStatusEnum.PARTIAL,
           coverage: 90,
           failingTestsList: [
             {
@@ -1418,13 +1450,19 @@ describe("TasksDataService", () => {
       // Assert: Should handle malformed data gracefully
       expect(result).toBeDefined();
       expect(result?.testStatus?.failingTestsList).toHaveLength(2);
-      
+
       // First test should be valid
-      expect(result?.testStatus?.failingTestsList?.[0].name).toBe("Valid Test Failure");
-      expect(result?.testStatus?.failingTestsList?.[0].category).toBe("assertion");
-      
+      expect(result?.testStatus?.failingTestsList?.[0].name).toBe(
+        "Valid Test Failure"
+      );
+      expect(result?.testStatus?.failingTestsList?.[0].category).toBe(
+        "assertion"
+      );
+
       // Second test should be present but may have undefined fields
-      expect(result?.testStatus?.failingTestsList?.[1].name).toBe("Malformed Test");
+      expect(result?.testStatus?.failingTestsList?.[1].name).toBe(
+        "Malformed Test"
+      );
       // Note: In a real implementation, you might want to filter out malformed tests
       // or provide default values, but for now we're just testing that the service
       // doesn't crash when encountering malformed data

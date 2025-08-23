@@ -289,7 +289,7 @@ This implementation plan breaks down the feature into atomic, TDD-friendly tasks
   - Write unit tests for message handling
   - _Requirements: 3.1, 8.1_
 
-- [ ] 3.3.9 Add relative time integration
+- [x] 3.3.9 Add relative time integration
 
   - Connect to TimeFormattingUtility for timestamp display
   - Implement periodic time refresh in webview
@@ -297,7 +297,7 @@ This implementation plan breaks down the feature into atomic, TDD-friendly tasks
   - Write unit tests for time formatting integration
   - _Requirements: 4.8, 9.3, 9.4_
 
-- [ ] 3.3.10 Create "no task selected" state
+- [x] 3.3.10 Create "no task selected" state
 
   - Add placeholder content when no task is selected
   - Include helpful instructions for task interaction

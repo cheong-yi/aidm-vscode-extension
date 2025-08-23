@@ -1,10 +1,33 @@
-// Task Types - Main Export File
-// Re-export from centralized types to avoid duplication
-// Requirements: 1.1, 1.2, 2.1, 7.1
+/**
+ * Task Types - Main Export File
+ * Single source of truth for all task-related types
+ * Requirements: 1.1, 1.2, 2.1, 7.1
+ */
 
-// Re-export from main types to maintain single source of truth
+// ============================================================================
+// CORE TASK TYPES (Single Source of Truth)
+// ============================================================================
+
+// Export all core types from centralized location
 export * from "../../types/tasks";
 
-// Keep only unique interfaces that don't exist in main types
+// ============================================================================
+// TASK-SPECIFIC BUSINESS LOGIC TYPES
+// ============================================================================
+
+// Export unique task-specific interfaces
+export * from "./taskTypes";
+
+// ============================================================================
+// TASK SERVICE INTERFACES
+// ============================================================================
+
+// Export service interfaces for task management
 export * from "./taskInterfaces";
+
+// ============================================================================
+// TASK JSON-RPC TYPES
+// ============================================================================
+
+// Export JSON-RPC specific types
 export * from "./taskJsonRpc";

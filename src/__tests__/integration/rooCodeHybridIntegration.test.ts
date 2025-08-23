@@ -9,6 +9,8 @@ import { SimpleMCPServer } from "../../server/SimpleMCPServer";
 import { ContextManager } from "../../server/ContextManager";
 import { MockDataProvider } from "../../mock/MockDataProvider";
 import { CacheManager } from "../../services/CacheManager";
+import { TaskStatusManager } from "../../services/TaskStatusManager";
+import { MarkdownTaskParser } from "../../services/MarkdownTaskParser";
 import { getNextAvailablePort } from "../utils/testPorts";
 
 describe("RooCode Hybrid MCP Integration", () => {
@@ -21,9 +23,15 @@ describe("RooCode Hybrid MCP Integration", () => {
     // Start local MCP server for testing
     const mockDataProvider = new MockDataProvider();
     const contextManager = new ContextManager(mockDataProvider);
+    const markdownParser = new MarkdownTaskParser();
+    const taskStatusManager = new TaskStatusManager(markdownParser);
 
     const testPort = getNextAvailablePort();
-    mcpServer = new SimpleMCPServer(testPort, contextManager);
+    mcpServer = new SimpleMCPServer(
+      testPort,
+      contextManager,
+      taskStatusManager
+    );
     await mcpServer.start();
     isServerRunning = true;
 

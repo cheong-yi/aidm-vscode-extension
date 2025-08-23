@@ -52,6 +52,16 @@ export enum ErrorCode {
 }
 
 /**
+ * Interface for error recovery strategies
+ */
+export interface ErrorRecoveryStrategy {
+  canRecover(error: Error, context: any): boolean;
+  recover(error: Error, context: any): Promise<any>;
+  maxRetries: number;
+  retryDelay: number;
+}
+
+/**
  * Interface for hover provider functionality
  */
 export interface BusinessContextHoverProvider {

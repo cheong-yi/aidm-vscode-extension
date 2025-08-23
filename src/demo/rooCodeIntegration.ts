@@ -22,6 +22,7 @@ export interface RooCodeQuery {
 }
 
 export interface RooCodeResponse {
+  success: boolean;
   queryType: string;
   localContext?: LocalContext;
   remoteIntelligence?: RemoteIntelligence;
@@ -103,6 +104,7 @@ export class RooCodeIntegration {
     );
 
     return {
+      success: true,
       queryType: "local",
       localContext,
       suggestions,
@@ -144,6 +146,7 @@ export class RooCodeIntegration {
     );
 
     return {
+      success: true,
       queryType: "remote",
       remoteIntelligence,
       suggestions,
@@ -181,6 +184,7 @@ export class RooCodeIntegration {
     );
 
     return {
+      success: true,
       queryType: "hybrid",
       localContext: hybridContext.local,
       remoteIntelligence: hybridContext.remote,
@@ -372,6 +376,7 @@ export class RooCodeIntegration {
     error: any
   ): RooCodeResponse {
     return {
+      success: false,
       queryType: query.type,
       suggestions: [
         "Unable to process query due to connectivity issues",

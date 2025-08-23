@@ -2,19 +2,24 @@
  * Task Data Contract Validation Tests
  * Task 2.6.4: Validate enhanced mock response structure matches API
  * Requirements: 6.8, 6.9
- * 
+ *
  * This test suite validates that all enhanced Task fields match the design document interface exactly,
  * including FailingTest structure, STATUS_DISPLAY_NAMES mapping, and TestStatus enhanced fields.
  */
 
 import { jest } from "@jest/globals";
-import { TaskValidator, TaskValidationResult, FailingTestValidationResult } from "../../utils/TaskValidator";
+import {
+  TaskValidator,
+  TaskValidationResult,
+  FailingTestValidationResult,
+} from "../../utils/TaskValidator";
 import {
   Task,
   TaskStatus,
   TaskComplexity,
   TaskPriority,
   TestStatus,
+  TestStatusEnum,
   FailingTest,
   STATUS_DISPLAY_NAMES,
 } from "../../types/tasks";
@@ -26,7 +31,8 @@ describe("TaskValidator - Enhanced Mock Data Contract Validation", () => {
       const completeTask: Task = {
         id: "test-1",
         title: "Complete Test Task",
-        description: "A task with all enhanced properties for validation testing",
+        description:
+          "A task with all enhanced properties for validation testing",
         status: TaskStatus.NOT_STARTED,
         complexity: TaskComplexity.MEDIUM,
         dependencies: ["task-0"],
@@ -46,6 +52,7 @@ describe("TaskValidator - Enhanced Mock Data Contract Validation", () => {
           totalTests: 20,
           passedTests: 18,
           failedTests: 2,
+          status: TestStatusEnum.PARTIAL,
           testSuite: "TaskValidator.test.ts",
           coverage: 90,
           failingTestsList: [
@@ -107,7 +114,9 @@ describe("TaskValidator - Enhanced Mock Data Contract Validation", () => {
       expect(result.missingFields).toContain("requirements");
       expect(result.missingFields).toContain("createdDate");
       expect(result.missingFields).toContain("lastModified");
-      expect(result.errors).toContain("Missing required fields: description, status, complexity, dependencies, requirements, createdDate, lastModified");
+      expect(result.errors).toContain(
+        "Missing required fields: description, status, complexity, dependencies, requirements, createdDate, lastModified"
+      );
     });
 
     it("should detect invalid field types", () => {
@@ -120,7 +129,7 @@ describe("TaskValidator - Enhanced Mock Data Contract Validation", () => {
         complexity: "invalid_complexity", // Should be TaskComplexity enum
         dependencies: "not_an_array", // Should be array
         requirements: "not_an_array", // Should be array
-        createdDate: new Date(), // Should be string
+        createdDate: "2024-01-01T00:00:00Z", // Should be string
         lastModified: "2024-01-01T00:00:00.000Z",
         estimatedDuration: 123, // Should be string
         isExecutable: "true", // Should be boolean
@@ -132,11 +141,21 @@ describe("TaskValidator - Enhanced Mock Data Contract Validation", () => {
       // Assert
       expect(result.isValid).toBe(false);
       expect(result.contractCompliance).toBe(false);
-      expect(result.invalidFieldTypes).toContain("id: expected string, got number");
-      expect(result.invalidFieldTypes).toContain("dependencies: expected array, got string");
-      expect(result.invalidFieldTypes).toContain("requirements: expected array, got string");
-      expect(result.invalidFieldTypes).toContain("estimatedDuration: expected string, got number");
-      expect(result.invalidFieldTypes).toContain("isExecutable: expected boolean, got string");
+      expect(result.invalidFieldTypes).toContain(
+        "id: expected string, got number"
+      );
+      expect(result.invalidFieldTypes).toContain(
+        "dependencies: expected array, got string"
+      );
+      expect(result.invalidFieldTypes).toContain(
+        "requirements: expected array, got string"
+      );
+      expect(result.invalidFieldTypes).toContain(
+        "estimatedDuration: expected string, got number"
+      );
+      expect(result.invalidFieldTypes).toContain(
+        "isExecutable: expected boolean, got string"
+      );
     });
 
     it("should validate enhanced optional fields when present", () => {
@@ -147,6 +166,7 @@ describe("TaskValidator - Enhanced Mock Data Contract Validation", () => {
         description: "Task testing enhanced optional fields",
         status: TaskStatus.IN_PROGRESS,
         complexity: TaskComplexity.HIGH,
+        priority: TaskPriority.MEDIUM,
         dependencies: [],
         requirements: [],
         createdDate: "2024-01-01T00:00:00.000Z",
@@ -173,6 +193,7 @@ describe("TaskValidator - Enhanced Mock Data Contract Validation", () => {
         description: "A not_started task that's not executable",
         status: TaskStatus.NOT_STARTED,
         complexity: TaskComplexity.LOW,
+        priority: TaskPriority.MEDIUM,
         dependencies: [],
         requirements: [],
         createdDate: "2024-01-01T00:00:00.000Z",
@@ -185,7 +206,9 @@ describe("TaskValidator - Enhanced Mock Data Contract Validation", () => {
 
       // Assert
       expect(result.isValid).toBe(true); // Still valid, just a warning
-      expect(result.warnings).toContain("not_started tasks should typically have isExecutable: true for Cursor integration");
+      expect(result.warnings).toContain(
+        "not_started tasks should typically have isExecutable: true for Cursor integration"
+      );
     });
   });
 
@@ -245,7 +268,9 @@ describe("TaskValidator - Enhanced Mock Data Contract Validation", () => {
       expect(result.isValid).toBe(false);
       expect(result.requiredFieldsPresent).toBe(false);
       expect(result.errors).toContain("message must be a string");
-      expect(result.errors).toContain("category must be one of: assertion, type, filesystem, timeout, network");
+      expect(result.errors).toContain(
+        "category must be one of: assertion, type, filesystem, timeout, network"
+      );
     });
 
     it("should detect invalid category values", () => {
@@ -262,7 +287,9 @@ describe("TaskValidator - Enhanced Mock Data Contract Validation", () => {
       // Assert
       expect(result.isValid).toBe(false);
       expect(result.categoryValidation).toBe(false);
-      expect(result.errors).toContain("category must be one of: assertion, type, filesystem, timeout, network");
+      expect(result.errors).toContain(
+        "category must be one of: assertion, type, filesystem, timeout, network"
+      );
     });
 
     it("should validate optional stackTrace field", () => {
@@ -295,13 +322,14 @@ describe("TaskValidator - Enhanced Mock Data Contract Validation", () => {
       ];
 
       // Act & Assert: Each date should be valid
-      validDates.forEach(dateString => {
+      validDates.forEach((dateString) => {
         const task: Task = {
           id: "date-test",
           title: "Date Test Task",
           description: "Task for testing date validation",
           status: TaskStatus.COMPLETED,
           complexity: TaskComplexity.LOW,
+          priority: TaskPriority.MEDIUM,
           dependencies: [],
           requirements: [],
           createdDate: dateString,
@@ -311,7 +339,9 @@ describe("TaskValidator - Enhanced Mock Data Contract Validation", () => {
         const result = TaskValidator.validateTask(task);
         expect(result.isValid).toBe(true);
         expect(result.validationDetails.dateValidations.createdDate).toBe(true);
-        expect(result.validationDetails.dateValidations.lastModified).toBe(true);
+        expect(result.validationDetails.dateValidations.lastModified).toBe(
+          true
+        );
       });
     });
 
@@ -329,7 +359,7 @@ describe("TaskValidator - Enhanced Mock Data Contract Validation", () => {
       ];
 
       // Act & Assert: Each invalid date should be rejected
-      invalidDates.forEach(invalidDate => {
+      invalidDates.forEach((invalidDate) => {
         if (invalidDate !== null && invalidDate !== undefined) {
           const task: any = {
             id: "invalid-date-test",
@@ -337,6 +367,7 @@ describe("TaskValidator - Enhanced Mock Data Contract Validation", () => {
             description: "Task for testing invalid date validation",
             status: TaskStatus.COMPLETED,
             complexity: TaskComplexity.LOW,
+            priority: TaskPriority.MEDIUM,
             dependencies: [],
             requirements: [],
             createdDate: invalidDate,
@@ -344,7 +375,9 @@ describe("TaskValidator - Enhanced Mock Data Contract Validation", () => {
           };
 
           const result = TaskValidator.validateTask(task);
-          expect(result.validationDetails.dateValidations.createdDate).toBe(false);
+          expect(result.validationDetails.dateValidations.createdDate).toBe(
+            false
+          );
         }
       });
     });
@@ -365,7 +398,7 @@ describe("TaskValidator - Enhanced Mock Data Contract Validation", () => {
       const allStatuses = Object.values(TaskStatus);
 
       // Act & Assert: Each status should have a display name
-      allStatuses.forEach(status => {
+      allStatuses.forEach((status) => {
         expect(STATUS_DISPLAY_NAMES[status]).toBeDefined();
         expect(typeof STATUS_DISPLAY_NAMES[status]).toBe("string");
         expect(STATUS_DISPLAY_NAMES[status].length).toBeGreaterThan(0);
@@ -377,7 +410,7 @@ describe("TaskValidator - Enhanced Mock Data Contract Validation", () => {
       const displayNames = Object.values(STATUS_DISPLAY_NAMES);
 
       // Act & Assert: All display names should be lowercase with spaces
-      displayNames.forEach(displayName => {
+      displayNames.forEach((displayName) => {
         expect(displayName).toMatch(/^[a-z\s]+$/);
         expect(displayName).not.toMatch(/[A-Z]/); // No uppercase letters
         expect(displayName).not.toMatch(/[_-]/); // No underscores or hyphens
@@ -393,6 +426,7 @@ describe("TaskValidator - Enhanced Mock Data Contract Validation", () => {
         totalTests: 25,
         passedTests: 22,
         failedTests: 3,
+        status: TestStatusEnum.PARTIAL,
         testSuite: "EnhancedTestStatus.test.ts",
         coverage: 88,
         failingTestsList: [
@@ -428,6 +462,7 @@ describe("TaskValidator - Enhanced Mock Data Contract Validation", () => {
         totalTests: 10,
         passedTests: 10,
         failedTests: 0,
+        status: TestStatusEnum.PASSING,
       };
 
       // Act
@@ -636,7 +671,8 @@ describe("TaskValidator - Enhanced Mock Data Contract Validation", () => {
       };
 
       // Act
-      const result = TaskValidator.validateMockDataStructure(mockDataWithoutTasks);
+      const result =
+        TaskValidator.validateMockDataStructure(mockDataWithoutTasks);
 
       // Assert
       expect(result.isValid).toBe(true);

@@ -15,6 +15,7 @@ import { ContextManager } from "../types/extension";
 import { CodeLocation } from "../types/business";
 import { TaskStatusManager } from "../services/TaskStatusManager";
 import { TaskStatus } from "../types/tasks";
+import { PortFinder } from "../utils/portFinder";
 
 export interface Tool {
   name: string;
@@ -48,6 +49,13 @@ export class SimpleMCPServer {
   async start(): Promise<void> {
     if (this.isRunning) {
       throw new Error("Server is already running");
+    }
+
+    // Find an available port if the current port is busy
+    const actualPort = await PortFinder.findAvailablePort(this.port);
+    if (actualPort !== this.port) {
+      this.port = actualPort;
+      console.log(`Port ${this.port} was busy, using port ${actualPort}`);
     }
 
     return new Promise((resolve, reject) => {

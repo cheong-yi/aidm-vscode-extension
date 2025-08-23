@@ -20,6 +20,7 @@ export interface RooCodeQuery {
 }
 
 export interface RooCodeResponse {
+  success: boolean;
   suggestion: string;
   localContext: {
     sprintAlignment: string;
@@ -72,7 +73,11 @@ export class RooCodeIntegrationDemo {
       const contextManager = new ContextManager(mockDataProvider);
       const taskStatusManager = new TaskStatusManager(new MarkdownTaskParser());
 
-      this.mcpServer = new SimpleMCPServer(3000, contextManager, taskStatusManager);
+      this.mcpServer = new SimpleMCPServer(
+        3000,
+        contextManager,
+        taskStatusManager
+      );
       await this.mcpServer.start();
       this.isServerRunning = true;
 
@@ -91,9 +96,12 @@ export class RooCodeIntegrationDemo {
     const vscode = require("vscode");
     const config = vscode.workspace.getConfiguration();
 
-    const remoteUrl = (config.get("aidmVscodeExtension.remote.mcpServerUrl") as string) || "";
-    const apiKey = (config.get("aidmVscodeExtension.remote.apiKey") as string) || "";
-    const remoteEnabled = (config.get("aidmVscodeExtension.remote.enabled") as boolean) || false;
+    const remoteUrl =
+      (config.get("aidmVscodeExtension.remote.mcpServerUrl") as string) || "";
+    const apiKey =
+      (config.get("aidmVscodeExtension.remote.apiKey") as string) || "";
+    const remoteEnabled =
+      (config.get("aidmVscodeExtension.remote.enabled") as boolean) || false;
 
     if (remoteEnabled && remoteUrl) {
       this.hybridClient.configureRemoteServer(remoteUrl);
@@ -206,6 +214,7 @@ export class RooCodeIntegrationDemo {
     }
 
     return {
+      success: true,
       suggestion,
       localContext: {
         sprintAlignment: `Aligns with sprint "${local.sprintDetails.name}" - ${local.storyContext.title}`,
@@ -364,6 +373,7 @@ This guidance combines your immediate sprint context with proven delivery intell
    */
   private generateFallbackResponse(query: RooCodeQuery): RooCodeResponse {
     return {
+      success: false,
       suggestion: `I'm working in offline mode, but I can still help with ${query.type}. Here's a basic suggestion based on general best practices:
 
 \`\`\`typescript

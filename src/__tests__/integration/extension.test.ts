@@ -5,47 +5,49 @@
 
 import { activate, deactivate } from "../../extension";
 
-// Mock configuration
-const mockConfig = {
-  "mcpServer.port": 3003,
-  "mcpServer.timeout": 5000,
-  "mcpServer.retryAttempts": 3,
-  "performance.maxConcurrentRequests": 10,
-  "mock.enabled": true,
-  "mock.dataSize": "small",
-  "mock.enterprisePatterns": true,
-};
+jest.mock("vscode", () => {
+  // Mock configuration
+  const mockConfig = {
+    "mcpServer.port": 3003,
+    "mcpServer.timeout": 5000,
+    "mcpServer.retryAttempts": 3,
+    "performance.maxConcurrentRequests": 10,
+    "mock.enabled": true,
+    "mock.dataSize": "small",
+    "mock.enterprisePatterns": true,
+  };
 
-jest.mock("vscode", () => ({
-  workspace: {
-    getConfiguration: jest.fn(() => ({
-      get: jest.fn((key: string, defaultValue?: any) => {
-        return mockConfig[key as keyof typeof mockConfig] || defaultValue;
-      }),
-    })),
-    onDidChangeConfiguration: jest.fn(() => ({
-      dispose: jest.fn(),
-    })),
-  },
-  languages: {
-    registerHoverProvider: jest.fn(() => ({
-      dispose: jest.fn(),
-    })),
-  },
-  commands: {
-    registerCommand: jest.fn(() => ({
-      dispose: jest.fn(),
-    })),
-  },
-  window: {
-    showInformationMessage: jest.fn(),
-    showErrorMessage: jest.fn(),
-  },
-  ExtensionContext: jest.fn(),
-  ExtensionMode: {
-    Test: 3,
-  },
-}));
+  return {
+    workspace: {
+      getConfiguration: jest.fn(() => ({
+        get: jest.fn((key: string, defaultValue?: any) => {
+          return mockConfig[key as keyof typeof mockConfig] || defaultValue;
+        }),
+      })),
+      onDidChangeConfiguration: jest.fn(() => ({
+        dispose: jest.fn(),
+      })),
+    },
+    languages: {
+      registerHoverProvider: jest.fn(() => ({
+        dispose: jest.fn(),
+      })),
+    },
+    commands: {
+      registerCommand: jest.fn(() => ({
+        dispose: jest.fn(),
+      })),
+    },
+    window: {
+      showInformationMessage: jest.fn(),
+      showErrorMessage: jest.fn(),
+    },
+    ExtensionContext: jest.fn(),
+    ExtensionMode: {
+      Test: 3,
+    },
+  };
+});
 
 import * as vscode from "vscode";
 

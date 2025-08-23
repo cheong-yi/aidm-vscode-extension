@@ -1,135 +1,82 @@
 /**
- * Core Task Type Definitions
+ * Task-Specific Business Logic Types
  * Requirements: 1.1, 1.2, 2.1, 7.1
+ * 
+ * This file contains ONLY unique interfaces that extend or specialize
+ * the core types defined in ../../types/tasks.ts
  */
 
-import { TaskStatus, TaskComplexity, TaskPriority, TestStatus as TestStatusEnum } from './taskEnums';
+// Import core types for use in this file's interfaces
+import type {
+  Task,
+  TestStatus,
+  FailingTest,
+  TaskStatus,
+  TaskComplexity,
+  TaskPriority,
+  TestStatusEnum,
+  ValidationResult,
+  TaskContext,
+  TaskData,
+  TaskMetadata,
+  TaskRelationships,
+  TaskPerformance
+} from "../../types/tasks";
+
+// ============================================================================
+// TASK-SPECIFIC BUSINESS LOGIC TYPES (Unique to this module)
+// ============================================================================
 
 /**
- * Main Task interface representing a development task
+ * Task execution context for Cursor integration
  */
-export interface Task {
-  id: string;
-  title: string;
-  description: string;
-  status: TaskStatus;
-  complexity: TaskComplexity;
-  priority: TaskPriority;
-  dependencies: string[];
+export interface TaskExecutionContext {
+  taskId: string;
+  filePath: string;
+  lineNumber: number;
+  context: string;
   requirements: string[];
-  createdDate: string; // ISO date string for TimeFormattingUtility compatibility
-  lastModified: string; // ISO date string for TimeFormattingUtility compatibility
-  assignee?: string;
-  estimatedHours?: number;
-  actualHours?: number;
-  estimatedDuration?: string; // "15-30 min", "20-25 min" format
-  isExecutable?: boolean; // true for not_started tasks eligible for Cursor integration
-  testStatus?: TaskTestStatus;
-  tags?: string[];
-  parentTaskId?: string;
-  subTasks?: string[];
-  notes?: string;
-  dueDate?: string; // ISO date string
-  statusDisplayName?: string; // From STATUS_DISPLAY_NAMES mapping
+  dependencies: string[];
+  estimatedDuration: string;
+  isExecutable: boolean;
+  executionMode: 'cursor' | 'manual' | 'automated';
+  environment: 'development' | 'testing' | 'production';
 }
 
 /**
- * Test results associated with a task
+ * Task validation context for business rules
  */
-export interface TaskTestStatus {
-  lastRunDate?: string; // ISO date string
-  totalTests: number;
-  passedTests: number;
-  failedTests: number;
-  failingTestsList?: FailingTest[];
-  testSuite?: string;
-  coverage?: number;
-  status: TestStatusEnum;
-  errorMessage?: string;
-  executionTime?: number;
-}
-
-/**
- * Individual failing test information
- */
-export interface FailingTest {
-  name: string;
-  message: string;
-  stackTrace?: string;
-  category: "assertion" | "type" | "filesystem" | "timeout" | "network";
-  testFile?: string;
-  lineNumber?: number;
-  expectedValue?: string;
-  actualValue?: string;
-}
-
-/**
- * Validation result for task data integrity
- */
-export interface ValidationResult {
-  isValid: boolean;
-  errors: string[];
-  warnings: string[];
-  suggestions?: string[];
-}
-
-/**
- * Task context with related information
- */
-export interface TaskContext {
+export interface TaskValidationContext {
   task: Task;
-  relatedRequirements: string[];
-  codeMappings: string[];
-  businessContext?: string;
-  dependencies: Task[];
-  blockers: Task[];
-  testResults?: TaskTestStatus;
-  estimatedCompletion?: string; // ISO date string
-  progressPercentage?: number;
+  businessRules: string[];
+  validationLevel: 'basic' | 'strict' | 'enterprise';
+  customValidators: string[];
+  allowPartialValidation: boolean;
 }
 
 /**
- * Task data structure with metadata
+ * Task performance metrics specific to development workflow
  */
-export interface TaskData {
-  tasks: Task[];
-  metadata: TaskMetadata;
-  relationships: TaskRelationships;
-  performance: TaskPerformance;
+export interface TaskDevelopmentMetrics {
+  taskId: string;
+  timeToFirstCommit: number;
+  timeToFirstTest: number;
+  timeToFirstReview: number;
+  totalDevelopmentTime: number;
+  testCoverageAtCompletion: number;
+  codeQualityScore: number;
+  reviewerSatisfaction: number;
 }
 
 /**
- * Task metadata information
+ * Task dependency resolution result
  */
-export interface TaskMetadata {
-  lastUpdated: string; // ISO date string
-  totalTasks: number;
-  completedTasks: number;
-  inProgressTasks: number;
-  blockedTasks: number;
-  testCoverage: number;
-  averageComplexity: TaskComplexity;
-  projectName?: string;
-  sprintName?: string;
-}
-
-/**
- * Task relationship mappings
- */
-export interface TaskRelationships {
-  taskDependencies: Record<string, string[]>;
-  requirementMappings: Record<string, string[]>;
-  fileMappings: Record<string, string[]>;
-  testMappings: Record<string, string[]>;
-}
-
-/**
- * Task performance metrics
- */
-export interface TaskPerformance {
-  lastRefreshTime: Date;
-  refreshDuration: number;
-  cacheHitRate: number;
-  averageResponseTime: number;
-  memoryUsage?: number;
+export interface TaskDependencyResolution {
+  taskId: string;
+  resolvedDependencies: string[];
+  unresolvedDependencies: string[];
+  circularDependencies: string[];
+  blockingTasks: string[];
+  estimatedResolutionTime: number;
+  resolutionStrategy: 'sequential' | 'parallel' | 'hybrid';
 }

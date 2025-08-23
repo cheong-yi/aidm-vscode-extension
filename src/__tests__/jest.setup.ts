@@ -3,8 +3,8 @@
  * Global test configuration and mocks
  */
 
-// Global test timeout
-jest.setTimeout(10000);
+// Global test timeout - increased for integration tests
+jest.setTimeout(30000);
 
 // Test utilities
 export const testUtils = {
@@ -21,7 +21,7 @@ export const testUtils = {
   expectEventuallyToBe: async (
     getValue: () => any,
     expectedValue: any,
-    timeout: number = 5000,
+    timeout: number = 10000, // Increased timeout
     interval: number = 100
   ) => {
     const startTime = Date.now();

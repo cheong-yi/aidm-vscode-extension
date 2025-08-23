@@ -40,7 +40,7 @@ describe("StatusBarManager Integration", () => {
     const mockConfig = {
       get: jest.fn((key: string, defaultValue?: any) => {
         if (key === "mcpServer.port") {
-          return 3000;
+          return 3001; // Changed from 3000 since Cursor takes port 3000
         }
         if (key === "mcpServer.timeout") {
           return 5000;
@@ -53,7 +53,7 @@ describe("StatusBarManager Integration", () => {
     );
 
     // Create real MCP client (will be mocked at HTTP level)
-    mcpClient = new MCPClient(3000, 5000);
+    mcpClient = new MCPClient(3001, 5000); // Changed from 3000 to 3001
 
     // Mock axios for HTTP requests
     mockAxios = require("axios");
@@ -61,6 +61,12 @@ describe("StatusBarManager Integration", () => {
       post: jest.fn(),
     });
     mockAxios.isAxiosError = jest.fn().mockReturnValue(false);
+
+    // Mock the axios module itself
+    jest.doMock("axios", () => ({
+      create: mockAxios.create,
+      isAxiosError: mockAxios.isAxiosError,
+    }));
   });
 
   afterEach(() => {
@@ -135,7 +141,7 @@ describe("StatusBarManager Integration", () => {
 
       // Should have created new HTTP client with updated config
       expect(mockAxios.create).toHaveBeenCalledWith({
-        baseURL: "http://localhost:3000/rpc",
+        baseURL: "http://localhost:3001/rpc",
         timeout: 5000,
         headers: {
           "Content-Type": "application/json",

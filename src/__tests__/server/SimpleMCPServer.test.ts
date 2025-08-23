@@ -9,7 +9,13 @@ import { MockDataProvider } from "../../mock/MockDataProvider";
 import { TaskStatusManager } from "../../services/TaskStatusManager";
 import { MarkdownTaskParser } from "../../services/MarkdownTaskParser";
 import { JSONRPCRequest, ToolCallRequest } from "../../types/jsonrpc";
-import { Task, TaskStatus, TestStatus } from "../../types/tasks";
+import {
+  Task,
+  TaskStatus,
+  TestStatus,
+  TaskPriority,
+  TestStatusEnum,
+} from "../../types/tasks";
 
 describe("SimpleMCPServer Unit Tests", () => {
   let server: SimpleMCPServer;
@@ -23,25 +29,29 @@ describe("SimpleMCPServer Unit Tests", () => {
 
     // Create mock instances with proper jest mocking
     mockMarkdownParser = {
-      parseTasksFromFile: jest.fn()
+      parseTasksFromFile: jest.fn(),
     };
-    
+
     mockTaskStatusManager = {
       getTasks: jest.fn(),
       getTaskById: jest.fn(),
       updateTaskStatus: jest.fn(),
       refreshTasksFromFile: jest.fn(),
       getTaskDependencies: jest.fn(),
-      validateStatusTransition: jest.fn()
+      validateStatusTransition: jest.fn(),
     };
-    
+
     mockContextManager = {
       getBusinessContext: jest.fn(),
-      getRequirementById: jest.fn()
+      getRequirementById: jest.fn(),
     };
 
     // Create server instance
-    server = new SimpleMCPServer(3000, mockContextManager, mockTaskStatusManager);
+    server = new SimpleMCPServer(
+      3000,
+      mockContextManager,
+      mockTaskStatusManager
+    );
   });
 
   describe("Tool Registration", () => {
@@ -54,8 +64,10 @@ describe("SimpleMCPServer Unit Tests", () => {
       };
 
       // Use reflection to access private method for testing
-      const toolsListResponse = await (server as any).handleToolsList(mockRequest);
-      
+      const toolsListResponse = await (server as any).handleToolsList(
+        mockRequest
+      );
+
       expect(toolsListResponse.result.tools).toEqual(
         expect.arrayContaining([
           expect.objectContaining({ name: "tasks/list" }),
@@ -75,14 +87,18 @@ describe("SimpleMCPServer Unit Tests", () => {
         id: "test-2",
       };
 
-      const toolsListResponse = await (server as any).handleToolsList(mockRequest);
-      const refreshTool = toolsListResponse.result.tools.find((t: any) => t.name === "tasks/refresh");
-      
+      const toolsListResponse = await (server as any).handleToolsList(
+        mockRequest
+      );
+      const refreshTool = toolsListResponse.result.tools.find(
+        (t: any) => t.name === "tasks/refresh"
+      );
+
       expect(refreshTool).toBeDefined();
       expect(refreshTool.inputSchema).toEqual({
         type: "object",
         properties: {},
-        additionalProperties: false
+        additionalProperties: false,
       });
     });
 
@@ -93,20 +109,24 @@ describe("SimpleMCPServer Unit Tests", () => {
         id: "test-3",
       };
 
-      const toolsListResponse = await (server as any).handleToolsList(mockRequest);
-      const dependenciesTool = toolsListResponse.result.tools.find((t: any) => t.name === "tasks/dependencies");
-      
+      const toolsListResponse = await (server as any).handleToolsList(
+        mockRequest
+      );
+      const dependenciesTool = toolsListResponse.result.tools.find(
+        (t: any) => t.name === "tasks/dependencies"
+      );
+
       expect(dependenciesTool).toBeDefined();
       expect(dependenciesTool.inputSchema).toEqual({
         type: "object",
         properties: {
           id: {
             type: "string",
-            description: "The unique identifier of the task"
-          }
+            description: "The unique identifier of the task",
+          },
         },
         required: ["id"],
-        additionalProperties: false
+        additionalProperties: false,
       });
     });
 
@@ -117,57 +137,82 @@ describe("SimpleMCPServer Unit Tests", () => {
         id: "test-4",
       };
 
-      const toolsListResponse = await (server as any).handleToolsList(mockRequest);
-      const testResultsTool = toolsListResponse.result.tools.find((t: any) => t.name === "tasks/test-results");
-      
+      const toolsListResponse = await (server as any).handleToolsList(
+        mockRequest
+      );
+      const testResultsTool = toolsListResponse.result.tools.find(
+        (t: any) => t.name === "tasks/test-results"
+      );
+
       expect(testResultsTool).toBeDefined();
       expect(testResultsTool.inputSchema).toEqual({
         type: "object",
         properties: {
           id: {
             type: "string",
-            description: "The unique identifier of the task"
-          }
+            description: "The unique identifier of the task",
+          },
         },
         required: ["id"],
-        additionalProperties: false
+        additionalProperties: false,
       });
     });
   });
 
   describe("Tool Validation", () => {
     it("should validate tasks/refresh with no arguments", () => {
-      const validationError = (server as any).validateToolArguments("tasks/refresh", {});
+      const validationError = (server as any).validateToolArguments(
+        "tasks/refresh",
+        {}
+      );
       expect(validationError).toBeNull();
     });
 
     it("should validate tasks/dependencies with valid ID", () => {
-      const validationError = (server as any).validateToolArguments("tasks/dependencies", { id: "task-123" });
+      const validationError = (server as any).validateToolArguments(
+        "tasks/dependencies",
+        { id: "task-123" }
+      );
       expect(validationError).toBeNull();
     });
 
     it("should validate tasks/test-results with valid ID", () => {
-      const validationError = (server as any).validateToolArguments("tasks/test-results", { id: "task-123" });
+      const validationError = (server as any).validateToolArguments(
+        "tasks/test-results",
+        { id: "task-123" }
+      );
       expect(validationError).toBeNull();
     });
 
     it("should reject tasks/dependencies without ID", () => {
-      const validationError = (server as any).validateToolArguments("tasks/dependencies", {});
+      const validationError = (server as any).validateToolArguments(
+        "tasks/dependencies",
+        {}
+      );
       expect(validationError).toBe("id is required and must be a string");
     });
 
     it("should reject tasks/test-results without ID", () => {
-      const validationError = (server as any).validateToolArguments("tasks/test-results", {});
+      const validationError = (server as any).validateToolArguments(
+        "tasks/test-results",
+        {}
+      );
       expect(validationError).toBe("id is required and must be a string");
     });
 
     it("should reject tasks/dependencies with non-string ID", () => {
-      const validationError = (server as any).validateToolArguments("tasks/dependencies", { id: 123 });
+      const validationError = (server as any).validateToolArguments(
+        "tasks/dependencies",
+        { id: 123 }
+      );
       expect(validationError).toBe("id is required and must be a string");
     });
 
     it("should reject tasks/test-results with non-string ID", () => {
-      const validationError = (server as any).validateToolArguments("tasks/test-results", { id: 123 });
+      const validationError = (server as any).validateToolArguments(
+        "tasks/test-results",
+        { id: 123 }
+      );
       expect(validationError).toBe("id is required and must be a string");
     });
   });
@@ -182,10 +227,11 @@ describe("SimpleMCPServer Unit Tests", () => {
             description: "Description 1",
             status: TaskStatus.NOT_STARTED,
             complexity: "low" as any,
+            priority: TaskPriority.MEDIUM,
             dependencies: [],
             requirements: [],
-            createdDate: new Date(),
-            lastModified: new Date()
+            createdDate: "2024-01-01T00:00:00Z",
+            lastModified: "2024-01-01T00:00:00Z",
           },
           {
             id: "task-2",
@@ -193,11 +239,12 @@ describe("SimpleMCPServer Unit Tests", () => {
             description: "Description 2",
             status: TaskStatus.IN_PROGRESS,
             complexity: "medium" as any,
+            priority: TaskPriority.MEDIUM,
             dependencies: [],
             requirements: [],
-            createdDate: new Date(),
-            lastModified: new Date()
-          }
+            createdDate: "2024-01-01T00:00:00Z",
+            lastModified: "2024-01-01T00:00:00Z",
+          },
         ];
 
         mockTaskStatusManager.refreshTasksFromFile.mockResolvedValue();
@@ -209,16 +256,18 @@ describe("SimpleMCPServer Unit Tests", () => {
           id: "test-5",
           params: {
             name: "tasks/refresh",
-            arguments: {}
-          }
+            arguments: {},
+          },
         };
 
         const response = await (server as any).handleToolCall(mockRequest);
-        
+
         expect(mockTaskStatusManager.refreshTasksFromFile).toHaveBeenCalled();
         expect(mockTaskStatusManager.getTasks).toHaveBeenCalled();
-        
-        expect(response.result.content[0].text).toContain("Tasks refreshed successfully");
+
+        expect(response.result.content[0].text).toContain(
+          "Tasks refreshed successfully"
+        );
         expect(response.result.content[0].text).toContain('"taskCount": 2');
         expect(response.result.content[0].text).toContain('"refreshedAt"');
       });
@@ -233,14 +282,16 @@ describe("SimpleMCPServer Unit Tests", () => {
           id: "test-6",
           params: {
             name: "tasks/refresh",
-            arguments: {}
-          }
+            arguments: {},
+          },
         };
 
         const response = await (server as any).handleToolCall(mockRequest);
-        
+
         expect(response.result.isError).toBe(true);
-        expect(response.result.content[0].text).toContain("Error executing tool tasks/refresh");
+        expect(response.result.content[0].text).toContain(
+          "Error executing tool tasks/refresh"
+        );
         expect(response.result.content[0].text).toContain("Refresh failed");
       });
     });
@@ -248,7 +299,9 @@ describe("SimpleMCPServer Unit Tests", () => {
     describe("tasks/dependencies", () => {
       it("should return dependencies with metadata", async () => {
         const mockDependencies = ["dep-1", "dep-2", "dep-3"];
-        mockTaskStatusManager.getTaskDependencies.mockResolvedValue(mockDependencies);
+        mockTaskStatusManager.getTaskDependencies.mockResolvedValue(
+          mockDependencies
+        );
 
         const mockRequest: ToolCallRequest = {
           jsonrpc: "2.0",
@@ -256,21 +309,29 @@ describe("SimpleMCPServer Unit Tests", () => {
           id: "test-7",
           params: {
             name: "tasks/dependencies",
-            arguments: { id: "task-123" }
-          }
+            arguments: { id: "task-123" },
+          },
         };
 
         const response = await (server as any).handleToolCall(mockRequest);
-        
-        expect(mockTaskStatusManager.getTaskDependencies).toHaveBeenCalledWith("task-123");
-        
-        expect(response.result.content[0].text).toContain('"taskId": "task-123"');
+
+        expect(mockTaskStatusManager.getTaskDependencies).toHaveBeenCalledWith(
+          "task-123"
+        );
+
+        expect(response.result.content[0].text).toContain(
+          '"taskId": "task-123"'
+        );
         expect(response.result.content[0].text).toContain('"dependencies": [');
         expect(response.result.content[0].text).toContain('"dep-1"');
         expect(response.result.content[0].text).toContain('"dep-2"');
         expect(response.result.content[0].text).toContain('"dep-3"');
-        expect(response.result.content[0].text).toContain('"dependencyCount": 3');
-        expect(response.result.content[0].text).toContain('"hasDependencies": true');
+        expect(response.result.content[0].text).toContain(
+          '"dependencyCount": 3'
+        );
+        expect(response.result.content[0].text).toContain(
+          '"hasDependencies": true'
+        );
       });
 
       it("should handle empty dependencies", async () => {
@@ -282,15 +343,19 @@ describe("SimpleMCPServer Unit Tests", () => {
           id: "test-8",
           params: {
             name: "tasks/dependencies",
-            arguments: { id: "task-123" }
-          }
+            arguments: { id: "task-123" },
+          },
         };
 
         const response = await (server as any).handleToolCall(mockRequest);
-        
+
         expect(response.result.content[0].text).toContain('"dependencies": []');
-        expect(response.result.content[0].text).toContain('"dependencyCount": 0');
-        expect(response.result.content[0].text).toContain('"hasDependencies": false');
+        expect(response.result.content[0].text).toContain(
+          '"dependencyCount": 0'
+        );
+        expect(response.result.content[0].text).toContain(
+          '"hasDependencies": false'
+        );
       });
 
       it("should handle errors in tasks/dependencies", async () => {
@@ -303,15 +368,19 @@ describe("SimpleMCPServer Unit Tests", () => {
           id: "test-9",
           params: {
             name: "tasks/dependencies",
-            arguments: { id: "task-123" }
-          }
+            arguments: { id: "task-123" },
+          },
         };
 
         const response = await (server as any).handleToolCall(mockRequest);
-        
+
         expect(response.result.isError).toBe(true);
-        expect(response.result.content[0].text).toContain("Error executing tool tasks/dependencies");
-        expect(response.result.content[0].text).toContain("Dependencies failed");
+        expect(response.result.content[0].text).toContain(
+          "Error executing tool tasks/dependencies"
+        );
+        expect(response.result.content[0].text).toContain(
+          "Dependencies failed"
+        );
       });
     });
 
@@ -321,8 +390,9 @@ describe("SimpleMCPServer Unit Tests", () => {
           totalTests: 10,
           passedTests: 8,
           failedTests: 2,
-          lastRunDate: new Date("2024-01-01"),
-          coverage: 85.5
+          status: TestStatusEnum.PARTIAL,
+          lastRunDate: "2024-01-01T00:00:00Z",
+          coverage: 85.5,
         };
 
         const mockTask: Task = {
@@ -331,11 +401,12 @@ describe("SimpleMCPServer Unit Tests", () => {
           description: "A test task",
           status: TaskStatus.IN_PROGRESS,
           complexity: "medium" as any,
+          priority: TaskPriority.MEDIUM,
           dependencies: [],
           requirements: [],
-          createdDate: new Date(),
-          lastModified: new Date(),
-          testStatus: mockTestStatus
+          createdDate: "2024-01-01T00:00:00Z",
+          lastModified: "2024-01-01T00:00:00Z",
+          testStatus: mockTestStatus,
         };
 
         mockTaskStatusManager.getTaskById.mockResolvedValue(mockTask);
@@ -346,19 +417,25 @@ describe("SimpleMCPServer Unit Tests", () => {
           id: "test-10",
           params: {
             name: "tasks/test-results",
-            arguments: { id: "task-123" }
-          }
+            arguments: { id: "task-123" },
+          },
         };
 
         const response = await (server as any).handleToolCall(mockRequest);
-        
-        expect(mockTaskStatusManager.getTaskById).toHaveBeenCalledWith("task-123");
-        
-        expect(response.result.content[0].text).toContain('"hasTestResults": true');
+
+        expect(mockTaskStatusManager.getTaskById).toHaveBeenCalledWith(
+          "task-123"
+        );
+
+        expect(response.result.content[0].text).toContain(
+          '"hasTestResults": true'
+        );
         expect(response.result.content[0].text).toContain('"total": 10');
         expect(response.result.content[0].text).toContain('"passed": 8');
         expect(response.result.content[0].text).toContain('"failed": 2');
-        expect(response.result.content[0].text).toContain('"passRate": "80.0%"');
+        expect(response.result.content[0].text).toContain(
+          '"passRate": "80.0%"'
+        );
       });
 
       it("should handle task not found", async () => {
@@ -370,14 +447,18 @@ describe("SimpleMCPServer Unit Tests", () => {
           id: "test-11",
           params: {
             name: "tasks/test-results",
-            arguments: { id: "task-123" }
-          }
+            arguments: { id: "task-123" },
+          },
         };
 
         const response = await (server as any).handleToolCall(mockRequest);
-        
-        expect(response.result.content[0].text).toContain('"hasTestResults": false');
-        expect(response.result.content[0].text).toContain("Task with ID 'task-123' not found");
+
+        expect(response.result.content[0].text).toContain(
+          '"hasTestResults": false'
+        );
+        expect(response.result.content[0].text).toContain(
+          "Task with ID 'task-123' not found"
+        );
       });
 
       it("should handle task without test status", async () => {
@@ -387,10 +468,11 @@ describe("SimpleMCPServer Unit Tests", () => {
           description: "A test task",
           status: TaskStatus.IN_PROGRESS,
           complexity: "medium" as any,
+          priority: TaskPriority.MEDIUM,
           dependencies: [],
           requirements: [],
-          createdDate: new Date(),
-          lastModified: new Date()
+          createdDate: "2024-01-01T00:00:00Z",
+          lastModified: "2024-01-01T00:00:00Z",
           // No testStatus
         };
 
@@ -402,14 +484,18 @@ describe("SimpleMCPServer Unit Tests", () => {
           id: "test-12",
           params: {
             name: "tasks/test-results",
-            arguments: { id: "task-123" }
-          }
+            arguments: { id: "task-123" },
+          },
         };
 
         const response = await (server as any).handleToolCall(mockRequest);
-        
-        expect(response.result.content[0].text).toContain('"hasTestResults": false');
-        expect(response.result.content[0].text).toContain("No test results available for this task");
+
+        expect(response.result.content[0].text).toContain(
+          '"hasTestResults": false'
+        );
+        expect(response.result.content[0].text).toContain(
+          "No test results available for this task"
+        );
       });
 
       it("should handle errors in tasks/test-results", async () => {
@@ -422,15 +508,19 @@ describe("SimpleMCPServer Unit Tests", () => {
           id: "test-13",
           params: {
             name: "tasks/test-results",
-            arguments: { id: "task-123" }
-          }
+            arguments: { id: "task-123" },
+          },
         };
 
         const response = await (server as any).handleToolCall(mockRequest);
-        
+
         expect(response.result.isError).toBe(true);
-        expect(response.result.content[0].text).toContain("Error executing tool tasks/test-results");
-        expect(response.result.content[0].text).toContain("Test results failed");
+        expect(response.result.content[0].text).toContain(
+          "Error executing tool tasks/test-results"
+        );
+        expect(response.result.content[0].text).toContain(
+          "Test results failed"
+        );
       });
     });
   });

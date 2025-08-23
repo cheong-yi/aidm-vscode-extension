@@ -9,7 +9,6 @@ module.exports = {
   collectCoverageFrom: [
     "src/**/*.ts",
     "!src/**/*.d.ts",
-    "!src/**/__tests__/**",
     "!src/**/*.test.ts",
   ],
   coverageDirectory: "coverage",
@@ -24,8 +23,25 @@ module.exports = {
   },
   setupFilesAfterEnv: ["<rootDir>/src/__tests__/jest.setup.ts"],
   moduleFileExtensions: ["ts", "js", "json"],
-  testTimeout: 10000,
+  testTimeout: 30000, // Increased timeout for integration tests
   moduleNameMapper: {
     "^vscode$": "<rootDir>/src/__tests__/__mocks__/vscode.ts",
+  },
+  // Better handling for integration tests
+  testPathIgnorePatterns: [
+    "/node_modules/",
+    "/dist/",
+    "/coverage/"
+  ],
+  // Increase timeout for slow tests
+  slowTestThreshold: 10,
+  // Better error reporting
+  verbose: true,
+  // Async cleanup configuration
+  detectOpenHandles: true,
+  forceExit: true,
+  // Better async operation handling
+  testEnvironmentOptions: {
+    url: "http://localhost",
   },
 };

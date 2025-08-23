@@ -17,7 +17,12 @@ import {
   RequirementStatus,
   ChangeType,
 } from "../../types/business";
-import { Task, TaskStatus, TaskComplexity } from "../../types/tasks";
+import {
+  Task,
+  TaskStatus,
+  TaskComplexity,
+  TaskPriority,
+} from "../../types/tasks";
 
 describe("MCP Tools Unit Tests", () => {
   let mcpServer: SimpleMCPServer;
@@ -339,11 +344,11 @@ describe("MCP Tools Unit Tests", () => {
         requirements: [],
         implementationStatus: {
           completionPercentage: 0,
-          lastVerified: new Date(),
+          lastVerified: new Date("2024-01-01"),
           verifiedBy: "System",
         },
         relatedChanges: [],
-        lastUpdated: new Date(),
+        lastUpdated: new Date("2024-01-01"),
       };
 
       const codeLocation: CodeLocation = {
@@ -508,10 +513,11 @@ describe("MCP Tools Unit Tests", () => {
           description: "Add secure user login functionality",
           status: TaskStatus.IN_PROGRESS,
           complexity: TaskComplexity.MEDIUM,
+          priority: TaskPriority.HIGH,
           dependencies: [],
           requirements: ["REQ-001"],
-          createdDate: new Date("2024-01-01"),
-          lastModified: new Date("2024-01-15"),
+          createdDate: "2024-01-01T00:00:00Z",
+          lastModified: "2024-01-15T00:00:00Z",
         },
         {
           id: "TASK-002",
@@ -519,10 +525,11 @@ describe("MCP Tools Unit Tests", () => {
           description: "Create comprehensive test coverage",
           status: TaskStatus.NOT_STARTED,
           complexity: TaskComplexity.LOW,
+          priority: TaskPriority.MEDIUM,
           dependencies: ["TASK-001"],
           requirements: ["REQ-002"],
-          createdDate: new Date("2024-01-01"),
-          lastModified: new Date("2024-01-01"),
+          createdDate: "2024-01-01T00:00:00Z",
+          lastModified: "2024-01-01T00:00:00Z",
         },
       ];
 
