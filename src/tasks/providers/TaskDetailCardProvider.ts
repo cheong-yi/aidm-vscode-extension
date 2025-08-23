@@ -9,7 +9,7 @@
  */
 
 import * as vscode from "vscode";
-import { Task, TaskStatus } from "../types";
+import { Task, TaskStatus, STATUS_ACTIONS } from "../types";
 import { TimeFormattingUtility } from "../../utils/TimeFormattingUtility";
 
 /**
@@ -518,7 +518,7 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
             ${this.renderTestResultsSection(task)}
             
             <!-- Action Buttons Section -->
-            <div class="actions">
+            <div class="action-buttons">
               ${this.renderActionButtons(task)}
             </div>
           </div>
@@ -559,6 +559,21 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
                 taskId: taskId
               });
             }
+            
+            // Add event delegation for action buttons
+            document.addEventListener('click', function(event) {
+              const button = event.target.closest('.action-btn');
+              if (button) {
+                const action = button.getAttribute('data-action');
+                const taskId = button.getAttribute('data-task-id');
+                if (action && taskId) {
+                  vscode.postMessage({
+                    command: action,
+                    taskId: taskId
+                  });
+                }
+              }
+            });
             
             // Initialize failures sections on page load
             document.addEventListener('DOMContentLoaded', function() {
@@ -1124,6 +1139,60 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
         background: var(--vscode-button-hoverBackground, #4a86c7);
       }
 
+      /* Action button container */
+      .action-buttons {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-top: 16px;
+      }
+
+      /* Cursor integration button styling */
+      .action-btn.cursor-btn {
+        background: var(--vscode-button-background, #569cd6);
+        color: var(--vscode-button-foreground, #ffffff);
+        border: 2px solid var(--vscode-focusBorder, #007acc);
+        font-weight: 600;
+        position: relative;
+      }
+
+      .action-btn.cursor-btn:hover {
+        background: var(--vscode-button-hoverBackground, #4a86c7);
+        border-color: var(--vscode-focusBorder, #007acc);
+        transform: translateY(-1px);
+        box-shadow: 0 2px 8px rgba(0, 122, 204, 0.3);
+      }
+
+      .action-btn.cursor-btn:active {
+        transform: translateY(0);
+        box-shadow: 0 1px 4px rgba(0, 122, 204, 0.2);
+      }
+
+      /* No actions state */
+      .no-actions {
+        font-size: 11px;
+        color: var(--vscode-descriptionForeground, #969696);
+        font-style: italic;
+        text-align: center;
+        padding: 12px;
+        background: var(--vscode-panel-background, #2d2d30);
+        border: 1px solid var(--vscode-panel-border, #3e3e42);
+        border-radius: 4px;
+        margin-top: 16px;
+      }
+
+      /* Action error state */
+      .action-error {
+        font-size: 11px;
+        color: #f48771;
+        text-align: center;
+        padding: 12px;
+        background: var(--vscode-panel-background, #2d2d30);
+        border: 1px solid #f48771;
+        border-radius: 4px;
+        margin-top: 16px;
+      }
+
       /* Section divider */
       .section-divider {
         height: 1px;
@@ -1492,6 +1561,101 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
   }
 
   /**
+   * Gets actions for a specific task status using STATUS_ACTIONS mapping
+   * Called when determining which action buttons to display for a task
+   *
+   * @param status - The task status to get actions for
+   * @returns Array of action strings for the given status
+   */
+  public getActionsForStatus(status: TaskStatus): string[] {
+    return STATUS_ACTIONS[status] || [];
+  }
+
+  /**
+   * Renders individual action button with proper data attributes and styling
+   * Called when generating HTML for individual action buttons
+   *
+   * @param action - The action string to render as a button
+   * @param taskId - The task ID for the button data attribute
+   * @returns HTML string for the action button
+   */
+  public renderButton(action: string, taskId: string): string {
+    // Create a mock task context to check if this is an executable action
+    const mockTask: Task = {
+      id: taskId,
+      title: "",
+      description: "",
+      status: "not_started" as TaskStatus,
+      complexity: "low" as any,
+      dependencies: [],
+      requirements: [],
+      createdDate: "",
+      lastModified: "",
+      isExecutable: true, // Assume executable for NOT_STARTED tasks
+    };
+
+    const isExecutableAction = this.isExecutableAction(action, mockTask);
+    const buttonClass = isExecutableAction
+      ? "action-btn cursor-btn"
+      : "action-btn";
+    const actionKey = this.getActionKey(action);
+
+    return `<button class="${buttonClass}" data-action="${actionKey}" data-task-id="${taskId}">${action}</button>`;
+  }
+
+  /**
+   * Determines if an action is executable (Cursor integration related)
+   * Called when determining button styling and behavior for executable actions
+   *
+   * @param action - The action string to check
+   * @param task - The task context for the action
+   * @returns True if the action is executable (Cursor integration)
+   */
+  public isExecutableAction(action: string, task: Task): boolean {
+    // Only "🤖 Execute with Cursor" action is executable
+    // Task must be NOT_STARTED and have isExecutable = true
+    return (
+      action.includes("🤖") &&
+      task.status === "not_started" &&
+      task.isExecutable === true
+    );
+  }
+
+  /**
+   * Converts action display text to action key for data attributes
+   * Called when generating data-action attributes for button event handling
+   *
+   * @param action - The action display text
+   * @returns Action key string for data attributes
+   */
+  private getActionKey(action: string): string {
+    const actionKeyMap: Record<string, string> = {
+      "🤖 Execute with Cursor": "execute-cursor",
+      "Generate Prompt": "generate-prompt",
+      "View Requirements": "view-requirements",
+      "Continue Work": "continue-work",
+      "Mark Complete": "mark-complete",
+      "View Dependencies": "view-dependencies",
+      "Approve & Complete": "approve-complete",
+      "Request Changes": "request-changes",
+      "View Implementation": "view-implementation",
+      "View Code": "view-code",
+      "View Tests": "view-tests",
+      History: "history",
+      "Fix Failing Tests": "fix-failing-tests",
+      "View Full Report": "view-full-report",
+      "Rerun Tests": "rerun-tests",
+      "View Blockers": "view-blockers",
+      "Update Dependencies": "update-dependencies",
+      "Report Issue": "report-issue",
+      Archive: "archive",
+      "View History": "view-history",
+    };
+
+    return actionKeyMap[action] || action.toLowerCase().replace(/\s+/g, "-");
+  }
+
+  /**
    * Renders action buttons based on task status and properties
    * Called when generating the action buttons section
    *
@@ -1499,141 +1663,67 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
    * @returns HTML string for action buttons
    */
   private renderActionButtons(task: Task): string {
-    const buttons: string[] = [];
+    try {
+      // Get actions for the task status from STATUS_ACTIONS mapping
+      let actions = this.getActionsForStatus(task.status);
 
-    switch (task.status) {
-      case "not_started":
-        if (task.isExecutable) {
-          buttons.push(
-            "<button class=\"action-btn primary\" onclick=\"handleActionClick('executeWithCursor', '" +
-              task.id +
-              "')\">🤖 Execute with Cursor</button>"
-          );
-        }
-        buttons.push(
-          "<button class=\"action-btn\" onclick=\"handleActionClick('generatePrompt', '" +
-            task.id +
-            "')\">Generate Prompt</button>"
-        );
-        buttons.push(
-          "<button class=\"action-btn\" onclick=\"handleActionClick('viewRequirements', '" +
-            task.id +
-            "')\">View Requirements</button>"
-        );
-        break;
+      if (actions.length === 0) {
+        return '<div class="no-actions">No actions available for this task status</div>';
+      }
 
-      case "in_progress":
-        buttons.push(
-          "<button class=\"action-btn primary\" onclick=\"handleActionClick('continueWork', '" +
-            task.id +
-            "')\">Continue Work</button>"
-        );
-        buttons.push(
-          "<button class=\"action-btn\" onclick=\"handleActionClick('markComplete', '" +
-            task.id +
-            "')\">Mark Complete</button>"
-        );
-        buttons.push(
-          "<button class=\"action-btn\" onclick=\"handleActionClick('viewDependencies', '" +
-            task.id +
-            "')\">View Dependencies</button>"
-        );
-        break;
+      // Filter out Cursor action for non-executable tasks
+      if (task.status === "not_started" && !task.isExecutable) {
+        actions = actions.filter((action) => !action.includes("🤖"));
+      }
 
-      case "review":
-        buttons.push(
-          "<button class=\"action-btn primary\" onclick=\"handleActionClick('approveComplete', '" +
-            task.id +
-            "')\">Approve & Complete</button>"
-        );
-        buttons.push(
-          "<button class=\"action-btn\" onclick=\"handleActionClick('requestChanges', '" +
-            task.id +
-            "')\">Request Changes</button>"
-        );
-        buttons.push(
-          "<button class=\"action-btn\" onclick=\"handleActionClick('viewImplementation', '" +
-            task.id +
-            "')\">View Implementation</button>"
-        );
-        break;
+      // Special handling for completed tasks with test failures
+      if (
+        task.status === "completed" &&
+        task.testStatus &&
+        task.testStatus.failedTests > 0
+      ) {
+        return this.renderCompletedTaskWithFailures(task);
+      }
 
-      case "completed":
-        if (task.testStatus && task.testStatus.failedTests > 0) {
-          buttons.push(
-            "<button class=\"action-btn\" onclick=\"handleActionClick('fixFailingTests', '" +
-              task.id +
-              "')\">Fix Failing Tests</button>"
-          );
-          buttons.push(
-            "<button class=\"action-btn\" onclick=\"handleActionClick('viewFullReport', '" +
-              task.id +
-              "')\">View Full Report</button>"
-          );
-          buttons.push(
-            "<button class=\"action-btn\" onclick=\"handleActionClick('rerunTests', '" +
-              task.id +
-              "')\">Rerun Tests</button>"
-          );
-        } else {
-          buttons.push(
-            "<button class=\"action-btn\" onclick=\"handleActionClick('viewCode', '" +
-              task.id +
-              "')\">View Code</button>"
-          );
-          buttons.push(
-            "<button class=\"action-btn\" onclick=\"handleActionClick('viewTests', '" +
-              task.id +
-              "')\">View Tests</button>"
-          );
-          buttons.push(
-            "<button class=\"action-btn\" onclick=\"handleActionClick('history', '" +
-              task.id +
-              "')\">History</button>"
-          );
-        }
-        break;
+      // Render buttons using STATUS_ACTIONS mapping with proper task context
+      const buttons = actions.map((action) => {
+        // Check if this action should be executable for the current task
+        const isExecutableAction = this.isExecutableAction(action, task);
+        const buttonClass = isExecutableAction
+          ? "action-btn cursor-btn"
+          : "action-btn";
+        const actionKey = this.getActionKey(action);
 
-      case "blocked":
-        buttons.push(
-          "<button class=\"action-btn\" onclick=\"handleActionClick('viewBlockers', '" +
-            task.id +
-            "')\">View Blockers</button>"
-        );
-        buttons.push(
-          "<button class=\"action-btn\" onclick=\"handleActionClick('updateDependencies', '" +
-            task.id +
-            "')\">Update Dependencies</button>"
-        );
-        buttons.push(
-          "<button class=\"action-btn\" onclick=\"handleActionClick('reportIssue', '" +
-            task.id +
-            "')\">Report Issue</button>"
-        );
-        break;
+        return `<button class="${buttonClass}" data-action="${actionKey}" data-task-id="${task.id}">${action}</button>`;
+      });
 
-      case "deprecated":
-        buttons.push(
-          "<button class=\"action-btn\" onclick=\"handleActionClick('archive', '" +
-            task.id +
-            "')\">Archive</button>"
-        );
-        buttons.push(
-          "<button class=\"action-btn\" onclick=\"handleActionClick('viewHistory', '" +
-            task.id +
-            "')\">View History</button>"
-        );
-        break;
-
-      default:
-        buttons.push(
-          "<button class=\"action-btn\" onclick=\"handleActionClick('viewDetails', '" +
-            task.id +
-            "')\">View Details</button>"
-        );
+      return `<div class="action-buttons">${buttons.join("")}</div>`;
+    } catch (error) {
+      console.error("Failed to render action buttons:", error);
+      return '<div class="action-error">Error loading actions</div>';
     }
+  }
 
-    return buttons.join("");
+  /**
+   * Renders action buttons for completed tasks with test failures
+   * Called when handling special case for completed tasks with failing tests
+   *
+   * @param task - The completed task with test failures
+   * @returns HTML string for test failure action buttons
+   */
+  private renderCompletedTaskWithFailures(task: Task): string {
+    const testFailureActions = [
+      "Fix Failing Tests",
+      "View Full Report",
+      "Rerun Tests",
+    ];
+
+    const buttons = testFailureActions.map((action) => {
+      const actionKey = this.getActionKey(action);
+      return `<button class="action-btn" data-action="${actionKey}" data-task-id="${task.id}">${action}</button>`;
+    });
+
+    return `<div class="action-buttons">${buttons.join("")}</div>`;
   }
 
   /**
@@ -1768,19 +1858,161 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
   private handleWebviewMessage(message: any): void {
     try {
       switch (message.command) {
+        case "execute-cursor":
+          if (message.taskId) {
+            this._onCursorExecuteRequested.fire({
+              taskId: message.taskId,
+            });
+          }
+          break;
+
+        case "generate-prompt":
+          if (message.taskId) {
+            // Handle prompt generation (future implementation)
+            console.log("Generate prompt for task:", message.taskId);
+          }
+          break;
+
+        case "view-requirements":
+          if (message.taskId) {
+            // Handle requirements viewing (future implementation)
+            console.log("View requirements for task:", message.taskId);
+          }
+          break;
+
+        case "continue-work":
+          if (message.taskId) {
+            // Handle continue work action (future implementation)
+            console.log("Continue work on task:", message.taskId);
+          }
+          break;
+
+        case "mark-complete":
+          if (message.taskId) {
+            // Handle mark complete action (future implementation)
+            console.log("Mark task complete:", message.taskId);
+          }
+          break;
+
+        case "view-dependencies":
+          if (message.taskId) {
+            // Handle dependencies viewing (future implementation)
+            console.log("View dependencies for task:", message.taskId);
+          }
+          break;
+
+        case "approve-complete":
+          if (message.taskId) {
+            // Handle approve and complete action (future implementation)
+            console.log("Approve and complete task:", message.taskId);
+          }
+          break;
+
+        case "request-changes":
+          if (message.taskId) {
+            // Handle request changes action (future implementation)
+            console.log("Request changes for task:", message.taskId);
+          }
+          break;
+
+        case "view-implementation":
+          if (message.taskId) {
+            // Handle implementation viewing (future implementation)
+            console.log("View implementation for task:", message.taskId);
+          }
+          break;
+
+        case "view-code":
+          if (message.taskId) {
+            // Handle code viewing (future implementation)
+            console.log("View code for task:", message.taskId);
+          }
+          break;
+
+        case "view-tests":
+          if (message.taskId) {
+            // Handle tests viewing (future implementation)
+            console.log("View tests for task:", message.taskId);
+          }
+          break;
+
+        case "history":
+          if (message.taskId) {
+            // Handle history viewing (future implementation)
+            console.log("View history for task:", message.taskId);
+          }
+          break;
+
+        case "fix-failing-tests":
+          if (message.taskId) {
+            // Handle fix failing tests action (future implementation)
+            console.log("Fix failing tests for task:", message.taskId);
+          }
+          break;
+
+        case "view-full-report":
+          if (message.taskId) {
+            // Handle full report viewing (future implementation)
+            console.log("View full report for task:", message.taskId);
+          }
+          break;
+
+        case "rerun-tests":
+          if (message.taskId) {
+            // Handle rerun tests action (future implementation)
+            console.log("Rerun tests for task:", message.taskId);
+          }
+          break;
+
+        case "view-blockers":
+          if (message.taskId) {
+            // Handle blockers viewing (future implementation)
+            console.log("View blockers for task:", message.taskId);
+          }
+          break;
+
+        case "update-dependencies":
+          if (message.taskId) {
+            // Handle dependencies update action (future implementation)
+            console.log("Update dependencies for task:", message.taskId);
+          }
+          break;
+
+        case "report-issue":
+          if (message.taskId) {
+            // Handle issue reporting action (future implementation)
+            console.log("Report issue for task:", message.taskId);
+          }
+          break;
+
+        case "archive":
+          if (message.taskId) {
+            // Handle archive action (future implementation)
+            console.log("Archive task:", message.taskId);
+          }
+          break;
+
+        case "view-history":
+          if (message.taskId) {
+            // Handle history viewing (future implementation)
+            console.log("View history for task:", message.taskId);
+          }
+          break;
+
+        // Legacy command support for backward compatibility
+        case "executeWithCursor":
+          if (message.taskId) {
+            this._onCursorExecuteRequested.fire({
+              taskId: message.taskId,
+            });
+          }
+          break;
+
         case "updateStatus":
           if (message.taskId && message.newStatus) {
             this._onStatusChanged.fire({
               taskId: message.taskId,
               newStatus: message.newStatus as TaskStatus,
-            });
-          }
-          break;
-
-        case "executeWithCursor":
-          if (message.taskId) {
-            this._onCursorExecuteRequested.fire({
-              taskId: message.taskId,
             });
           }
           break;

@@ -974,7 +974,7 @@ describe("TaskDetailCardProvider", () => {
         description: "Test Description",
         status: TaskStatus.NOT_STARTED,
         complexity: "low" as any,
-        priority: TaskPriority.MEDIUM,
+        priority: "medium" as any,
         dependencies: [],
         requirements: [],
         createdDate: "2024-01-01T00:00:00.000Z",
@@ -996,7 +996,7 @@ describe("TaskDetailCardProvider", () => {
         description: "Test Description",
         status: TaskStatus.IN_PROGRESS,
         complexity: "low" as any,
-        priority: TaskPriority.MEDIUM,
+        priority: "medium" as any,
         dependencies: [],
         requirements: [],
         createdDate: "2024-01-01T00:00:00.000Z",
@@ -1017,7 +1017,7 @@ describe("TaskDetailCardProvider", () => {
         description: "Test Description",
         status: TaskStatus.REVIEW,
         complexity: "low" as any,
-        priority: TaskPriority.MEDIUM,
+        priority: "medium" as any,
         dependencies: [],
         requirements: [],
         createdDate: "2024-01-01T00:00:00.000Z",
@@ -1038,7 +1038,7 @@ describe("TaskDetailCardProvider", () => {
         description: "Test Description",
         status: TaskStatus.COMPLETED,
         complexity: "low" as any,
-        priority: TaskPriority.MEDIUM,
+        priority: "medium" as any,
         dependencies: [],
         requirements: [],
         createdDate: "2024-01-01T00:00:00.000Z",
@@ -1058,6 +1058,323 @@ describe("TaskDetailCardProvider", () => {
       expect(html).toContain("Fix Failing Tests");
       expect(html).toContain("View Full Report");
       expect(html).toContain("Rerun Tests");
+    });
+
+    it("should render blocked task actions correctly", () => {
+      const mockTask: Task = {
+        id: "test-1",
+        title: "Test Task",
+        description: "Test Description",
+        status: TaskStatus.BLOCKED,
+        complexity: "low" as any,
+        priority: "medium" as any,
+        dependencies: [],
+        requirements: [],
+        createdDate: "2024-01-01T00:00:00.000Z",
+        lastModified: "2024-01-01T00:00:00.000Z",
+      };
+
+      const html = (provider as any).generateTaskDetailsHTML(mockTask);
+
+      expect(html).toContain("View Blockers");
+      expect(html).toContain("Update Dependencies");
+      expect(html).toContain("Report Issue");
+    });
+
+    it("should render deprecated task actions correctly", () => {
+      const mockTask: Task = {
+        id: "test-1",
+        title: "Test Task",
+        description: "Test Description",
+        status: TaskStatus.DEPRECATED,
+        complexity: "low" as any,
+        priority: "medium" as any,
+        dependencies: [],
+        requirements: [],
+        createdDate: "2024-01-01T00:00:00.000Z",
+        lastModified: "2024-01-01T00:00:00.000Z",
+      };
+
+      const html = (provider as any).generateTaskDetailsHTML(mockTask);
+
+      expect(html).toContain("Archive");
+      expect(html).toContain("View History");
+    });
+  });
+
+  describe("STATUS_ACTIONS Integration", () => {
+    it("should use STATUS_ACTIONS mapping for button generation", () => {
+      const mockTask: Task = {
+        id: "test-1",
+        title: "Test Task",
+        description: "Test Description",
+        status: TaskStatus.NOT_STARTED,
+        complexity: "low" as any,
+        priority: "medium" as any,
+        dependencies: [],
+        requirements: [],
+        createdDate: "2024-01-01T00:00:00.000Z",
+        lastModified: "2024-01-01T00:00:00.000Z",
+        isExecutable: true,
+      };
+
+      // Verify that getActionsForStatus returns correct actions
+      const actions = provider.getActionsForStatus(TaskStatus.NOT_STARTED);
+      expect(actions).toContain("🤖 Execute with Cursor");
+      expect(actions).toContain("Generate Prompt");
+      expect(actions).toContain("View Requirements");
+    });
+
+    it("should handle all TaskStatus enum values with STATUS_ACTIONS", () => {
+      const allStatuses = [
+        TaskStatus.NOT_STARTED,
+        TaskStatus.IN_PROGRESS,
+        TaskStatus.REVIEW,
+        TaskStatus.COMPLETED,
+        TaskStatus.BLOCKED,
+        TaskStatus.DEPRECATED,
+      ];
+
+      allStatuses.forEach(status => {
+        const actions = provider.getActionsForStatus(status);
+        expect(actions.length).toBeGreaterThan(0);
+        expect(Array.isArray(actions)).toBe(true);
+      });
+    });
+
+    it("should return empty array for unknown status", () => {
+      const actions = provider.getActionsForStatus("unknown_status" as any);
+      expect(actions).toEqual([]);
+    });
+  });
+
+  describe("Action Button Helper Methods", () => {
+    it("should render individual buttons with proper data attributes", () => {
+      const buttonHtml = provider.renderButton("🤖 Execute with Cursor", "test-1");
+      
+      expect(buttonHtml).toContain('data-action="execute-cursor"');
+      expect(buttonHtml).toContain('data-task-id="test-1"');
+      expect(buttonHtml).toContain('class="action-btn cursor-btn"');
+      expect(buttonHtml).toContain("🤖 Execute with Cursor");
+    });
+
+    it("should render regular buttons without cursor styling", () => {
+      const buttonHtml = provider.renderButton("Generate Prompt", "test-1");
+      
+      expect(buttonHtml).toContain('data-action="generate-prompt"');
+      expect(buttonHtml).toContain('data-task-id="test-1"');
+      expect(buttonHtml).toContain('class="action-btn"');
+      expect(buttonHtml).not.toContain('cursor-btn');
+    });
+
+    it("should correctly identify executable actions", () => {
+      const executableTask: Task = {
+        id: "test-1",
+        title: "Test Task",
+        description: "Test Description",
+        status: TaskStatus.NOT_STARTED,
+        complexity: "low" as any,
+        priority: "medium" as any,
+        dependencies: [],
+        requirements: [],
+        createdDate: "2024-01-01T00:00:00.000Z",
+        lastModified: "2024-01-01T00:00:00.000Z",
+        isExecutable: true,
+      };
+
+      const nonExecutableTask: Task = {
+        ...executableTask,
+        isExecutable: false,
+      };
+
+      expect(provider.isExecutableAction("🤖 Execute with Cursor", executableTask)).toBe(true);
+      expect(provider.isExecutableAction("🤖 Execute with Cursor", nonExecutableTask)).toBe(false);
+      expect(provider.isExecutableAction("Generate Prompt", executableTask)).toBe(false);
+    });
+
+    it("should generate correct action keys for all actions", () => {
+      const testActions = [
+        "🤖 Execute with Cursor",
+        "Generate Prompt",
+        "View Requirements",
+        "Continue Work",
+        "Mark Complete",
+        "View Dependencies",
+        "Approve & Complete",
+        "Request Changes",
+        "View Implementation",
+        "View Code",
+        "View Tests",
+        "History",
+        "Fix Failing Tests",
+        "View Full Report",
+        "Rerun Tests",
+        "View Blockers",
+        "Update Dependencies",
+        "Report Issue",
+        "Archive",
+        "View History"
+      ];
+
+      testActions.forEach(action => {
+        const actionKey = (provider as any).getActionKey(action);
+        expect(actionKey).toBeDefined();
+        expect(typeof actionKey).toBe("string");
+        expect(actionKey.length).toBeGreaterThan(0);
+      });
+    });
+
+    it("should handle unknown actions with fallback key generation", () => {
+      const unknownAction = "Unknown Action";
+      const actionKey = (provider as any).getActionKey(unknownAction);
+      expect(actionKey).toBe("unknown-action");
+    });
+  });
+
+  describe("Executable Task Detection", () => {
+    it("should show Cursor buttons only for executable NOT_STARTED tasks", () => {
+      const executableTask: Task = {
+        id: "test-1",
+        title: "Test Task",
+        description: "Test Description",
+        status: TaskStatus.NOT_STARTED,
+        complexity: "low" as any,
+        priority: "medium" as any,
+        dependencies: [],
+        requirements: [],
+        createdDate: "2024-01-01T00:00:00.000Z",
+        lastModified: "2024-01-01T00:00:00.000Z",
+        isExecutable: true,
+      };
+
+      const nonExecutableTask: Task = {
+        ...executableTask,
+        isExecutable: false,
+      };
+
+      const executableHtml = (provider as any).generateTaskDetailsHTML(executableTask);
+      const nonExecutableHtml = (provider as any).generateTaskDetailsHTML(nonExecutableTask);
+
+      // Executable task should have Cursor button
+      expect(executableHtml).toContain("🤖 Execute with Cursor");
+      expect(executableHtml).toContain('class="action-btn cursor-btn"');
+
+      // Non-executable task should not have Cursor button
+      expect(nonExecutableHtml).not.toContain("🤖 Execute with Cursor");
+      expect(nonExecutableHtml).toContain("Generate Prompt");
+      expect(nonExecutableHtml).toContain("View Requirements");
+    });
+
+    it("should not show Cursor buttons for non-NOT_STARTED tasks", () => {
+      const inProgressTask: Task = {
+        id: "test-1",
+        title: "Test Task",
+        description: "Test Description",
+        status: TaskStatus.IN_PROGRESS,
+        complexity: "low" as any,
+        priority: "medium" as any,
+        dependencies: [],
+        requirements: [],
+        createdDate: "2024-01-01T00:00:00.000Z",
+        lastModified: "2024-01-01T00:00:00.000Z",
+        isExecutable: true, // Even if executable, should not show Cursor button
+      };
+
+      const html = (provider as any).generateTaskDetailsHTML(inProgressTask);
+
+      expect(html).not.toContain("🤖 Execute with Cursor");
+      expect(html).toContain("Continue Work");
+      expect(html).toContain("Mark Complete");
+      expect(html).toContain("View Dependencies");
+    });
+  });
+
+  describe("Button Data Attributes and Event Handling", () => {
+    it("should include proper data attributes for all buttons", () => {
+      const mockTask: Task = {
+        id: "test-1",
+        title: "Test Task",
+        description: "Test Description",
+        status: TaskStatus.NOT_STARTED,
+        complexity: "low" as any,
+        priority: "medium" as any,
+        dependencies: [],
+        requirements: [],
+        createdDate: "2024-01-01T00:00:00.000Z",
+        lastModified: "2024-01-01T00:00:00.000Z",
+        isExecutable: true,
+      };
+
+      const html = (provider as any).generateTaskDetailsHTML(mockTask);
+
+      // Verify data attributes are present
+      expect(html).toContain('data-action="execute-cursor"');
+      expect(html).toContain('data-action="generate-prompt"');
+      expect(html).toContain('data-action="view-requirements"');
+      expect(html).toContain('data-task-id="test-1"');
+    });
+
+    it("should use action-buttons container class", () => {
+      const mockTask: Task = {
+        id: "test-1",
+        title: "Test Task",
+        description: "Test Description",
+        status: TaskStatus.NOT_STARTED,
+        complexity: "low" as any,
+        priority: "medium" as any,
+        dependencies: [],
+        requirements: [],
+        createdDate: "2024-01-01T00:00:00.000Z",
+        lastModified: "2024-01-01T00:00:00.000Z",
+      };
+
+      const html = (provider as any).generateTaskDetailsHTML(mockTask);
+
+      expect(html).toContain('class="action-buttons"');
+      expect(html).not.toContain('class="actions"');
+    });
+  });
+
+  describe("Error Handling in Action Button Rendering", () => {
+    it("should handle missing task status gracefully", () => {
+      const malformedTask = {
+        id: "test-1",
+        title: "Test Task",
+        description: "Test Description",
+        // Missing status
+        complexity: "low" as any,
+        priority: "medium" as any,
+        dependencies: [],
+        requirements: [],
+        createdDate: "2024-01-01T00:00:00.000Z",
+        lastModified: "2024-01-01T00:00:00.000Z",
+      } as any;
+
+      // This should not throw and should handle missing status gracefully
+      expect(() => {
+        (provider as any).generateTaskDetailsHTML(malformedTask);
+      }).not.toThrow();
+    });
+
+    it("should show error state when action button rendering fails", () => {
+      // Mock a task that would cause rendering to fail
+      const problematicTask = {
+        id: "test-1",
+        title: "Test Task",
+        description: "Test Description",
+        status: "invalid_status",
+        complexity: "low" as any,
+        priority: "medium" as any,
+        dependencies: [],
+        requirements: [],
+        createdDate: "2024-01-01T00:00:00.000Z",
+        lastModified: "2024-01-01T00:00:00.000Z",
+      } as any;
+
+      const html = (provider as any).generateTaskDetailsHTML(problematicTask);
+
+      // Should show no actions available message
+      expect(html).toContain("No actions available for this task status");
     });
   });
 
