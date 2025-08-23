@@ -565,6 +565,40 @@ describe("MockDataProvider", () => {
         }
       });
     });
+
+    it("should have realistic timestamps for relative time display", async () => {
+      // Arrange
+      const mockProvider = new MockDataProvider();
+      const now = new Date();
+
+      // Act
+      const result = await mockProvider.getTasks();
+
+      // Assert
+      result.forEach((task) => {
+        const created = new Date(task.createdDate);
+        const modified = new Date(task.lastModified);
+
+        // Verify timestamps are valid dates
+        expect(created.getTime()).not.toBeNaN();
+        expect(modified.getTime()).not.toBeNaN();
+
+        // Verify lastModified >= createdDate
+        expect(modified.getTime()).toBeGreaterThanOrEqual(created.getTime());
+
+        // Verify timestamps are in the past
+        expect(created.getTime()).toBeLessThanOrEqual(now.getTime());
+        expect(modified.getTime()).toBeLessThanOrEqual(now.getTime());
+      });
+
+      // Verify variety in timestamp ranges
+      const createdDates = result.map((task) => new Date(task.createdDate));
+      const oldestCreated = Math.min(...createdDates.map((d) => d.getTime()));
+      const newestCreated = Math.max(...createdDates.map((d) => d.getTime()));
+      const timeDiffHours = (newestCreated - oldestCreated) / (1000 * 60 * 60);
+
+      expect(timeDiffHours).toBeGreaterThan(24); // At least 1 day range
+    });
   });
 
   describe("getTaskById", () => {

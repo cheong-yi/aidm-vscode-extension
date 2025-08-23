@@ -103,6 +103,13 @@ export class MockDataProvider {
    * Get basic tasks for testing and demonstration
    */
   async getTasks(): Promise<Task[]> {
+    // Calculate timestamps relative to current time for realistic relative display
+    const now = new Date();
+    const hoursAgo = (hours: number) =>
+      new Date(now.getTime() - hours * 60 * 60 * 1000).toISOString();
+    const daysAgo = (days: number) =>
+      new Date(now.getTime() - days * 24 * 60 * 60 * 1000).toISOString();
+
     return [
       {
         id: "1.1.1",
@@ -113,8 +120,8 @@ export class MockDataProvider {
         complexity: TaskComplexity.LOW,
         dependencies: [], // Foundation task, no dependencies
         requirements: ["1.1"],
-        createdDate: "2024-08-22T10:00:00Z",
-        lastModified: "2024-08-22T10:00:00Z",
+        createdDate: hoursAgo(2), // "2 hours ago"
+        lastModified: hoursAgo(2), // Same as created (not modified)
         estimatedDuration: "15-20 min",
         isExecutable: true, // true because status is NOT_STARTED
         testStatus: undefined, // No tests yet for foundation task
@@ -128,8 +135,8 @@ export class MockDataProvider {
         complexity: TaskComplexity.MEDIUM,
         dependencies: ["1.1.1"], // Depends on directory structure
         requirements: ["2.1"],
-        createdDate: "2024-08-22T09:00:00Z",
-        lastModified: "2024-08-22T11:30:00Z",
+        createdDate: daysAgo(1), // "1 day ago"
+        lastModified: hoursAgo(4), // "4 hours ago"
         estimatedDuration: "25-30 min",
         isExecutable: false, // false because status is IN_PROGRESS
         testStatus: {
@@ -168,8 +175,8 @@ export class MockDataProvider {
         complexity: TaskComplexity.LOW,
         dependencies: ["1.1.1", "2.1.1"], // Depends on directory and data service
         requirements: ["1.1", "3.1"],
-        createdDate: "2024-08-22T08:00:00Z",
-        lastModified: "2024-08-22T14:00:00Z",
+        createdDate: daysAgo(5), // "5 days ago"
+        lastModified: daysAgo(2), // "2 days ago"
         estimatedDuration: "15-20 min",
         isExecutable: false, // false because status is COMPLETED
         testStatus: {
@@ -190,8 +197,8 @@ export class MockDataProvider {
         complexity: TaskComplexity.LOW,
         dependencies: ["3.1.1"], // Depends on tree item creation
         requirements: ["10.1"],
-        createdDate: "2024-08-22T12:00:00Z",
-        lastModified: "2024-08-22T12:00:00Z",
+        createdDate: hoursAgo(1), // "1 hour ago"
+        lastModified: hoursAgo(1), // Same as created
         estimatedDuration: "10-15 min",
         isExecutable: true,
         testStatus: undefined, // No tests yet for registration task
@@ -205,8 +212,8 @@ export class MockDataProvider {
         complexity: TaskComplexity.MEDIUM,
         dependencies: ["4.2.1"], // Depends on basic mock data (4.2.1 represents completed 4.2.1a-d)
         requirements: ["11.6"],
-        createdDate: "2024-08-22T13:00:00Z",
-        lastModified: "2024-08-22T13:00:00Z",
+        createdDate: hoursAgo(8), // "8 hours ago"
+        lastModified: hoursAgo(3), // "3 hours ago"
         estimatedDuration: "15-20 min",
         isExecutable: false,
         testStatus: undefined, // No tests yet for blocked task
@@ -220,8 +227,8 @@ export class MockDataProvider {
         complexity: TaskComplexity.HIGH,
         dependencies: ["4.1.1", "4.1.2"], // Depends on registration tasks
         requirements: ["7.1"],
-        createdDate: "2024-08-22T14:00:00Z",
-        lastModified: "2024-08-22T15:30:00Z",
+        createdDate: daysAgo(7), // "7 days ago" / "1 week ago"
+        lastModified: hoursAgo(6), // "6 hours ago"
         estimatedDuration: "20-25 min",
         isExecutable: false,
         testStatus: {
@@ -269,8 +276,8 @@ export class MockDataProvider {
         complexity: TaskComplexity.MEDIUM,
         dependencies: ["4.4.1"], // Depends on command registration infrastructure
         requirements: ["8.5"],
-        createdDate: "2024-08-22T16:00:00Z",
-        lastModified: "2024-08-22T16:00:00Z",
+        createdDate: hoursAgo(5), // "5 hours ago"
+        lastModified: hoursAgo(5), // Same as created
         estimatedDuration: "20-25 min",
         isExecutable: true,
         testStatus: undefined, // No tests yet for command task
@@ -284,8 +291,8 @@ export class MockDataProvider {
         complexity: TaskComplexity.HIGH,
         dependencies: [], // Standalone deprecated task
         requirements: ["8.2"],
-        createdDate: "2024-08-21T10:00:00Z",
-        lastModified: "2024-08-22T17:00:00Z",
+        createdDate: daysAgo(14), // "2 weeks ago"
+        lastModified: daysAgo(10), // "10 days ago"
         estimatedDuration: "20-25 min",
         isExecutable: false,
         testStatus: {
@@ -338,8 +345,8 @@ export class MockDataProvider {
         complexity: TaskComplexity.MEDIUM,
         dependencies: ["2.1.1", "4.1.1"], // Depends on data service and registration
         requirements: ["8.1"],
-        createdDate: "2024-08-22T11:00:00Z",
-        lastModified: "2024-08-22T18:45:00Z",
+        createdDate: daysAgo(1), // "1 day ago"
+        lastModified: hoursAgo(1), // "1 hour ago"
         estimatedDuration: "20-25 min",
         isExecutable: false,
         testStatus: {
@@ -375,8 +382,8 @@ export class MockDataProvider {
         complexity: TaskComplexity.LOW,
         dependencies: ["3.2.1", "3.2.2"], // Depends on tree view provider basics
         requirements: ["1.1"],
-        createdDate: "2024-08-22T07:00:00Z",
-        lastModified: "2024-08-22T16:30:00Z",
+        createdDate: daysAgo(4), // "4 days ago"
+        lastModified: daysAgo(3), // "3 days ago"
         estimatedDuration: "15-20 min",
         isExecutable: false,
         testStatus: {
