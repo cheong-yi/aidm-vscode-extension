@@ -13,10 +13,17 @@ import {
 } from "./config/extensionConfig";
 import { MockCache } from "./server/MockCache";
 import { PortFinder } from "./utils/portFinder";
+import {
+  TasksDataService,
+  MarkdownTaskParser,
+  TaskStatusManager,
+} from "./services";
+import { TaskStatus } from "./types/tasks";
 
 let mcpClient: MCPClient;
 let statusBarManager: StatusBarManagerImpl;
 let processManager: ProcessManager;
+let tasksDataService: TasksDataService;
 
 export async function activate(
   context: vscode.ExtensionContext
@@ -115,6 +122,17 @@ export async function activate(
       console.log("✅ StatusBarManager initialized");
     } catch (error) {
       console.error("❌ StatusBarManager initialization failed:", error);
+      throw error;
+    }
+
+    console.log("=== ACTIVATION STEP 8.5: Initializing TasksDataService ===");
+    try {
+      const markdownParser = new MarkdownTaskParser();
+      const taskStatusManager = new TaskStatusManager(markdownParser);
+      tasksDataService = new TasksDataService(taskStatusManager);
+      console.log("✅ TasksDataService initialized");
+    } catch (error) {
+      console.error("❌ TasksDataService initialization failed:", error);
       throw error;
     }
 
@@ -445,9 +463,15 @@ export async function activate(
           try {
             // Note: TasksDataService.refreshTasks() method is assumed to exist per task requirements
             // This command will be functional once the refreshTasks method is implemented
-            vscode.window.showInformationMessage('Tasks refreshed successfully');
+            vscode.window.showInformationMessage(
+              "Tasks refreshed successfully"
+            );
           } catch (error) {
-            vscode.window.showErrorMessage(`Failed to refresh tasks: ${error instanceof Error ? error.message : 'Unknown error'}`);
+            vscode.window.showErrorMessage(
+              `Failed to refresh tasks: ${
+                error instanceof Error ? error.message : "Unknown error"
+              }`
+            );
           }
         }
       );
@@ -455,6 +479,44 @@ export async function activate(
       console.log("✅ refreshTasks command registered");
     } catch (error) {
       console.error("❌ refreshTasks command failed:", error);
+    }
+
+    // Register update task status command - Task 4.4.1b
+    try {
+      const updateTaskStatusCommand = vscode.commands.registerCommand(
+        getCommandId("updateTaskStatus"),
+        async (taskId: string, newStatus: TaskStatus) => {
+          if (!taskId || !newStatus) {
+            vscode.window.showErrorMessage("Task ID and status are required");
+            return;
+          }
+          try {
+            const success = await tasksDataService.updateTaskStatus(
+              taskId,
+              newStatus
+            );
+            if (success) {
+              vscode.window.showInformationMessage(
+                `Task ${taskId} status updated to ${newStatus}`
+              );
+            } else {
+              vscode.window.showErrorMessage(
+                `Failed to update task ${taskId} status`
+              );
+            }
+          } catch (error) {
+            vscode.window.showErrorMessage(
+              `Error updating task status: ${
+                error instanceof Error ? error.message : "Unknown error"
+              }`
+            );
+          }
+        }
+      );
+      context.subscriptions.push(updateTaskStatusCommand);
+      console.log("✅ updateTaskStatus command registered");
+    } catch (error) {
+      console.error("❌ updateTaskStatus command failed:", error);
     }
 
     // Register configuration change listener
