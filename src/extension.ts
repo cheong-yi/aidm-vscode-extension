@@ -746,44 +746,95 @@ export async function activate(
       console.error("❌ updateTaskStatus command failed:", error);
     }
 
-    // Register execute task with Cursor command - Task 4.4.1c
+    // Register execute task with Cursor command - Task 4.4.3
     try {
       const executeTaskWithCursorCommand = vscode.commands.registerCommand(
         getCommandId("executeTaskWithCursor"),
         async (taskId: string) => {
-          if (!taskId) {
-            vscode.window.showErrorMessage("Task ID is required");
+          // Parameter validation - Task 4.4.3 requirements
+          if (!taskId || typeof taskId !== "string") {
+            vscode.window.showErrorMessage(
+              "Task ID is required and must be a string"
+            );
             return;
           }
+
           try {
+            // Get task details
             const task = await tasksDataService.getTaskById(taskId);
+
             if (!task) {
               vscode.window.showErrorMessage(`Task ${taskId} not found`);
               return;
             }
+
+            // Validate task is executable - Task 4.4.3 requirements
             if (!task.isExecutable) {
-              vscode.window.showErrorMessage(
-                `Task ${taskId} is not executable`
+              vscode.window.showWarningMessage(
+                `Task ${taskId} is not executable. Only tasks with "not started" status can be executed.`
               );
               return;
             }
-            // Placeholder implementation - copy task info to clipboard
-            const taskInfo = `Task ${task.id}: ${task.title}\n\nDescription: ${task.description}`;
-            await vscode.env.clipboard.writeText(taskInfo);
-            vscode.window.showInformationMessage(
-              `Task info copied to clipboard. Cursor integration coming soon!`
-            );
+
+            // Generate comprehensive task context for clipboard fallback
+            const taskContext = [
+              `# Task Implementation: ${task.title}`,
+              ``,
+              `## Context`,
+              `Task ID: ${task.id}`,
+              `Status: ${task.status}`,
+              `Complexity: ${task.complexity}`,
+              `Estimated Duration: ${
+                task.estimatedDuration || "Not specified"
+              }`,
+              ``,
+              `## Description`,
+              task.description,
+              ``,
+              `## Dependencies`,
+              task.dependencies.length > 0
+                ? task.dependencies.join(", ")
+                : "None",
+              ``,
+              `## Requirements`,
+              task.requirements.length > 0
+                ? task.requirements.join(", ")
+                : "None",
+              ``,
+              `## Implementation Notes`,
+              `- This task is ready for AI-assisted implementation`,
+              `- Cursor integration coming soon - currently using clipboard fallback`,
+              `- Review dependencies and requirements before starting`,
+            ].join("\n");
+
+            // Copy comprehensive task context to clipboard
+            await vscode.env.clipboard.writeText(taskContext);
+
+            // Show success message with action button for Cursor integration
+            vscode.window
+              .showInformationMessage(
+                `Task context copied to clipboard! Cursor integration coming soon.`,
+                "Open Cursor"
+              )
+              .then((selection) => {
+                if (selection === "Open Cursor") {
+                  vscode.window.showInformationMessage(
+                    "Please paste the task context in Cursor to begin implementation."
+                  );
+                }
+              });
           } catch (error) {
+            const errorMessage =
+              error instanceof Error ? error.message : "Unknown error occurred";
             vscode.window.showErrorMessage(
-              `Error executing task: ${
-                error instanceof Error ? error.message : "Unknown error"
-              }`
+              `Error executing task: ${errorMessage}`
             );
+            console.error("ExecuteTaskWithCursor command error:", error);
           }
         }
       );
       context.subscriptions.push(executeTaskWithCursorCommand);
-      console.log("✅ executeTaskWithCursor command registered");
+      console.log("✅ executeTaskWithCursor command registered - Task 4.4.3");
     } catch (error) {
       console.error("❌ executeTaskWithCursor command failed:", error);
     }

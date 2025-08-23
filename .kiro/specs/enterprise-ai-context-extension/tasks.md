@@ -289,7 +289,7 @@ This implementation plan breaks down the feature into atomic, TDD-friendly tasks
   - _Requirements: 12.1, 4.6_
   - _Duration: 15-20 minutes_
 
-- [ ] 4.4.2 Register updateTaskStatus command in extension activate function
+- [x] 4.4.2 Register updateTaskStatus command in extension activate function
 
   - Add command handler for "aidm-vscode-extension.updateTaskStatus"
   - Extract taskId from command arguments and validate input
@@ -298,7 +298,7 @@ This implementation plan breaks down the feature into atomic, TDD-friendly tasks
   - _Requirements: 12.4, 3.1, 3.2_
   - _Duration: 20-25 minutes_
 
-- [ ] 4.4.3 Register executeTaskWithCursor command in extension activate function
+- [x] 4.4.3 Register executeTaskWithCursor command in extension activate function
 
   - Add command handler for "aidm-vscode-extension.executeTaskWithCursor"
   - Validate task executable state before processing

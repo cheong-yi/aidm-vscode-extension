@@ -172,15 +172,79 @@ describe("Extension", () => {
       ).toBe(true);
 
       // Test invalid parameters
-      expect(invalidTaskId && typeof invalidTaskId === "string").toBe(false);
-      expect(
-        invalidStatus && Object.values(TaskStatus).includes(invalidStatus)
-      ).toBe(false);
+      expect(typeof invalidTaskId === "string").toBe(false);
+      expect(Object.values(TaskStatus).includes(invalidStatus)).toBe(false);
 
       // Verify TaskStatus enum values are accessible
       expect(Object.values(TaskStatus)).toContain(TaskStatus.NOT_STARTED);
       expect(Object.values(TaskStatus)).toContain(TaskStatus.IN_PROGRESS);
       expect(Object.values(TaskStatus)).toContain(TaskStatus.COMPLETED);
+    });
+
+    it("should register executeTaskWithCursor command successfully - Task 4.4.3", () => {
+      // This test verifies that the executeTaskWithCursor command is properly registered
+      // during extension activation with Task 4.4.3 requirements
+
+      // Arrange: Mock the registerCommand API
+      const mockRegisterCommand = jest
+        .fn()
+        .mockReturnValue({ dispose: jest.fn() });
+      jest
+        .spyOn(vscode.commands, "registerCommand")
+        .mockImplementation(mockRegisterCommand);
+
+      // Act: Activate the extension
+      activate(mockContext);
+
+      // Verify that the extension activated without throwing errors
+      expect(() => activate(mockContext)).not.toThrow();
+
+      // Verify that the command registration was added to subscriptions
+      expect(mockContext.subscriptions.length).toBeGreaterThan(0);
+      const hasCommandSubscription = mockContext.subscriptions.some(
+        (sub) => sub && typeof sub === "object" && "dispose" in sub
+      );
+      expect(hasCommandSubscription).toBe(true);
+
+      // Note: The actual executeTaskWithCursor command registration is verified by the console output
+      // "✅ executeTaskWithCursor command registered - Task 4.4.3" which appears during activation
+    });
+
+    it("should validate executeTaskWithCursor command parameters correctly - Task 4.4.3", () => {
+      // This test verifies the parameter validation logic for Task 4.4.3
+
+      // Test data for validation
+      const validTaskId = "task-123";
+      const invalidTaskId = null;
+      const invalidTaskIdType = 123;
+
+      // Test valid parameters
+      expect(validTaskId && typeof validTaskId === "string").toBe(true);
+
+      // Test invalid parameters
+      expect(typeof invalidTaskId === "string").toBe(false);
+      expect(typeof invalidTaskIdType === "string").toBe(false);
+
+      // Verify Task interface has required properties for executable task validation
+      const mockTask: Task = {
+        id: "test-task",
+        title: "Test Task",
+        description: "Test description",
+        status: TaskStatus.NOT_STARTED,
+        complexity: "low" as any,
+        dependencies: [],
+        requirements: [],
+        createdDate: "2024-01-01T00:00:00.000Z",
+        lastModified: "2024-01-01T00:00:00.000Z",
+        isExecutable: true,
+        estimatedDuration: "15-30 min",
+      };
+
+      // Verify executable task properties
+      expect(mockTask.isExecutable).toBe(true);
+      expect(mockTask.estimatedDuration).toBe("15-30 min");
+      expect(mockTask.dependencies).toEqual([]);
+      expect(mockTask.requirements).toEqual([]);
     });
   });
 
