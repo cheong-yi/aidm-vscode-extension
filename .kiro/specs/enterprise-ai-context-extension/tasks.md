@@ -176,7 +176,7 @@ This implementation plan breaks down the feature into atomic, TDD-friendly tasks
   - _Requirements: Event synchronization_
   - _Duration: 20-25 minutes_
 
-- [ ] 4.1.5 Connect TaskTreeViewProvider to TaskDetailCardProvider event synchronization
+- [x] 4.1.5 Connect TaskTreeViewProvider to TaskDetailCardProvider event synchronization
 
   - Wire TaskTreeViewProvider.onTaskClick event to TaskDetailCardProvider.updateTaskDetails
   - Handle task selection events to update detail panel with selected task data
@@ -197,12 +197,12 @@ This implementation plan breaks down the feature into atomic, TDD-friendly tasks
   - Add field with realistic values like "15-20 min"
   - Test: all tasks have estimatedDuration field
 
-- [ ] 4.2.1c: Add isExecutable field logic for not_started tasks (10 min)
+- [x] 4.2.1c: Add isExecutable field logic for not_started tasks (10 min)
 
   - Set isExecutable=true only for not_started status
   - Test: isExecutable matches status correctly
 
-- [ ] 4.2.1d: Expand to 10 tasks with status variety (15 min)
+- [x] 4.2.1d: Expand to 10 tasks with status variety (15 min)
 
   - Add 7 more tasks with different statuses
   - Test: status distribution covers all enum values

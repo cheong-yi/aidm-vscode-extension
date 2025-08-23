@@ -372,7 +372,7 @@ describe("MockDataProvider", () => {
   });
 
   describe("Task Generation", () => {
-    it("should return exactly 3 Task objects", async () => {
+    it("should return exactly 10 Task objects", async () => {
       // Arrange
       const mockProvider = new MockDataProvider();
 
@@ -380,10 +380,26 @@ describe("MockDataProvider", () => {
       const result = await mockProvider.getTasks();
 
       // Assert
-      expect(result).toHaveLength(3);
+      expect(result).toHaveLength(10);
       expect(result[0]).toHaveProperty("id");
       expect(result[0]).toHaveProperty("title");
       expect(result[0]).toHaveProperty("status");
+    });
+
+    it("should return 10 tasks with varied statuses", async () => {
+      // Arrange
+      const mockProvider = new MockDataProvider();
+
+      // Act
+      const result = await mockProvider.getTasks();
+
+      // Assert
+      expect(result).toHaveLength(10);
+
+      // Verify status distribution covers multiple enum values
+      const statuses = result.map((task) => task.status);
+      const uniqueStatuses = [...new Set(statuses)];
+      expect(uniqueStatuses.length).toBeGreaterThanOrEqual(5);
     });
 
     it("should return tasks with valid Task interface structure", async () => {
@@ -431,6 +447,13 @@ describe("MockDataProvider", () => {
       const result = await mockProvider.getTasks();
 
       // Assert
+      // Check that all tasks have estimatedDuration field
+      result.forEach((task) => {
+        expect(task.estimatedDuration).toBeDefined();
+        expect(typeof task.estimatedDuration).toBe("string");
+      });
+
+      // Verify specific known values for first few tasks
       expect(result[0].estimatedDuration).toBe("15-20 min");
       expect(result[1].estimatedDuration).toBe("25-30 min");
       expect(result[2].estimatedDuration).toBe("15-20 min");
@@ -444,9 +467,25 @@ describe("MockDataProvider", () => {
       const result = await mockProvider.getTasks();
 
       // Assert
+      // Check that all tasks have isExecutable field
+      result.forEach((task) => {
+        expect(task.isExecutable).toBeDefined();
+        expect(typeof task.isExecutable).toBe("boolean");
+      });
+
+      // Verify specific known values for first few tasks
       expect(result[0].isExecutable).toBe(true); // NOT_STARTED task
       expect(result[1].isExecutable).toBe(false); // IN_PROGRESS task
       expect(result[2].isExecutable).toBe(false); // COMPLETED task
+
+      // Verify that NOT_STARTED tasks are executable and others are not
+      result.forEach((task) => {
+        if (task.status === TaskStatus.NOT_STARTED) {
+          expect(task.isExecutable).toBe(true);
+        } else {
+          expect(task.isExecutable).toBe(false);
+        }
+      });
     });
   });
 });
