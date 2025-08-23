@@ -977,43 +977,51 @@ async function startMCPServer(): Promise<void> {
 }
 
 export async function deactivate() {
-  console.log(`${EXTENSION_CONFIG.displayName} is being deactivated`);
+  console.log("AIDM VSCode Extension: Starting deactivation...");
 
   try {
+    // Commands and providers are automatically disposed via context.subscriptions
+    // This includes all registered commands, tree data providers, and webview providers
+    console.log(
+      "AIDM VSCode Extension: All registered commands and providers disposed via context.subscriptions"
+    );
+
     // Graceful shutdown of process manager
     if (processManager) {
       await processManager.shutdown();
+      console.log("AIDM VSCode Extension: Process manager shutdown completed");
     }
 
     // Dispose status bar manager
     if (statusBarManager) {
       statusBarManager.dispose();
+      console.log("AIDM VSCode Extension: Status bar manager disposed");
     }
 
     // Dispose tasks data service if it exists
     if (tasksDataService) {
       tasksDataService.dispose();
+      console.log("AIDM VSCode Extension: Tasks data service disposed");
     }
 
     // Dispose task tree view provider if it exists
     if (taskTreeViewProvider) {
       taskTreeViewProvider.dispose();
+      console.log("AIDM VSCode Extension: Task tree view provider disposed");
     }
 
     // Dispose MCP client if it exists
     if (mcpClient) {
       // Note: MCPClient doesn't have a dispose method, but we can clean up any resources
-      console.log("MCP client cleanup completed");
+      console.log("AIDM VSCode Extension: MCP client cleanup completed");
     }
 
-    // All commands and providers are automatically disposed via context.subscriptions
-    // VSCode handles the disposal of all registered commands, hover providers, and other disposables
-    console.log(
-      "All registered commands and providers disposed via context.subscriptions"
-    );
-
-    console.log("Extension deactivated successfully");
+    // Additional cleanup for any global state or timers
+    // (TimeFormattingUtility timer should already be in subscriptions)
+    console.log("AIDM VSCode Extension: All resources cleaned up successfully");
   } catch (error) {
-    console.error("Error during extension deactivation:", error);
+    console.error("AIDM VSCode Extension: Error during deactivation:", error);
+  } finally {
+    console.log("AIDM VSCode Extension deactivated");
   }
 }

@@ -274,5 +274,53 @@ describe("Extension", () => {
     it("should deactivate without errors", () => {
       expect(() => deactivate()).not.toThrow();
     });
+
+    it("should deactivate extension cleanly without errors", () => {
+      // Arrange
+      const consoleSpy = jest.spyOn(console, "log");
+      const consoleErrorSpy = jest.spyOn(console, "error");
+
+      // Act
+      deactivate();
+
+      // Assert
+      expect(consoleSpy).toHaveBeenCalledWith(
+        "AIDM VSCode Extension deactivated"
+      );
+      expect(consoleErrorSpy).not.toHaveBeenCalled();
+    });
+
+    it("should handle deactivation errors gracefully", () => {
+      // Arrange
+      const consoleSpy = jest.spyOn(console, "log");
+      const consoleErrorSpy = jest.spyOn(console, "error");
+
+      // Simulate error scenario by mocking a specific console.log call that might fail
+      const originalLog = console.log;
+      let callCount = 0;
+      console.log = jest.fn().mockImplementation((...args) => {
+        callCount++;
+        if (callCount === 2) {
+          // Target the second console.log call
+          throw new Error("Mock deactivation error");
+        }
+        return originalLog.apply(console, args);
+      });
+
+      // Act
+      deactivate();
+
+      // Assert
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        "AIDM VSCode Extension: Error during deactivation:",
+        expect.any(Error)
+      );
+      expect(consoleSpy).toHaveBeenLastCalledWith(
+        "AIDM VSCode Extension deactivated"
+      );
+
+      // Restore console.log
+      console.log = originalLog;
+    });
   });
 });
