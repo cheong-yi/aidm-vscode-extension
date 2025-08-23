@@ -674,17 +674,17 @@ export async function activate(
         getCommandId("refreshTasks"),
         async () => {
           try {
-            // Note: TasksDataService.refreshTasks() method is assumed to exist per task requirements
-            // This command will be functional once the refreshTasks method is implemented
+            await tasksDataService.refreshTasks();
             vscode.window.showInformationMessage(
               "Tasks refreshed successfully"
             );
           } catch (error) {
+            const errorMessage =
+              error instanceof Error ? error.message : "Unknown error occurred";
             vscode.window.showErrorMessage(
-              `Failed to refresh tasks: ${
-                error instanceof Error ? error.message : "Unknown error"
-              }`
+              `Failed to refresh tasks: ${errorMessage}`
             );
+            console.error("RefreshTasks command error:", error);
           }
         }
       );

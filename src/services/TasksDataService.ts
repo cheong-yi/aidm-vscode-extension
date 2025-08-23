@@ -199,6 +199,43 @@ export class TasksDataService implements ITasksDataService {
     }
   }
 
+  // Task 4.4.1: Add refreshTasks method for manual task refresh
+  async refreshTasks(): Promise<void> {
+    try {
+      // Try to refresh via MCP server first
+      const response = await this.makeJSONRPCCall("tasks/refresh");
+
+      if (response.error) {
+        throw new Error(`MCP server error: ${response.error.message}`);
+      }
+
+      // If MCP server refresh successful, get updated tasks and fire event
+      const updatedTasks = await this.getTasks();
+      this.onTasksUpdated.fire(updatedTasks);
+    } catch (error) {
+      // Check if this is an MCP server error - if so, re-throw it
+      if (
+        error instanceof Error &&
+        error.message.startsWith("MCP server error:")
+      ) {
+        throw error;
+      }
+
+      // Fallback to TaskStatusManager for HTTP failures
+      console.warn(
+        "HTTP call failed, falling back to TaskStatusManager:",
+        error instanceof Error ? error.message : String(error)
+      );
+
+      // Use TaskStatusManager's refresh method as fallback
+      await this.taskStatusManager.refreshTasksFromFile();
+
+      // Get updated tasks and fire event
+      const updatedTasks = await this.taskStatusManager.getTasks();
+      this.onTasksUpdated.fire(updatedTasks);
+    }
+  }
+
   // Cleanup method for event emitters - Recovery Task 2.3.1 & 2.3.2
   dispose(): void {
     this.onTasksUpdated.dispose();

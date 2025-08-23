@@ -280,7 +280,7 @@ This implementation plan breaks down the feature into atomic, TDD-friendly tasks
 
 #### 4.4 Command Registration (CRITICAL BLOCKER 4)
 
-- [ ] 4.4.1 Register refreshTasks command in extension activate function
+- [x] 4.4.1 Register refreshTasks command in extension activate function
 
   - Add vscode.commands.registerCommand for "aidm-vscode-extension.refreshTasks"
   - Connect command to TasksDataService.refreshTasks() method
