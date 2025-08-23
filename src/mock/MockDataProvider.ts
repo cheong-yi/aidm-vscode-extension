@@ -17,6 +17,7 @@ import {
   BusinessContext,
   ImplementationStatus,
 } from "../types/business";
+import { Task, TaskStatus, TaskComplexity } from "../types/tasks";
 
 export interface MockConfiguration {
   dataSize: "small" | "medium" | "large";
@@ -96,6 +97,50 @@ export class MockDataProvider {
     }
 
     return this.requirements.get(id) || null;
+  }
+
+  /**
+   * Get basic tasks for testing and demonstration
+   */
+  async getTasks(): Promise<Task[]> {
+    return [
+      {
+        id: "1.1.1",
+        title: "Create directory structure for task management components",
+        description:
+          "Set up the basic folder structure for task-related components in the extension.",
+        status: TaskStatus.NOT_STARTED,
+        complexity: TaskComplexity.LOW,
+        dependencies: [],
+        requirements: ["1.1"],
+        createdDate: "2024-08-22T10:00:00Z",
+        lastModified: "2024-08-22T10:00:00Z",
+      },
+      {
+        id: "2.1.1",
+        title: "Create basic TasksDataService class structure",
+        description:
+          "Implement the foundational TasksDataService class with basic structure and interface.",
+        status: TaskStatus.IN_PROGRESS,
+        complexity: TaskComplexity.MEDIUM,
+        dependencies: ["1.1.1"],
+        requirements: ["2.1"],
+        createdDate: "2024-08-22T09:00:00Z",
+        lastModified: "2024-08-22T11:30:00Z",
+      },
+      {
+        id: "3.1.1",
+        title: "Create TaskTreeItem class with basic properties",
+        description:
+          "Implement TaskTreeItem extending vscode.TreeItem with required properties.",
+        status: TaskStatus.COMPLETED,
+        complexity: TaskComplexity.LOW,
+        dependencies: ["1.1.1", "2.1.1"],
+        requirements: ["1.1", "3.1"],
+        createdDate: "2024-08-22T08:00:00Z",
+        lastModified: "2024-08-22T14:00:00Z",
+      },
+    ];
   }
 
   /**

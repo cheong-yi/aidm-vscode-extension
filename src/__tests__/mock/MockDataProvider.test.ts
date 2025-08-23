@@ -19,6 +19,7 @@ import {
   ChangeType,
   BusinessContext,
 } from "../../types/business";
+import { Task, TaskStatus, TaskComplexity } from "../../types/tasks";
 
 describe("MockDataProvider", () => {
   let mockProvider: MockDataProvider;
@@ -367,6 +368,59 @@ describe("MockDataProvider", () => {
       expect(allTags).toContain("security");
       expect(allTags).toContain("authentication");
       expect(allTags).toContain("performance");
+    });
+  });
+
+  describe("Task Generation", () => {
+    it("should return exactly 3 Task objects", async () => {
+      // Arrange
+      const mockProvider = new MockDataProvider();
+      
+      // Act
+      const result = await mockProvider.getTasks();
+      
+      // Assert
+      expect(result).toHaveLength(3);
+      expect(result[0]).toHaveProperty('id');
+      expect(result[0]).toHaveProperty('title');
+      expect(result[0]).toHaveProperty('status');
+    });
+
+    it("should return tasks with valid Task interface structure", async () => {
+      // Arrange
+      const mockProvider = new MockDataProvider();
+      
+      // Act
+      const result = await mockProvider.getTasks();
+      
+      // Assert
+      result.forEach((task) => {
+        expect(task).toMatchObject({
+          id: expect.any(String),
+          title: expect.any(String),
+          description: expect.any(String),
+          status: expect.any(String),
+          complexity: expect.any(String),
+          dependencies: expect.any(Array),
+          requirements: expect.any(Array),
+          createdDate: expect.any(String),
+          lastModified: expect.any(String)
+        });
+      });
+    });
+
+    it("should return tasks with valid enum values", async () => {
+      // Arrange
+      const mockProvider = new MockDataProvider();
+      
+      // Act
+      const result = await mockProvider.getTasks();
+      
+      // Assert
+      result.forEach((task) => {
+        expect(Object.values(TaskStatus)).toContain(task.status);
+        expect(Object.values(TaskComplexity)).toContain(task.complexity);
+      });
     });
   });
 });
