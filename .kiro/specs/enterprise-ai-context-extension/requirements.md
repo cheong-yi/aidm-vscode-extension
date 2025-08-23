@@ -1,131 +1,255 @@
-# Requirements Document
+# Requirements Document - Sidebar Taskmaster Dashboard
 
 ## Introduction
 
-The Enterprise AI Context VSCode Extension is an innovative solution that bridges the gap between business requirements and code implementation in enterprise environments. The system provides contextual business information to human developers through hover functionality and enables AI assistants to access rich project context via the Model Context Protocol (MCP). This addresses the critical enterprise pain point where developers lack context about why code was written, what business requirements it fulfills, and how changes might impact other system components.
+The Sidebar Taskmaster Dashboard is a new UI module within the enterprise-ai-context-extension that provides developers with an intelligent task management interface. This module shifts developer focus from manual implementation to intelligent review and management of tasks, leveraging AI assistants (RooCode/Gemini) and institutional knowledge from MCP Servers. The dashboard will be displayed as an expandable list design in the VSCode sidebar, featuring collapsible task items with detailed information panels.
+
+## Current Status and Critical Gaps
+
+**Implementation Progress: ~65% Complete**
+
+**Critical Implementation Gaps Identified:**
+- Extension UI component registration missing from extension.ts
+- Mock task data generation not implemented in MockDataProvider
+- VSCode contribution points missing from package.json
+- Task-related commands not registered in activation function
+
+**Risk Assessment:** While core components are implemented, the extension would fail at runtime due to missing UI registration and task data provision.
 
 ## Requirements
 
 ### Requirement 1
 
-**User Story:** As a developer, I want to hover over code elements and see relevant business context, so that I can understand the business purpose and requirements behind the implementation.
+**User Story:** As a developer, I want to see a high-level overview of all assigned tasks in an expandable list view, so that I can quickly understand my workload and task priorities while accessing detailed information when needed.
 
 #### Acceptance Criteria
 
-1. WHEN a developer hovers over a code element in TypeScript files (additional language support in future phases) THEN the system SHALL display a hover popup containing relevant business context within 200ms
-2. WHEN business context is available for a code element THEN the system SHALL show requirements, implementation status, and related changes
-3. WHEN no business context is available THEN the system SHALL display a message indicating no context found
-4. WHEN the hover popup is displayed THEN it SHALL include formatted business requirements, implementation notes, and related change history
-5. IF the system encounters an error retrieving context THEN it SHALL display an appropriate error message without breaking the hover functionality
+1. WHEN the extension is activated THEN the system SHALL display a task list view in the VSCode sidebar
+2. WHEN the task list view is displayed THEN the system SHALL show task ID, task name/title, and status indicator for each task in collapsed state
+3. WHEN a task header is clicked THEN the system SHALL expand/collapse the task to show/hide detailed information
+4. IF a task has dependencies THEN the system SHALL display dependency relationships in the expanded details section
+5. WHEN the task list is refreshed THEN the system SHALL update the list view with current task data from the MCP server
+6. WHEN a task is expanded THEN only one task SHALL be expanded at a time (accordion behavior)
+7. IF the list contains many tasks THEN the system SHALL support virtual scrolling to maintain performance
+8. WHEN a task has status "not_started" THEN the system SHALL display a blue left border and 🤖 icon indicating it's executable with Cursor
 
-### Requirement 2 (Future Enhancement - Deprioritized)
+#### Implementation Status
+- **Core UI Components**: ✅ TaskTreeViewProvider implemented
+- **Extension Registration**: ❌ Missing registration in extension.ts
+- **Data Provider**: ❌ Missing task mock data generation
 
-**User Story:** As a developer, I want to search for business requirements across the project using keywords or phrases, so that I can find which code implements specific business functionality and understand system dependencies.
+### Requirement 2
 
-**Priority:** Nice to have - Future backlog item
+**User Story:** As a developer, I want to view detailed information about a task in an expanded view, so that I can understand the full context, requirements, and current status before implementation.
 
 #### Acceptance Criteria
 
-1. WHEN a developer opens the requirements search panel (via command palette or shortcut) THEN the system SHALL provide a search interface within VSCode
-2. WHEN search terms are entered (e.g., "user authentication", "payment processing") THEN the system SHALL return matching requirements with relevance scoring
-3. WHEN search results are displayed THEN each result SHALL show requirement title, description, and related code file locations with line numbers
-4. WHEN a search result is selected THEN the system SHALL navigate to the relevant code file and highlight the implementing functions/classes
-5. IF no results are found THEN the system SHALL display a "no results found" message with search suggestions and similar requirements
+1. WHEN a task is expanded THEN the system SHALL display full task description, complexity rating, estimated duration, and dependencies list
+2. WHEN task details are displayed THEN the system SHALL show metadata in a grid layout (complexity, estimated duration, dependencies)
+3. IF a task has no dependencies THEN the system SHALL display "None" in the dependencies section
+4. WHEN task details are loaded THEN the system SHALL maintain expansion state until another task is clicked
+5. WHEN no task is expanded THEN all tasks SHALL be in collapsed state showing only header information
+6. IF a task has associated test data THEN the system SHALL display test results summary with pass/fail counts
+7. WHEN test results include failures THEN the system SHALL provide a collapsible section showing failing test details
+8. IF test results have a last run date THEN the system SHALL display relative time format ("2 hours ago")
 
-**Note:** This requirement is deprioritized for the initial MVP. Focus should be on core hover functionality and MCP integration first.
+#### Implementation Status
+- **Detail Card Component**: ✅ TaskDetailCardProvider implemented
+- **Time Formatting**: ✅ TimeFormattingUtility implemented
+- **WebView Registration**: ❌ Missing registration in extension.ts
 
 ### Requirement 3
 
-**User Story:** As a developer, I want to see the connection status between the VSCode extension and the MCP server, so that I can understand if the context system is functioning properly.
+**User Story:** As a developer, I want to update task status and see status-specific actions, so that I can track progress and take appropriate actions based on the current task state.
 
 #### Acceptance Criteria
 
-1. WHEN the extension is active THEN the system SHALL display a status indicator in the VSCode status bar
-2. WHEN the MCP server is connected and healthy THEN the status indicator SHALL show a green connected state
-3. WHEN the MCP server is disconnected or unhealthy THEN the status indicator SHALL show a red disconnected state
-4. WHEN the status indicator is clicked THEN the system SHALL display basic connection status (detailed metrics in Phase 2)
-5. WHEN connection issues occur THEN the system SHALL attempt automatic reconnection and log appropriate error messages
+1. WHEN a task status is changed in the expanded view THEN the system SHALL send a JSON-RPC call to the local MCP server using method "tasks/update-status"
+2. WHEN the status update API call is made THEN the system SHALL include parameters: taskId (string) and newStatus (TaskStatus enum)
+3. IF the status update is successful THEN the system SHALL persist the change to the tasks.md file
+4. WHEN the status is updated THEN the system SHALL reflect the change in the task header status badge
+5. IF the status update fails THEN the system SHALL display an appropriate error message
+6. IF an invalid status transition is attempted THEN the system SHALL validate and prevent the change before sending to server
+7. WHEN a task is expanded THEN the system SHALL display status-specific action buttons based on current task status
+8. WHEN task status is "not_started" THEN action buttons SHALL include "🤖 Execute with Cursor", "Generate Prompt", "View Requirements"
+9. WHEN task status is "completed" THEN action buttons SHALL include "View Code", "View Tests", "History"
+
+#### Implementation Status
+- **Status Update Logic**: ✅ TasksDataService implemented
+- **MCP Integration**: ✅ Server-side tools implemented
+- **Command Registration**: ❌ Missing command registration in extension.ts
 
 ### Requirement 4
 
-**User Story:** As an AI assistant, I want to access rich project context through MCP protocol, so that I can provide better code suggestions and understand business requirements.
+**User Story:** As a developer, I want the dashboard to automatically refresh task data and show relative timestamps, so that I always have current information with human-readable time formats.
 
 #### Acceptance Criteria
 
-1. WHEN an AI assistant connects via MCP THEN the system SHALL expose available tools and capabilities
-2. WHEN an AI assistant requests project context THEN the system SHALL return structured business requirements and code relationships
-3. WHEN an AI assistant queries for specific requirements THEN the system SHALL return relevant business context with proper formatting
-4. WHEN multiple AI assistants connect simultaneously THEN the system SHALL handle concurrent requests without performance degradation
-5. IF an AI assistant request fails THEN the system SHALL return appropriate error responses following MCP protocol standards
+1. WHEN the extension is activated THEN the system SHALL automatically fetch task data from the local MCP server
+2. WHEN a refresh is triggered THEN the system SHALL retrieve updated task information and maintain current expansion state
+3. IF new tasks are added THEN the system SHALL display them in the list view
+4. IF task statuses change externally THEN the system SHALL reflect those changes in the UI
+5. WHEN auto-refresh is enabled THEN the system SHALL refresh task data every 5 minutes by default
+6. WHEN a manual refresh is requested THEN the system SHALL perform a full data fetch from the MCP server
+7. IF the refresh operation fails THEN the system SHALL display cached data with a staleness indicator
+8. WHEN displaying timestamps THEN the system SHALL use relative time format ("2 hours ago", "45 minutes ago")
+9. IF timestamp formatting fails THEN the system SHALL fall back to absolute time display
+
+#### Implementation Status
+- **Auto-refresh Logic**: ✅ TasksDataService with event system implemented
+- **Time Formatting**: ✅ TimeFormattingUtility with caching implemented
+- **Refresh Commands**: ❌ Missing command registration and initialization
 
 ### Requirement 5
 
-**User Story:** As a system administrator, I want the extension to handle errors gracefully and provide audit capabilities, so that I can ensure system reliability and compliance in enterprise environments.
+**User Story:** As a developer, I want the dashboard to handle errors gracefully and provide meaningful test failure information, so that I can continue working and quickly identify issues.
 
 #### Acceptance Criteria
 
-1. WHEN any system error occurs THEN the extension SHALL log detailed error information without exposing sensitive data
-2. WHEN external dependencies are unavailable THEN the system SHALL fall back to cached data or mock responses
-3. WHEN user interactions occur THEN the system SHALL maintain an audit trail of access patterns and data requests
-4. WHEN the system starts up THEN it SHALL validate all configuration and dependencies before becoming available
-5. IF critical errors occur THEN the system SHALL continue operating in degraded mode rather than completely failing
+1. WHEN the MCP server is unavailable THEN the system SHALL display an appropriate error message
+2. IF API calls fail THEN the system SHALL provide retry options
+3. WHEN errors occur THEN the system SHALL log them according to existing error handling patterns
+4. IF the tasks.md file cannot be read THEN the system SHALL display a fallback message
+5. WHEN errors occur THEN the system SHALL display a visual error indicator (red icon) in the status bar
+6. IF the error state persists THEN the system SHALL provide a "Report Issue" button with error details
+7. WHEN in error state THEN the system SHALL disable interactive features that require server communication
+8. WHEN test failures are displayed THEN the system SHALL categorize errors by type (assertion, type, filesystem, timeout, network)
+9. IF test failure details are available THEN the system SHALL show test name, error message, and error category in a collapsible section
+
+#### Implementation Status
+- **Error Handling**: ✅ Enhanced error response formats implemented
+- **Test Failure Display**: ✅ FailingTest interface and display logic implemented
+- **Mock Failure Data**: ❌ Missing realistic test failure mock scenarios
 
 ### Requirement 6
 
-**User Story:** As a developer, I want the system to work with mock data initially, so that I can evaluate the functionality without requiring complex enterprise integrations.
+**User Story:** As a developer, I want the dashboard to integrate with existing extension infrastructure and provide enhanced task data, so that it follows established patterns and provides rich task information.
 
 #### Acceptance Criteria
 
-1. WHEN the system is in mock mode THEN it SHALL provide realistic business context data for demonstration purposes
-2. WHEN mock data is displayed THEN it SHALL represent typical enterprise scenarios including requirements, changes, and relationships
-3. WHEN switching between mock and real data modes THEN the system SHALL maintain consistent user experience and API contracts
-4. WHEN mock data is used THEN the system SHALL clearly indicate the data source to prevent confusion
-5. IF mock data generation fails THEN the system SHALL provide fallback static data to ensure functionality demonstration
+1. WHEN the dashboard is implemented THEN it SHALL use the existing ContextManager for data retrieval
+2. IF the CompositeContextService is available THEN the system SHALL leverage it for context management
+3. WHEN communicating with the MCP server THEN the system SHALL use the existing HTTP JSON-RPC protocol
+4. IF the MockDataProvider is available THEN the system SHALL use it for testing and development
+5. WHEN error handling is required THEN the system SHALL use the existing ErrorHandler and DegradedModeManager
+6. IF audit logging is needed THEN the system SHALL use the existing AuditLogger for all task operations
+7. WHEN configuration is required THEN the system SHALL use the existing extension configuration patterns
+8. WHEN task data is retrieved THEN it SHALL include estimatedDuration field ("15-30 min" format)
+9. IF tasks have test results THEN the data SHALL include detailed failure information with error categorization
+
+#### Implementation Status
+- **Integration Interfaces**: ✅ All interface definitions complete
+- **Enhanced Data Models**: ✅ Task interface with all required fields implemented
+- **MockDataProvider Integration**: ❌ Missing task generation methods in MockDataProvider
 
 ### Requirement 7
 
-**User Story:** As a development team, I want comprehensive test coverage and TypeScript type safety, so that we can maintain code quality and reliability as the system evolves.
+**User Story:** As a developer, I want to see comprehensive test results with failure details, so that I can quickly assess implementation quality and identify specific issues.
 
 #### Acceptance Criteria
 
-1. WHEN code is written THEN it SHALL include comprehensive unit tests achieving >80% coverage
-2. WHEN components interact THEN integration tests SHALL verify proper data flow and error handling
-3. WHEN TypeScript compilation occurs THEN it SHALL complete without errors or warnings
-4. WHEN external dependencies are mocked THEN tests SHALL verify proper abstraction layer functionality
-5. IF test failures occur THEN the build process SHALL prevent deployment until issues are resolved
+1. WHEN a task has associated test data THEN the system SHALL display test results in the expanded task view
+2. IF tests are failing THEN the system SHALL highlight the failure count and provide access to detailed test results
+3. WHEN test results are displayed THEN the system SHALL show total tests, passed tests, and failed tests in a summary format
+4. IF a task has no test data THEN the system SHALL display a "No tests available yet" or similar indicator
+5. WHEN test results change THEN the system SHALL update the display to reflect the current state
+6. IF test failures exist THEN the system SHALL provide a collapsible section showing failing test names and error messages
+7. WHEN failing tests are displayed THEN each failure SHALL show test name, error message, and error category
+8. IF test coverage data is available THEN the system SHALL display coverage percentage in the test results section
+9. WHEN test results have timestamps THEN the system SHALL display relative time since last test run
+
+#### Implementation Status
+- **Test Results Display**: ✅ TestStatus interface and rendering logic implemented
+- **Failure Categorization**: ✅ FailingTest with category enum implemented
+- **Mock Test Data**: ❌ Missing realistic test result mock scenarios
 
 ### Requirement 8
 
-**User Story:** As an AI assistant (specifically RooCode), I want to access both local sprint context and future enterprise delivery patterns through a unified MCP interface, so that I can provide context-aware code suggestions that align with both current project needs and proven delivery methodologies.
+**User Story:** As a developer, I want to click on executable tasks to automatically generate contextual prompts for my AI coding assistant, so that I can begin implementation with proper context without manual research.
 
 #### Acceptance Criteria
 
-1. WHEN RooCode queries for current context THEN it SHALL receive sprint details, story context, and team coding patterns from local MCP
-2. WHEN RooCode queries for delivery intelligence THEN the system SHALL be architected to support future remote MCP integration for institutional knowledge
-3. WHEN RooCode generates code suggestions THEN they SHALL incorporate available business context and delivery patterns
-4. WHEN multiple AI queries occur simultaneously THEN the hybrid architecture SHALL handle both local and future remote requests efficiently
-5. IF remote delivery intelligence is unavailable THEN RooCode SHALL still receive rich local context for immediate development needs
+1. WHEN I click on a task with status "not_started" AND isExecutable=true THEN the system SHALL extract task context and generate a Cursor-compatible prompt
+2. WHEN a prompt is generated THEN it SHALL include task description, dependencies, requirements mapping, and relevant architectural context
+3. WHEN the prompt is ready THEN the system SHALL trigger Cursor's chat interface with the generated prompt
+4. IF a task is already "in_progress" or "completed" THEN the click SHALL expand task details instead of generating a prompt
+5. WHEN context extraction fails THEN the system SHALL show an error message with fallback manual prompt option
+6. IF Cursor is not available THEN the system SHALL copy the prompt to clipboard with a notification
+7. WHEN a task is executable THEN it SHALL display visual indicators (blue left border, 🤖 icon)
+8. IF task executable state changes THEN the system SHALL update visual indicators accordingly
 
-### Requirement 9 (New) – Pluggable Context Sources and Priority
+#### Implementation Status
+- **Executable Task Logic**: ✅ isExecutable property and visual indicators implemented
+- **Context Extraction**: ⚠️ Interface defined, implementation planned
+- **Cursor Integration**: ❌ Service interface defined, implementation missing
 
-**User Story:** As a developer and AI assistant, I want the local MCP to aggregate context from multiple sources in a defined priority so that the most accurate and deterministic context is used first.
+### Requirement 9
 
-#### Acceptance Criteria
-
-1. WHEN a context request arrives THEN the system SHALL query sources in the configured order (default: mockCache → remote → generated)
-2. WHEN a higher-priority source returns a result THEN the system SHALL NOT query lower-priority sources
-3. WHEN no source returns a result THEN the system SHALL return a well-formed empty context
-4. WHEN configuration changes THEN the new priority SHALL take effect without code changes
-5. WHEN provenance is available THEN the hover SHALL indicate the source in the UI in a non-intrusive way
-
-### Requirement 10 (New) – Background Seeding and Sync
-
-**User Story:** As a system maintainer, I want the local MCP to be able to seed and periodically sync the local cache from a remote MCP so that developers get fast, offline-friendly context while reducing load on remote APIs.
+**User Story:** As a developer, I want to see estimated task durations and relative time formatting throughout the interface, so that I can better understand effort requirements and timeline context.
 
 #### Acceptance Criteria
 
-1. WHEN `seed_from_remote` is invoked with target paths THEN the system SHALL fetch and persist context to `.aidm/mock-cache.json`
-2. WHEN daily sync is configured THEN the system SHALL refresh cached entries without blocking hover requests
-3. WHEN remote is unavailable THEN the system SHALL skip sync and retain existing cache
-4. WHEN sensitive fields are detected in seeded data THEN basic PII redaction SHALL be applied per local policy (e.g., Singapore PDPA)
-5. WHEN OAuth credentials expire THEN the system SHALL surface an actionable error and avoid partial writes
+1. WHEN task metadata is displayed THEN the system SHALL show estimatedDuration field in human-readable format ("15-30 min")
+2. IF estimated duration is not available THEN the system SHALL display "Duration not specified" or hide the field
+3. WHEN timestamps are displayed THEN the system SHALL format them as relative time ("2 hours ago", "45 minutes ago")
+4. IF relative time calculation fails THEN the system SHALL fall back to absolute timestamp display
+5. WHEN time formatting is updated THEN the system SHALL refresh relative times periodically (every minute)
+6. IF task creation or modification dates are available THEN the system SHALL display them in tooltip or metadata section
+7. WHEN displaying test run times THEN the system SHALL use consistent relative time formatting
+8. IF time data is missing THEN the system SHALL handle gracefully without breaking the interface
+
+#### Implementation Status
+- **Duration Fields**: ✅ estimatedDuration property added to Task interface
+- **Time Formatting**: ✅ TimeFormattingUtility with caching implemented
+- **Periodic Updates**: ⚠️ Logic implemented, needs initialization in extension.ts
+
+## New Critical Requirements
+
+### Requirement 10 (NEW)
+
+**User Story:** As a developer, I want the Taskmaster dashboard to appear in my VSCode sidebar when the extension is activated, so that I can access the task management interface.
+
+#### Acceptance Criteria
+
+1. WHEN the extension is activated THEN the system SHALL register TaskTreeViewProvider with VSCode's registerTreeDataProvider API
+2. WHEN the extension is activated THEN the system SHALL register TaskDetailCardProvider with VSCode's registerWebviewViewProvider API
+3. WHEN the sidebar is opened THEN the "Taskmaster" activity bar icon SHALL be visible
+4. WHEN the Taskmaster icon is clicked THEN the task list view SHALL be displayed
+5. IF registration fails THEN the system SHALL log appropriate error messages and gracefully degrade
+6. WHEN the extension is deactivated THEN all registered providers SHALL be properly disposed
+
+#### Blocking Impact
+- **Severity**: CRITICAL
+- **Impact**: Without this requirement, the entire Taskmaster UI will be invisible to users
+- **Dependencies**: All other UI requirements depend on this foundation
+
+### Requirement 11 (NEW)
+
+**User Story:** As a developer, I want to see realistic task data in the dashboard during development and testing, so that I can evaluate the interface functionality with meaningful content.
+
+#### Acceptance Criteria
+
+1. WHEN MockDataProvider.getTasks() is called THEN it SHALL return an array of realistic Task objects
+2. WHEN task data is generated THEN it SHALL include all required enhanced fields (estimatedDuration, isExecutable, testStatus)
+3. WHEN mock test results are generated THEN they SHALL include realistic FailingTest objects with proper error categorization
+4. IF a task has status "not_started" THEN it SHALL have isExecutable=true and appropriate visual indicators
+5. WHEN task timestamps are generated THEN they SHALL use ISO date strings that produce realistic relative times
+6. IF MockDataProvider.getTaskById() is called THEN it SHALL return the specific task or null appropriately
+7. WHEN mock data includes dependencies THEN they SHALL reference valid task IDs within the dataset
+8. IF test failure data is included THEN it SHALL represent realistic development scenarios
+
+#### Blocking Impact
+- **Severity**: CRITICAL
+- **Impact**: Without realistic mock data, TasksDataService cannot provide content, resulting in empty UI
+- **Dependencies**: All display and interaction requirements depend on this data foundation
+
+### Requirement 12 (NEW)
+
+**User Story:** As a developer, I want task-related commands to be available in the VSCode command palette and context menus, so that I can interact with tasks efficiently.
+
+#### Acceptance Criteria
+
+1. WHEN the extension is activated THEN task commands SHALL be registered via vscode.commands.registerCommand
+2. WHEN I open the command palette THEN "Taskmaster: Refresh Tasks" SHALL be available
+3. WHEN I right-click on an executable task THEN "Execute Task with Cursor" SHALL appear in the context menu
+4. WHEN commands are executed THEN they SHALL interact with the
