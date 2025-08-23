@@ -226,6 +226,15 @@
           "icon": "$(checklist)"
         }
       ]
+    },
+    "views": {
+      "taskmaster": [
+        {
+          "id": "aidm-vscode-extension.tasks-list",
+          "name": "Tasks",
+          "type": "tree"
+        }
+      ]
     }
   },
   "scripts": {

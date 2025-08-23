@@ -248,7 +248,7 @@ This implementation plan breaks down the feature into atomic, TDD-friendly tasks
   - Just id, title, and icon fields
   - Test: JSON parses without syntax errors
 
-- [ ] 4.3.1b: Add views contribution with single tasks-list view (8 min)
+- [x] 4.3.1b: Add views contribution with single tasks-list view (8 min)
 
   - Reference the taskmaster container
   - Test: VSCode recognizes view contribution
