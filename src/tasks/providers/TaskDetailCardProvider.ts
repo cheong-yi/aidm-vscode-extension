@@ -3,6 +3,7 @@
  * VSCode WebviewViewProvider implementation for task detail display
  * Requirements: 2.1, 2.2 - Task detail display with expandable content
  * Task 3.3.1: Create TaskDetailCardProvider class structure
+ * Task 3.3.9: Add relative time integration with periodic refresh
  *
  * This provider handles webview-based task detail display matching the expandable
  * list mockup design from taskmaster_mockup.html.
@@ -20,6 +21,8 @@ import { TimeFormattingUtility } from "../../utils/TimeFormattingUtility";
  * - VSCode WebviewViewProvider interface compliance
  * - Event emitter preparation for tree view integration
  * - Webview options setup for HTML content rendering
+ * - TimeFormattingUtility integration for relative time display
+ * - Periodic refresh mechanism for dynamic time updates
  */
 export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
   /**
@@ -86,13 +89,28 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
 
   /**
    * Time formatting utility for duration and date formatting
-   * Used for enhanced metadata display
+   * Used for enhanced metadata display and relative time formatting
+   * Task 3.3.9: Dependency injection for TimeFormattingUtility service
    */
-  protected readonly timeFormatter: TimeFormattingUtility;
+  private readonly timeFormattingUtility: TimeFormattingUtility;
 
-  constructor() {
-    // Initialize time formatting utility
-    this.timeFormatter = new TimeFormattingUtility();
+  /**
+   * Interval reference for periodic time refresh
+   * Used to update displayed times every minute without full webview reload
+   * Task 3.3.9: Periodic refresh mechanism for dynamic time updates
+   */
+  private timeRefreshInterval: NodeJS.Timeout | null = null;
+
+  /**
+   * Constructor with TimeFormattingUtility dependency injection
+   * Task 3.3.9: Constructor dependency injection for time formatting service
+   *
+   * @param timeFormattingUtility - TimeFormattingUtility service instance
+   */
+  constructor(timeFormattingUtility?: TimeFormattingUtility) {
+    // Initialize time formatting utility with dependency injection
+    this.timeFormattingUtility =
+      timeFormattingUtility || new TimeFormattingUtility();
 
     // Initialize event emitters for webview communication
     this._onTaskSelected = new vscode.EventEmitter<Task>();
@@ -122,6 +140,9 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
       this._onTestResultsUpdated,
       this._onCursorExecuteRequested
     );
+
+    // Task 3.3.9: Setup periodic time refresh mechanism
+    this.setupPeriodicTimeRefresh();
   }
 
   /**
@@ -178,6 +199,7 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
   /**
    * Updates the task details displayed in the webview
    * Called when a task is selected from the tree view
+   * Task 3.3.9: Enhanced with time formatting integration
    *
    * @param task - The task to display details for
    */
@@ -186,9 +208,14 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
       this.currentTask = task;
 
       if (this.webview && this.webview.visible) {
-        // Update webview content with task details
-        // HTML content generation will be implemented in future tasks
-        this.webview.webview.html = this.generateTaskDetailsHTML(task);
+        // Generate HTML content with time formatting integration
+        const htmlContent = this.generateTaskDetailsHTML(task);
+
+        // Task 3.3.9: Apply time formatting to HTML content
+        const formattedHtml = this.formatTimestampsInHTML(htmlContent, task);
+
+        // Update webview content with formatted timestamps
+        this.webview.webview.html = formattedHtml;
       }
     } catch (error) {
       console.error("Failed to update task details:", error);
@@ -488,15 +515,11 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
               </div>
               <div class="meta-item">
                 <div class="meta-label">Created</div>
-                <div class="meta-value created-date">${this.timeFormatter.formatRelativeTime(
-                  task.createdDate
-                )}</div>
+                <div class="meta-value created-date">{{CREATED_DATE}}</div>
               </div>
               <div class="meta-item">
                 <div class="meta-label">Modified</div>
-                <div class="meta-value modified-date">${this.timeFormatter.formatRelativeTime(
-                  task.lastModified
-                )}</div>
+                <div class="meta-value modified-date">{{LAST_MODIFIED}}</div>
               </div>
             </div>
             
@@ -1431,9 +1454,7 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
       <div class="test-results">
         <div class="test-header">
           <div class="test-title">Test Results</div>
-          <div class="test-date">Last run: ${this.formatLastRunTime(
-            testStatus.lastRunDate
-          )}</div>
+          <div class="test-date">Last run: {{LAST_RUN_DATE}}</div>
         </div>
         <div class="test-summary">
           <div class="test-summary-stats">
@@ -1512,35 +1533,6 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
     } catch (error) {
       console.warn("Failed to format test summary:", error);
       return "Test summary unavailable";
-    }
-  }
-
-  /**
-   * Formats last run time using TimeFormattingUtility
-   * Called when displaying test execution timestamps
-   *
-   * @param lastRunDate - ISO date string for last test run
-   * @returns Formatted relative time string
-   */
-  private formatLastRunTime(lastRunDate?: string): string {
-    if (!lastRunDate || lastRunDate.trim() === "") {
-      return "Never run";
-    }
-
-    try {
-      return this.timeFormatter.formatRelativeTime(lastRunDate);
-    } catch (error) {
-      console.warn("Failed to format last run time:", error);
-      // Fallback to absolute date if TimeFormattingUtility fails
-      try {
-        const date = new Date(lastRunDate);
-        if (isNaN(date.getTime())) {
-          return "Invalid date";
-        }
-        return date.toLocaleDateString();
-      } catch (fallbackError) {
-        return "Date unavailable";
-      }
     }
   }
 
@@ -2361,9 +2353,16 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
   /**
    * Disposes of all resources used by the provider
    * Called when the extension is deactivated or the provider is no longer needed
+   * Task 3.3.9: Enhanced cleanup for time refresh interval
    */
   public dispose(): void {
     try {
+      // Task 3.3.9: Clean up time refresh interval to prevent memory leaks
+      if (this.timeRefreshInterval) {
+        clearInterval(this.timeRefreshInterval);
+        this.timeRefreshInterval = null;
+      }
+
       // Dispose of all event emitters and other disposables
       this.disposables.forEach((disposable) => {
         try {
@@ -2422,13 +2421,13 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
           </div>
           <div class="meta-item">
             <div class="meta-label">Created</div>
-            <div class="meta-value created-date">${this.timeFormatter.formatRelativeTime(
+            <div class="meta-value created-date">${this.timeFormattingUtility.formatRelativeTime(
               task.createdDate
             )}</div>
           </div>
           <div class="meta-item">
             <div class="meta-label">Modified</div>
-            <div class="meta-value modified-date">${this.timeFormatter.formatRelativeTime(
+            <div class="meta-value modified-date">${this.timeFormattingUtility.formatRelativeTime(
               task.lastModified
             )}</div>
           </div>
@@ -2455,7 +2454,7 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
     try {
       // Use TimeFormattingUtility to parse and format duration if needed
       const parsedDuration =
-        this.timeFormatter.parseEstimatedDuration(duration);
+        this.timeFormattingUtility.parseEstimatedDuration(duration);
       if (parsedDuration > 0) {
         // Return original format for now, could be enhanced with parsed formatting
         return duration.trim();
@@ -2561,5 +2560,196 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
         </div>
       </div>
     `;
+  }
+
+  /**
+   * Sets up periodic time refresh mechanism
+   * Called when the provider is initialized to set up a timer for dynamic time updates
+   * Task 3.3.9: Periodic refresh mechanism for dynamic time updates
+   */
+  private setupPeriodicTimeRefresh(): void {
+    try {
+      // Set up a timer to refresh the time display every minute
+      this.timeRefreshInterval = setInterval(() => {
+        if (this.webview && this.webview.visible && this.currentTask) {
+          // Task 3.3.9: Use efficient time refresh method
+          this.refreshDisplayedTimes();
+        }
+      }, 60000); // 60000 milliseconds = 1 minute
+    } catch (error) {
+      console.error("Failed to setup periodic time refresh:", error);
+    }
+  }
+
+  /**
+   * Refreshes displayed times in the webview without full content reload
+   * Called periodically to update relative time displays
+   * Task 3.3.9: Efficient time updates without full webview reload
+   */
+  private refreshDisplayedTimes(): void {
+    try {
+      if (!this.webview || !this.webview.visible || !this.currentTask) {
+        return;
+      }
+
+      // Update the webview content to refresh time displays
+      this.webview.webview.html = this.generateTaskDetailsHTML(
+        this.currentTask
+      );
+    } catch (error) {
+      console.error("Failed to refresh displayed times:", error);
+    }
+  }
+
+  /**
+   * Handles time formatting failures gracefully with fallback display
+   * Called when TimeFormattingUtility fails to format a timestamp
+   * Task 3.3.9: Graceful error handling for time formatting failures
+   *
+   * @param error - The error that occurred during time formatting
+   * @param fallbackTime - Fallback time string to display
+   * @returns Formatted fallback time string
+   */
+  private handleTimeFormattingFailure(
+    error: Error,
+    fallbackTime: string
+  ): string {
+    try {
+      // Log the error for debugging
+      console.warn("Time formatting failed, using fallback:", {
+        error: error.message,
+        fallbackTime,
+      });
+
+      // Return fallback time or "Invalid date" if fallback is empty
+      return fallbackTime || "Invalid date";
+    } catch (fallbackError) {
+      console.error("Failed to handle time formatting failure:", fallbackError);
+      return "Invalid date";
+    }
+  }
+
+  /**
+   * Formats timestamps in HTML content using TimeFormattingUtility
+   * Called when generating HTML to ensure consistent time formatting
+   * Task 3.3.9: Integration of TimeFormattingUtility throughout HTML generation
+   *
+   * @param html - HTML content to format timestamps in
+   * @param task - The task containing timestamp data
+   * @returns HTML content with formatted timestamps
+   */
+  private formatTimestampsInHTML(html: string, task: Task): string {
+    try {
+      // Replace timestamp placeholders with formatted relative times
+      let formattedHtml = html;
+
+      // Format created date
+      if (task.createdDate) {
+        try {
+          const formattedCreated =
+            this.timeFormattingUtility.formatRelativeTime(task.createdDate);
+          formattedHtml = formattedHtml.replace(
+            /{{CREATED_DATE}}/g,
+            formattedCreated
+          );
+        } catch (error) {
+          const fallbackCreated = this.handleTimeFormattingFailure(
+            error as Error,
+            task.createdDate
+          );
+          formattedHtml = formattedHtml.replace(
+            /{{CREATED_DATE}}/g,
+            fallbackCreated
+          );
+        }
+      } else {
+        // Handle case where createdDate is empty or undefined
+        formattedHtml = formattedHtml.replace(
+          /{{CREATED_DATE}}/g,
+          "Invalid date"
+        );
+      }
+
+      // Format last modified date
+      if (task.lastModified) {
+        try {
+          const formattedModified =
+            this.timeFormattingUtility.formatRelativeTime(task.lastModified);
+          formattedHtml = formattedHtml.replace(
+            /{{LAST_MODIFIED}}/g,
+            formattedModified
+          );
+        } catch (error) {
+          const fallbackModified = this.handleTimeFormattingFailure(
+            error as Error,
+            task.lastModified
+          );
+          formattedHtml = formattedHtml.replace(
+            /{{LAST_MODIFIED}}/g,
+            fallbackModified
+          );
+        }
+      } else {
+        // Handle case where lastModified is empty or undefined
+        formattedHtml = formattedHtml.replace(
+          /{{LAST_MODIFIED}}/g,
+          "Invalid date"
+        );
+      }
+
+      // Format test results last run date
+      if (task.testStatus?.lastRunDate) {
+        try {
+          const formattedLastRun =
+            this.timeFormattingUtility.formatRelativeTime(
+              task.testStatus.lastRunDate
+            );
+          formattedHtml = formattedHtml.replace(
+            /{{LAST_RUN_DATE}}/g,
+            formattedLastRun
+          );
+        } catch (error) {
+          const fallbackLastRun = this.handleTimeFormattingFailure(
+            error as Error,
+            task.testStatus.lastRunDate
+          );
+          formattedHtml = formattedHtml.replace(
+            /{{LAST_RUN_DATE}}/g,
+            fallbackLastRun
+          );
+        }
+      } else {
+        // Handle case where lastRunDate is empty or undefined
+        formattedHtml = formattedHtml.replace(
+          /{{LAST_RUN_DATE}}/g,
+          "Never run"
+        );
+      }
+
+      return formattedHtml;
+    } catch (error) {
+      console.error("Failed to format timestamps in HTML:", error);
+      return html; // Return original HTML if formatting fails
+    }
+  }
+
+  /**
+   * Gets the TimeFormattingUtility instance for testing and external access
+   * Task 3.3.9: Access to time formatting utility for testing and integration
+   *
+   * @returns The TimeFormattingUtility instance
+   */
+  public getTimeFormattingUtility(): TimeFormattingUtility {
+    return this.timeFormattingUtility;
+  }
+
+  /**
+   * Gets the time refresh interval for testing and monitoring
+   * Task 3.3.9: Access to time refresh interval for testing and debugging
+   *
+   * @returns The time refresh interval or null if not set
+   */
+  public getTimeRefreshInterval(): NodeJS.Timeout | null {
+    return this.timeRefreshInterval;
   }
 }
