@@ -3021,6 +3021,29 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
   }
 
   /**
+   * Public method to refresh relative times in the webview
+   * Called by extension to trigger time updates without full webview reload
+   * Task 4.1.3: Enable periodic time refresh from extension level
+   *
+   * @returns Promise that resolves when refresh is complete
+   */
+  public async refreshRelativeTimes(): Promise<void> {
+    try {
+      if (!this.webview || !this.webview.visible || !this.currentTask) {
+        return;
+      }
+
+      // Use the existing refresh method for consistency
+      this.refreshDisplayedTimes();
+
+      console.log("Relative times refreshed successfully");
+    } catch (error) {
+      console.error("Failed to refresh relative times:", error);
+      throw error;
+    }
+  }
+
+  /**
    * Generates CSS styling specifically for empty state components
    * Task 3.3.10: Empty state styling for consistent visual presentation
    *

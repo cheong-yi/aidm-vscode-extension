@@ -27,6 +27,7 @@ let statusBarManager: StatusBarManagerImpl;
 let processManager: ProcessManager;
 let tasksDataService: TasksDataService;
 let taskDetailProvider: TaskDetailCardProvider;
+let timeFormattingUtility: TimeFormattingUtility;
 
 export async function activate(
   context: vscode.ExtensionContext
@@ -140,10 +141,21 @@ export async function activate(
     }
 
     console.log(
+      "=== ACTIVATION STEP 8.5: Initializing TimeFormattingUtility ==="
+    );
+    try {
+      // Initialize shared TimeFormattingUtility instance
+      timeFormattingUtility = new TimeFormattingUtility();
+      console.log("✅ TimeFormattingUtility initialized");
+    } catch (error) {
+      console.error("❌ TimeFormattingUtility initialization failed:", error);
+      throw error;
+    }
+
+    console.log(
       "=== ACTIVATION STEP 8.6: Initializing TaskDetailCardProvider ==="
     );
     try {
-      const timeFormattingUtility = new TimeFormattingUtility();
       taskDetailProvider = new TaskDetailCardProvider(timeFormattingUtility);
       console.log("✅ TaskDetailCardProvider initialized");
     } catch (error) {
@@ -217,6 +229,33 @@ export async function activate(
         error
       );
       // Continue without event synchronization
+    }
+
+    console.log(
+      "=== ACTIVATION STEP 8.9: Setting up periodic time refresh ==="
+    );
+    try {
+      // Set up periodic refresh for relative times (every 1 minute)
+      const timeRefreshInterval = setInterval(() => {
+        // Trigger refresh event for UI components that display relative times
+        if (taskDetailProvider) {
+          taskDetailProvider.refreshRelativeTimes().catch((error) => {
+            console.error("Failed to refresh relative times:", error);
+          });
+        }
+      }, 60000); // 60 seconds
+
+      // Store interval for cleanup
+      context.subscriptions.push({
+        dispose: () => {
+          clearInterval(timeRefreshInterval);
+          console.log("Time refresh interval cleared");
+        },
+      });
+      console.log("✅ Periodic time refresh timer initialized");
+    } catch (error) {
+      console.error("❌ Periodic time refresh setup failed:", error);
+      // Continue without periodic refresh
     }
 
     // Expose TaskDetailCardProvider methods for external use (e.g., tree view integration)

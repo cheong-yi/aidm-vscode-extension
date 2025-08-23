@@ -149,7 +149,7 @@ This implementation plan breaks down the feature into atomic, TDD-friendly tasks
   - Add disposal call to extension cleanup
   - Test: no memory leaks on deactivation
 
-- [ ] 4.1.2 Register TaskDetailCardProvider in extension.ts activate function
+- [x] 4.1.2 Register TaskDetailCardProvider in extension.ts activate function
 
   - Add vscode.window.registerWebviewViewProvider('aidm-vscode-extension.task-details', taskDetailProvider)
   - Pass extensionUri for webview resource loading
@@ -158,7 +158,7 @@ This implementation plan breaks down the feature into atomic, TDD-friendly tasks
   - _Requirements: 10.2, 2.1_
   - _Duration: 15-20 minutes_
 
-- [ ] 4.1.3 Initialize TimeFormattingUtility in extension activate function
+- [x] 4.1.3 Initialize TimeFormattingUtility in extension activate function
 
   - Create TimeFormattingUtility instance for shared use
   - Inject utility into TaskDetailCardProvider for timestamp formatting
@@ -167,7 +167,7 @@ This implementation plan breaks down the feature into atomic, TDD-friendly tasks
   - _Requirements: 9.5, 4.8_
   - _Duration: 15-20 minutes_
 
-- [ ] 4.1.4 Connect UI synchronization event flow in extension
+- [x] 4.1.4 Connect UI synchronization event flow in extension
 
   - Wire TaskTreeViewProvider.onTaskClick to TaskDetailCardProvider.updateTaskDetails
   - Connect TasksDataService events to both UI providers for synchronization
