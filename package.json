@@ -225,7 +225,8 @@
     "test": "jest",
     "lint": "eslint src --ext ts",
     "package": "node package-extension.js",
-    "compile-tsc": "tsc -p ./"
+    "compile-tsc": "tsc -p ./",
+    "pretest": "npm run compile && npm run lint"
   },
   "devDependencies": {
     "@types/jest": "^29.5.14",
