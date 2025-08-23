@@ -22,6 +22,9 @@ export const window = {
     hide: jest.fn(),
     dispose: jest.fn(),
   })),
+  registerWebviewViewProvider: jest.fn(() => ({
+    dispose: jest.fn(),
+  })),
 };
 
 export const workspace = {

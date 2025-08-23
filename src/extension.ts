@@ -19,11 +19,14 @@ import {
   TaskStatusManager,
 } from "./services";
 import { TaskStatus } from "./types/tasks";
+import { TaskDetailCardProvider } from "./tasks/providers/TaskDetailCardProvider";
+import { TimeFormattingUtility } from "./utils";
 
 let mcpClient: MCPClient;
 let statusBarManager: StatusBarManagerImpl;
 let processManager: ProcessManager;
 let tasksDataService: TasksDataService;
+let taskDetailProvider: TaskDetailCardProvider;
 
 export async function activate(
   context: vscode.ExtensionContext
@@ -135,6 +138,96 @@ export async function activate(
       console.error("❌ TasksDataService initialization failed:", error);
       throw error;
     }
+
+    console.log(
+      "=== ACTIVATION STEP 8.6: Initializing TaskDetailCardProvider ==="
+    );
+    try {
+      const timeFormattingUtility = new TimeFormattingUtility();
+      taskDetailProvider = new TaskDetailCardProvider(timeFormattingUtility);
+      console.log("✅ TaskDetailCardProvider initialized");
+    } catch (error) {
+      console.error("❌ TaskDetailCardProvider initialization failed:", error);
+      throw error;
+    }
+
+    console.log(
+      "=== ACTIVATION STEP 8.7: Registering TaskDetailCardProvider as webview view provider ==="
+    );
+    try {
+      const webviewProviderDisposable =
+        vscode.window.registerWebviewViewProvider(
+          "aidm-vscode-extension.task-details",
+          taskDetailProvider
+        );
+      context.subscriptions.push(webviewProviderDisposable);
+      console.log(
+        "✅ TaskDetailCardProvider registered as webview view provider"
+      );
+    } catch (error) {
+      console.error(
+        "❌ TaskDetailCardProvider webview registration failed:",
+        error
+      );
+      // Continue without webview provider
+    }
+
+    console.log(
+      "=== ACTIVATION STEP 8.8: Connecting TaskDetailCardProvider events ==="
+    );
+    try {
+      // Connect TaskDetailCardProvider events to TasksDataService for synchronization
+      // This enables the webview to receive task updates and status changes
+      taskDetailProvider.onStatusChanged(({ taskId, newStatus }) => {
+        console.log(
+          `TaskDetailCardProvider: Status change requested for task ${taskId} to ${newStatus}`
+        );
+        // Update task status via TasksDataService
+        tasksDataService.updateTaskStatus(taskId, newStatus).catch((error) => {
+          console.error(
+            `Failed to update task status via TasksDataService:`,
+            error
+          );
+        });
+      });
+
+      taskDetailProvider.onCursorExecuteRequested(({ taskId }) => {
+        console.log(
+          `TaskDetailCardProvider: Cursor execution requested for task ${taskId}`
+        );
+        // Trigger Cursor execution command (future implementation)
+        vscode.commands
+          .executeCommand("aidm-vscode-extension.executeTaskWithCursor", taskId)
+          .then(
+            () => {
+              console.log(
+                `Cursor execution command triggered successfully for task ${taskId}`
+              );
+            },
+            (error: unknown) => {
+              console.error(`Failed to execute Cursor command:`, error);
+            }
+          );
+      });
+
+      console.log("✅ TaskDetailCardProvider events connected");
+    } catch (error) {
+      console.error(
+        "❌ TaskDetailCardProvider event connection failed:",
+        error
+      );
+      // Continue without event synchronization
+    }
+
+    // Expose TaskDetailCardProvider methods for external use (e.g., tree view integration)
+    // This enables other components to update the detail panel when tasks are selected
+    context.subscriptions.push({
+      dispose: () => {
+        if (taskDetailProvider) {
+          taskDetailProvider.dispose();
+        }
+      },
+    });
 
     console.log("=== ACTIVATION STEP 9: Connecting status listeners ===");
     // Connect process manager status to status bar
