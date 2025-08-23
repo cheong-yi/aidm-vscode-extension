@@ -308,7 +308,8 @@
     "lint": "eslint src --ext ts",
     "package": "node package-extension.js",
     "compile-tsc": "tsc -p ./",
-    "pretest": "npm run compile && npm run lint"
+    "pretest": "npm run compile && npm run lint",
+    "validate-manifest": "node scripts/validate-manifest.js"
   },
   "devDependencies": {
     "@types/jest": "^29.5.14",
