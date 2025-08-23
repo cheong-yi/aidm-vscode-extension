@@ -694,40 +694,54 @@ export async function activate(
       console.error("❌ refreshTasks command failed:", error);
     }
 
-    // Register update task status command - Task 4.4.1b
+    // Register update task status command - Task 4.4.2
     try {
       const updateTaskStatusCommand = vscode.commands.registerCommand(
         getCommandId("updateTaskStatus"),
         async (taskId: string, newStatus: TaskStatus) => {
-          if (!taskId || !newStatus) {
-            vscode.window.showErrorMessage("Task ID and status are required");
+          // Parameter validation - Task 4.4.2 requirements
+          if (!taskId || typeof taskId !== "string") {
+            vscode.window.showErrorMessage(
+              "Task ID is required and must be a string"
+            );
             return;
           }
+
+          if (!newStatus || !Object.values(TaskStatus).includes(newStatus)) {
+            vscode.window.showErrorMessage("Valid task status is required");
+            return;
+          }
+
           try {
             const success = await tasksDataService.updateTaskStatus(
               taskId,
               newStatus
             );
+
             if (success) {
+              const statusDisplayName = newStatus
+                .replace("_", " ")
+                .toLowerCase();
               vscode.window.showInformationMessage(
-                `Task ${taskId} status updated to ${newStatus}`
+                `Task ${taskId} status updated to "${statusDisplayName}"`
               );
             } else {
-              vscode.window.showErrorMessage(
-                `Failed to update task ${taskId} status`
+              vscode.window.showWarningMessage(
+                `Failed to update task ${taskId} status - task may not exist`
               );
             }
           } catch (error) {
+            const errorMessage =
+              error instanceof Error ? error.message : "Unknown error occurred";
             vscode.window.showErrorMessage(
-              `Error updating task status: ${
-                error instanceof Error ? error.message : "Unknown error"
-              }`
+              `Error updating task status: ${errorMessage}`
             );
+            console.error("UpdateTaskStatus command error:", error);
           }
         }
       );
       context.subscriptions.push(updateTaskStatusCommand);
-      console.log("✅ updateTaskStatus command registered");
+      console.log("✅ updateTaskStatus command registered - Task 4.4.2");
     } catch (error) {
       console.error("❌ updateTaskStatus command failed:", error);
     }
