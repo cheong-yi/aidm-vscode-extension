@@ -309,7 +309,8 @@
     "package": "node package-extension.js",
     "compile-tsc": "tsc -p ./",
     "pretest": "npm run compile && npm run lint",
-    "validate-manifest": "node scripts/validate-manifest.js"
+    "validate-manifest": "node scripts/validate-manifest.js",
+    "test:packaging": "node scripts/test-packaging.js"
   },
   "devDependencies": {
     "@types/jest": "^29.5.14",
