@@ -194,6 +194,7 @@ export class MockDataProvider {
         lastModified: "2024-08-22T12:00:00Z",
         estimatedDuration: "10-15 min",
         isExecutable: true,
+        testStatus: undefined, // No tests yet for registration task
       },
       {
         id: "4.2.2",
@@ -208,7 +209,7 @@ export class MockDataProvider {
         lastModified: "2024-08-22T13:00:00Z",
         estimatedDuration: "15-20 min",
         isExecutable: false,
-        testStatus: undefined,
+        testStatus: undefined, // No tests yet for blocked task
       },
       {
         id: "7.1.1",
@@ -272,6 +273,7 @@ export class MockDataProvider {
         lastModified: "2024-08-22T16:00:00Z",
         estimatedDuration: "20-25 min",
         isExecutable: true,
+        testStatus: undefined, // No tests yet for command task
       },
       {
         id: "6.1.2",
