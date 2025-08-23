@@ -217,6 +217,15 @@
           "description": "API key for remote MCP server authentication"
         }
       }
+    },
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "taskmaster",
+          "title": "Taskmaster",
+          "icon": "$(checklist)"
+        }
+      ]
     }
   },
   "scripts": {

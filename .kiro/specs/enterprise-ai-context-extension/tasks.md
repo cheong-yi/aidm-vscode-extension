@@ -243,7 +243,7 @@ This implementation plan breaks down the feature into atomic, TDD-friendly tasks
 
 #### 4.3 Package.json Configuration (CRITICAL BLOCKER 3)
 
-- [ ] 4.3.1a: Add minimal taskmaster viewContainer to package.json (5 min)
+- [x] 4.3.1a: Add minimal taskmaster viewContainer to package.json (5 min)
 
   - Just id, title, and icon fields
   - Test: JSON parses without syntax errors
