@@ -115,6 +115,7 @@ export class MockDataProvider {
         requirements: ["1.1"],
         createdDate: "2024-08-22T10:00:00Z",
         lastModified: "2024-08-22T10:00:00Z",
+        estimatedDuration: "15-20 min",
       },
       {
         id: "2.1.1",
@@ -127,6 +128,7 @@ export class MockDataProvider {
         requirements: ["2.1"],
         createdDate: "2024-08-22T09:00:00Z",
         lastModified: "2024-08-22T11:30:00Z",
+        estimatedDuration: "25-30 min",
       },
       {
         id: "3.1.1",
@@ -139,6 +141,7 @@ export class MockDataProvider {
         requirements: ["1.1", "3.1"],
         createdDate: "2024-08-22T08:00:00Z",
         lastModified: "2024-08-22T14:00:00Z",
+        estimatedDuration: "15-20 min",
       },
     ];
   }

@@ -375,24 +375,24 @@ describe("MockDataProvider", () => {
     it("should return exactly 3 Task objects", async () => {
       // Arrange
       const mockProvider = new MockDataProvider();
-      
+
       // Act
       const result = await mockProvider.getTasks();
-      
+
       // Assert
       expect(result).toHaveLength(3);
-      expect(result[0]).toHaveProperty('id');
-      expect(result[0]).toHaveProperty('title');
-      expect(result[0]).toHaveProperty('status');
+      expect(result[0]).toHaveProperty("id");
+      expect(result[0]).toHaveProperty("title");
+      expect(result[0]).toHaveProperty("status");
     });
 
     it("should return tasks with valid Task interface structure", async () => {
       // Arrange
       const mockProvider = new MockDataProvider();
-      
+
       // Act
       const result = await mockProvider.getTasks();
-      
+
       // Assert
       result.forEach((task) => {
         expect(task).toMatchObject({
@@ -404,7 +404,7 @@ describe("MockDataProvider", () => {
           dependencies: expect.any(Array),
           requirements: expect.any(Array),
           createdDate: expect.any(String),
-          lastModified: expect.any(String)
+          lastModified: expect.any(String),
         });
       });
     });
@@ -412,15 +412,28 @@ describe("MockDataProvider", () => {
     it("should return tasks with valid enum values", async () => {
       // Arrange
       const mockProvider = new MockDataProvider();
-      
+
       // Act
       const result = await mockProvider.getTasks();
-      
+
       // Assert
       result.forEach((task) => {
         expect(Object.values(TaskStatus)).toContain(task.status);
         expect(Object.values(TaskComplexity)).toContain(task.complexity);
       });
+    });
+
+    it("should have estimatedDuration field on all tasks", async () => {
+      // Arrange
+      const mockProvider = new MockDataProvider();
+
+      // Act
+      const result = await mockProvider.getTasks();
+
+      // Assert
+      expect(result[0].estimatedDuration).toBe("15-20 min");
+      expect(result[1].estimatedDuration).toBe("25-30 min");
+      expect(result[2].estimatedDuration).toBe("15-20 min");
     });
   });
 });
