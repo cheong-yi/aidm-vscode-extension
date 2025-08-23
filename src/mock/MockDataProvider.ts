@@ -247,6 +247,24 @@ export class MockDataProvider {
   }
 
   /**
+   * Get task by ID with error handling
+   */
+  async getTaskById(id: string): Promise<Task | null> {
+    if (!id || typeof id !== "string") {
+      return null;
+    }
+
+    try {
+      const tasks = await this.getTasks();
+      const foundTask = tasks.find((task) => task.id === id);
+      return foundTask || null;
+    } catch (error) {
+      console.error("Error retrieving task by ID:", error);
+      return null;
+    }
+  }
+
+  /**
    * Get all requirements (for testing purposes)
    */
   getAllRequirements(): Requirement[] {

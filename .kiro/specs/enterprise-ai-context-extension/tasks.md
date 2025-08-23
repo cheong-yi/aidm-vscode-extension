@@ -207,12 +207,12 @@ This implementation plan breaks down the feature into atomic, TDD-friendly tasks
   - Add 7 more tasks with different statuses
   - Test: status distribution covers all enum values
 
-- [ ] 4.2.1e: Add simple dependency chains to existing tasks (10 min)
+- [x] 4.2.1e: Add simple dependency chains to existing tasks (10 min)
 
   - Link 3-4 tasks with basic dependencies
   - Test: dependency references point to valid task IDs
 
-- [ ] 4.2.2 Add getTaskById method to MockDataProvider
+- [x] 4.2.2 Add getTaskById method to MockDataProvider
 
   - Implement lookup logic for individual tasks by ID
   - Return null for invalid task IDs with proper error handling

@@ -516,4 +516,43 @@ describe("MockDataProvider", () => {
       expect(invalidDeps).toHaveLength(0);
     });
   });
+
+  describe("getTaskById", () => {
+    it("should return specific task by valid ID", async () => {
+      // Arrange
+      const mockProvider = new MockDataProvider();
+      const expectedTaskId = "1.1.1";
+
+      // Act
+      const result = await mockProvider.getTaskById(expectedTaskId);
+
+      // Assert
+      expect(result).not.toBeNull();
+      expect(result!.id).toBe(expectedTaskId);
+      expect(result!.title).toBe(
+        "Create directory structure for task management components"
+      );
+    });
+
+    it("should return null for invalid task ID", async () => {
+      // Arrange
+      const mockProvider = new MockDataProvider();
+
+      // Act
+      const result = await mockProvider.getTaskById("nonexistent.id");
+
+      // Assert
+      expect(result).toBeNull();
+    });
+
+    it("should return null for empty or invalid input", async () => {
+      // Arrange
+      const mockProvider = new MockDataProvider();
+
+      // Act & Assert
+      expect(await mockProvider.getTaskById("")).toBeNull();
+      expect(await mockProvider.getTaskById(null as any)).toBeNull();
+      expect(await mockProvider.getTaskById(undefined as any)).toBeNull();
+    });
+  });
 });
