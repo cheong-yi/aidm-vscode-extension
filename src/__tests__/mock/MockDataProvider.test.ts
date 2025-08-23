@@ -515,6 +515,56 @@ describe("MockDataProvider", () => {
       );
       expect(invalidDeps).toHaveLength(0);
     });
+
+    it("should have realistic test results with proper failure categorization", async () => {
+      // Arrange
+      const mockProvider = new MockDataProvider();
+
+      // Act
+      const result = await mockProvider.getTasks();
+
+      // Assert
+      const taskWithTests = result.find((task) => task.id === "2.1.1");
+      expect(taskWithTests).toBeDefined();
+      expect(taskWithTests!.testStatus).not.toBeNull();
+      expect(taskWithTests!.testStatus!.totalTests).toBeGreaterThan(0);
+      expect(taskWithTests!.testStatus!.failingTestsList).toHaveLength(
+        taskWithTests!.testStatus!.failedTests
+      );
+
+      // Verify failure categories are valid
+      const validCategories = [
+        "assertion",
+        "type",
+        "filesystem",
+        "timeout",
+        "network",
+      ];
+      expect(taskWithTests!.testStatus!.failingTestsList).toBeDefined();
+      taskWithTests!.testStatus!.failingTestsList!.forEach((failure) => {
+        expect(validCategories).toContain(failure.category);
+      });
+
+      // Verify test status distribution
+      const tasksWithTestStatus = result.filter(
+        (task) => task.testStatus !== undefined
+      );
+      expect(tasksWithTestStatus.length).toBeGreaterThanOrEqual(4);
+
+      // Verify some tasks have no tests yet
+      const tasksWithoutTests = result.filter(
+        (task) => task.testStatus === undefined
+      );
+      expect(tasksWithoutTests.length).toBeGreaterThanOrEqual(2);
+
+      // Verify realistic test coverage values
+      tasksWithTestStatus.forEach((task) => {
+        if (task.testStatus!.coverage !== undefined) {
+          expect(task.testStatus!.coverage).toBeGreaterThanOrEqual(0);
+          expect(task.testStatus!.coverage).toBeLessThanOrEqual(100);
+        }
+      });
+    });
   });
 
   describe("getTaskById", () => {

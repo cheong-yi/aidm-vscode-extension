@@ -131,6 +131,32 @@ export class MockDataProvider {
         lastModified: "2024-08-22T11:30:00Z",
         estimatedDuration: "25-30 min",
         isExecutable: false, // false because status is IN_PROGRESS
+        testStatus: {
+          lastRunDate: "2024-08-22T14:30:00Z",
+          totalTests: 12,
+          passedTests: 9,
+          failedTests: 3,
+          failingTestsList: [
+            {
+              name: "should initialize TasksDataService correctly",
+              message:
+                "TypeError: Cannot read property 'mockDataProvider' of undefined",
+              category: "type",
+            },
+            {
+              name: "should handle HTTP timeout gracefully",
+              message: "Error: Request timeout after 5000ms",
+              category: "timeout",
+            },
+            {
+              name: "should validate task data structure",
+              message:
+                "AssertionError: Expected object to have property 'estimatedDuration'",
+              category: "assertion",
+            },
+          ],
+          coverage: 78,
+        },
       },
       {
         id: "3.1.1",
@@ -145,6 +171,14 @@ export class MockDataProvider {
         lastModified: "2024-08-22T14:00:00Z",
         estimatedDuration: "15-20 min",
         isExecutable: false, // false because status is COMPLETED
+        testStatus: {
+          lastRunDate: "2024-08-22T16:00:00Z",
+          totalTests: 8,
+          passedTests: 8,
+          failedTests: 0,
+          failingTestsList: [],
+          coverage: 92,
+        },
       },
       {
         id: "4.1.1",
@@ -173,6 +207,7 @@ export class MockDataProvider {
         lastModified: "2024-08-22T13:00:00Z",
         estimatedDuration: "15-20 min",
         isExecutable: false,
+        testStatus: undefined,
       },
       {
         id: "7.1.1",
@@ -187,6 +222,41 @@ export class MockDataProvider {
         lastModified: "2024-08-22T15:30:00Z",
         estimatedDuration: "20-25 min",
         isExecutable: false,
+        testStatus: {
+          lastRunDate: "2024-08-22T13:45:00Z",
+          totalTests: 25,
+          passedTests: 20,
+          failedTests: 5,
+          failingTestsList: [
+            {
+              name: "should register all extension components",
+              message:
+                "Error: TreeDataProvider not found in context.subscriptions",
+              category: "assertion",
+            },
+            {
+              name: "should handle file system permissions",
+              message: "EACCES: permission denied, open '/usr/local/tasks.md'",
+              category: "filesystem",
+            },
+            {
+              name: "should connect to MCP server",
+              message: "NetworkError: Connection refused on localhost:3000",
+              category: "network",
+            },
+            {
+              name: "should validate task status transitions",
+              message: "TypeError: status.toLowerCase is not a function",
+              category: "type",
+            },
+            {
+              name: "should complete integration test within time limit",
+              message: "TimeoutError: Test exceeded 10000ms timeout",
+              category: "timeout",
+            },
+          ],
+          coverage: 65,
+        },
       },
       {
         id: "5.1.1",
@@ -229,6 +299,30 @@ export class MockDataProvider {
         lastModified: "2024-08-22T18:45:00Z",
         estimatedDuration: "20-25 min",
         isExecutable: false,
+        testStatus: {
+          lastRunDate: "2024-08-22T15:20:00Z",
+          totalTests: 15,
+          passedTests: 12,
+          failedTests: 3,
+          failingTestsList: [
+            {
+              name: "should inject dependencies correctly",
+              message: "Error: MockDataProvider is not properly instantiated",
+              category: "assertion",
+            },
+            {
+              name: "should handle service initialization errors",
+              message: "ReferenceError: TasksDataService is not defined",
+              category: "type",
+            },
+            {
+              name: "should clean up resources on deactivation",
+              message: "Error: Cannot call dispose() on undefined subscription",
+              category: "assertion",
+            },
+          ],
+          coverage: 82,
+        },
       },
       {
         id: "3.2.10",
