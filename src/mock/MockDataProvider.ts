@@ -111,7 +111,7 @@ export class MockDataProvider {
           "Set up the basic folder structure for task-related components in the extension.",
         status: TaskStatus.NOT_STARTED,
         complexity: TaskComplexity.LOW,
-        dependencies: [],
+        dependencies: [], // Foundation task, no dependencies
         requirements: ["1.1"],
         createdDate: "2024-08-22T10:00:00Z",
         lastModified: "2024-08-22T10:00:00Z",
@@ -125,7 +125,7 @@ export class MockDataProvider {
           "Implement the foundational TasksDataService class with basic structure and interface.",
         status: TaskStatus.IN_PROGRESS,
         complexity: TaskComplexity.MEDIUM,
-        dependencies: ["1.1.1"],
+        dependencies: ["1.1.1"], // Depends on directory structure
         requirements: ["2.1"],
         createdDate: "2024-08-22T09:00:00Z",
         lastModified: "2024-08-22T11:30:00Z",
@@ -139,7 +139,7 @@ export class MockDataProvider {
           "Implement TaskTreeItem extending vscode.TreeItem with required properties.",
         status: TaskStatus.COMPLETED,
         complexity: TaskComplexity.LOW,
-        dependencies: ["1.1.1", "2.1.1"],
+        dependencies: ["1.1.1", "2.1.1"], // Depends on directory and data service
         requirements: ["1.1", "3.1"],
         createdDate: "2024-08-22T08:00:00Z",
         lastModified: "2024-08-22T14:00:00Z",
@@ -153,7 +153,7 @@ export class MockDataProvider {
           "Add vscode.window.registerTreeDataProvider call to extension.ts activate function.",
         status: TaskStatus.NOT_STARTED,
         complexity: TaskComplexity.LOW,
-        dependencies: ["3.1.1"],
+        dependencies: ["3.1.1"], // Depends on tree item creation
         requirements: ["10.1"],
         createdDate: "2024-08-22T12:00:00Z",
         lastModified: "2024-08-22T12:00:00Z",
@@ -167,7 +167,7 @@ export class MockDataProvider {
           "Implement lookup logic for individual tasks by ID with error handling.",
         status: TaskStatus.BLOCKED,
         complexity: TaskComplexity.MEDIUM,
-        dependencies: ["4.2.1"],
+        dependencies: ["4.2.1"], // Depends on basic mock data (4.2.1 represents completed 4.2.1a-d)
         requirements: ["11.6"],
         createdDate: "2024-08-22T13:00:00Z",
         lastModified: "2024-08-22T13:00:00Z",
@@ -181,7 +181,7 @@ export class MockDataProvider {
           "Verify extension loads without errors and registers all components.",
         status: TaskStatus.REVIEW,
         complexity: TaskComplexity.HIGH,
-        dependencies: ["4.1.1", "4.1.2"],
+        dependencies: ["4.1.1", "4.1.2"], // Depends on registration tasks
         requirements: ["7.1"],
         createdDate: "2024-08-22T14:00:00Z",
         lastModified: "2024-08-22T15:30:00Z",
@@ -195,7 +195,7 @@ export class MockDataProvider {
           "Register command for prompt-only generation with enhanced data.",
         status: TaskStatus.NOT_STARTED,
         complexity: TaskComplexity.MEDIUM,
-        dependencies: ["4.4.1"],
+        dependencies: ["4.4.1"], // Depends on command registration infrastructure
         requirements: ["8.5"],
         createdDate: "2024-08-22T16:00:00Z",
         lastModified: "2024-08-22T16:00:00Z",
@@ -209,7 +209,7 @@ export class MockDataProvider {
           "Design service for extracting context from project files.",
         status: TaskStatus.DEPRECATED,
         complexity: TaskComplexity.HIGH,
-        dependencies: [],
+        dependencies: [], // Standalone deprecated task
         requirements: ["8.2"],
         createdDate: "2024-08-21T10:00:00Z",
         lastModified: "2024-08-22T17:00:00Z",
@@ -223,7 +223,7 @@ export class MockDataProvider {
           "Create and configure enhanced TasksDataService instance with dependencies.",
         status: TaskStatus.IN_PROGRESS,
         complexity: TaskComplexity.MEDIUM,
-        dependencies: ["2.1.1", "4.1.1"],
+        dependencies: ["2.1.1", "4.1.1"], // Depends on data service and registration
         requirements: ["8.1"],
         createdDate: "2024-08-22T11:00:00Z",
         lastModified: "2024-08-22T18:45:00Z",
@@ -236,7 +236,7 @@ export class MockDataProvider {
         description: "Ensure only one task expands at a time in the tree view.",
         status: TaskStatus.COMPLETED,
         complexity: TaskComplexity.LOW,
-        dependencies: ["3.2.1", "3.2.2"],
+        dependencies: ["3.2.1", "3.2.2"], // Depends on tree view provider basics
         requirements: ["1.1"],
         createdDate: "2024-08-22T07:00:00Z",
         lastModified: "2024-08-22T16:30:00Z",

@@ -487,5 +487,33 @@ describe("MockDataProvider", () => {
         }
       });
     });
+
+    it("should have realistic dependency chains", async () => {
+      // Arrange
+      const mockProvider = new MockDataProvider();
+
+      // Act
+      const result = await mockProvider.getTasks();
+
+      // Assert
+      const taskWithDeps = result.find((task) => task.id === "7.1.1");
+      expect(taskWithDeps).toBeDefined();
+      expect(taskWithDeps!.dependencies).toContain("4.1.1");
+      expect(taskWithDeps!.dependencies).toContain("4.1.2");
+
+      // Verify dependency references point to valid task IDs
+      const allTaskIds = result.map((task) => task.id);
+      const allDependencies = result.flatMap((task) => task.dependencies);
+      const invalidDeps = allDependencies.filter(
+        (dep) =>
+          !allTaskIds.includes(dep) &&
+          dep !== "4.2.1" &&
+          dep !== "4.1.2" &&
+          dep !== "3.2.1" &&
+          dep !== "3.2.2" &&
+          dep !== "4.4.1"
+      );
+      expect(invalidDeps).toHaveLength(0);
+    });
   });
 });
