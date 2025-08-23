@@ -117,6 +117,7 @@ export class MockDataProvider {
         lastModified: "2024-08-22T10:00:00Z",
         estimatedDuration: "15-20 min",
         isExecutable: true, // true because status is NOT_STARTED
+        testStatus: undefined, // No tests yet for foundation task
       },
       {
         id: "2.1.1",
@@ -285,6 +286,46 @@ export class MockDataProvider {
         lastModified: "2024-08-22T17:00:00Z",
         estimatedDuration: "20-25 min",
         isExecutable: false,
+        testStatus: {
+          lastRunDate: "2024-08-22T17:00:00Z",
+          totalTests: 18,
+          passedTests: 12,
+          failedTests: 6,
+          failingTestsList: [
+            {
+              name: "should extract context from legacy file formats",
+              message: "Error: Unsupported file format detected",
+              category: "assertion",
+            },
+            {
+              name: "should handle deprecated API endpoints",
+              message: "TypeError: Cannot read property 'legacy' of undefined",
+              category: "type",
+            },
+            {
+              name: "should validate deprecated configuration schema",
+              message:
+                "ValidationError: Schema version 1.0 is no longer supported",
+              category: "assertion",
+            },
+            {
+              name: "should process deprecated data sources",
+              message: "Error: Data source 'legacy-db' has been deprecated",
+              category: "filesystem",
+            },
+            {
+              name: "should handle deprecated authentication methods",
+              message: "SecurityError: Basic auth is no longer supported",
+              category: "assertion",
+            },
+            {
+              name: "should migrate deprecated data structures",
+              message: "Error: Migration timeout after 30000ms",
+              category: "timeout",
+            },
+          ],
+          coverage: 45,
+        },
       },
       {
         id: "8.1.2",
@@ -336,6 +377,14 @@ export class MockDataProvider {
         lastModified: "2024-08-22T16:30:00Z",
         estimatedDuration: "15-20 min",
         isExecutable: false,
+        testStatus: {
+          lastRunDate: "2024-08-22T16:30:00Z",
+          totalTests: 6,
+          passedTests: 6,
+          failedTests: 0,
+          failingTestsList: [],
+          coverage: 95,
+        },
       },
     ];
   }
