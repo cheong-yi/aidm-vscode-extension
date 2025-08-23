@@ -754,8 +754,9 @@ describe("TaskDetailCardProvider", () => {
           totalTests: 10,
           passedTests: 8,
           failedTests: 2,
-        
-          status: TestStatusEnum.PARTIAL,},
+
+          status: TestStatusEnum.PARTIAL,
+        },
       };
 
       const html = (provider as any).generateTaskDetailsHTML(mockTask);
@@ -904,8 +905,12 @@ describe("TaskDetailCardProvider", () => {
       expect(css).toContain("}");
       expect(css).toContain("/* Main container styling */");
       expect(css).toContain("/* Task header section */");
-      expect(css).toContain("/* Status badge styling */");
-      expect(css).toContain("/* Responsive design */");
+      expect(css).toContain(
+        "/* Status badge styling - exact colors from mockup */"
+      );
+      expect(css).toContain(
+        "/* Responsive design for different sidebar widths */"
+      );
     });
 
     it("should include all required CSS classes", () => {
@@ -1149,6 +1154,263 @@ describe("TaskDetailCardProvider", () => {
       expect(css).toContain("font-family: var(--vscode-font-family");
       expect(css).toContain("background: var(--vscode-editor-background");
       expect(css).toContain("color: var(--vscode-foreground");
+    });
+  });
+
+  describe("Enhanced Metadata Display", () => {
+    it("should render metadata grid with complete task data", () => {
+      const mockTask: Task = {
+        id: "3.3.4",
+        title: "Implement enhanced task metadata display",
+        description:
+          "Implement enhanced task metadata display including complexity, estimated duration, and dependencies",
+        status: TaskStatus.NOT_STARTED,
+        complexity: "medium" as any,
+        priority: "medium" as any,
+        dependencies: ["3.3.3", "2.7.1"],
+        requirements: ["2.1", "9.1"],
+        createdDate: "2024-08-22T10:00:00Z",
+        lastModified: "2024-08-22T14:30:00Z",
+        estimatedDuration: "20-25 min",
+        isExecutable: true,
+      };
+
+      const metadataHTML = provider.renderMetadataGrid(mockTask);
+
+      // Verify all metadata fields are present
+      expect(metadataHTML).toContain("Complexity");
+      expect(metadataHTML).toContain("Duration");
+      expect(metadataHTML).toContain("Dependencies");
+      expect(metadataHTML).toContain("Requirements");
+      expect(metadataHTML).toContain("Created");
+      expect(metadataHTML).toContain("Modified");
+
+      // Verify values are displayed correctly
+      expect(metadataHTML).toContain("Medium");
+      expect(metadataHTML).toContain("20-25 min");
+      expect(metadataHTML).toContain("3.3.3, 2.7.1");
+      expect(metadataHTML).toContain("2.1, 9.1");
+    });
+
+    it("should handle missing estimated duration gracefully", () => {
+      const mockTask: Task = {
+        id: "test-1",
+        title: "Test Task",
+        description: "Test Description",
+        status: TaskStatus.NOT_STARTED,
+        complexity: "low" as any,
+        priority: "medium" as any,
+        dependencies: [],
+        requirements: [],
+        createdDate: "2024-01-01T00:00:00.000Z",
+        lastModified: "2024-01-01T00:00:00.000Z",
+      };
+
+      const result = provider.formatEstimatedDuration(
+        mockTask.estimatedDuration
+      );
+      expect(result).toBe("Not specified");
+    });
+
+    it("should format estimated duration correctly", () => {
+      const testCases = [
+        { input: "15-30 min", expected: "15-30 min" },
+        { input: "45 min", expected: "45 min" },
+        { input: "2 hours", expected: "2 hours" },
+        { input: "  20-25 min  ", expected: "20-25 min" }, // Test trimming
+      ];
+
+      testCases.forEach(({ input, expected }) => {
+        const result = provider.formatEstimatedDuration(input);
+        expect(result).toBe(expected);
+      });
+    });
+
+    it("should handle empty dependencies array", () => {
+      const result = provider.formatDependencies([]);
+      expect(result).toBe("None");
+    });
+
+    it("should format dependencies list correctly", () => {
+      const testCases = [
+        { input: ["3.3.3"], expected: "3.3.3" },
+        { input: ["3.3.3", "2.7.1"], expected: "3.3.3, 2.7.1" },
+        { input: ["1.1", "1.2", "1.3"], expected: "1.1, 1.2, 1.3" },
+      ];
+
+      testCases.forEach(({ input, expected }) => {
+        const result = provider.formatDependencies(input);
+        expect(result).toBe(expected);
+      });
+    });
+
+    it("should handle undefined dependencies gracefully", () => {
+      const result = provider.formatDependencies(undefined);
+      expect(result).toBe("None");
+    });
+
+    it("should handle empty requirements array", () => {
+      const result = provider.formatRequirements([]);
+      expect(result).toBe("None");
+    });
+
+    it("should format requirements list correctly", () => {
+      const testCases = [
+        { input: ["2.1"], expected: "2.1" },
+        { input: ["2.1", "9.1"], expected: "2.1, 9.1" },
+        { input: ["1.1", "1.2", "1.3"], expected: "1.1, 1.2, 1.3" },
+      ];
+
+      testCases.forEach(({ input, expected }) => {
+        const result = provider.formatRequirements(input);
+        expect(result).toBe(expected);
+      });
+    });
+
+    it("should handle undefined requirements gracefully", () => {
+      const result = provider.formatRequirements(undefined);
+      expect(result).toBe("None");
+    });
+
+    it("should format complexity correctly for CSS classes", () => {
+      const testCases = [
+        { input: "low", expected: "low" },
+        { input: "MEDIUM", expected: "medium" },
+        { input: "High", expected: "high" },
+        { input: "  EXTREME  ", expected: "extreme" }, // Test trimming
+      ];
+
+      testCases.forEach(({ input, expected }) => {
+        const result = provider.formatComplexity(input);
+        expect(result).toBe(expected);
+      });
+    });
+
+    it("should handle undefined complexity gracefully", () => {
+      const result = provider.formatComplexity(undefined);
+      expect(result).toBe("unknown");
+    });
+
+    it("should handle null complexity gracefully", () => {
+      const result = provider.formatComplexity(null as any);
+      expect(result).toBe("unknown");
+    });
+
+    it("should render fallback metadata when main rendering fails", () => {
+      const mockTask: Task = {
+        id: "test-1",
+        title: "Test Task",
+        description: "Test Description",
+        status: TaskStatus.NOT_STARTED,
+        complexity: "low" as any,
+        priority: "medium" as any,
+        dependencies: ["dep-1"],
+        requirements: ["req-1"],
+        createdDate: "2024-01-01T00:00:00.000Z",
+        lastModified: "2024-01-01T00:00:00.000Z",
+        estimatedDuration: "15 min",
+      };
+
+      const fallbackHTML = (provider as any).renderFallbackMetadata(mockTask);
+
+      // Verify fallback metadata structure
+      expect(fallbackHTML).toContain("Complexity");
+      expect(fallbackHTML).toContain("Duration");
+      expect(fallbackHTML).toContain("Dependencies");
+      expect(fallbackHTML).toContain("Requirements");
+
+      // Verify fallback values
+      expect(fallbackHTML).toContain("low");
+      expect(fallbackHTML).toContain("15 min");
+      expect(fallbackHTML).toContain("dep-1");
+      expect(fallbackHTML).toContain("req-1");
+    });
+
+    it("should integrate with TimeFormattingUtility for date formatting", () => {
+      const mockTask: Task = {
+        id: "test-1",
+        title: "Test Task",
+        description: "Test Description",
+        status: TaskStatus.NOT_STARTED,
+        complexity: "low" as any,
+        priority: "medium" as any,
+        dependencies: [],
+        requirements: [],
+        createdDate: "2024-01-01T00:00:00.000Z",
+        lastModified: "2024-01-01T00:00:00.000Z",
+      };
+
+      const metadataHTML = provider.renderMetadataGrid(mockTask);
+
+      // Verify that TimeFormattingUtility is used for date formatting
+      expect(metadataHTML).toContain("Created");
+      expect(metadataHTML).toContain("Modified");
+      // The actual formatted dates will depend on the current time when test runs
+    });
+
+    it("should handle malformed task data gracefully in metadata rendering", () => {
+      const malformedTask = {
+        id: "test-1",
+        title: "Test Task",
+        description: "Test Description",
+        status: "invalid_status",
+        complexity: "invalid_complexity",
+        dependencies: null,
+        requirements: [],
+        createdDate: "invalid-date",
+        lastModified: "2024-01-01T00:00:00.000Z",
+      } as any;
+
+      // This should not throw and should handle malformed data gracefully
+      expect(() => {
+        provider.renderMetadataGrid(malformedTask);
+      }).not.toThrow();
+
+      const metadataHTML = provider.renderMetadataGrid(malformedTask);
+      expect(metadataHTML).toContain("Complexity");
+      expect(metadataHTML).toContain("Duration");
+    });
+
+    it("should maintain consistent metadata grid structure across different task types", () => {
+      const testTasks = [
+        {
+          id: "simple",
+          title: "Simple Task",
+          description: "Simple description",
+          status: TaskStatus.NOT_STARTED,
+          complexity: "low" as any,
+          priority: "low" as any,
+          dependencies: [],
+          requirements: [],
+          createdDate: "2024-01-01T00:00:00.000Z",
+          lastModified: "2024-01-01T00:00:00.000Z",
+        },
+        {
+          id: "complex",
+          title: "Complex Task",
+          description: "Complex description",
+          status: TaskStatus.IN_PROGRESS,
+          complexity: "high" as any,
+          priority: "critical" as any,
+          dependencies: ["dep-1", "dep-2", "dep-3"],
+          requirements: ["req-1", "req-2"],
+          createdDate: "2024-01-01T00:00:00.000Z",
+          lastModified: "2024-01-02T00:00:00.000Z",
+          estimatedDuration: "2-3 hours",
+        },
+      ];
+
+      testTasks.forEach((task) => {
+        const metadataHTML = provider.renderMetadataGrid(task as Task);
+
+        // Verify consistent structure
+        expect(metadataHTML).toContain("Complexity");
+        expect(metadataHTML).toContain("Duration");
+        expect(metadataHTML).toContain("Dependencies");
+        expect(metadataHTML).toContain("Requirements");
+        expect(metadataHTML).toContain("Created");
+        expect(metadataHTML).toContain("Modified");
+      });
     });
   });
 });

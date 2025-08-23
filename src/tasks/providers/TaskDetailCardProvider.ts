@@ -10,6 +10,7 @@
 
 import * as vscode from "vscode";
 import { Task, TaskStatus } from "../types";
+import { TimeFormattingUtility } from "../../utils/TimeFormattingUtility";
 
 /**
  * TaskDetailCardProvider implements vscode.WebviewViewProvider to display
@@ -83,7 +84,16 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
    */
   private readonly disposables: vscode.Disposable[] = [];
 
+  /**
+   * Time formatting utility for duration and date formatting
+   * Used for enhanced metadata display
+   */
+  private readonly timeFormatter: TimeFormattingUtility;
+
   constructor() {
+    // Initialize time formatting utility
+    this.timeFormatter = new TimeFormattingUtility();
+
     // Initialize event emitters for webview communication
     this._onTaskSelected = new vscode.EventEmitter<Task>();
     this.onTaskSelected = this._onTaskSelected.event;
@@ -373,11 +383,27 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
             <div class="task-meta">
               <div class="meta-item">
                 <div class="meta-label">Complexity</div>
-                <div class="meta-value complexity-${task.complexity.toLowerCase()}">${this.getComplexityDisplayName(task.complexity)}</div>
+                <div class="meta-value complexity-${this.formatComplexity(task.complexity)}">${this.getComplexityDisplayName(task.complexity)}</div>
               </div>
               <div class="meta-item">
-                <div class="meta-label">Estimated</div>
-                <div class="meta-value">${task.estimatedDuration || 'Not specified'}</div>
+                <div class="meta-label">Duration</div>
+                <div class="meta-value duration">${this.formatEstimatedDuration(task.estimatedDuration)}</div>
+              </div>
+              <div class="meta-item">
+                <div class="meta-label">Dependencies</div>
+                <div class="meta-value dependencies">${this.formatDependencies(task.dependencies)}</div>
+              </div>
+              <div class="meta-item">
+                <div class="meta-label">Requirements</div>
+                <div class="meta-value requirements">${this.formatRequirements(task.requirements)}</div>
+              </div>
+              <div class="meta-item">
+                <div class="meta-label">Created</div>
+                <div class="meta-value created-date">${this.timeFormatter.formatRelativeTime(task.createdDate)}</div>
+              </div>
+              <div class="meta-item">
+                <div class="meta-label">Modified</div>
+                <div class="meta-value modified-date">${this.timeFormatter.formatRelativeTime(task.lastModified)}</div>
               </div>
             </div>
             
@@ -537,12 +563,35 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
         margin: 0;
       }
 
-      /* Metadata grid layout */
+      /* Metadata grid layout - enhanced for 6 metadata items */
       .task-meta {
         display: grid;
         grid-template-columns: 1fr 1fr;
         gap: 12px;
         margin-bottom: 16px;
+      }
+
+      /* Enhanced metadata styling for specific fields */
+      .meta-value.duration {
+        color: var(--vscode-foreground, #ffffff);
+      }
+
+      .meta-value.dependencies {
+        color: #dcdcaa;
+        font-family: 'Courier New', monospace;
+        font-size: 11px;
+      }
+
+      .meta-value.requirements {
+        color: #dcdcaa;
+        font-family: 'Courier New', monospace;
+        font-size: 11px;
+      }
+
+      .meta-value.created-date,
+      .meta-value.modified-date {
+        color: var(--vscode-descriptionForeground, #969696);
+        font-size: 11px;
       }
 
       .meta-item {
@@ -1283,5 +1332,164 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
     } catch (error) {
       console.error("Error during TaskDetailCardProvider disposal:", error);
     }
+  }
+
+  /**
+   * Renders enhanced task metadata in organized grid layout
+   * Called when generating the metadata section for task details
+   *
+   * @param task - The task to render metadata for
+   * @returns HTML string for enhanced metadata grid
+   */
+  public renderMetadataGrid(task: Task): string {
+    try {
+      return `
+        <div class="task-meta">
+          <div class="meta-item">
+            <div class="meta-label">Complexity</div>
+            <div class="meta-value complexity-${this.formatComplexity(task.complexity)}">${this.getComplexityDisplayName(task.complexity)}</div>
+          </div>
+          <div class="meta-item">
+            <div class="meta-label">Duration</div>
+            <div class="meta-value duration">${this.formatEstimatedDuration(task.estimatedDuration)}</div>
+          </div>
+          <div class="meta-item">
+            <div class="meta-label">Dependencies</div>
+            <div class="meta-value dependencies">${this.formatDependencies(task.dependencies)}</div>
+          </div>
+          <div class="meta-item">
+            <div class="meta-label">Requirements</div>
+            <div class="meta-value requirements">${this.formatRequirements(task.requirements)}</div>
+          </div>
+          <div class="meta-item">
+            <div class="meta-label">Created</div>
+            <div class="meta-value created-date">${this.timeFormatter.formatRelativeTime(task.createdDate)}</div>
+          </div>
+          <div class="meta-item">
+            <div class="meta-label">Modified</div>
+            <div class="meta-value modified-date">${this.timeFormatter.formatRelativeTime(task.lastModified)}</div>
+          </div>
+        </div>
+      `;
+    } catch (error) {
+      console.error("Failed to render metadata grid:", error);
+      return this.renderFallbackMetadata(task);
+    }
+  }
+
+  /**
+   * Formats estimated duration for display
+   * Called when displaying task duration in metadata
+   *
+   * @param duration - Estimated duration string (e.g., "15-30 min")
+   * @returns Formatted duration string or fallback text
+   */
+  public formatEstimatedDuration(duration?: string): string {
+    if (!duration || duration.trim() === "") {
+      return "Not specified";
+    }
+
+    try {
+      // Use TimeFormattingUtility to parse and format duration if needed
+      const parsedDuration = this.timeFormatter.parseEstimatedDuration(duration);
+      if (parsedDuration > 0) {
+        // Return original format for now, could be enhanced with parsed formatting
+        return duration.trim();
+      }
+      return duration.trim();
+    } catch (error) {
+      console.warn("Failed to format estimated duration:", error);
+      return duration.trim();
+    }
+  }
+
+  /**
+   * Formats dependencies list for display
+   * Called when displaying task dependencies in metadata
+   *
+   * @param dependencies - Array of dependency task IDs
+   * @returns Formatted dependencies string
+   */
+  public formatDependencies(dependencies?: string[]): string {
+    if (!dependencies || dependencies.length === 0) {
+      return "None";
+    }
+
+    try {
+      return dependencies.join(", ");
+    } catch (error) {
+      console.warn("Failed to format dependencies:", error);
+      return "Error loading dependencies";
+    }
+  }
+
+  /**
+   * Formats requirements list for display
+   * Called when displaying task requirements in metadata
+   *
+   * @param requirements - Array of requirement IDs
+   * @returns Formatted requirements string
+   */
+  public formatRequirements(requirements?: string[]): string {
+    if (!requirements || requirements.length === 0) {
+      return "None";
+    }
+
+    try {
+      return requirements.join(", ");
+    } catch (error) {
+      console.warn("Failed to format requirements:", error);
+      return "Error loading requirements";
+    }
+  }
+
+  /**
+   * Formats complexity for CSS class and display
+   * Called when generating complexity styling classes
+   *
+   * @param complexity - Task complexity value
+   * @returns Formatted complexity string for CSS classes
+   */
+  public formatComplexity(complexity?: string): string {
+    if (!complexity) {
+      return "unknown";
+    }
+
+    try {
+      return complexity.toLowerCase().trim();
+    } catch (error) {
+      console.warn("Failed to format complexity:", error);
+      return "unknown";
+    }
+  }
+
+  /**
+   * Renders fallback metadata when main rendering fails
+   * Called when there's an error in metadata rendering
+   *
+   * @param task - The task to render fallback metadata for
+   * @returns Fallback metadata HTML string
+   */
+  private renderFallbackMetadata(task: Task): string {
+    return `
+      <div class="task-meta">
+        <div class="meta-item">
+          <div class="meta-label">Complexity</div>
+          <div class="meta-value">${task.complexity || "Unknown"}</div>
+        </div>
+        <div class="meta-item">
+          <div class="meta-label">Duration</div>
+          <div class="meta-value">${task.estimatedDuration || "Not specified"}</div>
+        </div>
+        <div class="meta-item">
+          <div class="meta-label">Dependencies</div>
+          <div class="meta-value">${task.dependencies?.length ? task.dependencies.join(", ") : "None"}</div>
+        </div>
+        <div class="meta-item">
+          <div class="meta-label">Requirements</div>
+          <div class="meta-value">${task.requirements?.length ? task.requirements.join(", ") : "None"}</div>
+        </div>
+      </div>
+    `;
   }
 }
