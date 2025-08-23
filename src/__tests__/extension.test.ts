@@ -35,7 +35,7 @@ describe("Extension", () => {
       const consoleSpy = jest.spyOn(console, "log");
       activate(mockContext);
       expect(consoleSpy).toHaveBeenCalledWith(
-        "Enterprise AI Context extension is now active!"
+        "🚀 AiDM VSCode Extension activation started!"
       );
     });
   });

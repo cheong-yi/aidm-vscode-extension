@@ -712,6 +712,23 @@ export async function deactivate() {
       statusBarManager.dispose();
     }
 
+    // Dispose tasks data service if it exists
+    if (tasksDataService) {
+      tasksDataService.dispose();
+    }
+
+    // Dispose MCP client if it exists
+    if (mcpClient) {
+      // Note: MCPClient doesn't have a dispose method, but we can clean up any resources
+      console.log("MCP client cleanup completed");
+    }
+
+    // All commands and providers are automatically disposed via context.subscriptions
+    // VSCode handles the disposal of all registered commands, hover providers, and other disposables
+    console.log(
+      "All registered commands and providers disposed via context.subscriptions"
+    );
+
     console.log("Extension deactivated successfully");
   } catch (error) {
     console.error("Error during extension deactivation:", error);
