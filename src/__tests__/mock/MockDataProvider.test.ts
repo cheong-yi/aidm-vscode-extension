@@ -435,5 +435,18 @@ describe("MockDataProvider", () => {
       expect(result[1].estimatedDuration).toBe("25-30 min");
       expect(result[2].estimatedDuration).toBe("15-20 min");
     });
+
+    it("should set isExecutable correctly based on task status", async () => {
+      // Arrange
+      const mockProvider = new MockDataProvider();
+
+      // Act
+      const result = await mockProvider.getTasks();
+
+      // Assert
+      expect(result[0].isExecutable).toBe(true); // NOT_STARTED task
+      expect(result[1].isExecutable).toBe(false); // IN_PROGRESS task
+      expect(result[2].isExecutable).toBe(false); // COMPLETED task
+    });
   });
 });

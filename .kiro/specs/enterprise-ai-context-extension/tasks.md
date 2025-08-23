@@ -178,12 +178,12 @@ This implementation plan breaks down the feature into atomic, TDD-friendly tasks
 
 #### 4.2 Mock Data Generation (CRITICAL BLOCKER 2)
 
-- [ ] 4.2.1a: Add getTasks() method returning 3 basic Task objects (10 min)
+- [x] 4.2.1a: Add getTasks() method returning 3 basic Task objects (10 min)
 
   - Only required fields: id, title, description, status
   - Test: method returns array of 3 valid Task objects
 
-- [ ] 4.2.1b: Add estimatedDuration field to existing 3 tasks (5 min)
+- [x] 4.2.1b: Add estimatedDuration field to existing 3 tasks (5 min)
 
   - Add field with realistic values like "15-20 min"
   - Test: all tasks have estimatedDuration field
