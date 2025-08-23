@@ -88,7 +88,7 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
    * Time formatting utility for duration and date formatting
    * Used for enhanced metadata display
    */
-  private readonly timeFormatter: TimeFormattingUtility;
+  protected readonly timeFormatter: TimeFormattingUtility;
 
   constructor() {
     // Initialize time formatting utility
@@ -244,13 +244,15 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
     }
 
     const failureItems = failures
-      .map(failure => `
+      .map(
+        (failure) => `
         <div class="failure-item">
           <div class="failure-name">${this.escapeHtml(failure.name)}</div>
           <div class="failure-message">${this.escapeHtml(failure.message)}</div>
         </div>
-      `)
-      .join('');
+      `
+      )
+      .join("");
 
     return `
       <div class="failures-section">
@@ -314,7 +316,7 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
    */
   public formatRelativeTime(isoDate: string): string {
     if (!isoDate) {
-      return 'Never';
+      return "Never";
     }
 
     try {
@@ -326,13 +328,13 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
       const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
 
       if (diffMinutes < 1) {
-        return 'Just now';
+        return "Just now";
       } else if (diffMinutes < 60) {
-        return `${diffMinutes} minute${diffMinutes === 1 ? '' : 's'} ago`;
+        return `${diffMinutes} minute${diffMinutes === 1 ? "" : "s"} ago`;
       } else if (diffHours < 24) {
-        return `${diffHours} hour${diffHours === 1 ? '' : 's'} ago`;
+        return `${diffHours} hour${diffHours === 1 ? "" : "s"} ago`;
       } else if (diffDays < 7) {
-        return `${diffDays} day${diffDays === 1 ? '' : 's'} ago`;
+        return `${diffDays} day${diffDays === 1 ? "" : "s"} ago`;
       } else {
         return date.toLocaleDateString();
       }
@@ -369,8 +371,14 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
               <div class="task-title">${this.escapeHtml(task.title)}</div>
               <div>
                 <span class="task-id">${this.escapeHtml(task.id)}</span>
-                <span class="status-badge ${this.getStatusClass(task.status)}">${this.getStatusDisplayName(task.status)}</span>
-                ${task.isExecutable ? '<span class="executable-indicator">🤖</span>' : ''}
+                <span class="status-badge ${this.getStatusClass(
+                  task.status
+                )}">${this.getStatusDisplayName(task.status)}</span>
+                ${
+                  task.isExecutable
+                    ? '<span class="executable-indicator">🤖</span>'
+                    : ""
+                }
               </div>
             </div>
             
@@ -383,27 +391,39 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
             <div class="task-meta">
               <div class="meta-item">
                 <div class="meta-label">Complexity</div>
-                <div class="meta-value complexity-${this.formatComplexity(task.complexity)}">${this.getComplexityDisplayName(task.complexity)}</div>
+                <div class="meta-value complexity-${this.formatComplexity(
+                  task.complexity
+                )}">${this.getComplexityDisplayName(task.complexity)}</div>
               </div>
               <div class="meta-item">
                 <div class="meta-label">Duration</div>
-                <div class="meta-value duration">${this.formatEstimatedDuration(task.estimatedDuration)}</div>
+                <div class="meta-value duration">${this.formatEstimatedDuration(
+                  task.estimatedDuration
+                )}</div>
               </div>
               <div class="meta-item">
                 <div class="meta-label">Dependencies</div>
-                <div class="meta-value dependencies">${this.formatDependencies(task.dependencies)}</div>
+                <div class="meta-value dependencies">${this.formatDependencies(
+                  task.dependencies
+                )}</div>
               </div>
               <div class="meta-item">
                 <div class="meta-label">Requirements</div>
-                <div class="meta-value requirements">${this.formatRequirements(task.requirements)}</div>
+                <div class="meta-value requirements">${this.formatRequirements(
+                  task.requirements
+                )}</div>
               </div>
               <div class="meta-item">
                 <div class="meta-label">Created</div>
-                <div class="meta-value created-date">${this.timeFormatter.formatRelativeTime(task.createdDate)}</div>
+                <div class="meta-value created-date">${this.timeFormatter.formatRelativeTime(
+                  task.createdDate
+                )}</div>
               </div>
               <div class="meta-item">
                 <div class="meta-label">Modified</div>
-                <div class="meta-value modified-date">${this.timeFormatter.formatRelativeTime(task.lastModified)}</div>
+                <div class="meta-value modified-date">${this.timeFormatter.formatRelativeTime(
+                  task.lastModified
+                )}</div>
               </div>
             </div>
             
@@ -451,7 +471,7 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
   /**
    * Generates complete CSS styling for task details webview
    * Called when generating HTML content to ensure consistent styling
-   * 
+   *
    * @returns Complete CSS string matching mockup design exactly
    */
   private generateCSS(): string {
@@ -688,6 +708,29 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
         color: var(--vscode-descriptionForeground, #969696);
       }
 
+      .test-summary {
+        margin-bottom: 8px;
+        font-size: 11px;
+        color: var(--vscode-descriptionForeground, #969696);
+      }
+
+      .test-summary-stats {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+
+      .test-summary-text {
+        font-weight: 500;
+        color: var(--vscode-foreground, #ffffff);
+      }
+
+      .test-coverage {
+        font-weight: 500;
+        color: var(--vscode-foreground, #ffffff);
+      }
+
       .test-stats {
         display: flex;
         gap: 16px;
@@ -723,6 +766,31 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
 
       .test-total {
         color: #dcdcaa;
+      }
+
+      /* Test suite info */
+      .test-suite {
+        font-size: 10px;
+        color: var(--vscode-descriptionForeground, #969696);
+        margin-top: 8px;
+        margin-bottom: 8px;
+        padding: 4px 8px;
+        background: var(--vscode-panel-background, #2d2d30);
+        border-radius: 3px;
+        display: inline-block;
+      }
+
+      /* Coverage styling */
+      .coverage-low {
+        color: #f48771;
+      }
+
+      .coverage-medium {
+        color: #dcdcaa;
+      }
+
+      .coverage-high {
+        color: #4ec9b0;
       }
 
       /* Failures section */
@@ -1003,15 +1071,17 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
     if (!dependencies || dependencies.length === 0) {
       return '<span class="dependency-tag">None</span>';
     }
-    
+
     return dependencies
-      .map(dep => `<span class="dependency-tag">${this.escapeHtml(dep)}</span>`)
-      .join('');
+      .map(
+        (dep) => `<span class="dependency-tag">${this.escapeHtml(dep)}</span>`
+      )
+      .join("");
   }
 
   /**
    * Renders test results section with proper structure
-   * Called when generating the test results section
+   * Called when generating the test results section for a task
    *
    * @param task - The task to render test results for
    * @returns HTML string for test results section
@@ -1022,31 +1092,152 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
     }
 
     const { testStatus } = task;
-    const hasFailures = testStatus.failingTestsList && testStatus.failingTestsList.length > 0;
-    
+    const hasFailures =
+      testStatus.failingTestsList && testStatus.failingTestsList.length > 0;
+
     return `
       <div class="test-results">
         <div class="test-header">
           <div class="test-title">Test Results</div>
-          <div class="test-date">Last run: ${this.formatRelativeTime(testStatus.lastRunDate || '')}</div>
+          <div class="test-date">Last run: ${this.formatLastRunTime(
+            testStatus.lastRunDate
+          )}</div>
+        </div>
+        <div class="test-summary">
+          <div class="test-summary-stats">
+            <span class="test-summary-text">${this.formatTestSummary(
+              testStatus
+            )}</span>
+            ${
+              testStatus.coverage
+                ? `<span class="test-coverage">${this.formatCoverage(
+                    testStatus.coverage
+                  )}</span>`
+                : ""
+            }
+          </div>
         </div>
         <div class="test-stats">
           <div class="test-stat">
-            <div class="test-stat-value test-total">${testStatus.totalTests}</div>
+            <div class="test-stat-value test-total">${
+              testStatus.totalTests
+            }</div>
             <div class="test-stat-label">Total</div>
           </div>
           <div class="test-stat">
-            <div class="test-stat-value test-passed">${testStatus.passedTests}</div>
+            <div class="test-stat-value test-passed">${
+              testStatus.passedTests
+            }</div>
             <div class="test-stat-label">Passed</div>
           </div>
           <div class="test-stat">
-            <div class="test-stat-value test-failed">${testStatus.failedTests}</div>
+            <div class="test-stat-value test-failed">${
+              testStatus.failedTests
+            }</div>
             <div class="test-stat-label">Failed</div>
           </div>
         </div>
-        ${hasFailures ? this.renderFailuresSection(testStatus.failingTestsList!) : ''}
+        ${
+          testStatus.testSuite
+            ? `<div class="test-suite">Suite: ${this.escapeHtml(
+                testStatus.testSuite
+              )}</div>`
+            : ""
+        }
+        ${
+          hasFailures
+            ? this.renderFailuresSection(testStatus.failingTestsList!)
+            : ""
+        }
       </div>
     `;
+  }
+
+  /**
+   * Formats test summary in "passed/total passed" format
+   * Called when displaying test summary statistics
+   *
+   * @param testStatus - The test status to format summary for
+   * @returns Formatted test summary string
+   */
+  private formatTestSummary(testStatus: any): string {
+    try {
+      const { passedTests, totalTests } = testStatus;
+
+      if (totalTests === 0) {
+        return "No tests run";
+      }
+
+      if (passedTests === totalTests) {
+        return `${passedTests}/${totalTests} passed ✅`;
+      }
+
+      if (passedTests === 0) {
+        return `${passedTests}/${totalTests} passed ❌`;
+      }
+
+      return `${passedTests}/${totalTests} passed ⚠️`;
+    } catch (error) {
+      console.warn("Failed to format test summary:", error);
+      return "Test summary unavailable";
+    }
+  }
+
+  /**
+   * Formats last run time using TimeFormattingUtility
+   * Called when displaying test execution timestamps
+   *
+   * @param lastRunDate - ISO date string for last test run
+   * @returns Formatted relative time string
+   */
+  private formatLastRunTime(lastRunDate?: string): string {
+    if (!lastRunDate || lastRunDate.trim() === "") {
+      return "Never run";
+    }
+
+    try {
+      return this.timeFormatter.formatRelativeTime(lastRunDate);
+    } catch (error) {
+      console.warn("Failed to format last run time:", error);
+      // Fallback to absolute date if TimeFormattingUtility fails
+      try {
+        const date = new Date(lastRunDate);
+        if (isNaN(date.getTime())) {
+          return "Invalid date";
+        }
+        return date.toLocaleDateString();
+      } catch (fallbackError) {
+        return "Date unavailable";
+      }
+    }
+  }
+
+  /**
+   * Formats test coverage percentage with appropriate styling
+   * Called when displaying test coverage information
+   *
+   * @param coverage - Coverage percentage (0-100)
+   * @returns Formatted coverage string with CSS class
+   */
+  private formatCoverage(coverage: number): string {
+    try {
+      if (typeof coverage !== "number" || isNaN(coverage)) {
+        return "";
+      }
+
+      const roundedCoverage = Math.round(coverage);
+
+      if (roundedCoverage >= 90) {
+        return `<span class="coverage-high">${roundedCoverage}% coverage</span>`;
+      } else if (roundedCoverage >= 70) {
+        return `<span class="coverage-medium">${roundedCoverage}% coverage</span>`;
+      } else {
+        return `<span class="coverage-low">${roundedCoverage}% coverage</span>`;
+      }
+    } catch (error) {
+      console.warn("Failed to format coverage:", error);
+      return "";
+    }
   }
 
   /**
@@ -1058,17 +1249,19 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
    */
   private renderFailuresSection(failures: any[]): string {
     if (!failures || failures.length === 0) {
-      return '';
+      return "";
     }
 
     const failureItems = failures
-      .map(failure => `
+      .map(
+        (failure) => `
         <div class="failure-item">
           <div class="failure-name">${this.escapeHtml(failure.name)}</div>
           <div class="failure-message">${this.escapeHtml(failure.message)}</div>
         </div>
-      `)
-      .join('');
+      `
+      )
+      .join("");
 
     return `
       <div class="failures-section" onclick="toggleFailures(this, event)">
@@ -1096,54 +1289,138 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
     const buttons: string[] = [];
 
     switch (task.status) {
-      case 'not_started':
+      case "not_started":
         if (task.isExecutable) {
-          buttons.push('<button class="action-btn primary" onclick="handleActionClick(\'executeWithCursor\', \'' + task.id + '\')">🤖 Execute with Cursor</button>');
+          buttons.push(
+            "<button class=\"action-btn primary\" onclick=\"handleActionClick('executeWithCursor', '" +
+              task.id +
+              "')\">🤖 Execute with Cursor</button>"
+          );
         }
-        buttons.push('<button class="action-btn" onclick="handleActionClick(\'generatePrompt\', \'' + task.id + '\')">Generate Prompt</button>');
-        buttons.push('<button class="action-btn" onclick="handleActionClick(\'viewRequirements\', \'' + task.id + '\')">View Requirements</button>');
+        buttons.push(
+          "<button class=\"action-btn\" onclick=\"handleActionClick('generatePrompt', '" +
+            task.id +
+            "')\">Generate Prompt</button>"
+        );
+        buttons.push(
+          "<button class=\"action-btn\" onclick=\"handleActionClick('viewRequirements', '" +
+            task.id +
+            "')\">View Requirements</button>"
+        );
         break;
-      
-      case 'in_progress':
-        buttons.push('<button class="action-btn primary" onclick="handleActionClick(\'continueWork\', \'' + task.id + '\')">Continue Work</button>');
-        buttons.push('<button class="action-btn" onclick="handleActionClick(\'markComplete\', \'' + task.id + '\')">Mark Complete</button>');
-        buttons.push('<button class="action-btn" onclick="handleActionClick(\'viewDependencies\', \'' + task.id + '\')">View Dependencies</button>');
+
+      case "in_progress":
+        buttons.push(
+          "<button class=\"action-btn primary\" onclick=\"handleActionClick('continueWork', '" +
+            task.id +
+            "')\">Continue Work</button>"
+        );
+        buttons.push(
+          "<button class=\"action-btn\" onclick=\"handleActionClick('markComplete', '" +
+            task.id +
+            "')\">Mark Complete</button>"
+        );
+        buttons.push(
+          "<button class=\"action-btn\" onclick=\"handleActionClick('viewDependencies', '" +
+            task.id +
+            "')\">View Dependencies</button>"
+        );
         break;
-      
-      case 'review':
-        buttons.push('<button class="action-btn primary" onclick="handleActionClick(\'approveComplete\', \'' + task.id + '\')">Approve & Complete</button>');
-        buttons.push('<button class="action-btn" onclick="handleActionClick(\'requestChanges\', \'' + task.id + '\')">Request Changes</button>');
-        buttons.push('<button class="action-btn" onclick="handleActionClick(\'viewImplementation\', \'' + task.id + '\')">View Implementation</button>');
+
+      case "review":
+        buttons.push(
+          "<button class=\"action-btn primary\" onclick=\"handleActionClick('approveComplete', '" +
+            task.id +
+            "')\">Approve & Complete</button>"
+        );
+        buttons.push(
+          "<button class=\"action-btn\" onclick=\"handleActionClick('requestChanges', '" +
+            task.id +
+            "')\">Request Changes</button>"
+        );
+        buttons.push(
+          "<button class=\"action-btn\" onclick=\"handleActionClick('viewImplementation', '" +
+            task.id +
+            "')\">View Implementation</button>"
+        );
         break;
-      
-      case 'completed':
+
+      case "completed":
         if (task.testStatus && task.testStatus.failedTests > 0) {
-          buttons.push('<button class="action-btn" onclick="handleActionClick(\'fixFailingTests\', \'' + task.id + '\')">Fix Failing Tests</button>');
-          buttons.push('<button class="action-btn" onclick="handleActionClick(\'viewFullReport\', \'' + task.id + '\')">View Full Report</button>');
-          buttons.push('<button class="action-btn" onclick="handleActionClick(\'rerunTests\', \'' + task.id + '\')">Rerun Tests</button>');
+          buttons.push(
+            "<button class=\"action-btn\" onclick=\"handleActionClick('fixFailingTests', '" +
+              task.id +
+              "')\">Fix Failing Tests</button>"
+          );
+          buttons.push(
+            "<button class=\"action-btn\" onclick=\"handleActionClick('viewFullReport', '" +
+              task.id +
+              "')\">View Full Report</button>"
+          );
+          buttons.push(
+            "<button class=\"action-btn\" onclick=\"handleActionClick('rerunTests', '" +
+              task.id +
+              "')\">Rerun Tests</button>"
+          );
         } else {
-          buttons.push('<button class="action-btn" onclick="handleActionClick(\'viewCode\', \'' + task.id + '\')">View Code</button>');
-          buttons.push('<button class="action-btn" onclick="handleActionClick(\'viewTests\', \'' + task.id + '\')">View Tests</button>');
-          buttons.push('<button class="action-btn" onclick="handleActionClick(\'history\', \'' + task.id + '\')">History</button>');
+          buttons.push(
+            "<button class=\"action-btn\" onclick=\"handleActionClick('viewCode', '" +
+              task.id +
+              "')\">View Code</button>"
+          );
+          buttons.push(
+            "<button class=\"action-btn\" onclick=\"handleActionClick('viewTests', '" +
+              task.id +
+              "')\">View Tests</button>"
+          );
+          buttons.push(
+            "<button class=\"action-btn\" onclick=\"handleActionClick('history', '" +
+              task.id +
+              "')\">History</button>"
+          );
         }
         break;
-      
-      case 'blocked':
-        buttons.push('<button class="action-btn" onclick="handleActionClick(\'viewBlockers\', \'' + task.id + '\')">View Blockers</button>');
-        buttons.push('<button class="action-btn" onclick="handleActionClick(\'updateDependencies\', \'' + task.id + '\')">Update Dependencies</button>');
-        buttons.push('<button class="action-btn" onclick="handleActionClick(\'reportIssue\', \'' + task.id + '\')">Report Issue</button>');
+
+      case "blocked":
+        buttons.push(
+          "<button class=\"action-btn\" onclick=\"handleActionClick('viewBlockers', '" +
+            task.id +
+            "')\">View Blockers</button>"
+        );
+        buttons.push(
+          "<button class=\"action-btn\" onclick=\"handleActionClick('updateDependencies', '" +
+            task.id +
+            "')\">Update Dependencies</button>"
+        );
+        buttons.push(
+          "<button class=\"action-btn\" onclick=\"handleActionClick('reportIssue', '" +
+            task.id +
+            "')\">Report Issue</button>"
+        );
         break;
-      
-      case 'deprecated':
-        buttons.push('<button class="action-btn" onclick="handleActionClick(\'archive\', \'' + task.id + '\')">Archive</button>');
-        buttons.push('<button class="action-btn" onclick="handleActionClick(\'viewHistory\', \'' + task.id + '\')">View History</button>');
+
+      case "deprecated":
+        buttons.push(
+          "<button class=\"action-btn\" onclick=\"handleActionClick('archive', '" +
+            task.id +
+            "')\">Archive</button>"
+        );
+        buttons.push(
+          "<button class=\"action-btn\" onclick=\"handleActionClick('viewHistory', '" +
+            task.id +
+            "')\">View History</button>"
+        );
         break;
-      
+
       default:
-        buttons.push('<button class="action-btn" onclick="handleActionClick(\'viewDetails\', \'' + task.id + '\')">View Details</button>');
+        buttons.push(
+          "<button class=\"action-btn\" onclick=\"handleActionClick('viewDetails', '" +
+            task.id +
+            "')\">View Details</button>"
+        );
     }
 
-    return buttons.join('');
+    return buttons.join("");
   }
 
   /**
@@ -1154,7 +1431,7 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
    * @returns CSS class name for status styling
    */
   private getStatusClass(status: string): string {
-    return status.replace('_', '-');
+    return status.replace("_", "-");
   }
 
   /**
@@ -1166,14 +1443,14 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
    */
   private getStatusDisplayName(status: string): string {
     const statusMap: Record<string, string> = {
-      'not_started': 'not started',
-      'in_progress': 'in progress',
-      'review': 'review',
-      'completed': 'completed',
-      'blocked': 'blocked',
-      'deprecated': 'deprecated'
+      not_started: "not started",
+      in_progress: "in progress",
+      review: "review",
+      completed: "completed",
+      blocked: "blocked",
+      deprecated: "deprecated",
     };
-    
+
     return statusMap[status] || status;
   }
 
@@ -1186,11 +1463,11 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
    */
   private getComplexityDisplayName(complexity: string): string {
     const complexityMap: Record<string, string> = {
-      'low': 'Low',
-      'medium': 'Medium',
-      'high': 'High'
+      low: "Low",
+      medium: "Medium",
+      high: "High",
     };
-    
+
     return complexityMap[complexity] || complexity;
   }
 
@@ -1202,14 +1479,14 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
    * @returns Escaped HTML-safe text
    */
   private escapeHtml(text: string): string {
-    if (!text) return '';
-    
+    if (!text) return "";
+
     return text
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#39;');
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
   }
 
   /**
@@ -1347,27 +1624,39 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
         <div class="task-meta">
           <div class="meta-item">
             <div class="meta-label">Complexity</div>
-            <div class="meta-value complexity-${this.formatComplexity(task.complexity)}">${this.getComplexityDisplayName(task.complexity)}</div>
+            <div class="meta-value complexity-${this.formatComplexity(
+              task.complexity
+            )}">${this.getComplexityDisplayName(task.complexity)}</div>
           </div>
           <div class="meta-item">
             <div class="meta-label">Duration</div>
-            <div class="meta-value duration">${this.formatEstimatedDuration(task.estimatedDuration)}</div>
+            <div class="meta-value duration">${this.formatEstimatedDuration(
+              task.estimatedDuration
+            )}</div>
           </div>
           <div class="meta-item">
             <div class="meta-label">Dependencies</div>
-            <div class="meta-value dependencies">${this.formatDependencies(task.dependencies)}</div>
+            <div class="meta-value dependencies">${this.formatDependencies(
+              task.dependencies
+            )}</div>
           </div>
           <div class="meta-item">
             <div class="meta-label">Requirements</div>
-            <div class="meta-value requirements">${this.formatRequirements(task.requirements)}</div>
+            <div class="meta-value requirements">${this.formatRequirements(
+              task.requirements
+            )}</div>
           </div>
           <div class="meta-item">
             <div class="meta-label">Created</div>
-            <div class="meta-value created-date">${this.timeFormatter.formatRelativeTime(task.createdDate)}</div>
+            <div class="meta-value created-date">${this.timeFormatter.formatRelativeTime(
+              task.createdDate
+            )}</div>
           </div>
           <div class="meta-item">
             <div class="meta-label">Modified</div>
-            <div class="meta-value modified-date">${this.timeFormatter.formatRelativeTime(task.lastModified)}</div>
+            <div class="meta-value modified-date">${this.timeFormatter.formatRelativeTime(
+              task.lastModified
+            )}</div>
           </div>
         </div>
       `;
@@ -1391,7 +1680,8 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
 
     try {
       // Use TimeFormattingUtility to parse and format duration if needed
-      const parsedDuration = this.timeFormatter.parseEstimatedDuration(duration);
+      const parsedDuration =
+        this.timeFormatter.parseEstimatedDuration(duration);
       if (parsedDuration > 0) {
         // Return original format for now, could be enhanced with parsed formatting
         return duration.trim();
@@ -1479,15 +1769,21 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
         </div>
         <div class="meta-item">
           <div class="meta-label">Duration</div>
-          <div class="meta-value">${task.estimatedDuration || "Not specified"}</div>
+          <div class="meta-value">${
+            task.estimatedDuration || "Not specified"
+          }</div>
         </div>
         <div class="meta-item">
           <div class="meta-label">Dependencies</div>
-          <div class="meta-value">${task.dependencies?.length ? task.dependencies.join(", ") : "None"}</div>
+          <div class="meta-value">${
+            task.dependencies?.length ? task.dependencies.join(", ") : "None"
+          }</div>
         </div>
         <div class="meta-item">
           <div class="meta-label">Requirements</div>
-          <div class="meta-value">${task.requirements?.length ? task.requirements.join(", ") : "None"}</div>
+          <div class="meta-value">${
+            task.requirements?.length ? task.requirements.join(", ") : "None"
+          }</div>
         </div>
       </div>
     `;

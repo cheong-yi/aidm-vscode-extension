@@ -670,6 +670,300 @@ describe("TaskDetailCardProvider", () => {
       expect(html).toContain("Test 1");
       expect(html).toContain("Assertion failed");
     });
+
+    it("should display comprehensive test results with all fields", () => {
+      const mockTask: Task = {
+        id: "test-1",
+        title: "Test Task",
+        description: "Test Description",
+        status: TaskStatus.COMPLETED,
+        complexity: "low" as any,
+        priority: TaskPriority.MEDIUM,
+        dependencies: [],
+        requirements: [],
+        createdDate: "2024-01-01T00:00:00.000Z",
+        lastModified: "2024-01-01T00:00:00.000Z",
+        testStatus: {
+          lastRunDate: "2024-08-22T14:15:00Z",
+          totalTests: 18,
+          passedTests: 15,
+          failedTests: 3,
+          coverage: 85,
+          testSuite: "unit-tests",
+          status: TestStatusEnum.PARTIAL,
+          failingTestsList: [
+            {
+              name: "should validate input",
+              message: "AssertionError: Expected 400 but got 200",
+              category: "assertion" as any,
+            },
+            {
+              name: "should handle errors",
+              message: "TypeError: Cannot read property 'id' of undefined",
+              category: "type" as any,
+            },
+          ],
+        },
+      };
+
+      const html = (provider as any).generateTaskDetailsHTML(mockTask);
+
+      // Verify test results section structure
+      expect(html).toContain("Test Results");
+      expect(html).toContain("15/18 passed ⚠️");
+      expect(html).toContain("85% coverage");
+      expect(html).toContain("Suite: unit-tests");
+      expect(html).toContain("Failed Tests (2)");
+      expect(html).toContain("should validate input");
+      expect(html).toContain("should handle errors");
+    });
+
+    it("should format test summary correctly for different scenarios", () => {
+      // Test all passing
+      const allPassing = {
+        totalTests: 10,
+        passedTests: 10,
+        failedTests: 0,
+      };
+      expect((provider as any).formatTestSummary(allPassing)).toBe(
+        "10/10 passed ✅"
+      );
+
+      // Test all failing
+      const allFailing = {
+        totalTests: 5,
+        passedTests: 0,
+        failedTests: 5,
+      };
+      expect((provider as any).formatTestSummary(allFailing)).toBe(
+        "0/5 passed ❌"
+      );
+
+      // Test partial passing
+      const partialPassing = {
+        totalTests: 8,
+        passedTests: 6,
+        failedTests: 2,
+      };
+      expect((provider as any).formatTestSummary(partialPassing)).toBe(
+        "6/8 passed ⚠️"
+      );
+
+      // Test zero tests
+      const zeroTests = {
+        totalTests: 0,
+        passedTests: 0,
+        failedTests: 0,
+      };
+      expect((provider as any).formatTestSummary(zeroTests)).toBe(
+        "No tests run"
+      );
+    });
+
+    it("should format last run time using TimeFormattingUtility", () => {
+      const now = new Date();
+      const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
+      const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+
+      // Test with valid dates
+      const result1 = (provider as any).formatLastRunTime(
+        oneHourAgo.toISOString()
+      );
+      expect(result1).toContain("1 hour ago");
+
+      const result2 = (provider as any).formatLastRunTime(
+        oneDayAgo.toISOString()
+      );
+      expect(result2).toContain("1 day ago");
+
+      // Test with empty/undefined dates
+      expect((provider as any).formatLastRunTime("")).toBe("Never run");
+      expect((provider as any).formatLastRunTime(undefined)).toBe("Never run");
+      expect((provider as any).formatLastRunTime(null as any)).toBe(
+        "Never run"
+      );
+    });
+
+    it("should handle TimeFormattingUtility failures gracefully", () => {
+      // Test with invalid date format that would cause parsing issues
+      const result = (provider as any).formatLastRunTime("invalid-date-string");
+
+      // TimeFormattingUtility returns the original string for invalid dates
+      expect(result).toBe("invalid-date-string");
+    });
+
+    it("should format coverage percentage with appropriate styling", () => {
+      // Test high coverage (90%+)
+      const highCoverage = (provider as any).formatCoverage(95);
+      expect(highCoverage).toContain("95% coverage");
+      expect(highCoverage).toContain("coverage-high");
+
+      // Test medium coverage (70-89%)
+      const mediumCoverage = (provider as any).formatCoverage(75);
+      expect(mediumCoverage).toContain("75% coverage");
+      expect(mediumCoverage).toContain("coverage-medium");
+
+      // Test low coverage (<70%)
+      const lowCoverage = (provider as any).formatCoverage(45);
+      expect(lowCoverage).toContain("45% coverage");
+      expect(lowCoverage).toContain("coverage-low");
+
+      // Test edge cases
+      expect((provider as any).formatCoverage(0)).toContain("0% coverage");
+      expect((provider as any).formatCoverage(100)).toContain("100% coverage");
+    });
+
+    it("should handle invalid coverage values gracefully", () => {
+      // Test invalid inputs
+      expect((provider as any).formatCoverage(NaN)).toBe("");
+      expect((provider as any).formatCoverage("invalid" as any)).toBe("");
+      expect((provider as any).formatCoverage(null as any)).toBe("");
+      expect((provider as any).formatCoverage(undefined as any)).toBe("");
+    });
+
+    it("should display test suite information when available", () => {
+      const mockTask: Task = {
+        id: "test-1",
+        title: "Test Task",
+        description: "Test Description",
+        status: TaskStatus.COMPLETED,
+        complexity: "low" as any,
+        priority: TaskPriority.MEDIUM,
+        dependencies: [],
+        requirements: [],
+        createdDate: "2024-01-01T00:00:00.000Z",
+        lastModified: "2024-01-01T00:00:00.000Z",
+        testStatus: {
+          lastRunDate: "2024-01-01T10:00:00.000Z",
+          totalTests: 10,
+          passedTests: 8,
+          failedTests: 2,
+          testSuite: "integration-tests",
+          status: TestStatusEnum.PARTIAL,
+        },
+      };
+
+      const html = (provider as any).generateTaskDetailsHTML(mockTask);
+
+      expect(html).toContain("Suite: integration-tests");
+    });
+
+    it("should not display test suite when not available", () => {
+      const mockTask: Task = {
+        id: "test-1",
+        title: "Test Task",
+        description: "Test Description",
+        status: TaskStatus.COMPLETED,
+        complexity: "low" as any,
+        priority: TaskPriority.MEDIUM,
+        dependencies: [],
+        requirements: [],
+        createdDate: "2024-01-01T00:00:00.000Z",
+        lastModified: "2024-01-01T00:00:00.000Z",
+        testStatus: {
+          lastRunDate: "2024-01-01T10:00:00.000Z",
+          totalTests: 10,
+          passedTests: 8,
+          failedTests: 2,
+          status: TestStatusEnum.PARTIAL,
+        },
+      };
+
+      const html = (provider as any).generateTaskDetailsHTML(mockTask);
+
+      expect(html).not.toContain("Suite:");
+    });
+
+    it("should handle edge cases in test results display", () => {
+      // Test with missing lastRunDate
+      const mockTaskNoDate: Task = {
+        id: "test-1",
+        title: "Test Task",
+        description: "Test Description",
+        status: TaskStatus.COMPLETED,
+        complexity: "low" as any,
+        priority: TaskPriority.MEDIUM,
+        dependencies: [],
+        requirements: [],
+        createdDate: "2024-01-01T00:00:00.000Z",
+        lastModified: "2024-01-01T00:00:00.000Z",
+        testStatus: {
+          totalTests: 5,
+          passedTests: 5,
+          failedTests: 0,
+          status: TestStatusEnum.PASSING,
+        },
+      };
+
+      const htmlNoDate = (provider as any).generateTaskDetailsHTML(
+        mockTaskNoDate
+      );
+      expect(htmlNoDate).toContain("Last run: Never run");
+
+      // Test with zero tests
+      const mockTaskZeroTests: Task = {
+        id: "test-2",
+        title: "Test Task 2",
+        description: "Test Description 2",
+        status: TaskStatus.COMPLETED,
+        complexity: "low" as any,
+        priority: TaskPriority.MEDIUM,
+        dependencies: [],
+        requirements: [],
+        createdDate: "2024-01-01T00:00:00.000Z",
+        lastModified: "2024-01-01T00:00:00.000Z",
+        testStatus: {
+          lastRunDate: "2024-01-01T10:00:00.000Z",
+          totalTests: 0,
+          passedTests: 0,
+          failedTests: 0,
+          status: TestStatusEnum.NOT_RUN,
+        },
+      };
+
+      const htmlZeroTests = (provider as any).generateTaskDetailsHTML(
+        mockTaskZeroTests
+      );
+      expect(htmlZeroTests).toContain("No tests run");
+    });
+
+    it("should handle malformed test status data gracefully", () => {
+      const malformedTask = {
+        id: "test-1",
+        title: "Test Task",
+        description: "Test Description",
+        status: TaskStatus.COMPLETED,
+        complexity: "low" as any,
+        priority: TaskPriority.MEDIUM,
+        dependencies: [],
+        requirements: [],
+        createdDate: "2024-01-01T00:00:00.000Z",
+        lastModified: "2024-01-01T00:00:00.000Z",
+        testStatus: {
+          lastRunDate: "invalid-date",
+          totalTests: 5,
+          passedTests: 3,
+          failedTests: 2,
+          coverage: "invalid" as any,
+          testSuite: "unit-tests",
+        } as any,
+      };
+
+      // This should not throw and should handle malformed data gracefully
+      expect(() => {
+        (provider as any).generateTaskDetailsHTML(malformedTask);
+      }).not.toThrow();
+
+      const html = (provider as any).generateTaskDetailsHTML(malformedTask);
+
+      // Should still display test results section
+      expect(html).toContain("Test Results");
+      // Should handle invalid data gracefully - TimeFormattingUtility returns original string
+      expect(html).toContain("Last run: invalid-date");
+      // Should still show test stats
+      expect(html).toContain("3");
+      expect(html).toContain("2");
+    });
   });
 
   describe("Action Buttons Rendering", () => {
@@ -860,7 +1154,7 @@ describe("TaskDetailCardProvider", () => {
         description: "Test Description",
         status: TaskStatus.NOT_STARTED,
         complexity: "low" as any,
-        priority: TaskPriority.MEDIUM,
+        priority: "medium" as any,
         dependencies: [],
         requirements: [],
         createdDate: "2024-01-01T00:00:00.000Z",
