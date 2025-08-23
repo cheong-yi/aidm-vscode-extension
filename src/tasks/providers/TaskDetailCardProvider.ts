@@ -348,233 +348,8 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
           <meta charset="UTF-8">
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
           <title>Task Details - ${task.id}</title>
-          <style>
-            body { 
-              font-family: var(--vscode-font-family); 
-              margin: 0; 
-              padding: 0; 
-              background: #1e1e1e; 
-              color: #cccccc; 
-            }
-            .task-details { 
-              padding: 16px; 
-              background: #2d2d30; 
-              border-top: 1px solid #3e3e42;
-            }
-            .task-header {
-              margin-bottom: 16px;
-              padding-bottom: 12px;
-              border-bottom: 1px solid #3e3e42;
-            }
-            .task-title {
-              font-size: 14px;
-              font-weight: 600;
-              color: #ffffff;
-              margin-bottom: 8px;
-              line-height: 1.3;
-            }
-            .task-id {
-              font-family: 'Courier New', monospace;
-              font-size: 11px;
-              background: #3e3e42;
-              padding: 2px 6px;
-              border-radius: 3px;
-              color: #dcdcaa;
-              display: inline-block;
-              margin-bottom: 8px;
-            }
-            .status-badge {
-              font-size: 10px;
-              padding: 3px 8px;
-              border-radius: 10px;
-              font-weight: 600;
-              display: inline-block;
-              margin-left: 8px;
-            }
-            .status-badge.not-started { background: #4a4a4a; color: #cccccc; }
-            .status-badge.in-progress { background: #569cd6; color: #ffffff; }
-            .status-badge.review { background: #dcdcaa; color: #1e1e1e; }
-            .status-badge.completed { background: #4ec9b0; color: #1e1e1e; }
-            .status-badge.blocked { background: #f48771; color: #1e1e1e; }
-            .status-badge.deprecated { background: #6a6a6a; color: #cccccc; }
-            
-            .task-description {
-              margin-bottom: 16px;
-              font-size: 12px;
-              line-height: 1.4;
-              color: #d4d4d4;
-            }
-            
-            .task-meta {
-              display: grid;
-              grid-template-columns: 1fr 1fr;
-              gap: 12px;
-              margin-bottom: 16px;
-            }
-            .meta-item {
-              font-size: 11px;
-            }
-            .meta-label {
-              color: #969696;
-              margin-bottom: 2px;
-            }
-            .meta-value {
-              color: #ffffff;
-              font-weight: 500;
-            }
-            .complexity-low { color: #4ec9b0; }
-            .complexity-medium { color: #dcdcaa; }
-            .complexity-high { color: #f48771; }
-            
-            .dependencies {
-              margin-bottom: 16px;
-            }
-            .dependencies-title {
-              font-size: 11px;
-              color: #969696;
-              margin-bottom: 6px;
-            }
-            .dependency-list {
-              display: flex;
-              flex-wrap: wrap;
-              gap: 4px;
-            }
-            .dependency-tag {
-              background: #3e3e42;
-              color: #dcdcaa;
-              font-size: 10px;
-              padding: 2px 6px;
-              border-radius: 3px;
-              font-family: 'Courier New', monospace;
-            }
-            
-            .test-results {
-              background: #1e1e1e;
-              border: 1px solid #3e3e42;
-              border-radius: 4px;
-              padding: 12px;
-              margin-bottom: 12px;
-            }
-            .test-header {
-              display: flex;
-              justify-content: space-between;
-              align-items: center;
-              margin-bottom: 8px;
-            }
-            .test-title {
-              font-size: 11px;
-              font-weight: 600;
-              color: #ffffff;
-            }
-            .test-date {
-              font-size: 10px;
-              color: #969696;
-            }
-            .test-stats {
-              display: flex;
-              gap: 16px;
-              margin-bottom: 8px;
-            }
-            .test-stat {
-              text-align: center;
-            }
-            .test-stat-value {
-              font-size: 14px;
-              font-weight: 700;
-              margin-bottom: 2px;
-            }
-            .test-stat-label {
-              font-size: 9px;
-              color: #969696;
-              text-transform: uppercase;
-            }
-            .test-passed { color: #4ec9b0; }
-            .test-failed { color: #f48771; }
-            .test-total { color: #dcdcaa; }
-            
-            .failures-section {
-              margin-top: 12px;
-            }
-            .failures-header {
-              font-size: 10px;
-              color: #f48771;
-              font-weight: 600;
-              margin-bottom: 6px;
-              cursor: pointer;
-              display: flex;
-              align-items: center;
-              gap: 4px;
-            }
-            .failures-list {
-              display: none;
-              font-size: 10px;
-              color: #cccccc;
-            }
-            .failures-section.expanded .failures-list {
-              display: block;
-            }
-            .failure-item {
-              background: #2d2d30;
-              border-left: 3px solid #f48771;
-              padding: 6px 8px;
-              margin-bottom: 4px;
-              border-radius: 2px;
-            }
-            .failure-name {
-              font-weight: 500;
-              margin-bottom: 2px;
-            }
-            .failure-message {
-              color: #969696;
-              font-family: 'Courier New', monospace;
-              font-size: 9px;
-            }
-            
-            .no-tests {
-              font-size: 11px;
-              color: #969696;
-              font-style: italic;
-              text-align: center;
-              padding: 8px;
-            }
-            
-            .actions {
-              display: flex;
-              gap: 8px;
-              flex-wrap: wrap;
-            }
-            .action-btn {
-              background: #3e3e42;
-              border: none;
-              color: #cccccc;
-              padding: 6px 12px;
-              border-radius: 3px;
-              font-size: 10px;
-              cursor: pointer;
-              transition: background 0.2s;
-            }
-            .action-btn:hover {
-              background: #4a4a4a;
-            }
-            .action-btn.primary {
-              background: #569cd6;
-              color: #ffffff;
-            }
-            .action-btn.primary:hover {
-              background: #4a86c7;
-            }
-            
-            .section-divider {
-              height: 1px;
-              background: #3e3e42;
-              margin: 12px 0;
-            }
-            
-            .executable-indicator {
-              color: #569cd6;
-              font-size: 12px;
-              margin-left: 4px;
-            }
+                    <style>
+            ${this.generateCSS()}
           </style>
         </head>
         <body>
@@ -648,6 +423,493 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
   }
 
   /**
+   * Generates complete CSS styling for task details webview
+   * Called when generating HTML content to ensure consistent styling
+   * 
+   * @returns Complete CSS string matching mockup design exactly
+   */
+  private generateCSS(): string {
+    return `
+      /* Reset and base styles */
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: var(--vscode-font-family, 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif);
+        background: var(--vscode-editor-background, #1e1e1e);
+        color: var(--vscode-foreground, #cccccc);
+        margin: 0;
+        padding: 0;
+        line-height: 1.4;
+        font-size: 13px;
+      }
+
+      /* Main container styling */
+      .task-details {
+        padding: 16px;
+        background: var(--vscode-panel-background, #2d2d30);
+        border-top: 1px solid var(--vscode-panel-border, #3e3e42);
+        min-height: 100vh;
+      }
+
+      /* Task header section */
+      .task-header {
+        margin-bottom: 16px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid var(--vscode-panel-border, #3e3e42);
+      }
+
+      .task-title {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--vscode-foreground, #ffffff);
+        margin-bottom: 8px;
+        line-height: 1.3;
+        word-wrap: break-word;
+      }
+
+      .task-id {
+        font-family: 'Courier New', monospace;
+        font-size: 11px;
+        background: var(--vscode-panel-border, #3e3e42);
+        padding: 2px 6px;
+        border-radius: 3px;
+        color: #dcdcaa;
+        display: inline-block;
+        margin-bottom: 8px;
+        min-width: 35px;
+        text-align: center;
+      }
+
+      /* Status badge styling - exact colors from mockup */
+      .status-badge {
+        font-size: 10px;
+        padding: 3px 8px;
+        border-radius: 10px;
+        font-weight: 600;
+        display: inline-block;
+        margin-left: 8px;
+        text-transform: lowercase;
+      }
+
+      .status-badge.not-started {
+        background: #4a4a4a;
+        color: #cccccc;
+      }
+
+      .status-badge.in-progress {
+        background: #569cd6;
+        color: #ffffff;
+      }
+
+      .status-badge.review {
+        background: #dcdcaa;
+        color: #1e1e1e;
+      }
+
+      .status-badge.completed {
+        background: #4ec9b0;
+        color: #1e1e1e;
+      }
+
+      .status-badge.blocked {
+        background: #f48771;
+        color: #1e1e1e;
+      }
+
+      .status-badge.deprecated {
+        background: #6a6a6a;
+        color: #cccccc;
+      }
+
+      /* Task description */
+      .task-description {
+        margin-bottom: 16px;
+        font-size: 12px;
+        line-height: 1.4;
+        color: var(--vscode-descriptionForeground, #d4d4d4);
+      }
+
+      .task-description p {
+        margin: 0;
+      }
+
+      /* Metadata grid layout */
+      .task-meta {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+        margin-bottom: 16px;
+      }
+
+      .meta-item {
+        font-size: 11px;
+      }
+
+      .meta-label {
+        color: var(--vscode-descriptionForeground, #969696);
+        margin-bottom: 2px;
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      .meta-value {
+        color: var(--vscode-foreground, #ffffff);
+        font-weight: 500;
+        font-size: 12px;
+      }
+
+      /* Complexity color coding */
+      .complexity-low {
+        color: #4ec9b0;
+      }
+
+      .complexity-medium {
+        color: #dcdcaa;
+      }
+
+      .complexity-high {
+        color: #f48771;
+      }
+
+      /* Dependencies section */
+      .dependencies {
+        margin-bottom: 16px;
+      }
+
+      .dependencies-title {
+        font-size: 11px;
+        color: var(--vscode-descriptionForeground, #969696);
+        margin-bottom: 6px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      .dependency-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+      }
+
+      .dependency-tag {
+        background: var(--vscode-panel-border, #3e3e42);
+        color: #dcdcaa;
+        font-size: 10px;
+        padding: 2px 6px;
+        border-radius: 3px;
+        font-family: 'Courier New', monospace;
+        border: 1px solid transparent;
+        transition: border-color 0.2s;
+      }
+
+      .dependency-tag:hover {
+        border-color: var(--vscode-focusBorder, #007acc);
+      }
+
+      /* Test results section */
+      .test-results {
+        background: var(--vscode-editor-background, #1e1e1e);
+        border: 1px solid var(--vscode-panel-border, #3e3e42);
+        border-radius: 4px;
+        padding: 12px;
+        margin-bottom: 12px;
+      }
+
+      .test-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 8px;
+      }
+
+      .test-title {
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--vscode-foreground, #ffffff);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      .test-date {
+        font-size: 10px;
+        color: var(--vscode-descriptionForeground, #969696);
+      }
+
+      .test-stats {
+        display: flex;
+        gap: 16px;
+        margin-bottom: 8px;
+      }
+
+      .test-stat {
+        text-align: center;
+        flex: 1;
+      }
+
+      .test-stat-value {
+        font-size: 14px;
+        font-weight: 700;
+        margin-bottom: 2px;
+        display: block;
+      }
+
+      .test-stat-label {
+        font-size: 9px;
+        color: var(--vscode-descriptionForeground, #969696);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      .test-passed {
+        color: #4ec9b0;
+      }
+
+      .test-failed {
+        color: #f48771;
+      }
+
+      .test-total {
+        color: #dcdcaa;
+      }
+
+      /* Failures section */
+      .failures-section {
+        margin-top: 12px;
+      }
+
+      .failures-header {
+        font-size: 10px;
+        color: #f48771;
+        font-weight: 600;
+        margin-bottom: 6px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        user-select: none;
+        transition: color 0.2s;
+      }
+
+      .failures-header:hover {
+        color: #ff6b6b;
+      }
+
+      .failures-header svg {
+        width: 12px;
+        height: 12px;
+        transition: transform 0.2s;
+      }
+
+      .failures-section.expanded .failures-header svg {
+        transform: rotate(90deg);
+      }
+
+      .failures-list {
+        display: none;
+        font-size: 10px;
+        color: var(--vscode-foreground, #cccccc);
+        margin-top: 8px;
+      }
+
+      .failures-section.expanded .failures-list {
+        display: block;
+      }
+
+      .failure-item {
+        background: var(--vscode-panel-background, #2d2d30);
+        border-left: 3px solid #f48771;
+        padding: 6px 8px;
+        margin-bottom: 4px;
+        border-radius: 2px;
+        transition: background-color 0.2s;
+      }
+
+      .failure-item:hover {
+        background: var(--vscode-panel-border, #3e3e42);
+      }
+
+      .failure-name {
+        font-weight: 500;
+        margin-bottom: 2px;
+        color: var(--vscode-foreground, #ffffff);
+      }
+
+      .failure-message {
+        color: var(--vscode-descriptionForeground, #969696);
+        font-family: 'Courier New', monospace;
+        font-size: 9px;
+        word-break: break-word;
+      }
+
+      /* No tests state */
+      .no-tests {
+        font-size: 11px;
+        color: var(--vscode-descriptionForeground, #969696);
+        font-style: italic;
+        text-align: center;
+        padding: 8px;
+        background: var(--vscode-editor-background, #1e1e1e);
+        border: 1px solid var(--vscode-panel-border, #3e3e42);
+        border-radius: 4px;
+        margin-bottom: 12px;
+      }
+
+      /* Action buttons */
+      .actions {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-top: 16px;
+      }
+
+      .action-btn {
+        background: var(--vscode-panel-border, #3e3e42);
+        border: 1px solid transparent;
+        color: var(--vscode-foreground, #cccccc);
+        padding: 6px 12px;
+        border-radius: 3px;
+        font-size: 10px;
+        cursor: pointer;
+        transition: all 0.2s;
+        font-family: inherit;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+      }
+
+      .action-btn:hover {
+        background: var(--vscode-panel-border, #4a4a4a);
+        border-color: var(--vscode-focusBorder, #007acc);
+      }
+
+      .action-btn:active {
+        transform: translateY(1px);
+      }
+
+      .action-btn.primary {
+        background: var(--vscode-button-background, #569cd6);
+        color: var(--vscode-button-foreground, #ffffff);
+      }
+
+      .action-btn.primary:hover {
+        background: var(--vscode-button-hoverBackground, #4a86c7);
+      }
+
+      /* Section divider */
+      .section-divider {
+        height: 1px;
+        background: var(--vscode-panel-border, #3e3e42);
+        margin: 12px 0;
+      }
+
+      /* Executable indicator */
+      .executable-indicator {
+        color: var(--vscode-button-background, #569cd6);
+        font-size: 12px;
+        margin-left: 4px;
+        display: inline-block;
+      }
+
+      /* Responsive design for different sidebar widths */
+      @media (max-width: 300px) {
+        .task-details {
+          padding: 12px;
+        }
+        
+        .task-meta {
+          grid-template-columns: 1fr;
+          gap: 8px;
+        }
+        
+        .test-stats {
+          gap: 8px;
+        }
+        
+        .actions {
+          gap: 6px;
+        }
+        
+        .action-btn {
+          padding: 4px 8px;
+          font-size: 9px;
+        }
+      }
+
+      @media (min-width: 400px) {
+        .task-details {
+          padding: 20px;
+        }
+        
+        .task-meta {
+          grid-template-columns: 1fr 1fr 1fr;
+          gap: 16px;
+        }
+        
+        .test-stats {
+          gap: 24px;
+        }
+        
+        .actions {
+          gap: 12px;
+        }
+      }
+
+      /* VSCode theme integration fallbacks */
+      @media (prefers-color-scheme: light) {
+        .task-details {
+          background: var(--vscode-panel-background, #f3f3f3);
+          border-top-color: var(--vscode-panel-border, #e1e1e1);
+        }
+        
+        .test-results {
+          background: var(--vscode-editor-background, #ffffff);
+          border-color: var(--vscode-panel-border, #e1e1e1);
+        }
+        
+        .failure-item {
+          background: var(--vscode-panel-background, #f3f3f3);
+        }
+      }
+
+      /* Focus management for accessibility */
+      .action-btn:focus {
+        outline: 2px solid var(--vscode-focusBorder, #007acc);
+        outline-offset: 2px;
+      }
+
+      .failures-header:focus {
+        outline: 2px solid var(--vscode-focusBorder, #007acc);
+        outline-offset: 2px;
+        border-radius: 2px;
+      }
+
+      /* Smooth transitions for all interactive elements */
+      * {
+        transition: background-color 0.2s, border-color 0.2s, color 0.2s;
+      }
+
+      /* Print styles */
+      @media print {
+        .actions,
+        .failures-header {
+          display: none;
+        }
+        
+        .task-details {
+          background: white;
+          color: black;
+          border: none;
+        }
+      }
+    `;
+  }
+
+  /**
    * Generates fallback HTML when main template generation fails
    * Called when there's an error in the main HTML generation
    *
@@ -663,7 +925,7 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Task Details - ${task.id}</title>
         <style>
-          body { font-family: var(--vscode-font-family); padding: 10px; background: #1e1e1e; color: #cccccc; }
+          ${this.generateCSS()}
           .fallback { text-align: center; padding: 20px; }
           .error { color: #f48771; margin-bottom: 10px; }
         </style>
@@ -916,18 +1178,12 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>No Task Selected</title>
         <style>
-          body { 
-            font-family: var(--vscode-font-family); 
-            margin: 0; 
-            padding: 0; 
-            background: #1e1e1e; 
-            color: #cccccc; 
-          }
+          ${this.generateCSS()}
           .no-task { 
             padding: 40px 20px; 
             text-align: center; 
-            background: #2d2d30; 
-            border-top: 1px solid #3e3e42;
+            background: var(--vscode-panel-background, #2d2d30); 
+            border-top: 1px solid var(--vscode-panel-border, #3e3e42);
             min-height: 200px;
             display: flex;
             flex-direction: column;
@@ -935,12 +1191,12 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
             align-items: center;
           }
           .no-task h3 { 
-            color: #ffffff; 
+            color: var(--vscode-foreground, #ffffff); 
             margin-bottom: 16px;
             font-size: 16px;
           }
           .no-task p { 
-            color: #d4d4d4; 
+            color: var(--vscode-descriptionForeground, #d4d4d4); 
             margin-bottom: 8px;
             font-size: 13px;
             line-height: 1.4;

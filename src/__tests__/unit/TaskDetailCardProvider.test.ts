@@ -9,8 +9,13 @@
 
 import * as vscode from "vscode";
 import { TaskDetailCardProvider } from "../../tasks/providers/TaskDetailCardProvider";
-import { Task, TaskStatus } from "../../tasks/types";
-import { TestStatus } from "../../tasks/types/taskEnums";
+import {
+  Task,
+  TaskStatus,
+  TaskPriority,
+  TestStatus,
+  TestStatusEnum,
+} from "../../types/tasks";
 
 // Mock VSCode modules
 jest.mock("vscode", () => ({
@@ -106,6 +111,7 @@ describe("TaskDetailCardProvider", () => {
         description: "Test Description",
         status: TaskStatus.NOT_STARTED,
         complexity: "low" as any,
+        priority: "medium" as any,
         dependencies: [],
         requirements: [],
         createdDate: "2024-01-01T00:00:00.000Z",
@@ -200,6 +206,7 @@ describe("TaskDetailCardProvider", () => {
         description: "Test Description",
         status: TaskStatus.NOT_STARTED,
         complexity: "low" as any,
+        priority: "medium" as any,
         dependencies: [],
         requirements: [],
         createdDate: "2024-01-01T00:00:00.000Z",
@@ -255,6 +262,7 @@ describe("TaskDetailCardProvider", () => {
         description: "Test Description",
         status: TaskStatus.NOT_STARTED,
         complexity: "low" as any,
+        priority: "medium" as any,
         dependencies: [],
         requirements: [],
         createdDate: "2024-01-01T00:00:00.000Z",
@@ -273,6 +281,7 @@ describe("TaskDetailCardProvider", () => {
         description: "Test Description",
         status: TaskStatus.NOT_STARTED,
         complexity: "low" as any,
+        priority: TaskPriority.MEDIUM,
         dependencies: [],
         requirements: [],
         createdDate: "2024-01-01T00:00:00.000Z",
@@ -422,6 +431,7 @@ describe("TaskDetailCardProvider", () => {
         description: "Test Description",
         status: TaskStatus.NOT_STARTED,
         complexity: "low" as any,
+        priority: TaskPriority.MEDIUM,
         dependencies: [],
         requirements: [],
         createdDate: "2024-01-01T00:00:00.000Z",
@@ -449,6 +459,7 @@ describe("TaskDetailCardProvider", () => {
         description: "Test Description",
         status: TaskStatus.NOT_STARTED,
         complexity: "low" as any,
+        priority: TaskPriority.MEDIUM,
         dependencies: [],
         requirements: [],
         createdDate: "2024-01-01T00:00:00.000Z",
@@ -476,6 +487,7 @@ describe("TaskDetailCardProvider", () => {
         description: "Test Description",
         status: TaskStatus.NOT_STARTED,
         complexity: "low" as any,
+        priority: TaskPriority.MEDIUM,
         dependencies: [],
         requirements: [],
         createdDate: "2024-01-01T00:00:00.000Z",
@@ -499,6 +511,7 @@ describe("TaskDetailCardProvider", () => {
         description: "Test Description",
         status: TaskStatus.IN_PROGRESS,
         complexity: "medium" as any,
+        priority: TaskPriority.MEDIUM,
         dependencies: [],
         requirements: [],
         createdDate: "2024-01-01T00:00:00.000Z",
@@ -519,6 +532,7 @@ describe("TaskDetailCardProvider", () => {
         description: "Test Description",
         status: TaskStatus.NOT_STARTED,
         complexity: "low" as any,
+        priority: TaskPriority.MEDIUM,
         dependencies: [],
         requirements: [],
         createdDate: "2024-01-01T00:00:00.000Z",
@@ -539,6 +553,7 @@ describe("TaskDetailCardProvider", () => {
         description: "Test Description",
         status: TaskStatus.NOT_STARTED,
         complexity: "low" as any,
+        priority: TaskPriority.MEDIUM,
         dependencies: ["dep-1", "dep-2"],
         requirements: [],
         createdDate: "2024-01-01T00:00:00.000Z",
@@ -559,6 +574,7 @@ describe("TaskDetailCardProvider", () => {
         description: "Test Description",
         status: TaskStatus.NOT_STARTED,
         complexity: "low" as any,
+        priority: TaskPriority.MEDIUM,
         dependencies: [],
         requirements: [],
         createdDate: "2024-01-01T00:00:00.000Z",
@@ -579,6 +595,7 @@ describe("TaskDetailCardProvider", () => {
         description: "Test Description",
         status: TaskStatus.COMPLETED,
         complexity: "low" as any,
+        priority: TaskPriority.MEDIUM,
         dependencies: [],
         requirements: [],
         createdDate: "2024-01-01T00:00:00.000Z",
@@ -588,6 +605,7 @@ describe("TaskDetailCardProvider", () => {
           totalTests: 10,
           passedTests: 8,
           failedTests: 2,
+          status: TestStatusEnum.PARTIAL,
         },
       };
 
@@ -606,6 +624,7 @@ describe("TaskDetailCardProvider", () => {
         description: "Test Description",
         status: TaskStatus.NOT_STARTED,
         complexity: "low" as any,
+        priority: TaskPriority.MEDIUM,
         dependencies: [],
         requirements: [],
         createdDate: "2024-01-01T00:00:00.000Z",
@@ -624,6 +643,7 @@ describe("TaskDetailCardProvider", () => {
         description: "Test Description",
         status: TaskStatus.COMPLETED,
         complexity: "low" as any,
+        priority: TaskPriority.MEDIUM,
         dependencies: [],
         requirements: [],
         createdDate: "2024-01-01T00:00:00.000Z",
@@ -633,6 +653,7 @@ describe("TaskDetailCardProvider", () => {
           totalTests: 10,
           passedTests: 8,
           failedTests: 2,
+          status: TestStatusEnum.PARTIAL,
           failingTestsList: [
             {
               name: "Test 1",
@@ -659,6 +680,7 @@ describe("TaskDetailCardProvider", () => {
         description: "Test Description",
         status: TaskStatus.NOT_STARTED,
         complexity: "low" as any,
+        priority: TaskPriority.MEDIUM,
         dependencies: [],
         requirements: [],
         createdDate: "2024-01-01T00:00:00.000Z",
@@ -680,6 +702,7 @@ describe("TaskDetailCardProvider", () => {
         description: "Test Description",
         status: TaskStatus.IN_PROGRESS,
         complexity: "low" as any,
+        priority: TaskPriority.MEDIUM,
         dependencies: [],
         requirements: [],
         createdDate: "2024-01-01T00:00:00.000Z",
@@ -700,6 +723,7 @@ describe("TaskDetailCardProvider", () => {
         description: "Test Description",
         status: TaskStatus.REVIEW,
         complexity: "low" as any,
+        priority: TaskPriority.MEDIUM,
         dependencies: [],
         requirements: [],
         createdDate: "2024-01-01T00:00:00.000Z",
@@ -720,6 +744,7 @@ describe("TaskDetailCardProvider", () => {
         description: "Test Description",
         status: TaskStatus.COMPLETED,
         complexity: "low" as any,
+        priority: TaskPriority.MEDIUM,
         dependencies: [],
         requirements: [],
         createdDate: "2024-01-01T00:00:00.000Z",
@@ -729,7 +754,8 @@ describe("TaskDetailCardProvider", () => {
           totalTests: 10,
           passedTests: 8,
           failedTests: 2,
-        },
+        
+          status: TestStatusEnum.PARTIAL,},
       };
 
       const html = (provider as any).generateTaskDetailsHTML(mockTask);
@@ -833,6 +859,7 @@ describe("TaskDetailCardProvider", () => {
         description: "Test Description",
         status: TaskStatus.NOT_STARTED,
         complexity: "low" as any,
+        priority: TaskPriority.MEDIUM,
         dependencies: [],
         requirements: [],
         createdDate: "2024-01-01T00:00:00.000Z",
@@ -863,6 +890,265 @@ describe("TaskDetailCardProvider", () => {
       expect(() => {
         (provider as any).generateTaskDetailsHTML(malformedTask);
       }).not.toThrow();
+    });
+  });
+
+  describe("CSS Generation and Styling", () => {
+    it("should generate valid CSS syntax", () => {
+      // Access private method through any type for testing
+      const css = (provider as any).generateCSS();
+
+      // Verify CSS structure
+      expect(css).toContain("/* Reset and base styles */");
+      expect(css).toContain("body {");
+      expect(css).toContain("}");
+      expect(css).toContain("/* Main container styling */");
+      expect(css).toContain("/* Task header section */");
+      expect(css).toContain("/* Status badge styling */");
+      expect(css).toContain("/* Responsive design */");
+    });
+
+    it("should include all required CSS classes", () => {
+      const css = (provider as any).generateCSS();
+
+      // Verify all required CSS classes are present
+      expect(css).toContain(".task-details");
+      expect(css).toContain(".task-header");
+      expect(css).toContain(".task-title");
+      expect(css).toContain(".task-id");
+      expect(css).toContain(".status-badge");
+      expect(css).toContain(".task-description");
+      expect(css).toContain(".task-meta");
+      expect(css).toContain(".dependencies");
+      expect(css).toContain(".test-results");
+      expect(css).toContain(".failures-section");
+      expect(css).toContain(".actions");
+      expect(css).toContain(".action-btn");
+    });
+
+    it("should include exact status badge colors from mockup", () => {
+      const css = (provider as any).generateCSS();
+
+      // Verify exact color values from mockup
+      expect(css).toContain("background: #4a4a4a"); // not-started
+      expect(css).toContain("background: #569cd6"); // in-progress
+      expect(css).toContain("background: #dcdcaa"); // review
+      expect(css).toContain("background: #4ec9b0"); // completed
+      expect(css).toContain("background: #f48771"); // blocked
+      expect(css).toContain("background: #6a6a6a"); // deprecated
+    });
+
+    it("should include complexity color coding", () => {
+      const css = (provider as any).generateCSS();
+
+      // Verify complexity colors
+      expect(css).toContain(".complexity-low");
+      expect(css).toContain(".complexity-medium");
+      expect(css).toContain(".complexity-high");
+      expect(css).toContain("color: #4ec9b0"); // low
+      expect(css).toContain("color: #dcdcaa"); // medium
+      expect(css).toContain("color: #f48771"); // high
+    });
+
+    it("should include responsive design breakpoints", () => {
+      const css = (provider as any).generateCSS();
+
+      // Verify responsive breakpoints
+      expect(css).toContain("@media (max-width: 300px)");
+      expect(css).toContain("@media (min-width: 400px)");
+      expect(css).toContain("grid-template-columns: 1fr");
+      expect(css).toContain("grid-template-columns: 1fr 1fr 1fr");
+    });
+
+    it("should include VSCode theme integration", () => {
+      const css = (provider as any).generateCSS();
+
+      // Verify VSCode CSS custom properties
+      expect(css).toContain("var(--vscode-font-family");
+      expect(css).toContain("var(--vscode-editor-background");
+      expect(css).toContain("var(--vscode-foreground");
+      expect(css).toContain("var(--vscode-panel-background");
+      expect(css).toContain("var(--vscode-panel-border");
+      expect(css).toContain("var(--vscode-button-background");
+      expect(css).toContain("var(--vscode-focusBorder");
+    });
+
+    it("should include accessibility features", () => {
+      const css = (provider as any).generateCSS();
+
+      // Verify accessibility features
+      expect(css).toContain(":focus");
+      expect(css).toContain("outline:");
+      expect(css).toContain("user-select: none");
+      expect(css).toContain("transition:");
+    });
+
+    it("should include interactive element styling", () => {
+      const css = (provider as any).generateCSS();
+
+      // Verify interactive element styling
+      expect(css).toContain(":hover");
+      expect(css).toContain(":active");
+      expect(css).toContain("cursor: pointer");
+      expect(css).toContain("transform:");
+    });
+
+    it("should include print styles", () => {
+      const css = (provider as any).generateCSS();
+
+      // Verify print media query
+      expect(css).toContain("@media print");
+      expect(css).toContain("display: none");
+      expect(css).toContain("background: white");
+      expect(css).toContain("color: black");
+    });
+
+    it("should include light theme fallbacks", () => {
+      const css = (provider as any).generateCSS();
+
+      // Verify light theme support
+      expect(css).toContain("@media (prefers-color-scheme: light)");
+      expect(css).toContain(
+        "background: var(--vscode-panel-background, #f3f3f3)"
+      );
+      expect(css).toContain(
+        "background: var(--vscode-editor-background, #ffffff)"
+      );
+    });
+
+    it("should generate CSS with proper vendor prefixes", () => {
+      const css = (provider as any).generateCSS();
+
+      // Verify CSS properties that might need vendor prefixes
+      expect(css).toContain("box-sizing: border-box");
+      expect(css).toContain("display: grid");
+      expect(css).toContain("display: flex");
+      expect(css).toContain("gap:");
+    });
+
+    it("should include proper spacing and layout CSS", () => {
+      const css = (provider as any).generateCSS();
+
+      // Verify spacing and layout properties
+      expect(css).toContain("padding:");
+      expect(css).toContain("margin:");
+      expect(css).toContain("gap:");
+      expect(css).toContain("border-radius:");
+      expect(css).toContain("border:");
+    });
+
+    it("should include typography styling", () => {
+      const css = (provider as any).generateCSS();
+
+      // Verify typography properties
+      expect(css).toContain("font-family:");
+      expect(css).toContain("font-size:");
+      expect(css).toContain("font-weight:");
+      expect(css).toContain("line-height:");
+      expect(css).toContain("text-transform:");
+      expect(css).toContain("letter-spacing:");
+    });
+
+    it("should include test results section styling", () => {
+      const css = (provider as any).generateCSS();
+
+      // Verify test results styling
+      expect(css).toContain(".test-results");
+      expect(css).toContain(".test-header");
+      expect(css).toContain(".test-stats");
+      expect(css).toContain(".test-stat");
+      expect(css).toContain(".test-passed");
+      expect(css).toContain(".test-failed");
+      expect(css).toContain(".test-total");
+    });
+
+    it("should include failures section styling", () => {
+      const css = (provider as any).generateCSS();
+
+      // Verify failures section styling
+      expect(css).toContain(".failures-section");
+      expect(css).toContain(".failures-header");
+      expect(css).toContain(".failures-list");
+      expect(css).toContain(".failure-item");
+      expect(css).toContain(".failure-name");
+      expect(css).toContain(".failure-message");
+    });
+
+    it("should include action button styling", () => {
+      const css = (provider as any).generateCSS();
+
+      // Verify action button styling
+      expect(css).toContain(".actions");
+      expect(css).toContain(".action-btn");
+      expect(css).toContain(".action-btn.primary");
+      expect(css).toContain(":hover");
+      expect(css).toContain(":active");
+    });
+
+    it("should include dependency tag styling", () => {
+      const css = (provider as any).generateCSS();
+
+      // Verify dependency styling
+      expect(css).toContain(".dependency-list");
+      expect(css).toContain(".dependency-tag");
+      expect(css).toContain("font-family: 'Courier New', monospace");
+      expect(css).toContain("border-radius: 3px");
+    });
+
+    it("should include executable indicator styling", () => {
+      const css = (provider as any).generateCSS();
+
+      // Verify executable indicator styling
+      expect(css).toContain(".executable-indicator");
+      expect(css).toContain("color: var(--vscode-button-background");
+    });
+
+    it("should include section divider styling", () => {
+      const css = (provider as any).generateCSS();
+
+      // Verify section divider styling
+      expect(css).toContain(".section-divider");
+      expect(css).toContain("height: 1px");
+      expect(css).toContain("background:");
+    });
+
+    it("should include no-tests state styling", () => {
+      const css = (provider as any).generateCSS();
+
+      // Verify no-tests styling
+      expect(css).toContain(".no-tests");
+      expect(css).toContain("font-style: italic");
+      expect(css).toContain("text-align: center");
+    });
+
+    it("should generate CSS with proper CSS selector specificity", () => {
+      const css = (provider as any).generateCSS();
+
+      // Verify CSS selector patterns
+      expect(css).toContain(".status-badge.not-started");
+      expect(css).toContain(".status-badge.in-progress");
+      expect(css).toContain(".failures-section.expanded");
+      expect(css).toContain(".action-btn.primary");
+    });
+
+    it("should include proper CSS transitions and animations", () => {
+      const css = (provider as any).generateCSS();
+
+      // Verify transition properties
+      expect(css).toContain("transition:");
+      expect(css).toContain("transform:");
+      expect(css).toContain("transition: transform 0.2s");
+      expect(css).toContain("transition: all 0.2s");
+    });
+
+    it("should generate CSS that works with VSCode webview constraints", () => {
+      const css = (provider as any).generateCSS();
+
+      // Verify VSCode webview compatibility
+      expect(css).toContain("var(--vscode-");
+      expect(css).toContain("font-family: var(--vscode-font-family");
+      expect(css).toContain("background: var(--vscode-editor-background");
+      expect(css).toContain("color: var(--vscode-foreground");
     });
   });
 });
