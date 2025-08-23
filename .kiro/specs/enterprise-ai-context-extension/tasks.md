@@ -268,7 +268,7 @@ This implementation plan breaks down the feature into atomic, TDD-friendly tasks
   - _Requirements: 13.3, 13.6, 12.1, 12.2_
   - _Duration: 20-25 minutes_
 
-- [ ] 4.3.3 Configure taskmaster context menus in package.json
+- [x] 4.3.3 Configure taskmaster context menus in package.json
 
   - Add view/item/context menu entries for executable tasks
   - Configure "Execute Task with Cursor" for items with contextValue "executable-task"
