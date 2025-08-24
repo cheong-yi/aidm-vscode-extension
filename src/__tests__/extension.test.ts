@@ -248,34 +248,28 @@ describe("Extension", () => {
     });
 
     it("should register tree view with selection handler", () => {
-      // This test verifies that the tree view is created using createTreeView
-      // with selection event handling for accordion behavior
-
-      // Arrange: Mock the createTreeView API and selection handler
-      const mockTreeView = {
-        onDidChangeSelection: jest.fn().mockReturnValue({ dispose: jest.fn() }),
-        dispose: jest.fn(),
-      };
-      const mockCreateTreeView = jest.fn().mockReturnValue(mockTreeView);
-      jest
-        .spyOn(vscode.window, "createTreeView")
-        .mockImplementation(mockCreateTreeView);
-
-      // Act: Activate the extension
+      const createTreeViewSpy = jest.spyOn(vscode.window, "createTreeView");
       activate(mockContext);
 
-      // Assert: Verify that createTreeView was called with correct parameters
-      expect(vscode.window.createTreeView).toHaveBeenCalledWith(
+      expect(createTreeViewSpy).toHaveBeenCalledWith(
         "aidm-vscode-extension.tasks-list",
         expect.objectContaining({
           treeDataProvider: expect.any(Object), // TaskTreeViewProvider instance
           showCollapseAll: true,
         })
       );
+    });
 
-      // Assert: Verify that selection event handler was registered
-      expect(mockTreeView.onDidChangeSelection).toHaveBeenCalledWith(
-        expect.any(Function)
+    it("should register TaskTreeViewProvider with VSCode", () => {
+      const registerTreeDataProviderSpy = jest.spyOn(
+        vscode.window,
+        "registerTreeDataProvider"
+      );
+      activate(mockContext);
+
+      expect(registerTreeDataProviderSpy).toHaveBeenCalledWith(
+        "aidm-vscode-extension.tasks-list",
+        expect.any(Object) // TaskTreeViewProvider instance
       );
     });
 
