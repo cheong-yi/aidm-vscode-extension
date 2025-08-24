@@ -503,15 +503,7 @@ export class TaskTreeViewProvider
    */
   public async toggleTaskExpansion(taskId: string): Promise<void> {
     try {
-      // Debug logging to verify method execution
-      console.log(
-        `[TaskTreeView] toggleTaskExpansion called with taskId: ${taskId}`
-      );
-
       const wasExpanded = this.expandedTaskId === taskId;
-      console.log(
-        `[TaskTreeView] Current expanded task: ${this.expandedTaskId}, was expanded: ${wasExpanded}`
-      );
 
       if (this.isDisposed) {
         console.debug(
@@ -538,8 +530,6 @@ export class TaskTreeViewProvider
         this.expandNode(taskId);
       }
 
-      console.log(`[TaskTreeView] New expanded task: ${this.expandedTaskId}`);
-
       console.debug("TaskTreeViewProvider: Task expansion toggled:", {
         taskId,
         newExpandedState: this.expandedTaskId === taskId,
@@ -563,11 +553,7 @@ export class TaskTreeViewProvider
     try {
       // For TaskTreeItem elements, update collapsible state based on expansion state
       if (element instanceof TaskTreeItem) {
-        // Task EXPANSION-FIX-4: Log expansion state for each task item
         const isExpanded = this.expandedTaskId === element.id;
-        console.log(
-          `[TaskTreeView] getTreeItem for ${element.id}, expanded: ${isExpanded}`
-        );
 
         // Check if this task should be expanded based on accordion state
         if (isExpanded) {
@@ -729,26 +715,9 @@ export class TaskTreeViewProvider
         return;
       }
 
-      // Task EXPANSION-FIX-4: Log expansion state before refresh
-      const currentExpanded = this.expandedTaskId;
-      console.log(
-        `[TaskTreeView] Refresh started, preserving expanded task: ${currentExpanded}`
-      );
-
       // Fire event with undefined to refresh entire tree
       // This triggers VSCode to call getChildren() and update the view
       this._onDidChangeTreeData.fire(undefined);
-
-      // Task EXPANSION-FIX-4: Verify expansion state is maintained after refresh
-      console.log(
-        `[TaskTreeView] Refresh completed, expanded task still: ${this.expandedTaskId}`
-      );
-
-      if (currentExpanded !== this.expandedTaskId) {
-        console.warn(
-          `[TaskTreeView] Expansion state lost during refresh! Expected: ${currentExpanded}, Got: ${this.expandedTaskId}`
-        );
-      }
 
       // Log refresh event for debugging (can be removed in production)
       console.debug("TaskTreeViewProvider: Tree refresh triggered");
@@ -772,25 +741,8 @@ export class TaskTreeViewProvider
         return;
       }
 
-      // Task EXPANSION-FIX-4: Log expansion state before item refresh
-      const currentExpanded = this.expandedTaskId;
-      console.log(
-        `[TaskTreeView] Item refresh started for ${taskItem.id}, preserving expanded task: ${currentExpanded}`
-      );
-
       // Fire event with specific item to refresh just that item
       this._onDidChangeTreeData.fire(taskItem);
-
-      // Task EXPANSION-FIX-4: Verify expansion state is maintained after item refresh
-      console.log(
-        `[TaskTreeView] Item refresh completed for ${taskItem.id}, expanded task still: ${this.expandedTaskId}`
-      );
-
-      if (currentExpanded !== this.expandedTaskId) {
-        console.warn(
-          `[TaskTreeView] Expansion state lost during item refresh! Expected: ${currentExpanded}, Got: ${this.expandedTaskId}`
-        );
-      }
 
       console.debug(
         "TaskTreeViewProvider: Item refresh triggered for:",
