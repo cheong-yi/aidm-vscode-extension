@@ -931,6 +931,90 @@ export async function activate(
       console.error("❌ taskTreeItemClick command failed:", error);
     }
 
+    // Register generate task prompt command - CMD-001
+    try {
+      const generateTaskPromptCommand = vscode.commands.registerCommand(
+        getCommandId("generateTaskPrompt"),
+        async (taskId: string) => {
+          // Parameter validation
+          if (!taskId || typeof taskId !== "string") {
+            vscode.window.showErrorMessage(
+              "Task ID is required and must be a string"
+            );
+            return;
+          }
+
+          try {
+            // Get task details
+            const task = await tasksDataService.getTaskById(taskId);
+
+            if (!task) {
+              vscode.window.showErrorMessage(`Task ${taskId} not found`);
+              return;
+            }
+
+            // TODO: Implement prompt generation logic
+            vscode.window.showInformationMessage(
+              `Generating prompt for task: ${task.title}`
+            );
+          } catch (error) {
+            const errorMessage =
+              error instanceof Error ? error.message : "Unknown error occurred";
+            vscode.window.showErrorMessage(
+              `Error generating task prompt: ${errorMessage}`
+            );
+            console.error("GenerateTaskPrompt command error:", error);
+          }
+        }
+      );
+      context.subscriptions.push(generateTaskPromptCommand);
+      console.log("✅ generateTaskPrompt command registered - CMD-001");
+    } catch (error) {
+      console.error("❌ generateTaskPrompt command failed:", error);
+    }
+
+    // Register view test results command - CMD-001
+    try {
+      const viewTestResultsCommand = vscode.commands.registerCommand(
+        getCommandId("viewTestResults"),
+        async (taskId: string) => {
+          // Parameter validation
+          if (!taskId || typeof taskId !== "string") {
+            vscode.window.showErrorMessage(
+              "Task ID is required and must be a string"
+            );
+            return;
+          }
+
+          try {
+            // Get task details
+            const task = await tasksDataService.getTaskById(taskId);
+
+            if (!task) {
+              vscode.window.showErrorMessage(`Task ${taskId} not found`);
+              return;
+            }
+
+            // TODO: Implement test results viewing logic
+            vscode.window.showInformationMessage(
+              `Viewing test results for task: ${task.title}`
+            );
+          } catch (error) {
+            const errorMessage =
+              error instanceof Error ? error.message : "Unknown error occurred";
+            vscode.window.showErrorMessage(
+              `Error viewing test results: ${errorMessage}`
+            );
+            console.error("ViewTestResults command error:", error);
+          }
+        }
+      );
+      context.subscriptions.push(viewTestResultsCommand);
+      console.log("✅ viewTestResults command registered - CMD-001");
+    } catch (error) {
+      console.error("❌ viewTestResults command failed:", error);
+    }
+
     // Register configuration change listener
     try {
       const configChangeDisposable = vscode.workspace.onDidChangeConfiguration(
