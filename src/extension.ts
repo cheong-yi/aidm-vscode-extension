@@ -1,4 +1,6 @@
 import * as vscode from "vscode";
+import * as path from "path";
+import * as fs from "fs";
 import { MCPClient } from "./client/mcpClient";
 import { BusinessContextHover } from "./providers/hoverProvider";
 import { StatusBarManagerImpl } from "./ui/statusBar";
@@ -296,8 +298,34 @@ export async function activate(
 
     console.log("=== ACTIVATION STEP 8.7.5: Initializing TaskFileWatcher ===");
     try {
-      // Initialize file watcher to monitor tasks.md changes
-      taskFileWatcher = new TaskFileWatcher("./tasks.md");
+      // Get workspace root for configurable tasks.md path resolution
+      const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+
+      if (!workspaceRoot) {
+        console.warn(
+          "[Extension] No workspace folder found, using fallback path"
+        );
+        vscode.window.showWarningMessage(
+          "No workspace folder found. Tasks functionality may be limited."
+        );
+        // Continue without file watching - extension will still function
+        return;
+      }
+
+      // Get configured path or use default
+      const config = vscode.workspace.getConfiguration("aidmVscodeExtension");
+      const configuredTasksPath = config.get<string>(
+        "tasks.filePath",
+        "tasks.md"
+      );
+
+      // Create absolute path
+      const tasksFilePath = path.join(workspaceRoot, configuredTasksPath);
+      console.log(`[Extension] Using tasks file: ${tasksFilePath}`);
+      console.log(`[Extension] File exists: ${fs.existsSync(tasksFilePath)}`);
+
+      // Initialize with absolute path
+      taskFileWatcher = new TaskFileWatcher(tasksFilePath);
 
       // Start watching for file changes and wire to UI refresh
       taskFileWatcher.startWatching(async () => {
@@ -325,7 +353,9 @@ export async function activate(
         }
       });
 
-      console.log("✅ TaskFileWatcher initialized and watching tasks.md");
+      console.log(
+        `✅ TaskFileWatcher initialized and watching: ${tasksFilePath}`
+      );
     } catch (error) {
       console.error("❌ TaskFileWatcher initialization failed:", error);
       // Continue without file watching - extension will still function

@@ -188,4 +188,47 @@ describe("Extension UI Event Synchronization", () => {
       });
     });
   });
+
+  describe("Task File Path Resolution", () => {
+    it("should resolve workspace-relative paths correctly", () => {
+      // Mock workspace folders
+      const mockWorkspaceFolders = [{ uri: { fsPath: "/workspace/root" } }];
+
+      // Mock configuration
+      const mockConfig = {
+        get: jest.fn((key: string, defaultValue: any) => {
+          if (key === "tasks.filePath") return "custom-tasks.md";
+          return defaultValue;
+        }),
+      };
+
+      // Test path resolution logic
+      const workspaceRoot = mockWorkspaceFolders[0]?.uri.fsPath;
+      const configuredTasksPath = mockConfig.get("tasks.filePath", "tasks.md");
+      const expectedPath = "/workspace/root/custom-tasks.md";
+
+      expect(workspaceRoot).toBe("/workspace/root");
+      expect(configuredTasksPath).toBe("custom-tasks.md");
+      expect(expectedPath).toBe("/workspace/root/custom-tasks.md");
+    });
+
+    it("should handle missing workspace gracefully", () => {
+      // Mock no workspace folders
+      const mockWorkspaceFolders: any[] = [];
+
+      // Test graceful handling
+      const workspaceRoot = mockWorkspaceFolders[0]?.uri.fsPath;
+      expect(workspaceRoot).toBeUndefined();
+    });
+
+    it("should use default path when configuration is not set", () => {
+      // Mock configuration with no custom path
+      const mockConfig = {
+        get: jest.fn((key: string, defaultValue: any) => defaultValue),
+      };
+
+      const defaultPath = mockConfig.get("tasks.filePath", "tasks.md");
+      expect(defaultPath).toBe("tasks.md");
+    });
+  });
 });

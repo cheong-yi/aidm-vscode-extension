@@ -246,6 +246,11 @@
           "type": "string",
           "default": "",
           "description": "API key for remote MCP server authentication"
+        },
+        "aidmVscodeExtension.tasks.filePath": {
+          "type": "string",
+          "default": "tasks.md",
+          "description": "Path to tasks.md file relative to workspace root"
         }
       }
     },
