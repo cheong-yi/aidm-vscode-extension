@@ -28,6 +28,12 @@ export const window = {
   registerTreeDataProvider: jest.fn(() => ({
     dispose: jest.fn(),
   })),
+  createTreeView: jest.fn(() => ({
+    onDidChangeSelection: jest.fn(() => ({
+      dispose: jest.fn(),
+    })),
+    dispose: jest.fn(),
+  })),
 };
 
 export const workspace = {

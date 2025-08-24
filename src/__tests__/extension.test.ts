@@ -247,25 +247,35 @@ describe("Extension", () => {
       expect(mockTask.requirements).toEqual([]);
     });
 
-    it("should register tree view with correct ID matching package.json", () => {
-      // This test verifies that the tree view is registered with the correct ID
-      // that matches the package.json contributions configuration
+    it("should register tree view with selection handler", () => {
+      // This test verifies that the tree view is created using createTreeView
+      // with selection event handling for accordion behavior
 
-      // Arrange: Mock the registerTreeDataProvider API
-      const mockRegisterTreeDataProvider = jest
-        .fn()
-        .mockReturnValue({ dispose: jest.fn() });
+      // Arrange: Mock the createTreeView API and selection handler
+      const mockTreeView = {
+        onDidChangeSelection: jest.fn().mockReturnValue({ dispose: jest.fn() }),
+        dispose: jest.fn(),
+      };
+      const mockCreateTreeView = jest.fn().mockReturnValue(mockTreeView);
       jest
-        .spyOn(vscode.window, "registerTreeDataProvider")
-        .mockImplementation(mockRegisterTreeDataProvider);
+        .spyOn(vscode.window, "createTreeView")
+        .mockImplementation(mockCreateTreeView);
 
       // Act: Activate the extension
       activate(mockContext);
 
-      // Assert: Verify that the tree view was registered with the correct ID
-      expect(mockRegisterTreeDataProvider).toHaveBeenCalledWith(
+      // Assert: Verify that createTreeView was called with correct parameters
+      expect(vscode.window.createTreeView).toHaveBeenCalledWith(
         "aidm-vscode-extension.tasks-list",
-        expect.any(Object) // TaskTreeViewProvider instance
+        expect.objectContaining({
+          treeDataProvider: expect.any(Object), // TaskTreeViewProvider instance
+          showCollapseAll: true,
+        })
+      );
+
+      // Assert: Verify that selection event handler was registered
+      expect(mockTreeView.onDidChangeSelection).toHaveBeenCalledWith(
+        expect.any(Function)
       );
     });
   });

@@ -20,7 +20,7 @@ import {
 } from "./services";
 import { TaskStatus, Task } from "./types/tasks";
 import { TaskDetailCardProvider } from "./tasks/providers/TaskDetailCardProvider";
-import { TaskTreeViewProvider } from "./tasks/providers";
+import { TaskTreeViewProvider, TaskTreeItem } from "./tasks/providers";
 import { TimeFormattingUtility } from "./utils";
 
 /**
@@ -39,6 +39,7 @@ let processManager: ProcessManager;
 let tasksDataService: TasksDataService;
 let taskDetailProvider: TaskDetailCardProvider;
 let taskTreeViewProvider: TaskTreeViewProvider;
+let taskTreeView: vscode.TreeView<any>;
 let timeFormattingUtility: TimeFormattingUtility;
 
 export async function activate(
@@ -295,19 +296,49 @@ export async function activate(
     }
 
     console.log(
-      "=== ACTIVATION STEP 8.10.5: Registering TaskTreeViewProvider with VSCode ==="
+      "=== ACTIVATION STEP 8.10.5: Creating Tree View with Selection Handler ==="
     );
     try {
-      // Register TaskTreeViewProvider with VSCode's tree data provider API
-      const treeViewDisposable = vscode.window.registerTreeDataProvider(
+      // Create tree view with selection event handling for accordion behavior
+      taskTreeView = vscode.window.createTreeView(
         "aidm-vscode-extension.tasks-list",
-        taskTreeViewProvider
+        {
+          treeDataProvider: taskTreeViewProvider,
+          showCollapseAll: true,
+        }
       );
-      context.subscriptions.push(treeViewDisposable);
-      console.log("✅ TaskTreeViewProvider registered with VSCode");
+
+      // Register selection change handler for accordion expansion logic
+      const selectionChangeDisposable = taskTreeView.onDidChangeSelection(
+        async (e: vscode.TreeViewSelectionChangeEvent<any>) => {
+          try {
+            // Handle empty selection arrays gracefully
+            if (e.selection.length === 0) {
+              return;
+            }
+
+            // Get the selected task item
+            const selectedItem = e.selection[0];
+            if (selectedItem && selectedItem.task) {
+              // TODO: Task 3.2.12 - Connect Click Events to Expansion Logic
+              // This will wire to TaskTreeViewProvider.expandNode() method
+              console.log(
+                `Tree view selection changed to task: ${selectedItem.task.id}`
+              );
+            }
+          } catch (error) {
+            console.error("Error handling tree view selection change:", error);
+            // Continue without selection handling
+          }
+        }
+      );
+
+      // Add both the tree view and selection handler to subscriptions for proper disposal
+      context.subscriptions.push(taskTreeView, selectionChangeDisposable);
+      console.log("✅ Tree view created with selection handler");
     } catch (error) {
-      console.error("❌ TaskTreeViewProvider registration failed:", error);
-      // Continue without tree view provider
+      console.error("❌ Tree view creation failed:", error);
+      // Continue without tree view
     }
 
     console.log(
