@@ -7,6 +7,7 @@
  */
 
 import { jest } from "@jest/globals";
+import { promises as fs } from "fs";
 import { MarkdownTaskParser } from "../../../services/MarkdownTaskParser";
 import {
   Task,
@@ -49,6 +50,13 @@ describe("MarkdownTaskParser", () => {
   describe("MarkdownTaskParser - parseTasksFromFile", () => {
     // Test 1: Return type and promise
     it("should return Promise<Task[]> when parseTasksFromFile is called", async () => {
+      // Arrange
+      const mockFileContent = `
+- [x] 1.1 Create basic structure ✅
+- [ ] 1.2 Add functionality
+`;
+      jest.spyOn(fs, "readFile").mockResolvedValue(mockFileContent);
+
       const result = parser.parseTasksFromFile("test.md");
       expect(result).toBeInstanceOf(Promise);
 
@@ -59,6 +67,14 @@ describe("MarkdownTaskParser", () => {
 
     // Test 2: Mock data structure
     it("should return array of valid Task objects with required properties", async () => {
+      // Arrange
+      const mockFileContent = `
+- [x] 2.1 Create basic structure ✅
+- [ ] 2.2 Add functionality
+- [x] 2.3 Test implementation ✅
+`;
+      jest.spyOn(fs, "readFile").mockResolvedValue(mockFileContent);
+
       const tasks = await parser.parseTasksFromFile("test.md");
 
       expect(tasks.length).toBeGreaterThanOrEqual(2);
@@ -79,6 +95,14 @@ describe("MarkdownTaskParser", () => {
 
     // Test 3: Consistent structure (content may vary due to randomization)
     it("should return consistent structure on multiple calls", async () => {
+      // Arrange
+      const mockFileContent = `
+- [x] 3.1 Create basic structure ✅
+- [ ] 3.2 Add functionality
+- [x] 3.3 Test implementation ✅
+`;
+      jest.spyOn(fs, "readFile").mockResolvedValue(mockFileContent);
+
       const firstCall = await parser.parseTasksFromFile("test1.md");
       const secondCall = await parser.parseTasksFromFile("test2.md");
 
@@ -99,27 +123,19 @@ describe("MarkdownTaskParser", () => {
         expect(task.complexity).toBe(secondTask.complexity);
         expect(task.dependencies).toEqual(secondTask.dependencies);
         expect(task.requirements).toEqual(secondTask.requirements);
-
-        // Test status structure should be consistent but content may vary due to randomization
-        if (task.testStatus && secondTask.testStatus) {
-          expect(task.testStatus.totalTests).toBe(
-            secondTask.testStatus.totalTests
-          );
-          expect(task.testStatus.passedTests).toBe(
-            secondTask.testStatus.passedTests
-          );
-          expect(task.testStatus.failedTests).toBe(
-            secondTask.testStatus.failedTests
-          );
-          expect(task.testStatus.failingTestsList?.length).toBe(
-            secondTask.testStatus.failingTestsList?.length
-          );
-        }
       });
     });
 
     // Test 4: Different task statuses
     it("should return tasks with different status values", async () => {
+      // Arrange
+      const mockFileContent = `
+- [x] 4.1 Create basic structure ✅
+- [ ] 4.2 Add functionality
+- [x] 4.3 Test implementation ✅
+`;
+      jest.spyOn(fs, "readFile").mockResolvedValue(mockFileContent);
+
       const tasks = await parser.parseTasksFromFile("test.md");
 
       const statuses = tasks.map((t) => t.status);
@@ -127,24 +143,91 @@ describe("MarkdownTaskParser", () => {
 
       expect(uniqueStatuses.length).toBeGreaterThan(1);
       expect(statuses).toContain(TaskStatus.COMPLETED);
-      expect(statuses).toContain(TaskStatus.IN_PROGRESS);
+      expect(statuses).toContain(TaskStatus.NOT_STARTED);
     });
 
-    // Test 5: No errors
-    it("should not throw errors when called with any filePath", async () => {
-      const testPaths = [
-        "test.md",
-        "README.md",
-        "tasks.md",
-        "nonexistent.md",
-        "",
-      ];
+    // Test 5: File reading errors are handled
+    it("should handle file reading errors gracefully", async () => {
+      // Arrange
+      const errorMessage = "ENOENT: no such file or directory";
+      jest.spyOn(fs, "readFile").mockRejectedValue(new Error(errorMessage));
 
-      for (const filePath of testPaths) {
-        await expect(
-          parser.parseTasksFromFile(filePath)
-        ).resolves.toBeDefined();
-      }
+      // Act & Assert
+      await expect(parser.parseTasksFromFile("nonexistent.md")).rejects.toThrow(
+        "Could not read tasks file: ENOENT: no such file or directory"
+      );
+    });
+
+    // DATA-001: Test file reading functionality
+    it("should read and parse tasks from actual tasks.md file", async () => {
+      // Arrange
+      const mockFileContent = `
+### 1. Set up project structure
+- [x] 1.1 Create directory structure for task management components ✅
+- [ ] 1.2 Define core task type interfaces and enums
+`;
+      jest.spyOn(fs, "readFile").mockResolvedValue(mockFileContent);
+
+      // Act
+      const result = await parser.parseTasksFromFile("./tasks.md");
+
+      // Assert
+      expect(result).toHaveLength(2);
+      expect(result[0].id).toBe("1.1");
+      expect(result[0].status).toBe(TaskStatus.COMPLETED);
+      expect(result[1].id).toBe("1.2");
+      expect(result[1].status).toBe(TaskStatus.NOT_STARTED);
+    });
+
+    // DATA-001: Test file reading error handling
+    it("should throw descriptive error when file cannot be read", async () => {
+      // Arrange
+      const filePath = "./nonexistent.md";
+      const errorMessage = "ENOENT: no such file or directory";
+      jest.spyOn(fs, "readFile").mockRejectedValue(new Error(errorMessage));
+
+      // Act & Assert
+      await expect(parser.parseTasksFromFile(filePath)).rejects.toThrow(
+        "Could not read tasks file: ENOENT: no such file or directory"
+      );
+    });
+
+    // DATA-001: Test parseTasksFromMarkdownContent method
+    it("should parse markdown content into Task objects", () => {
+      // Arrange
+      const markdownContent = `
+- [x] 2.1 Create basic structure ✅
+- [ ] 2.2 Add functionality
+- [x] 2.3 Test implementation ✅
+`;
+
+      // Act
+      const result = parser.parseTasksFromMarkdownContent(markdownContent);
+
+      // Assert
+      expect(result).toHaveLength(3);
+      expect(result[0].id).toBe("2.1");
+      expect(result[0].status).toBe(TaskStatus.COMPLETED);
+      expect(result[1].id).toBe("2.2");
+      expect(result[1].status).toBe(TaskStatus.NOT_STARTED);
+      expect(result[2].id).toBe("2.3");
+      expect(result[2].status).toBe(TaskStatus.COMPLETED);
+    });
+
+    // DATA-001: Test empty markdown content handling
+    it("should return empty array for empty markdown content", () => {
+      // Arrange
+      const emptyContent = "";
+      const whitespaceContent = "   \n  \n  ";
+
+      // Act
+      const emptyResult = parser.parseTasksFromMarkdownContent(emptyContent);
+      const whitespaceResult =
+        parser.parseTasksFromMarkdownContent(whitespaceContent);
+
+      // Assert
+      expect(emptyResult).toEqual([]);
+      expect(whitespaceResult).toEqual([]);
     });
   });
 
