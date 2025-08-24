@@ -120,13 +120,77 @@ function setupUIEventSynchronization(): vscode.Disposable[] {
 
     // Error events show user notifications
     const errorSubscription = tasksDataService.onError.event(
-      (error: TaskErrorResponse) => {
+      async (error: TaskErrorResponse) => {
         try {
-          const errorMessage =
-            error.userInstructions ||
-            `Task operation failed: ${error.operation}`;
-          vscode.window.showErrorMessage(errorMessage);
-          console.warn("UI Sync: Service error displayed to user:", error);
+          // Task 4: Enhanced file validation error handling with user feedback
+          if (error.operation === "file_validation") {
+            // Handle file validation errors with action options
+            const errorMessage =
+              error.userInstructions || "Tasks file validation failed";
+            const action = await vscode.window.showErrorMessage(
+              errorMessage,
+              "Open Settings",
+              "Create tasks.md",
+              "Use Mock Data"
+            );
+
+            if (action === "Open Settings") {
+              // Open VS Code settings for the extension
+              vscode.commands.executeCommand(
+                "workbench.action.openSettings",
+                "aidmVscodeExtension.tasks.filePath"
+              );
+            } else if (action === "Create tasks.md") {
+              try {
+                // Access markdownParser through TasksDataService for file creation
+                const markdownParser = (tasksDataService as any).markdownParser;
+                if (
+                  markdownParser &&
+                  typeof markdownParser.createEmptyTasksFile === "function"
+                ) {
+                  const success = await markdownParser.createEmptyTasksFile(
+                    "./tasks.md"
+                  );
+                  if (success) {
+                    vscode.window.showInformationMessage(
+                      `Created tasks.md file at: ${path.basename("./tasks.md")}`
+                    );
+                    // Refresh tasks after creating the file
+                    await tasksDataService.refreshTasks();
+                  } else {
+                    vscode.window.showErrorMessage(
+                      `Failed to create tasks.md file. Please create it manually.`
+                    );
+                  }
+                } else {
+                  vscode.window.showErrorMessage(
+                    `Cannot create tasks.md file - parser not available. Please create it manually.`
+                  );
+                }
+              } catch (createError) {
+                vscode.window.showErrorMessage(
+                  `Failed to create tasks.md file: ${
+                    createError instanceof Error
+                      ? createError.message
+                      : "Unknown error"
+                  }`
+                );
+              }
+            } else if (action === "Use Mock Data") {
+              vscode.window.showInformationMessage(
+                "Using mock data. Tasks will be loaded from demo scenarios."
+              );
+              // The service will fall back to mock data automatically
+            }
+          } else {
+            // Handle other types of errors with simple error message
+            const errorMessage =
+              error.userInstructions ||
+              `Task operation failed: ${error.operation}`;
+            vscode.window.showErrorMessage(errorMessage);
+          }
+
+          console.warn("UI Sync: Service error handled:", error);
         } catch (displayError) {
           console.error(
             "UI Sync: Error displaying error notification:",
@@ -271,6 +335,95 @@ export async function activate(
     } catch (error) {
       console.error("❌ TasksDataService initialization failed:", error);
       throw error;
+    }
+
+    console.log(
+      "=== ACTIVATION STEP 8.5.5: Setting up file validation error handling ==="
+    );
+    try {
+      // Task 4: Enhanced file validation error handling with user feedback
+      const handleFileValidationError = async (
+        error: Error,
+        filePath: string
+      ) => {
+        const errorMessage = error.message;
+
+        // Check if it's a file validation error
+        if (errorMessage.includes("Tasks file validation failed:")) {
+          const validationError = errorMessage.replace(
+            "Tasks file validation failed: ",
+            ""
+          );
+
+          // Show user-friendly error message with action options
+          const action = await vscode.window.showErrorMessage(
+            `Tasks file issue: ${validationError}`,
+            "Open Settings",
+            "Create tasks.md",
+            "Use Mock Data"
+          );
+
+          if (action === "Open Settings") {
+            // Open VS Code settings for the extension
+            vscode.commands.executeCommand(
+              "workbench.action.openSettings",
+              "aidmVscodeExtension.tasks.filePath"
+            );
+          } else if (action === "Create tasks.md") {
+            try {
+              // Access markdownParser through TasksDataService for file creation
+              const markdownParser = (tasksDataService as any).markdownParser;
+              if (
+                markdownParser &&
+                typeof markdownParser.createEmptyTasksFile === "function"
+              ) {
+                const success = await markdownParser.createEmptyTasksFile(
+                  filePath
+                );
+                if (success) {
+                  vscode.window.showInformationMessage(
+                    `Created tasks.md file at: ${path.basename(filePath)}`
+                  );
+                  // Refresh tasks after creating the file
+                  await tasksDataService.refreshTasks();
+                } else {
+                  vscode.window.showErrorMessage(
+                    `Failed to create tasks.md file. Please create it manually.`
+                  );
+                }
+              } else {
+                vscode.window.showErrorMessage(
+                  `Cannot create tasks.md file - parser not available. Please create it manually.`
+                );
+              }
+            } catch (createError) {
+              vscode.window.showErrorMessage(
+                `Failed to create tasks.md file: ${
+                  createError instanceof Error
+                    ? createError.message
+                    : "Unknown error"
+                }`
+              );
+            }
+          } else if (action === "Use Mock Data") {
+            vscode.window.showInformationMessage(
+              "Using mock data. Tasks will be loaded from demo scenarios."
+            );
+            // The service will fall back to mock data automatically
+          }
+        } else {
+          // Handle other types of errors
+          vscode.window.showErrorMessage(`Task loading error: ${errorMessage}`);
+        }
+      };
+
+      // Store the error handler for use in other parts of the extension
+      (global as any).handleFileValidationError = handleFileValidationError;
+
+      console.log("✅ File validation error handling setup completed");
+    } catch (error) {
+      console.error("❌ File validation error handling setup failed:", error);
+      // Continue without enhanced error handling
     }
 
     console.log(

@@ -146,7 +146,35 @@ export class TasksDataService implements ITasksDataService {
         );
         return parsedTasks;
       } catch (fileError) {
-        console.error("File fallback failed, using mock data:", fileError);
+        // Task 4: Enhanced file validation error handling with user feedback
+        const errorMessage =
+          fileError instanceof Error ? fileError.message : String(fileError);
+
+        // Check if this is a file validation error that should trigger user notification
+        if (errorMessage.includes("Tasks file validation failed:")) {
+          console.error(
+            "File validation failed, triggering user notification:",
+            errorMessage
+          );
+
+          // Fire error event for file validation issues
+          this.onError.fire({
+            operation: "file_validation",
+            taskId: "N/A",
+            suggestedAction: "configure_file",
+            userInstructions: `Tasks file issue: ${errorMessage.replace(
+              "Tasks file validation failed: ",
+              ""
+            )}`,
+            technicalDetails: errorMessage,
+          });
+
+          // Note: User notification will be handled by the extension.ts error handler
+          // which listens to the onError event and shows appropriate UI messages
+        } else {
+          console.error("File parsing error (non-validation):", errorMessage);
+        }
+
         console.log("[TasksDataService] Falling back to mock data provider");
         const mockTasks = await this.mockDataProvider.getTasks();
         console.log(

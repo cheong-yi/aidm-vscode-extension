@@ -8,7 +8,22 @@
 
 import { jest } from "@jest/globals";
 import { promises as fs } from "fs";
+import * as fsSync from "fs";
 import { MarkdownTaskParser } from "../../../services/MarkdownTaskParser";
+
+// Mock specific fs functions
+jest.mock("fs", () => ({
+  existsSync: jest.fn(),
+  constants: {
+    R_OK: 4,
+  },
+}));
+
+jest.mock("fs/promises", () => ({
+  stat: jest.fn(),
+  access: jest.fn(),
+  readFile: jest.fn(),
+}));
 import {
   Task,
   TaskStatus,
@@ -55,7 +70,15 @@ describe("MarkdownTaskParser", () => {
 - [x] 1.1 Create basic structure ✅
 - [ ] 1.2 Add functionality
 `;
-      jest.spyOn(fs, "readFile").mockResolvedValue(mockFileContent);
+
+      // Mock file system validation to pass
+      (fsSync.existsSync as jest.Mock).mockReturnValue(true);
+      (fs.stat as jest.Mock).mockResolvedValue({
+        isFile: () => true,
+        size: 100,
+      });
+      (fs.access as jest.Mock).mockResolvedValue(undefined);
+      (fs.readFile as jest.Mock).mockResolvedValue(mockFileContent);
 
       const result = parser.parseTasksFromFile("test.md");
       expect(result).toBeInstanceOf(Promise);
@@ -73,7 +96,15 @@ describe("MarkdownTaskParser", () => {
 - [ ] 2.2 Add functionality
 - [x] 2.3 Test implementation ✅
 `;
-      jest.spyOn(fs, "readFile").mockResolvedValue(mockFileContent);
+
+      // Mock file system validation to pass
+      (fsSync.existsSync as jest.Mock).mockReturnValue(true);
+      (fs.stat as jest.Mock).mockResolvedValue({
+        isFile: () => true,
+        size: 100,
+      });
+      (fs.access as jest.Mock).mockResolvedValue(undefined);
+      (fs.readFile as jest.Mock).mockResolvedValue(mockFileContent);
 
       const tasks = await parser.parseTasksFromFile("test.md");
 
@@ -101,7 +132,15 @@ describe("MarkdownTaskParser", () => {
 - [ ] 3.2 Add functionality
 - [x] 3.3 Test implementation ✅
 `;
-      jest.spyOn(fs, "readFile").mockResolvedValue(mockFileContent);
+
+      // Mock file system validation to pass
+      (fsSync.existsSync as jest.Mock).mockReturnValue(true);
+      (fs.stat as jest.Mock).mockResolvedValue({
+        isFile: () => true,
+        size: 100,
+      });
+      (fs.access as jest.Mock).mockResolvedValue(undefined);
+      (fs.readFile as jest.Mock).mockResolvedValue(mockFileContent);
 
       const firstCall = await parser.parseTasksFromFile("test1.md");
       const secondCall = await parser.parseTasksFromFile("test2.md");
@@ -134,7 +173,15 @@ describe("MarkdownTaskParser", () => {
 - [ ] 4.2 Add functionality
 - [x] 4.3 Test implementation ✅
 `;
-      jest.spyOn(fs, "readFile").mockResolvedValue(mockFileContent);
+
+      // Mock file system validation to pass
+      (fsSync.existsSync as jest.Mock).mockReturnValue(true);
+      (fs.stat as jest.Mock).mockResolvedValue({
+        isFile: () => true,
+        size: 100,
+      });
+      (fs.access as jest.Mock).mockResolvedValue(undefined);
+      (fs.readFile as jest.Mock).mockResolvedValue(mockFileContent);
 
       const tasks = await parser.parseTasksFromFile("test.md");
 
@@ -147,14 +194,13 @@ describe("MarkdownTaskParser", () => {
     });
 
     // Test 5: File reading errors are handled
-    it("should handle file reading errors gracefully", async () => {
-      // Arrange
-      const errorMessage = "ENOENT: no such file or directory";
-      jest.spyOn(fs, "readFile").mockRejectedValue(new Error(errorMessage));
+    it("should handle file validation errors gracefully", async () => {
+      // Arrange - Test with non-existent file (validation will fail before file reading)
+      const filePath = "nonexistent.md";
 
       // Act & Assert
-      await expect(parser.parseTasksFromFile("nonexistent.md")).rejects.toThrow(
-        "Could not read tasks file: ENOENT: no such file or directory"
+      await expect(parser.parseTasksFromFile(filePath)).rejects.toThrow(
+        "Tasks file validation failed: Tasks file not found: nonexistent.md"
       );
     });
 
@@ -166,7 +212,15 @@ describe("MarkdownTaskParser", () => {
 - [x] 1.1 Create directory structure for task management components ✅
 - [ ] 1.2 Define core task type interfaces and enums
 `;
-      jest.spyOn(fs, "readFile").mockResolvedValue(mockFileContent);
+
+      // Mock file system validation to pass
+      (fsSync.existsSync as jest.Mock).mockReturnValue(true);
+      (fs.stat as jest.Mock).mockResolvedValue({
+        isFile: () => true,
+        size: 100,
+      });
+      (fs.access as jest.Mock).mockResolvedValue(undefined);
+      (fs.readFile as jest.Mock).mockResolvedValue(mockFileContent);
 
       // Act
       const result = await parser.parseTasksFromFile("./tasks.md");
@@ -183,8 +237,16 @@ describe("MarkdownTaskParser", () => {
     it("should throw descriptive error when file cannot be read", async () => {
       // Arrange
       const filePath = "./nonexistent.md";
-      const errorMessage = "ENOENT: no such file or directory";
-      jest.spyOn(fs, "readFile").mockRejectedValue(new Error(errorMessage));
+
+      // Mock file system validation to pass, but file reading to fail
+      jest.spyOn(fsSync, "existsSync").mockReturnValue(true);
+      jest
+        .spyOn(fs, "stat")
+        .mockResolvedValue({ isFile: () => true, size: 100 } as any);
+      jest.spyOn(fs, "access").mockResolvedValue(undefined);
+      jest
+        .spyOn(fs, "readFile")
+        .mockRejectedValue(new Error("ENOENT: no such file or directory"));
 
       // Act & Assert
       await expect(parser.parseTasksFromFile(filePath)).rejects.toThrow(

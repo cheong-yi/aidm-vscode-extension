@@ -6,10 +6,11 @@
  * Enhanced Task 2.6.1: Update mock data to include estimatedDuration and enhanced test results
  * Enhanced Task 2.6.3: Add realistic ISO timestamp mock data for relative time testing
  * DATA-001: Implement file reading in parseTasksFromFile method
+ * Task 4: Add comprehensive file path validation with user feedback
  * Requirements: 3.1-3.6, 4.1-4.4, 7.1-7.6, 6.8, 6.9, 7.7, 4.8, 7.9, 9.3
  */
 
-import { promises as fs, existsSync } from "fs";
+import { promises as fs, existsSync, constants } from "fs";
 import * as path from "path";
 import {
   Task,
@@ -28,15 +29,138 @@ export class MarkdownTaskParser {
   }
 
   /**
+   * Validate tasks.md file exists and is readable
+   * Task 4: Comprehensive file path validation with detailed error reporting
+   *
+   * @param filePath - Path to the tasks.md file to validate
+   * @returns Promise<{isValid: boolean, error?: string}> - Validation result with error details
+   */
+  private async validateTasksFile(
+    filePath: string
+  ): Promise<{ isValid: boolean; error?: string }> {
+    try {
+      // Check if file exists
+      if (!existsSync(filePath)) {
+        return {
+          isValid: false,
+          error: `Tasks file not found: ${path.basename(filePath)}`,
+        };
+      }
+
+      // Check if path is actually a file (not a directory)
+      const stats = await fs.stat(filePath);
+      if (!stats.isFile()) {
+        return {
+          isValid: false,
+          error: `Path exists but is not a file: ${path.basename(filePath)}`,
+        };
+      }
+
+      // Check if file is readable
+      await fs.access(filePath, constants.R_OK);
+
+      // Check if file has content (not empty)
+      if (stats.size === 0) {
+        return {
+          isValid: false,
+          error: `Tasks file is empty: ${path.basename(filePath)}`,
+        };
+      }
+
+      return { isValid: true };
+    } catch (error) {
+      return {
+        isValid: false,
+        error: `Cannot read tasks file: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`,
+      };
+    }
+  }
+
+  /**
+   * Create an empty tasks.md file with basic structure
+   * Task 4: Provide user option to create tasks.md when missing
+   *
+   * @param filePath - Path where to create the tasks.md file
+   * @returns Promise<boolean> - True if file was created successfully
+   */
+  async createEmptyTasksFile(filePath: string): Promise<boolean> {
+    try {
+      const defaultContent = `# Tasks
+
+## Development Tasks
+
+- [ ] 1.1 Sample Task
+  - Description: This is a sample task to get you started
+  - Status: not started
+  - Complexity: low
+  - Estimated Duration: 15-20 min
+
+## How to Use
+
+1. Add tasks in the format: \`- [ ] TaskID Task Title\`
+2. Mark completed tasks with: \`- [x] TaskID Task Title\`
+3. Add additional details on subsequent lines
+4. Save the file to see updates in the extension
+
+## Task Format Examples
+
+- [ ] 2.1 Implement Feature A
+  - Description: Add new functionality to the system
+  - Dependencies: 1.1
+  - Requirements: User authentication, database schema
+  - Estimated Duration: 2-3 hours
+
+- [x] 2.2 Setup Development Environment
+  - Description: Configure local development setup
+  - Status: completed
+  - Actual Duration: 45 min
+`;
+
+      // Ensure directory exists
+      const dir = path.dirname(filePath);
+      await fs.mkdir(dir, { recursive: true });
+
+      // Create the file
+      await fs.writeFile(filePath, defaultContent, "utf-8");
+
+      console.log(`[MarkdownTaskParser] Created empty tasks file: ${filePath}`);
+      return true;
+    } catch (error) {
+      console.error(
+        `[MarkdownTaskParser] Failed to create tasks file: ${filePath}:`,
+        error
+      );
+      return false;
+    }
+  }
+
+  /**
    * Parse tasks from a markdown file and return parsed Task objects
+   * Task 4: Enhanced with comprehensive file validation and user feedback
    * DATA-001: Implement actual file reading instead of mock data
    *
    * @param filePath - Path to the markdown file
    * @returns Promise<Task[]> - Array of parsed Task objects from file content
    */
   async parseTasksFromFile(filePath: string): Promise<Task[]> {
+    console.log(`[MarkdownTaskParser] Validating tasks file: ${filePath}`);
+
+    // Task 4: Validate file before attempting to parse
+    const validation = await this.validateTasksFile(filePath);
+    if (!validation.isValid) {
+      console.error(
+        `[MarkdownTaskParser] File validation failed: ${validation.error}`
+      );
+
+      // Note: User notification will be handled by the calling component
+      // (extension.ts or TasksDataService) to maintain separation of concerns
+      throw new Error(`Tasks file validation failed: ${validation.error}`);
+    }
+
     console.log(
-      `[MarkdownTaskParser] Attempting to parse tasks from: ${filePath}`
+      `[MarkdownTaskParser] File validation passed, proceeding with parsing`
     );
     console.log(`[MarkdownTaskParser] File exists: ${existsSync(filePath)}`);
     console.log(

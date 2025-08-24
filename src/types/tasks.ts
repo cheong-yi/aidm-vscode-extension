@@ -149,13 +149,15 @@ export interface TaskErrorResponse {
     | "task_retrieval"
     | "status_update"
     | "dependency_resolution"
-    | "test_results";
+    | "test_results"
+    | "file_validation";
   suggestedAction?:
     | "retry"
     | "manual_update"
     | "refresh"
     | "clear_cache"
-    | "check_permissions";
+    | "check_permissions"
+    | "configure_file";
   retryAfter?: number;
   userInstructions?: string;
   technicalDetails?: string;
