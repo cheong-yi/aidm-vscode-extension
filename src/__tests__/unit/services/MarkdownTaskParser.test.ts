@@ -24,6 +24,47 @@ jest.mock("fs/promises", () => ({
   access: jest.fn(),
   readFile: jest.fn(),
 }));
+
+// Type the mocked functions properly
+const mockFs = {
+  existsSync: jest.fn() as jest.MockedFunction<typeof fsSync.existsSync>,
+  stat: jest.fn() as jest.MockedFunction<typeof fs.stat>,
+  access: jest.fn() as jest.MockedFunction<typeof fs.access>,
+  readFile: jest.fn() as jest.MockedFunction<typeof fs.readFile>,
+};
+
+// Create a proper mock stats object that matches the Stats interface
+const createMockStats = () => ({
+  isFile: () => true,
+  size: 100,
+  isDirectory: () => false,
+  isBlockDevice: () => false,
+  isCharacterDevice: () => false,
+  isSymbolicLink: () => false,
+  isFIFO: () => false,
+  isSocket: () => false,
+  dev: 0,
+  ino: 0,
+  mode: 0,
+  nlink: 0,
+  uid: 0,
+  gid: 0,
+  rdev: 0,
+  atime: new Date(),
+  mtime: new Date(),
+  ctime: new Date(),
+  birthtime: new Date(),
+  atimeMs: 0,
+  mtimeMs: 0,
+  ctimeMs: 0,
+  birthtimeMs: 0,
+  atimeNs: BigInt(0),
+  mtimeNs: BigInt(0),
+  ctimeNs: BigInt(0),
+  birthtimeNs: BigInt(0),
+  blksize: 0,
+  blocks: 0,
+});
 import {
   Task,
   TaskStatus,
@@ -72,13 +113,10 @@ describe("MarkdownTaskParser", () => {
 `;
 
       // Mock file system validation to pass
-      (fsSync.existsSync as jest.Mock).mockReturnValue(true);
-      (fs.stat as jest.Mock).mockResolvedValue({
-        isFile: () => true,
-        size: 100,
-      });
-      (fs.access as jest.Mock).mockResolvedValue(undefined);
-      (fs.readFile as jest.Mock).mockResolvedValue(mockFileContent);
+      mockFs.existsSync.mockReturnValue(true);
+      mockFs.stat.mockResolvedValue(createMockStats());
+      mockFs.access.mockResolvedValue(undefined);
+      mockFs.readFile.mockResolvedValue(mockFileContent);
 
       const result = parser.parseTasksFromFile("test.md");
       expect(result).toBeInstanceOf(Promise);
@@ -98,13 +136,13 @@ describe("MarkdownTaskParser", () => {
 `;
 
       // Mock file system validation to pass
-      (fsSync.existsSync as jest.Mock).mockReturnValue(true);
-      (fs.stat as jest.Mock).mockResolvedValue({
+      mockFs.existsSync.mockReturnValue(true);
+      mockFs.stat.mockResolvedValue({
         isFile: () => true,
         size: 100,
       });
-      (fs.access as jest.Mock).mockResolvedValue(undefined);
-      (fs.readFile as jest.Mock).mockResolvedValue(mockFileContent);
+      mockFs.access.mockResolvedValue(undefined);
+      mockFs.readFile.mockResolvedValue(mockFileContent);
 
       const tasks = await parser.parseTasksFromFile("test.md");
 
@@ -134,13 +172,13 @@ describe("MarkdownTaskParser", () => {
 `;
 
       // Mock file system validation to pass
-      (fsSync.existsSync as jest.Mock).mockReturnValue(true);
-      (fs.stat as jest.Mock).mockResolvedValue({
+      mockFs.existsSync.mockReturnValue(true);
+      mockFs.stat.mockResolvedValue({
         isFile: () => true,
         size: 100,
       });
-      (fs.access as jest.Mock).mockResolvedValue(undefined);
-      (fs.readFile as jest.Mock).mockResolvedValue(mockFileContent);
+      mockFs.access.mockResolvedValue(undefined);
+      mockFs.readFile.mockResolvedValue(mockFileContent);
 
       const firstCall = await parser.parseTasksFromFile("test1.md");
       const secondCall = await parser.parseTasksFromFile("test2.md");
@@ -175,13 +213,13 @@ describe("MarkdownTaskParser", () => {
 `;
 
       // Mock file system validation to pass
-      (fsSync.existsSync as jest.Mock).mockReturnValue(true);
-      (fs.stat as jest.Mock).mockResolvedValue({
+      mockFs.existsSync.mockReturnValue(true);
+      mockFs.stat.mockResolvedValue({
         isFile: () => true,
         size: 100,
       });
-      (fs.access as jest.Mock).mockResolvedValue(undefined);
-      (fs.readFile as jest.Mock).mockResolvedValue(mockFileContent);
+      mockFs.access.mockResolvedValue(undefined);
+      mockFs.readFile.mockResolvedValue(mockFileContent);
 
       const tasks = await parser.parseTasksFromFile("test.md");
 
@@ -214,13 +252,13 @@ describe("MarkdownTaskParser", () => {
 `;
 
       // Mock file system validation to pass
-      (fsSync.existsSync as jest.Mock).mockReturnValue(true);
-      (fs.stat as jest.Mock).mockResolvedValue({
+      mockFs.existsSync.mockReturnValue(true);
+      mockFs.stat.mockResolvedValue({
         isFile: () => true,
         size: 100,
       });
-      (fs.access as jest.Mock).mockResolvedValue(undefined);
-      (fs.readFile as jest.Mock).mockResolvedValue(mockFileContent);
+      mockFs.access.mockResolvedValue(undefined);
+      mockFs.readFile.mockResolvedValue(mockFileContent);
 
       // Act
       const result = await parser.parseTasksFromFile("./tasks.md");
