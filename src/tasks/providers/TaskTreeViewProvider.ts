@@ -503,6 +503,16 @@ export class TaskTreeViewProvider
    */
   public async toggleTaskExpansion(taskId: string): Promise<void> {
     try {
+      // Debug logging to verify method execution
+      console.log(
+        `[TaskTreeView] toggleTaskExpansion called with taskId: ${taskId}`
+      );
+
+      const wasExpanded = this.expandedTaskId === taskId;
+      console.log(
+        `[TaskTreeView] Current expanded task: ${this.expandedTaskId}, was expanded: ${wasExpanded}`
+      );
+
       if (this.isDisposed) {
         console.debug(
           "TaskTreeViewProvider: Cannot toggle expansion on disposed provider"
@@ -527,6 +537,8 @@ export class TaskTreeViewProvider
         // Task is currently collapsed, expand it (accordion behavior will handle the rest)
         this.expandNode(taskId);
       }
+
+      console.log(`[TaskTreeView] New expanded task: ${this.expandedTaskId}`);
 
       console.debug("TaskTreeViewProvider: Task expansion toggled:", {
         taskId,
