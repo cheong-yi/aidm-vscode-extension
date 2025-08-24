@@ -9,7 +9,8 @@
  * Requirements: 3.1-3.6, 4.1-4.4, 7.1-7.6, 6.8, 6.9, 7.7, 4.8, 7.9, 9.3
  */
 
-import { promises as fs } from "fs";
+import { promises as fs, existsSync } from "fs";
+import * as path from "path";
 import {
   Task,
   TaskStatus,
@@ -34,11 +35,28 @@ export class MarkdownTaskParser {
    * @returns Promise<Task[]> - Array of parsed Task objects from file content
    */
   async parseTasksFromFile(filePath: string): Promise<Task[]> {
+    console.log(
+      `[MarkdownTaskParser] Attempting to parse tasks from: ${filePath}`
+    );
+    console.log(`[MarkdownTaskParser] File exists: ${existsSync(filePath)}`);
+    console.log(
+      `[MarkdownTaskParser] Resolved path: ${path.resolve(filePath)}`
+    );
+
     try {
       const fileContent = await fs.readFile(filePath, "utf-8");
-      return this.parseTasksFromMarkdownContent(fileContent);
+      console.log(
+        `[MarkdownTaskParser] Successfully read file, content length: ${fileContent.length} characters`
+      );
+
+      const parsedTasks = this.parseTasksFromMarkdownContent(fileContent);
+      console.log(
+        `[MarkdownTaskParser] Parsed ${parsedTasks.length} tasks from file content`
+      );
+
+      return parsedTasks;
     } catch (error) {
-      console.error(`Failed to read tasks file: ${filePath}`, error);
+      console.error(`[MarkdownTaskParser] Failed to parse ${filePath}:`, error);
       throw new Error(
         `Could not read tasks file: ${
           error instanceof Error ? error.message : String(error)
@@ -56,10 +74,14 @@ export class MarkdownTaskParser {
    */
   parseTasksFromMarkdownContent(markdownContent: string): Task[] {
     if (!markdownContent || !markdownContent.trim()) {
+      console.log("[MarkdownTaskParser] No markdown content to parse");
       return [];
     }
 
     const lines = markdownContent.trim().split("\n");
+    console.log(
+      `[MarkdownTaskParser] Processing ${lines.length} lines of markdown content`
+    );
     const tasks: Task[] = [];
 
     for (const line of lines) {
@@ -70,6 +92,12 @@ export class MarkdownTaskParser {
 
       // Check for task lines (- [x] or - [ ] format)
       if (trimmedLine.startsWith("- [")) {
+        console.log(
+          `[MarkdownTaskParser] Found task line: ${trimmedLine.substring(
+            0,
+            50
+          )}...`
+        );
         const task = this.parseTaskFromMarkdown(trimmedLine);
         if (task) {
           // Enhance the task with default values
@@ -96,10 +124,23 @@ export class MarkdownTaskParser {
             testStatus: task.testStatus,
           };
           tasks.push(enhancedTask);
+          console.log(
+            `[MarkdownTaskParser] Successfully parsed task: ${task.id} - ${task.title}`
+          );
+        } else {
+          console.log(
+            `[MarkdownTaskParser] Failed to parse task line: ${trimmedLine.substring(
+              0,
+              50
+            )}...`
+          );
         }
       }
     }
 
+    console.log(
+      `[MarkdownTaskParser] Completed parsing, found ${tasks.length} valid tasks`
+    );
     return tasks;
   }
 

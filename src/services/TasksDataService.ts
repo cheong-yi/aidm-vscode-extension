@@ -95,7 +95,12 @@ export class TasksDataService implements ITasksDataService {
 
   // Recovery Task 2.4.2: Replace with real JSON-RPC call to MCP server
   async getTasks(): Promise<Task[]> {
+    console.log("[TasksDataService] getTasks() called");
+
     try {
+      console.log(
+        "[TasksDataService] Attempting MCP server call for tasks/list"
+      );
       const response = await this.makeJSONRPCCall("tasks/list");
 
       if (response.error) {
@@ -107,13 +112,20 @@ export class TasksDataService implements ITasksDataService {
       if (response.result?.content?.[0]?.text) {
         try {
           const parsedContent = JSON.parse(response.result.content[0].text);
-          return parsedContent.tasks || [];
+          const mcpTasks = parsedContent.tasks || [];
+          console.log(
+            `[TasksDataService] Retrieved ${mcpTasks.length} tasks from MCP server`
+          );
+          return mcpTasks;
         } catch (parseError) {
           console.warn("Failed to parse MCP response content:", parseError);
           return [];
         }
       }
 
+      console.log(
+        "[TasksDataService] No MCP response content, returning empty array"
+      );
       return [];
     } catch (error) {
       // DATA-002: Fallback to file reading when HTTP fails, then to mock data if file reading fails
@@ -123,24 +135,49 @@ export class TasksDataService implements ITasksDataService {
       );
 
       try {
-        return await this.markdownTaskParser.parseTasksFromFile("./tasks.md");
+        console.log(
+          "[TasksDataService] Attempting file parsing fallback from ./tasks.md"
+        );
+        const parsedTasks = await this.markdownTaskParser.parseTasksFromFile(
+          "./tasks.md"
+        );
+        console.log(
+          `[TasksDataService] Retrieved ${parsedTasks.length} tasks from file parser`
+        );
+        return parsedTasks;
       } catch (fileError) {
         console.error("File fallback failed, using mock data:", fileError);
-        return this.mockDataProvider.getTasks();
+        console.log("[TasksDataService] Falling back to mock data provider");
+        const mockTasks = await this.mockDataProvider.getTasks();
+        console.log(
+          `[TasksDataService] Retrieved ${mockTasks.length} tasks from mock data provider`
+        );
+        return mockTasks;
       }
     }
   }
 
   // Recovery Task 2.4.3: Replace with real JSON-RPC call to MCP server
   async getTaskById(id: string): Promise<Task | null> {
+    console.log(`[TasksDataService] getTaskById(${id}) called`);
+
     try {
+      console.log(
+        `[TasksDataService] Attempting MCP server call for tasks/get with id: ${id}`
+      );
       const response = await this.makeJSONRPCCall("tasks/get", { id });
 
       if (response.error) {
         throw new Error(`MCP server error: ${response.error.message}`);
       }
 
-      return response.result?.task || null;
+      const task = response.result?.task || null;
+      if (task) {
+        console.log(`[TasksDataService] Retrieved task ${id} from MCP server`);
+      } else {
+        console.log(`[TasksDataService] Task ${id} not found in MCP server`);
+      }
+      return task;
     } catch (error) {
       // Only fallback to TaskStatusManager on actual HTTP failures, not MCP server errors
       if (
@@ -156,13 +193,31 @@ export class TasksDataService implements ITasksDataService {
         "HTTP call failed, falling back to TaskStatusManager:",
         error instanceof Error ? error.message : String(error)
       );
-      return await this.taskStatusManager.getTaskById(id);
+      console.log(
+        `[TasksDataService] Falling back to TaskStatusManager for task ${id}`
+      );
+      const fallbackTask = await this.taskStatusManager.getTaskById(id);
+      if (fallbackTask) {
+        console.log(
+          `[TasksDataService] Retrieved task ${id} from TaskStatusManager fallback`
+        );
+      } else {
+        console.log(
+          `[TasksDataService] Task ${id} not found in TaskStatusManager fallback`
+        );
+      }
+      return fallbackTask;
     }
   }
 
   // Recovery Task 2.4.4: Add updateTaskStatus method with JSON-RPC communication
   async updateTaskStatus(id: string, status: TaskStatus): Promise<boolean> {
+    console.log(`[TasksDataService] updateTaskStatus(${id}, ${status}) called`);
+
     try {
+      console.log(
+        `[TasksDataService] Attempting MCP server call for tasks/update-status`
+      );
       const response = await this.makeJSONRPCCall("tasks/update-status", {
         id,
         newStatus: status,
@@ -175,10 +230,17 @@ export class TasksDataService implements ITasksDataService {
       const success = response.result?.success || false;
 
       if (success) {
+        console.log(
+          `[TasksDataService] Successfully updated task ${id} status via MCP server`
+        );
         // Fire onTasksUpdated event after successful update
         // Use TaskStatusManager directly to avoid additional HTTP calls
         const updatedTasks = await this.taskStatusManager.getTasks();
         this.onTasksUpdated.fire(updatedTasks);
+      } else {
+        console.log(
+          `[TasksDataService] MCP server returned false for task ${id} status update`
+        );
       }
 
       return success;
@@ -207,13 +269,26 @@ export class TasksDataService implements ITasksDataService {
         "HTTP call failed, falling back to TaskStatusManager:",
         error instanceof Error ? error.message : String(error)
       );
-      return await this.taskStatusManager.updateTaskStatus(id, status);
+      console.log(
+        `[TasksDataService] Falling back to TaskStatusManager for task ${id} status update`
+      );
+      const fallbackSuccess = await this.taskStatusManager.updateTaskStatus(
+        id,
+        status
+      );
+      console.log(
+        `[TasksDataService] TaskStatusManager fallback result for ${id}: ${fallbackSuccess}`
+      );
+      return fallbackSuccess;
     }
   }
 
   // Task 4.4.1: Add refreshTasks method for manual task refresh
   async refreshTasks(): Promise<void> {
+    console.log("[TasksDataService] refreshTasks() called");
+
     try {
+      console.log("[TasksDataService] Attempting MCP server refresh");
       // Try to refresh via MCP server first
       const response = await this.makeJSONRPCCall("tasks/refresh");
 
@@ -221,6 +296,7 @@ export class TasksDataService implements ITasksDataService {
         throw new Error(`MCP server error: ${response.error.message}`);
       }
 
+      console.log("[TasksDataService] MCP server refresh successful");
       // If MCP server refresh successful, get updated tasks and fire event
       const updatedTasks = await this.getTasks();
       this.onTasksUpdated.fire(updatedTasks);
@@ -239,11 +315,17 @@ export class TasksDataService implements ITasksDataService {
         error instanceof Error ? error.message : String(error)
       );
 
+      console.log(
+        "[TasksDataService] Falling back to TaskStatusManager refresh"
+      );
       // Use TaskStatusManager's refresh method as fallback
       await this.taskStatusManager.refreshTasksFromFile();
 
       // Get updated tasks and fire event
       const updatedTasks = await this.taskStatusManager.getTasks();
+      console.log(
+        `[TasksDataService] TaskStatusManager refresh returned ${updatedTasks.length} tasks`
+      );
       this.onTasksUpdated.fire(updatedTasks);
     }
   }
