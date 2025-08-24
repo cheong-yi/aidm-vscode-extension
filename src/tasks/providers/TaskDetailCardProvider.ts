@@ -159,6 +159,8 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
     token: vscode.CancellationToken
   ): void | Thenable<void> {
     try {
+      console.log("[TaskDetailCard] Resolving webview view");
+
       // Store webview reference for content updates
       this.webview = webviewView;
 
@@ -176,22 +178,42 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
 
       // Handle webview disposal
       webviewView.onDidDispose(() => {
+        console.log("[TaskDetailCard] Webview disposed, clearing reference");
         this.webview = null;
       });
 
       // Handle webview visibility changes
       webviewView.onDidChangeVisibility(() => {
+        console.log(
+          `[TaskDetailCard] Webview visibility changed: ${
+            webviewView.visible ? "visible" : "hidden"
+          }`
+        );
+
         if (webviewView.visible && this.currentTask) {
+          console.log(
+            `[TaskDetailCard] Webview became visible with current task: ${this.currentTask.id}, refreshing content`
+          );
           // Refresh content when webview becomes visible
           this.updateTaskDetails(this.currentTask);
+        } else if (webviewView.visible) {
+          console.log(
+            "[TaskDetailCard] Webview became visible but no current task, showing empty state"
+          );
+        } else {
+          console.log("[TaskDetailCard] Webview became hidden");
         }
       });
 
       // Handle webview messages from JavaScript content
       this.setupMessageHandling(webviewView.webview);
+
+      console.log(
+        "[TaskDetailCard] Webview view resolution completed successfully"
+      );
     } catch (error) {
       // Log error and continue without webview functionality
-      console.error("Failed to resolve webview view:", error);
+      console.error("[TaskDetailCard] Failed to resolve webview view:", error);
       this.webview = null;
     }
   }
@@ -205,9 +227,14 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
    */
   public updateTaskDetails(task: Task): void {
     try {
+      console.log(`[TaskDetailCard] Updating task details for: ${task.id}`);
       this.currentTask = task;
 
       if (this.webview && this.webview.visible) {
+        console.log(
+          `[TaskDetailCard] Webview is visible, updating content for task: ${task.id}`
+        );
+
         // Generate HTML content with time formatting integration
         const htmlContent = this.generateTaskDetailsHTML(task);
 
@@ -216,9 +243,20 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
 
         // Update webview content with formatted timestamps
         this.webview.webview.html = formattedHtml;
+
+        console.log(
+          `[TaskDetailCard] Task details updated successfully for: ${task.id}`
+        );
+      } else {
+        console.log(
+          `[TaskDetailCard] Webview not visible or not available, skipping update for task: ${task.id}`
+        );
       }
     } catch (error) {
-      console.error("Failed to update task details:", error);
+      console.error(
+        `[TaskDetailCard] Failed to update task details for ${task.id}:`,
+        error
+      );
     }
   }
 
@@ -228,13 +266,21 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
    */
   public clearDetails(): void {
     try {
+      console.log("[TaskDetailCard] Clearing task details");
       this.currentTask = null;
 
       if (this.webview && this.webview.visible) {
+        console.log(
+          "[TaskDetailCard] Webview is visible, showing no task selected state"
+        );
         this.showNoTaskSelected();
+      } else {
+        console.log(
+          "[TaskDetailCard] Webview not visible, skipping state update"
+        );
       }
     } catch (error) {
-      console.error("Failed to clear task details:", error);
+      console.error("[TaskDetailCard] Failed to clear task details:", error);
     }
   }
 
@@ -245,10 +291,22 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
    */
   public showNoTaskSelected(): void {
     try {
+      console.log("[TaskDetailCard] Showing no task selected state");
+
       if (this.webview && this.webview.visible) {
+        console.log(
+          "[TaskDetailCard] Webview is visible, generating empty state HTML"
+        );
+
         // Generate enhanced empty state HTML with helpful content
         const emptyStateHTML = this.generateEmptyStateHTML();
         this.webview.webview.html = emptyStateHTML;
+
+        console.log("[TaskDetailCard] Empty state HTML displayed successfully");
+      } else {
+        console.log(
+          "[TaskDetailCard] Webview not visible, skipping empty state display"
+        );
       }
     } catch (error) {
       console.error("Failed to show no task selected state:", error);
@@ -1895,19 +1953,35 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
   /**
    * Handles messages received from the webview JavaScript content
    * Called when the webview sends messages to the extension
+   * Task EXPANSION-FIX-3: Enhanced with comprehensive debug logging for message processing verification
    *
    * @param message - The message received from the webview
    */
   private handleWebviewMessage(message: any): void {
     try {
+      console.log(
+        `[TaskDetailCard] Processing message command: ${message.command}`
+      );
+      console.log(`[TaskDetailCard] Message data:`, message.data || message);
+
       // Validate message structure before processing
       if (!this.isValidMessage(message)) {
-        console.warn("Invalid webview message received:", message);
+        console.warn(
+          "[TaskDetailCard] Invalid webview message received:",
+          message
+        );
         return;
       }
 
+      console.log(
+        `[TaskDetailCard] Message validation passed, processing command: ${message.command}`
+      );
+
       switch (message.command) {
         case "status-change":
+          console.log(
+            `[TaskDetailCard] Processing status change: ${message.data?.taskId} -> ${message.data?.newStatus}`
+          );
           this.handleStatusChange(
             message.data?.taskId,
             message.data?.newStatus
@@ -1915,14 +1989,23 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
           break;
 
         case "cursor-execute":
+          console.log(
+            `[TaskDetailCard] Processing Cursor execution request for: ${message.data?.taskId}`
+          );
           this.handleCursorExecution(message.data?.taskId);
           break;
 
         case "action-button":
+          console.log(
+            `[TaskDetailCard] Processing action button: ${message.data?.action} for task: ${message.data?.taskId}`
+          );
           this.handleActionButton(message.data?.action, message.data?.taskId);
           break;
 
         case "execute-cursor":
+          console.log(
+            `[TaskDetailCard] Processing legacy execute-cursor command for: ${message.taskId}`
+          );
           if (message.taskId) {
             this._onCursorExecuteRequested.fire({
               taskId: message.taskId,
@@ -2065,11 +2148,17 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
 
         // Task 3.3.10: Handle quick action messages from empty state
         case "quick-action":
+          console.log(
+            `[TaskDetailCard] Processing quick action: ${message.data?.action}`
+          );
           this.handleQuickAction(message.data?.action);
           break;
 
         // Legacy command support for backward compatibility
         case "executeWithCursor":
+          console.log(
+            `[TaskDetailCard] Processing legacy executeWithCursor command for: ${message.taskId}`
+          );
           if (message.taskId) {
             this._onCursorExecuteRequested.fire({
               taskId: message.taskId,
@@ -2078,6 +2167,9 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
           break;
 
         case "updateStatus":
+          console.log(
+            `[TaskDetailCard] Processing legacy updateStatus command: ${message.taskId} -> ${message.newStatus}`
+          );
           if (message.taskId && message.newStatus) {
             this._onStatusChanged.fire({
               taskId: message.taskId,
@@ -2091,50 +2183,78 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
           break;
 
         default:
-          console.log("Unknown webview message:", message);
+          console.log(
+            `[TaskDetailCard] Unknown webview message command: ${message.command}`,
+            message
+          );
       }
+
+      console.log(
+        `[TaskDetailCard] Message processing completed for command: ${message.command}`
+      );
     } catch (error) {
-      console.error("Failed to handle webview message:", error);
+      console.error(
+        `[TaskDetailCard] Failed to handle webview message:`,
+        error
+      );
     }
   }
 
   /**
    * Sets up webview message handling for bidirectional communication
    * Called during webview initialization to configure message listeners
+   * Task EXPANSION-FIX-3: Enhanced with debug logging for message flow verification
    *
    * @param webview - The webview instance to configure message handling for
    */
   private setupMessageHandling(webview: vscode.Webview): void {
     try {
+      console.log("[TaskDetailCard] Setting up webview message handling");
+
       // Configure message listener for webview communication
       webview.onDidReceiveMessage(
         (message) => {
+          console.log(`[TaskDetailCard] Received message:`, message);
           this.handleWebviewMessage(message);
         },
         undefined,
         this.disposables
       );
+
+      console.log("[TaskDetailCard] Webview message handling setup complete");
     } catch (error) {
-      console.error("Failed to setup message handling:", error);
+      console.error(
+        "[TaskDetailCard] Failed to setup message handling:",
+        error
+      );
     }
   }
 
   /**
    * Validates webview message structure and content
    * Called before processing any webview message to prevent errors
+   * Task EXPANSION-FIX-3: Enhanced with debug logging for validation troubleshooting
    *
    * @param message - The message to validate
    * @returns True if message is valid and can be processed
    */
   private isValidMessage(message: any): boolean {
     try {
+      console.log(`[TaskDetailCard] Validating message structure:`, message);
+
       // Check if message exists and has required structure
       if (!message || typeof message !== "object") {
+        console.log(
+          `[TaskDetailCard] Message validation failed: message is not an object`
+        );
         return false;
       }
 
       // Check if message has command property
       if (!message.command || typeof message.command !== "string") {
+        console.log(
+          `[TaskDetailCard] Message validation failed: missing or invalid command property`
+        );
         return false;
       }
 
@@ -2201,9 +2321,12 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
         }
       }
 
+      console.log(
+        `[TaskDetailCard] Message validation passed for command: ${message.command}`
+      );
       return true;
     } catch (error) {
-      console.error("Error validating message:", error);
+      console.error(`[TaskDetailCard] Error validating message:`, error);
       return false;
     }
   }

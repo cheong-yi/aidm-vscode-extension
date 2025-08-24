@@ -137,12 +137,6 @@
         "title": "View Test Results",
         "category": "Taskmaster",
         "icon": "$(beaker)"
-      },
-      {
-        "command": "aidm-vscode-extension.configureTasksPath",
-        "title": "Configure Tasks File Path",
-        "category": "Taskmaster",
-        "icon": "$(gear)"
       }
     ],
     "configuration": {
@@ -252,16 +246,6 @@
           "type": "string",
           "default": "",
           "description": "API key for remote MCP server authentication"
-        },
-        "aidmVscodeExtension.tasks.filePath": {
-          "type": "string",
-          "default": "tasks.md",
-          "description": "Path to tasks.md file relative to workspace root (e.g., 'tasks.md', 'docs/tasks.md', 'project/tasks.md')"
-        },
-        "aidmVscodeExtension.tasks.autoDetect": {
-          "type": "boolean",
-          "default": true,
-          "description": "Automatically detect tasks.md in common locations if the specified path doesn't exist"
         }
       }
     },
