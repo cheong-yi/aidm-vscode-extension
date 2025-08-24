@@ -269,6 +269,16 @@
         }
       ]
     },
+    "webviewViews": {
+      "taskmaster": [
+        {
+          "id": "aidm-vscode-extension.task-details",
+          "name": "Task Details",
+          "type": "webview",
+          "when": "workspaceFolderCount > 0"
+        }
+      ]
+    },
     "menus": {
       "view/item/context": [
         {
