@@ -19,6 +19,8 @@ import {
   TaskErrorResponse,
 } from "../types/tasks";
 import { TaskStatusManager } from "./TaskStatusManager";
+import { MarkdownTaskParser } from "./MarkdownTaskParser";
+import { MockDataProvider } from "../mock";
 
 interface ITasksDataService {
   getTasks(): Promise<Task[]>;
@@ -39,8 +41,12 @@ export class TasksDataService implements ITasksDataService {
   protected httpClient!: AxiosInstance;
   private readonly serverUrl: string;
 
-  constructor(private taskStatusManager: TaskStatusManager) {
-    // Constructor now accepts TaskStatusManager dependency
+  constructor(
+    private taskStatusManager: TaskStatusManager,
+    private markdownTaskParser: MarkdownTaskParser,
+    private mockDataProvider: MockDataProvider
+  ) {
+    // Constructor now accepts TaskStatusManager, MarkdownTaskParser, and MockDataProvider dependencies
     // Get port from VS Code configuration
     const config = workspace.getConfiguration("aidmVscodeExtension");
     const port = config.get<number>("mcpServer.port", 3001);
@@ -110,12 +116,18 @@ export class TasksDataService implements ITasksDataService {
 
       return [];
     } catch (error) {
-      // Fallback to TaskStatusManager if HTTP fails
+      // DATA-002: Fallback to file reading when HTTP fails, then to mock data if file reading fails
       console.warn(
-        "HTTP call failed, falling back to TaskStatusManager:",
+        "MCP server unavailable, falling back to file reading:",
         error instanceof Error ? error.message : String(error)
       );
-      return await this.taskStatusManager.getTasks();
+
+      try {
+        return await this.markdownTaskParser.parseTasksFromFile("./tasks.md");
+      } catch (fileError) {
+        console.error("File fallback failed, using mock data:", fileError);
+        return this.mockDataProvider.getTasks();
+      }
     }
   }
 

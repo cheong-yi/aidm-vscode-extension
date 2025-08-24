@@ -18,6 +18,7 @@ import {
   MarkdownTaskParser,
   TaskStatusManager,
 } from "./services";
+import { MockDataProvider } from "./mock";
 import { TaskStatus, Task } from "./types/tasks";
 import { TaskDetailCardProvider } from "./tasks/providers/TaskDetailCardProvider";
 import { TaskTreeViewProvider, TaskTreeItem } from "./tasks/providers";
@@ -146,7 +147,12 @@ export async function activate(
     try {
       const markdownParser = new MarkdownTaskParser();
       const taskStatusManager = new TaskStatusManager(markdownParser);
-      tasksDataService = new TasksDataService(taskStatusManager);
+      const mockDataProvider = new MockDataProvider();
+      tasksDataService = new TasksDataService(
+        taskStatusManager,
+        markdownParser,
+        mockDataProvider
+      );
       console.log("✅ TasksDataService initialized");
     } catch (error) {
       console.error("❌ TasksDataService initialization failed:", error);

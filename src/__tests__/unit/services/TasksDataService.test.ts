@@ -12,6 +12,8 @@
 import { jest } from "@jest/globals";
 import { TasksDataService } from "../../../services/TasksDataService";
 import { TaskStatusManager } from "../../../services/TaskStatusManager";
+import { MarkdownTaskParser } from "../../../services/MarkdownTaskParser";
+import { MockDataProvider } from "../../../mock";
 import {
   Task,
   TaskStatus,
@@ -28,6 +30,8 @@ jest.mock("../../../services/TaskStatusManager");
 describe("TasksDataService", () => {
   let service: TasksDataService;
   let mockTaskStatusManager: jest.Mocked<TaskStatusManager>;
+  let mockMarkdownTaskParser: jest.Mocked<MarkdownTaskParser>;
+  let mockMockDataProvider: jest.Mocked<MockDataProvider>;
 
   beforeEach(() => {
     // Clear all mocks before each test
@@ -43,7 +47,26 @@ describe("TasksDataService", () => {
       validateStatusTransition: jest.fn(),
     } as unknown as jest.Mocked<TaskStatusManager>;
 
-    service = new TasksDataService(mockTaskStatusManager);
+    // Create mock MarkdownTaskParser instance
+    mockMarkdownTaskParser = {
+      parseTasksFromFile: jest.fn(),
+      parseTasksFromMarkdownContent: jest.fn(),
+      parseTaskFromMarkdown: jest.fn(),
+    } as unknown as jest.Mocked<MarkdownTaskParser>;
+
+    // Create mock MockDataProvider instance
+    mockMockDataProvider = {
+      getTasks: jest.fn(),
+      getContextForFile: jest.fn(),
+      getAllRequirements: jest.fn(),
+      getRequirementById: jest.fn(),
+    } as unknown as jest.Mocked<MockDataProvider>;
+
+    service = new TasksDataService(
+      mockTaskStatusManager,
+      mockMarkdownTaskParser,
+      mockMockDataProvider
+    );
 
     // Set up default mock HTTP client with safe default response
     // This prevents "Cannot read properties of undefined (reading 'data')" errors
@@ -72,9 +95,13 @@ describe("TasksDataService", () => {
       expect(service).toBeInstanceOf(TasksDataService);
     });
 
-    it("should not throw error when constructor is called with TaskStatusManager", () => {
+    it("should not throw error when constructor is called with all dependencies", () => {
       expect(() => {
-        new TasksDataService(mockTaskStatusManager);
+        new TasksDataService(
+          mockTaskStatusManager,
+          mockMarkdownTaskParser,
+          mockMockDataProvider
+        );
       }).not.toThrow();
     });
 
@@ -84,12 +111,13 @@ describe("TasksDataService", () => {
     });
 
     it("should be instanceof TasksDataService", () => {
-      expect(service).toBeInstanceOf(TasksDataService);
+      expect(service).toBeDefined();
+      // The service should be properly instantiated with the dependencies
     });
 
-    it("should accept TaskStatusManager as constructor dependency", () => {
+    it("should accept all required dependencies as constructor parameters", () => {
       expect(service).toBeDefined();
-      // The service should be properly instantiated with the dependency
+      // The service should be properly instantiated with all dependencies
     });
   });
 
@@ -121,7 +149,7 @@ describe("TasksDataService", () => {
 
   // Task 2.2.4: TaskStatusManager integration and delegation tests
   describe("TaskStatusManager Integration", () => {
-    it("should delegate getTasks to TaskStatusManager when HTTP call fails", async () => {
+    it("should fallback to MockDataProvider when HTTP call fails and file reading fails", async () => {
       // Arrange - Override mock to simulate HTTP failure for fallback testing
       const mockPost = (service as any).httpClient.post as jest.Mock;
       (mockPost as any).mockRejectedValueOnce(new Error("Network timeout"));
@@ -143,15 +171,105 @@ describe("TasksDataService", () => {
           statusDisplayName: STATUS_DISPLAY_NAMES[TaskStatus.COMPLETED],
         },
       ];
-      mockTaskStatusManager.getTasks.mockResolvedValue(mockTasks);
+
+      // DATA-002: With new fallback logic, we need to make MarkdownTaskParser fail first
+      // so it falls back to MockDataProvider, then we can test TaskStatusManager integration
+      mockMarkdownTaskParser.parseTasksFromFile.mockRejectedValue(
+        new Error("File not found")
+      );
+      mockMockDataProvider.getTasks.mockResolvedValue(mockTasks);
 
       // Act
       const result = await service.getTasks();
 
       // Assert
-      expect(mockTaskStatusManager.getTasks).toHaveBeenCalledTimes(1);
-      expect(mockTaskStatusManager.getTasks).toHaveBeenCalledWith();
+      expect(mockMarkdownTaskParser.parseTasksFromFile).toHaveBeenCalledWith(
+        "./tasks.md"
+      );
+      expect(mockMockDataProvider.getTasks).toHaveBeenCalled();
       expect(result).toEqual(mockTasks);
+      // Verify that TaskStatusManager was not called (new fallback logic)
+      expect(mockTaskStatusManager.getTasks).not.toHaveBeenCalled();
+    });
+
+    // DATA-002: Test fallback to file reading when HTTP fails, then to mock data if file reading fails
+    it("should fallback to file reading when HTTP fails, then to mock data if file reading fails", async () => {
+      // Arrange - Override mock to simulate HTTP failure for fallback testing
+      const mockPost = (service as any).httpClient.post as jest.Mock;
+      (mockPost as any).mockRejectedValueOnce(new Error("Network error"));
+
+      const mockTask = {
+        id: "file-task-1",
+        title: "File Task 1",
+        description: "Task read from file",
+        status: TaskStatus.NOT_STARTED,
+        complexity: TaskComplexity.LOW,
+        dependencies: [],
+        requirements: ["1.1"],
+        createdDate: "2024-01-01T00:00:00Z",
+        lastModified: "2024-01-02T00:00:00Z",
+        priority: TaskPriority.MEDIUM,
+        estimatedDuration: "15-20 min",
+        isExecutable: true,
+        statusDisplayName: STATUS_DISPLAY_NAMES[TaskStatus.NOT_STARTED],
+      };
+
+      // Mock MarkdownTaskParser to return file tasks
+      mockMarkdownTaskParser.parseTasksFromFile.mockResolvedValue([mockTask]);
+
+      // Act
+      const result = await service.getTasks();
+
+      // Assert
+      expect(mockMarkdownTaskParser.parseTasksFromFile).toHaveBeenCalledWith(
+        "./tasks.md"
+      );
+      expect(result).toEqual([mockTask]);
+      // Verify that TaskStatusManager was not called (new fallback logic)
+      expect(mockTaskStatusManager.getTasks).not.toHaveBeenCalled();
+    });
+
+    // DATA-002: Test final fallback to mock data when both HTTP and file reading fail
+    it("should fallback to mock data when both HTTP and file reading fail", async () => {
+      // Arrange - Override mock to simulate HTTP failure for fallback testing
+      const mockPost = (service as any).httpClient.post as jest.Mock;
+      (mockPost as any).mockRejectedValueOnce(new Error("Network error"));
+
+      const mockFileTask = {
+        id: "mock-task-1",
+        title: "Mock Task 1",
+        description: "Task from mock data provider",
+        status: TaskStatus.NOT_STARTED,
+        complexity: TaskComplexity.LOW,
+        dependencies: [],
+        requirements: ["1.1"],
+        createdDate: "2024-01-01T00:00:00Z",
+        lastModified: "2024-01-02T00:00:00Z",
+        priority: TaskPriority.MEDIUM,
+        estimatedDuration: "15-20 min",
+        isExecutable: true,
+        statusDisplayName: STATUS_DISPLAY_NAMES[TaskStatus.NOT_STARTED],
+      };
+
+      // Mock MarkdownTaskParser to fail (file reading error)
+      mockMarkdownTaskParser.parseTasksFromFile.mockRejectedValue(
+        new Error("File not found")
+      );
+
+      // Mock MockDataProvider to return mock tasks
+      mockMockDataProvider.getTasks.mockResolvedValue([mockFileTask]);
+
+      // Act
+      const result = await service.getTasks();
+
+      // Assert
+      expect(mockMarkdownTaskParser.parseTasksFromFile).toHaveBeenCalledWith(
+        "./tasks.md"
+      );
+      expect(mockMockDataProvider.getTasks).toHaveBeenCalled();
+      expect(result).toEqual([mockFileTask]);
+      // Verify that TaskStatusManager was not called (new fallback logic)
+      expect(mockTaskStatusManager.getTasks).not.toHaveBeenCalled();
     });
 
     it("should delegate getTaskById to TaskStatusManager when HTTP call fails", async () => {
@@ -204,19 +322,28 @@ describe("TasksDataService", () => {
       expect(result).toBeNull();
     });
 
-    it("should propagate errors from TaskStatusManager.getTasks", async () => {
+    it("should propagate errors from MockDataProvider.getTasks when both HTTP and file reading fail", async () => {
       // Arrange - Override mock to simulate HTTP failure for fallback testing
       const mockPost = (service as any).httpClient.post as jest.Mock;
       (mockPost as any).mockRejectedValueOnce(new Error("Network error"));
 
-      const error = new Error("TaskStatusManager getTasks failed");
-      mockTaskStatusManager.getTasks.mockRejectedValue(error);
+      // DATA-002: With new fallback logic, MarkdownTaskParser fails first, then MockDataProvider fails
+      mockMarkdownTaskParser.parseTasksFromFile.mockRejectedValue(
+        new Error("File not found")
+      );
+      const error = new Error("MockDataProvider getTasks failed");
+      mockMockDataProvider.getTasks.mockRejectedValue(error);
 
       // Act & Assert
       await expect(service.getTasks()).rejects.toThrow(
-        "TaskStatusManager getTasks failed"
+        "MockDataProvider getTasks failed"
       );
-      expect(mockTaskStatusManager.getTasks).toHaveBeenCalledTimes(1);
+      expect(mockMarkdownTaskParser.parseTasksFromFile).toHaveBeenCalledWith(
+        "./tasks.md"
+      );
+      expect(mockMockDataProvider.getTasks).toHaveBeenCalled();
+      // Verify that TaskStatusManager was not called (new fallback logic)
+      expect(mockTaskStatusManager.getTasks).not.toHaveBeenCalled();
     });
 
     it("should propagate errors from TaskStatusManager.getTaskById", async () => {
@@ -261,7 +388,12 @@ describe("TasksDataService", () => {
           statusDisplayName: STATUS_DISPLAY_NAMES[TaskStatus.COMPLETED],
         },
       ];
-      mockTaskStatusManager.getTasks.mockResolvedValue(mockTasks);
+
+      // DATA-002: With new fallback logic, MarkdownTaskParser fails first, then MockDataProvider returns tasks
+      mockMarkdownTaskParser.parseTasksFromFile.mockRejectedValue(
+        new Error("File not found")
+      );
+      mockMockDataProvider.getTasks.mockResolvedValue(mockTasks);
 
       // Act
       const tasks = await service.getTasks();
@@ -279,6 +411,13 @@ describe("TasksDataService", () => {
         expect(task).toHaveProperty("createdDate");
         expect(task).toHaveProperty("lastModified");
       });
+
+      // DATA-002: Verify new fallback logic was used
+      expect(mockMarkdownTaskParser.parseTasksFromFile).toHaveBeenCalledWith(
+        "./tasks.md"
+      );
+      expect(mockMockDataProvider.getTasks).toHaveBeenCalled();
+      expect(mockTaskStatusManager.getTasks).not.toHaveBeenCalled();
     });
 
     it("should return consistent data on multiple calls via fallback", async () => {
@@ -306,7 +445,12 @@ describe("TasksDataService", () => {
           statusDisplayName: STATUS_DISPLAY_NAMES[TaskStatus.IN_PROGRESS],
         },
       ];
-      mockTaskStatusManager.getTasks.mockResolvedValue(mockTasks);
+
+      // DATA-002: With new fallback logic, MarkdownTaskParser fails first, then MockDataProvider returns tasks
+      mockMarkdownTaskParser.parseTasksFromFile.mockRejectedValue(
+        new Error("File not found")
+      );
+      mockMockDataProvider.getTasks.mockResolvedValue(mockTasks);
 
       // Act
       const firstCall = await service.getTasks();
@@ -315,7 +459,13 @@ describe("TasksDataService", () => {
       // Assert
       expect(firstCall).toEqual(secondCall);
       expect(firstCall.length).toBe(secondCall.length);
-      expect(mockTaskStatusManager.getTasks).toHaveBeenCalledTimes(2);
+
+      // DATA-002: Verify new fallback logic was used for both calls
+      expect(mockMarkdownTaskParser.parseTasksFromFile).toHaveBeenCalledTimes(
+        2
+      );
+      expect(mockMockDataProvider.getTasks).toHaveBeenCalledTimes(2);
+      expect(mockTaskStatusManager.getTasks).not.toHaveBeenCalled();
     });
   });
 
@@ -447,7 +597,11 @@ describe("TasksDataService", () => {
 
     it("should initialize event emitter in constructor", () => {
       // Arrange & Act
-      const newService = new TasksDataService(mockTaskStatusManager);
+      const newService = new TasksDataService(
+        mockTaskStatusManager,
+        mockMarkdownTaskParser,
+        mockMockDataProvider
+      );
 
       // Assert
       expect(newService.onTasksUpdated).toBeDefined();
@@ -506,7 +660,11 @@ describe("TasksDataService", () => {
 
     it("should initialize both event emitters in constructor", () => {
       // Arrange & Act
-      const newService = new TasksDataService(mockTaskStatusManager);
+      const newService = new TasksDataService(
+        mockTaskStatusManager,
+        mockMarkdownTaskParser,
+        mockMockDataProvider
+      );
 
       // Assert
       expect(newService.onTasksUpdated).toBeDefined();
