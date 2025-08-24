@@ -340,4 +340,124 @@ describe("MarkdownTaskParser", () => {
       expect(whitespaceTask?.title).toBe("Trimmed Task");
     });
   });
+
+  describe("MarkdownTaskParser - updateTaskInFile", () => {
+    // Reset mocks between tests to ensure isolation
+    afterEach(() => {
+      jest.restoreAllMocks();
+    });
+
+    // PERSIST-001: Test status update persistence
+    it("should update task status in tasks.md file", async () => {
+      // Arrange
+      const mockFileContent = `
+# Tasks
+- [x] 1.1 Create directory structure ✅
+- [ ] 1.2 Define core interfaces
+`;
+      const expectedContent = `
+# Tasks
+- [x] 1.1 Create directory structure ✅
+- [x] 1.2 Define core interfaces ✅
+`;
+      jest.spyOn(fs, "readFile").mockResolvedValue(mockFileContent);
+      jest.spyOn(fs, "writeFile").mockResolvedValue();
+
+      // Act
+      const result = await parser.updateTaskInFile("./tasks.md", "1.2", {
+        status: TaskStatus.COMPLETED,
+      });
+
+      // Assert
+      expect(result).toBe(true);
+      expect(fs.writeFile).toHaveBeenCalledWith(
+        "./tasks.md",
+        expectedContent,
+        "utf-8"
+      );
+    });
+
+    // PERSIST-001: Test status icon mapping
+    it("should apply correct status icons for different task statuses", async () => {
+      // Arrange
+      const mockFileContent = `
+# Tasks
+- [ ] 1.1 Task one
+- [ ] 1.2 Task two
+`;
+      jest.spyOn(fs, "readFile").mockResolvedValue(mockFileContent);
+      jest.spyOn(fs, "writeFile").mockResolvedValue();
+
+      // Act - Update to different statuses
+      await parser.updateTaskInFile("./tasks.md", "1.1", {
+        status: TaskStatus.IN_PROGRESS,
+      });
+      await parser.updateTaskInFile("./tasks.md", "1.2", {
+        status: TaskStatus.BLOCKED,
+      });
+
+      // Assert - Check that writeFile was called with correct icons
+      expect(fs.writeFile).toHaveBeenCalledTimes(2);
+      const firstCall = (fs.writeFile as jest.Mock).mock.calls[0];
+      const secondCall = (fs.writeFile as jest.Mock).mock.calls[1];
+
+      expect(firstCall[1]).toContain("🔄"); // IN_PROGRESS icon
+      expect(secondCall[1]).toContain("❌"); // BLOCKED icon
+    });
+
+    // PERSIST-001: Test task not found scenario
+    it("should return false when task ID is not found in file", async () => {
+      // Arrange
+      const mockFileContent = `
+# Tasks
+- [ ] 1.1 Task one
+`;
+      jest.spyOn(fs, "readFile").mockResolvedValue(mockFileContent);
+      jest.spyOn(fs, "writeFile").mockResolvedValue();
+
+      // Act
+      const result = await parser.updateTaskInFile(
+        "./tasks.md",
+        "nonexistent",
+        { status: TaskStatus.COMPLETED }
+      );
+
+      // Assert
+      expect(result).toBe(false);
+      expect(fs.writeFile).not.toHaveBeenCalled();
+    });
+
+    // PERSIST-001: Test file reading error handling
+    it("should handle file reading errors gracefully", async () => {
+      // Arrange
+      const errorMessage = "ENOENT: no such file or directory";
+      jest.spyOn(fs, "readFile").mockRejectedValue(new Error(errorMessage));
+
+      // Act & Assert
+      await expect(
+        parser.updateTaskInFile("./nonexistent.md", "1.1", {
+          status: TaskStatus.COMPLETED,
+        })
+      ).rejects.toThrow("ENOENT: no such file or directory");
+    });
+
+    // PERSIST-001: Test file writing error handling
+    it("should handle file writing errors gracefully", async () => {
+      // Arrange
+      const mockFileContent = `
+# Tasks
+- [ ] 1.1 Task one
+`;
+      const errorMessage = "EACCES: permission denied";
+      jest.spyOn(fs, "readFile").mockResolvedValue(mockFileContent);
+      jest.spyOn(fs, "writeFile").mockRejectedValue(new Error(errorMessage));
+
+      // Act & Assert
+      await expect(
+        parser.updateTaskInFile("./tasks.md", "1.1", {
+          status: TaskStatus.COMPLETED,
+        })
+      ).rejects.toThrow("EACCES: permission denied");
+    });
+  });
 });

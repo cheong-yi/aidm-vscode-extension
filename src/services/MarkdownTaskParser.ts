@@ -35,11 +35,15 @@ export class MarkdownTaskParser {
    */
   async parseTasksFromFile(filePath: string): Promise<Task[]> {
     try {
-      const fileContent = await fs.readFile(filePath, 'utf-8');
+      const fileContent = await fs.readFile(filePath, "utf-8");
       return this.parseTasksFromMarkdownContent(fileContent);
     } catch (error) {
       console.error(`Failed to read tasks file: ${filePath}`, error);
-      throw new Error(`Could not read tasks file: ${error instanceof Error ? error.message : String(error)}`);
+      throw new Error(
+        `Could not read tasks file: ${
+          error instanceof Error ? error.message : String(error)
+        }`
+      );
     }
   }
 
@@ -55,17 +59,17 @@ export class MarkdownTaskParser {
       return [];
     }
 
-    const lines = markdownContent.trim().split('\n');
+    const lines = markdownContent.trim().split("\n");
     const tasks: Task[] = [];
 
     for (const line of lines) {
       const trimmedLine = line.trim();
-      
+
       // Skip empty lines
       if (!trimmedLine) continue;
 
       // Check for task lines (- [x] or - [ ] format)
-      if (trimmedLine.startsWith('- [')) {
+      if (trimmedLine.startsWith("- [")) {
         const task = this.parseTaskFromMarkdown(trimmedLine);
         if (task) {
           // Enhance the task with default values
@@ -78,14 +82,18 @@ export class MarkdownTaskParser {
             createdDate: task.createdDate || new Date().toISOString(),
             lastModified: task.lastModified || new Date().toISOString(),
             priority: task.priority || TaskPriority.MEDIUM,
-            assignee: task.assignee || 'dev-team',
+            assignee: task.assignee || "dev-team",
             estimatedHours: task.estimatedHours || 1,
             actualHours: task.actualHours || 0,
-            estimatedDuration: task.estimatedDuration || '15-20 min',
-            isExecutable: task.isExecutable !== undefined ? task.isExecutable : (task.status === TaskStatus.NOT_STARTED),
-            tags: task.tags || ['task'],
-            statusDisplayName: task.statusDisplayName || STATUS_DISPLAY_NAMES[task.status],
-            testStatus: task.testStatus
+            estimatedDuration: task.estimatedDuration || "15-20 min",
+            isExecutable:
+              task.isExecutable !== undefined
+                ? task.isExecutable
+                : task.status === TaskStatus.NOT_STARTED,
+            tags: task.tags || ["task"],
+            statusDisplayName:
+              task.statusDisplayName || STATUS_DISPLAY_NAMES[task.status],
+            testStatus: task.testStatus,
           };
           tasks.push(enhancedTask);
         }
@@ -176,5 +184,76 @@ export class MarkdownTaskParser {
     } catch (error) {
       return null;
     }
+  }
+
+  /**
+   * Update task status in markdown file and persist changes
+   * PERSIST-001: Implement status update persistence to tasks.md file
+   *
+   * @param filePath - Path to the markdown file
+   * @param taskId - ID of the task to update
+   * @param updates - Partial Task object containing updates
+   * @returns Promise<boolean> - True if task was updated, false if not found
+   */
+  async updateTaskInFile(
+    filePath: string,
+    taskId: string,
+    updates: Partial<Task>
+  ): Promise<boolean> {
+    try {
+      const fileContent = await fs.readFile(filePath, "utf-8");
+      const lines = fileContent.split("\n");
+      let updated = false;
+
+      const updatedLines = lines.map((line) => {
+        // Match task line pattern: - [x] 1.1 Task title ✅ or - [ ] 1.1 Task title
+        const taskMatch = line.match(
+          /^(\s*- \[)([x\s])(\] )(\d+\.\d+(?:\.\d+)?)(.*?)(\s*(?:✅|❌|⏳|🔄|🚫)?\s*)$/
+        );
+
+        if (taskMatch && taskMatch[4] === taskId) {
+          const checkbox = updates.status === TaskStatus.COMPLETED ? "x" : " ";
+          const statusIcon = this.getStatusIcon(updates.status);
+          const newLine = `${taskMatch[1]}${checkbox}${taskMatch[3]}${taskMatch[4]}${taskMatch[5]} ${statusIcon}`;
+          updated = true;
+          return newLine.trim();
+        }
+        return line;
+      });
+
+      if (updated) {
+        await fs.writeFile(filePath, updatedLines.join("\n"), "utf-8");
+        console.log(`Updated task ${taskId} status in ${filePath}`);
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error(
+        `Failed to update task ${taskId} in file ${filePath}:`,
+        error
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Get status icon for markdown display
+   * PERSIST-001: Helper method for status icon mapping
+   *
+   * @param status - TaskStatus to get icon for
+   * @returns string - Status icon emoji or empty string
+   */
+  private getStatusIcon(status?: TaskStatus): string {
+    if (!status) return "";
+
+    const iconMap = {
+      [TaskStatus.COMPLETED]: "✅",
+      [TaskStatus.IN_PROGRESS]: "🔄",
+      [TaskStatus.REVIEW]: "⏳",
+      [TaskStatus.BLOCKED]: "❌",
+      [TaskStatus.NOT_STARTED]: "",
+      [TaskStatus.DEPRECATED]: "🚫",
+    };
+    return iconMap[status] || "";
   }
 }
