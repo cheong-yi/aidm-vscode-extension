@@ -61,6 +61,14 @@ export class TaskTreeItem extends vscode.TreeItem {
     // Set description to show additional context (estimated duration, test summary)
     // Task 3.1.5: Add robot icon for executable tasks
     this.description = this.generateDescription();
+
+    // Task 3.2.13: Add command property for click handling
+    // Enable command-based click handling for tree items
+    this.command = {
+      command: "aidm-vscode-extension.taskTreeItemClick",
+      title: "Toggle Task Expansion",
+      arguments: [this],
+    };
   }
 
   /**

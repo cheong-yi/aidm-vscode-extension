@@ -881,6 +881,42 @@ export async function activate(
       console.error("❌ executeTaskWithCursor command failed:", error);
     }
 
+    // Register task tree item click command - Task 3.2.13
+    try {
+      const taskClickCommand = vscode.commands.registerCommand(
+        getCommandId("taskTreeItemClick"),
+        async (taskTreeItem: TaskTreeItem) => {
+          // Parameter validation - Task 3.2.13 requirements
+          if (!taskTreeItem || !taskTreeItem.task) {
+            console.warn(
+              "TaskTreeItem click command: Invalid taskTreeItem or missing task"
+            );
+            return;
+          }
+
+          try {
+            // Call toggleTaskExpansion with the task ID
+            await taskTreeViewProvider.toggleTaskExpansion(
+              taskTreeItem.task.id
+            );
+            console.log(
+              `TaskTreeItem click command: Expansion toggled for task ${taskTreeItem.task.id}`
+            );
+          } catch (error) {
+            console.error(
+              `TaskTreeItem click command: Failed to toggle expansion for task ${taskTreeItem.task.id}:`,
+              error
+            );
+            // Continue without expansion handling - don't break user interaction
+          }
+        }
+      );
+      context.subscriptions.push(taskClickCommand);
+      console.log("✅ taskTreeItemClick command registered - Task 3.2.13");
+    } catch (error) {
+      console.error("❌ taskTreeItemClick command failed:", error);
+    }
+
     // Register configuration change listener
     try {
       const configChangeDisposable = vscode.workspace.onDidChangeConfiguration(
