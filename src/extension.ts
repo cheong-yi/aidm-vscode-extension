@@ -347,6 +347,14 @@ export async function activate(
       // Add both the tree view and selection handler to subscriptions for proper disposal
       context.subscriptions.push(taskTreeView, selectionChangeDisposable);
       console.log("✅ Tree view created with selection handler");
+
+      // Register the tree data provider with VSCode to make it visible in sidebar
+      const treeDataProviderDisposable = vscode.window.registerTreeDataProvider(
+        "aidm-vscode-extension.tasks-list",
+        taskTreeViewProvider
+      );
+      context.subscriptions.push(treeDataProviderDisposable);
+      console.log("✅ TaskTreeViewProvider registered with VSCode");
     } catch (error) {
       console.error("❌ Tree view creation failed:", error);
       // Continue without tree view
