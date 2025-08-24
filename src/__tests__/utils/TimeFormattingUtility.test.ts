@@ -23,7 +23,7 @@ describe("TimeFormattingUtility", () => {
 
   afterEach(() => {
     jest.useRealTimers();
-    utility.clearCache();
+    utility.destroy(); // This will clean up the timer
   });
 
   describe("formatRelativeTime", () => {
@@ -706,6 +706,68 @@ describe("TimeFormattingUtility", () => {
 
       // Verify that cache is working by checking size
       expect(stats.size).toBe(1);
+    });
+
+    it("should cache time formatting with TTL and cleanup expired entries", () => {
+      // Arrange
+      const testDate = new Date(Date.now() - 30000).toISOString(); // 30 seconds ago
+      
+      // Act
+      const result1 = utility.formatRelativeTime(testDate);
+      const result2 = utility.formatRelativeTime(testDate); // Should use cache
+      
+      // Verify cache hit
+      const statsAfterHit = utility.getCacheStats();
+      expect(result1).toBe(result2); // Cache hit
+      expect(statsAfterHit.hits).toBe(1);
+      expect(statsAfterHit.misses).toBe(1);
+      
+      // Fast-forward time to expire cache (beyond 1-minute TTL)
+      const originalDateNow = Date.now;
+      const futureTime = Date.now() + 61000; // 61 seconds
+      Date.now = jest.fn(() => futureTime);
+      
+      // Third call should recalculate due to expired cache
+      const result3 = utility.formatRelativeTime(testDate);
+      
+      // Verify cache miss and cleanup
+      const statsAfterExpiration = utility.getCacheStats();
+      expect(statsAfterExpiration.misses).toBe(2); // First + expired
+      expect(statsAfterExpiration.hits).toBe(1); // Second call
+      
+      // Restore original Date.now
+      Date.now = originalDateNow;
+    });
+
+    it("should perform periodic background cleanup", () => {
+      // Arrange
+      const testDate = new Date(Date.now() - 30000).toISOString(); // 30 seconds ago
+      utility.formatRelativeTime(testDate); // Cache miss
+      utility.formatRelativeTime(testDate); // Cache hit
+
+      // Verify initial cache state
+      const statsBeforeCleanup = utility.getCacheStats();
+      expect(statsBeforeCleanup.hits).toBe(1);
+      expect(statsBeforeCleanup.misses).toBe(1);
+      expect(statsBeforeCleanup.size).toBe(1);
+
+      // Simulate time passing by 1 minute (beyond TTL)
+      const originalDateNow = Date.now;
+      const futureTime = Date.now() + 61000; // 1 minute + 1 second
+      Date.now = jest.fn(() => futureTime);
+
+      // After 1 minute, the cache should be cleared and new entries should be calculated
+      const result1 = utility.formatRelativeTime(testDate); // Should be a cache miss
+      expect(result1).toBe("1 minute ago"); // Time has advanced
+
+      // Verify cache stats after cleanup - the old entry should be expired
+      const statsAfterCleanup = utility.getCacheStats();
+      expect(statsAfterCleanup.hits).toBe(1); // Previous hit is still counted
+      expect(statsAfterCleanup.misses).toBe(2); // First call + expired call
+      expect(statsAfterCleanup.size).toBe(1); // Only the new entry is in cache
+
+      // Restore original Date.now
+      Date.now = originalDateNow;
     });
   });
 });

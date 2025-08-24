@@ -1,13 +1,13 @@
 /**
  * TimeFormattingUtility - Time formatting and parsing utilities
- * Task: 2.7.3 - Add time formatting caching mechanism
+ * Task: PERF-001 - Optimize time formatting caching with TTL and cleanup
  * Requirements: 4.8, 9.1, 9.3
  *
  * Provides consistent time formatting for UI components including:
  * - Relative time formatting ("2 hours ago")
  * - Duration formatting ("45 min", "2 hours 30 min")
  * - Estimated duration parsing ("15-30 min" -> 22.5)
- * - Performance-optimized caching with 1-minute TTL
+ * - Performance-optimized caching with 1-minute TTL and automatic cleanup
  */
 
 import { Logger, LogLevel } from "./logger";
@@ -27,15 +27,23 @@ export interface TimeFormattingUtility {
   };
 }
 
+// Enhanced cache entry interface for better metadata tracking
+interface TimeCacheEntry {
+  formatted: string;
+  timestamp: number;
+  ttl: number;
+  originalIsoDate: string; // Store original input for debugging
+  accessCount: number; // Track access frequency for potential LRU optimization
+}
+
 export class TimeFormattingUtility implements TimeFormattingUtility {
   private logger: Logger;
 
   // Enhanced cache for relative time formatting with TTL tracking
-  private relativeTimeCache: Map<
-    string,
-    { formatted: string; timestamp: number; ttl: number }
-  > = new Map();
+  private relativeTimeCache: Map<string, TimeCacheEntry> = new Map();
   private readonly cacheTTL = 60000; // 1 minute cache TTL
+  private readonly cleanupInterval = 30000; // 30 seconds cleanup interval
+  private cleanupTimer: NodeJS.Timeout | null = null;
 
   // Cache performance tracking
   private cacheHits = 0;
@@ -47,12 +55,47 @@ export class TimeFormattingUtility implements TimeFormattingUtility {
       enableConsole: true,
       sanitizeData: true,
     });
+    
+    // Start periodic cache cleanup for better performance
+    this.startPeriodicCleanup();
+  }
+
+  /**
+   * Starts periodic background cleanup of expired cache entries
+   * This improves performance by avoiding cleanup on every cache miss
+   */
+  private startPeriodicCleanup(): void {
+    try {
+      this.cleanupTimer = setInterval(() => {
+        this.cleanupExpiredCache();
+      }, this.cleanupInterval);
+      
+      this.logger.debug("Periodic cache cleanup started", {
+        interval: this.cleanupInterval,
+        ttl: this.cacheTTL
+      });
+    } catch (error) {
+      this.logger.error("Failed to start periodic cache cleanup", error as Error);
+      // Fallback to manual cleanup on misses
+    }
+  }
+
+  /**
+   * Stops periodic cleanup and cleans up resources
+   * Called during cleanup or when utility is destroyed
+   */
+  private stopPeriodicCleanup(): void {
+    if (this.cleanupTimer) {
+      clearInterval(this.cleanupTimer);
+      this.cleanupTimer = null;
+      this.logger.debug("Periodic cache cleanup stopped");
+    }
   }
 
   /**
    * Formats an ISO date string to relative time (e.g., "2 hours ago")
    * Handles invalid dates gracefully by returning the original string
-   * Now includes performance-optimized caching with 1-minute TTL
+   * Now includes performance-optimized caching with 1-minute TTL and periodic cleanup
    *
    * @param isoDate - ISO 8601 date string
    * @returns Human-readable relative time or original string on error
@@ -84,13 +127,16 @@ export class TimeFormattingUtility implements TimeFormattingUtility {
     const cached = this.relativeTimeCache.get(cacheKey);
     const now = Date.now();
 
-    if (cached && now - cached.timestamp < cached.ttl) {
-      // Cache hit - return cached value
+    if (cached && this.isCacheValid(cached, now)) {
+      // Cache hit - update access count and return cached value
       this.cacheHits++;
+      cached.accessCount++;
+      
       this.logger.debug("Cache hit for relative time formatting", {
         isoDate,
         cachedValue: cached.formatted,
         age: now - cached.timestamp,
+        accessCount: cached.accessCount,
       });
       return cached.formatted;
     }
@@ -176,15 +222,14 @@ export class TimeFormattingUtility implements TimeFormattingUtility {
         }
       }
 
-      // Cache the result with TTL
+      // Cache the result with enhanced metadata
       this.relativeTimeCache.set(cacheKey, {
         formatted,
         timestamp: now,
         ttl: this.cacheTTL,
+        originalIsoDate: isoDate,
+        accessCount: 1,
       });
-
-      // Clean up expired cache entries to prevent memory leaks
-      this.cleanupExpiredCache();
 
       return formatted;
     } catch (error) {
@@ -353,6 +398,17 @@ export class TimeFormattingUtility implements TimeFormattingUtility {
   }
 
   /**
+   * Checks if a cache entry is valid (not expired)
+   *
+   * @param entry - The cache entry to check
+   * @param now - Current timestamp
+   * @returns True if valid, false if expired
+   */
+  private isCacheValid(entry: TimeCacheEntry, now: number): boolean {
+    return now - entry.timestamp < entry.ttl;
+  }
+
+  /**
    * Clears the relative time cache and resets cache statistics
    * Useful for testing or when cache needs to be refreshed
    */
@@ -388,7 +444,7 @@ export class TimeFormattingUtility implements TimeFormattingUtility {
 
   /**
    * Cleans up expired cache entries to prevent memory leaks
-   * Called automatically after each cache miss to maintain cache efficiency
+   * Now called periodically in the background for better performance
    */
   private cleanupExpiredCache(): void {
     const now = Date.now();
@@ -396,7 +452,7 @@ export class TimeFormattingUtility implements TimeFormattingUtility {
 
     // Collect expired keys first to avoid modifying map during iteration
     this.relativeTimeCache.forEach((entry, key) => {
-      if (now - entry.timestamp >= entry.ttl) {
+      if (!this.isCacheValid(entry, now)) {
         expiredKeys.push(key);
       }
     });
@@ -404,7 +460,10 @@ export class TimeFormattingUtility implements TimeFormattingUtility {
     // Remove expired entries
     expiredKeys.forEach((key) => {
       this.relativeTimeCache.delete(key);
-      this.logger.debug("Expired cache entry cleared", { key });
+      this.logger.debug("Expired cache entry cleared", { 
+        key,
+        originalDate: this.relativeTimeCache.get(key)?.originalIsoDate 
+      });
     });
 
     // Log cleanup summary if entries were removed
@@ -412,7 +471,18 @@ export class TimeFormattingUtility implements TimeFormattingUtility {
       this.logger.debug("Cache cleanup completed", {
         expiredEntries: expiredKeys.length,
         remainingEntries: this.relativeTimeCache.size,
+        cleanupInterval: this.cleanupInterval,
       });
     }
+  }
+
+  /**
+   * Cleanup method to be called when the utility is no longer needed
+   * Stops the periodic cleanup timer to prevent memory leaks
+   */
+  destroy(): void {
+    this.stopPeriodicCleanup();
+    this.clearCache();
+    this.logger.debug("TimeFormattingUtility destroyed and resources cleaned up");
   }
 }
