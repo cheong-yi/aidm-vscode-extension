@@ -307,7 +307,7 @@ This implementation plan breaks down the feature into atomic, TDD-friendly tasks
   - _Requirements: 12.4, 8.1, 8.6_
   - _Duration: 20-25 minutes_
 
-- [ ] 4.4.4 Add command disposal in extension deactivate function
+- [x] 4.4.4 Add command disposal in extension deactivate function
 
   - Properly dispose all registered commands and providers
   - Clear event listeners and timer intervals

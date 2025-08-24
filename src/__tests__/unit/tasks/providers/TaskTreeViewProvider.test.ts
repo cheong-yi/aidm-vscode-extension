@@ -1842,7 +1842,9 @@ describe("TaskTreeViewProvider", () => {
       const treeItem = provider.getTreeItem(taskTreeItem);
 
       // Assert: Tree item should reflect expanded state
-      expect(treeItem.collapsibleState).toBe(vscode.TreeItemCollapsibleState.Expanded);
+      expect(treeItem.collapsibleState).toBe(
+        vscode.TreeItemCollapsibleState.Expanded
+      );
     });
 
     it("should set collapsed state for non-expanded tasks in getTreeItem", () => {
@@ -1855,7 +1857,9 @@ describe("TaskTreeViewProvider", () => {
       const treeItem = provider.getTreeItem(taskTreeItem);
 
       // Assert: Tree item should reflect collapsed state
-      expect(treeItem.collapsibleState).toBe(vscode.TreeItemCollapsibleState.Collapsed);
+      expect(treeItem.collapsibleState).toBe(
+        vscode.TreeItemCollapsibleState.Collapsed
+      );
     });
 
     it("should handle getTreeItem errors gracefully", () => {
@@ -1917,14 +1921,14 @@ describe("TaskTreeViewProvider", () => {
       // Assert: Should log debug messages in correct sequence
       // The actual logging sequence is:
       // 1. Expansion state updated
-      // 2. Tree refresh triggered  
+      // 2. Tree refresh triggered
       // 3. Task expanded with accordion behavior
       expect(consoleSpy).toHaveBeenCalledWith(
         "TaskTreeViewProvider: Expansion state updated:",
         expect.objectContaining({
           previousExpandedTaskId: null,
           newExpandedTaskId: "task-1",
-          accordionBehavior: "Only one task expanded at a time"
+          accordionBehavior: "Only one task expanded at a time",
         })
       );
       expect(consoleSpy).toHaveBeenCalledWith(
@@ -1934,7 +1938,7 @@ describe("TaskTreeViewProvider", () => {
         "TaskTreeViewProvider: Task expanded with accordion behavior:",
         expect.objectContaining({
           expandedTaskId: "task-1",
-          previousExpandedTaskId: "task-1" // Note: previousExpandedTaskId is updated after setExpandedTask
+          previousExpandedTaskId: "task-1", // Note: previousExpandedTaskId is updated after setExpandedTask
         })
       );
 
@@ -1955,7 +1959,7 @@ describe("TaskTreeViewProvider", () => {
         expect.objectContaining({
           previousExpandedTaskId: null,
           newExpandedTaskId: "task-1",
-          accordionBehavior: "Only one task expanded at a time"
+          accordionBehavior: "Only one task expanded at a time",
         })
       );
 
@@ -1972,7 +1976,7 @@ describe("TaskTreeViewProvider", () => {
       ];
 
       // Act: Execute operations concurrently
-      operations.forEach(op => op());
+      operations.forEach((op) => op());
 
       // Assert: Last operation should win (accordion behavior)
       expect(provider.getExpandedTaskId()).toBe("task-3");
@@ -1990,7 +1994,7 @@ describe("TaskTreeViewProvider", () => {
       ];
 
       // Act: Execute multiple cycles
-      cycles.forEach(cycle => {
+      cycles.forEach((cycle) => {
         provider.expandNode(cycle.expand);
         expect(provider.getExpandedTaskId()).toBe(cycle.expand);
         provider.collapseNode(cycle.collapse);
@@ -2062,6 +2066,23 @@ describe("TaskTreeViewProvider", () => {
 
       // Assert: Expansion state should be maintained
       expect(newProvider.getExpandedTaskId()).toBe("task-1");
+    });
+
+    it("should toggle task expansion on selection", async () => {
+      // Arrange
+      const taskId = "1.1";
+
+      // Act - first click expands
+      await provider.toggleTaskExpansion(taskId);
+
+      // Assert
+      expect(provider.getExpandedTaskId()).toBe(taskId);
+
+      // Act - second click collapses
+      await provider.toggleTaskExpansion(taskId);
+
+      // Assert
+      expect(provider.getExpandedTaskId()).toBeNull();
     });
   });
 });

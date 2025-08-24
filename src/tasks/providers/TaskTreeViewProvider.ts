@@ -495,6 +495,53 @@ export class TaskTreeViewProvider
   }
 
   /**
+   * Toggle task expansion state - expand if collapsed, collapse if expanded
+   * Task 3.2.12: Connect Click Events to Expansion Logic
+   * This method bridges selection events to existing accordion logic
+   *
+   * @param taskId ID of the task to toggle expansion for
+   */
+  public async toggleTaskExpansion(taskId: string): Promise<void> {
+    try {
+      if (this.isDisposed) {
+        console.debug(
+          "TaskTreeViewProvider: Cannot toggle expansion on disposed provider"
+        );
+        return;
+      }
+
+      // Validate taskId
+      if (!taskId || typeof taskId !== "string") {
+        console.warn(
+          "TaskTreeViewProvider: Invalid taskId provided to toggleTaskExpansion:",
+          taskId
+        );
+        return;
+      }
+
+      // Toggle expansion state using existing accordion logic
+      if (this.expandedTaskId === taskId) {
+        // Task is currently expanded, collapse it
+        this.collapseNode(taskId);
+      } else {
+        // Task is currently collapsed, expand it (accordion behavior will handle the rest)
+        this.expandNode(taskId);
+      }
+
+      console.debug("TaskTreeViewProvider: Task expansion toggled:", {
+        taskId,
+        newExpandedState: this.expandedTaskId === taskId,
+        accordionBehavior: "Only one task expanded at a time",
+      });
+    } catch (error) {
+      console.error(
+        "TaskTreeViewProvider: Error toggling task expansion:",
+        error
+      );
+    }
+  }
+
+  /**
    * Required by vscode.TreeDataProvider interface
    * Returns the TreeItem representation of the given element
    * Task 3.2.10: Enhanced to reflect accordion expansion state

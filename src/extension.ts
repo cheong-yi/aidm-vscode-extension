@@ -320,11 +320,22 @@ export async function activate(
             // Get the selected task item
             const selectedItem = e.selection[0];
             if (selectedItem && selectedItem.task) {
-              // TODO: Task 3.2.12 - Connect Click Events to Expansion Logic
-              // This will wire to TaskTreeViewProvider.expandNode() method
-              console.log(
-                `Tree view selection changed to task: ${selectedItem.task.id}`
-              );
+              // Task 3.2.12 - Connect Click Events to Expansion Logic
+              // Wire to TaskTreeViewProvider.toggleTaskExpansion() method
+              try {
+                await taskTreeViewProvider.toggleTaskExpansion(
+                  selectedItem.task.id
+                );
+                console.log(
+                  `Tree view selection changed to task: ${selectedItem.task.id}, expansion toggled`
+                );
+              } catch (toggleError) {
+                console.error(
+                  `Error toggling expansion for task ${selectedItem.task.id}:`,
+                  toggleError
+                );
+                // Continue without expansion handling
+              }
             }
           } catch (error) {
             console.error("Error handling tree view selection change:", error);
