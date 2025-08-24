@@ -17,6 +17,7 @@ import {
   TasksDataService,
   MarkdownTaskParser,
   TaskStatusManager,
+  TaskFileWatcher,
 } from "./services";
 import { MockDataProvider } from "./mock";
 import { TaskStatus, Task } from "./types/tasks";
@@ -43,6 +44,7 @@ let taskDetailProvider: TaskDetailCardProvider;
 let taskTreeViewProvider: TaskTreeViewProvider;
 let taskTreeView: vscode.TreeView<any>;
 let timeFormattingUtility: TimeFormattingUtility;
+let taskFileWatcher: TaskFileWatcher;
 
 /**
  * Setup comprehensive UI event synchronization between tree view and detail panel
@@ -270,7 +272,7 @@ export async function activate(
     }
 
     console.log(
-      "=== ACTIVATION STEP 8.5: Initializing TimeFormattingUtility ==="
+      "=== ACTIVATION STEP 8.6: Initializing TimeFormattingUtility ==="
     );
     try {
       // Initialize shared TimeFormattingUtility instance
@@ -282,7 +284,7 @@ export async function activate(
     }
 
     console.log(
-      "=== ACTIVATION STEP 8.6: Initializing TaskDetailCardProvider ==="
+      "=== ACTIVATION STEP 8.7: Initializing TaskDetailCardProvider ==="
     );
     try {
       taskDetailProvider = new TaskDetailCardProvider(timeFormattingUtility);
@@ -292,8 +294,45 @@ export async function activate(
       throw error;
     }
 
+    console.log("=== ACTIVATION STEP 8.7.5: Initializing TaskFileWatcher ===");
+    try {
+      // Initialize file watcher to monitor tasks.md changes
+      taskFileWatcher = new TaskFileWatcher("./tasks.md");
+
+      // Start watching for file changes and wire to UI refresh
+      taskFileWatcher.startWatching(async () => {
+        try {
+          console.log("🔄 File change detected, refreshing UI components...");
+
+          // Refresh tasks data service
+          await tasksDataService.refreshTasks();
+
+          // Refresh tree view
+          if (taskTreeViewProvider) {
+            taskTreeViewProvider.refresh();
+          }
+
+          // Refresh detail panel if it has current task
+          if (taskDetailProvider) {
+            taskDetailProvider.refreshRelativeTimes().catch((error) => {
+              console.error("Failed to refresh detail panel times:", error);
+            });
+          }
+
+          console.log("✅ UI refresh completed after file change");
+        } catch (error) {
+          console.error("❌ Error refreshing UI after file change:", error);
+        }
+      });
+
+      console.log("✅ TaskFileWatcher initialized and watching tasks.md");
+    } catch (error) {
+      console.error("❌ TaskFileWatcher initialization failed:", error);
+      // Continue without file watching - extension will still function
+    }
+
     console.log(
-      "=== ACTIVATION STEP 8.7: Registering TaskDetailCardProvider as webview view provider ==="
+      "=== ACTIVATION STEP 8.8: Registering TaskDetailCardProvider as webview view provider ==="
     );
     try {
       const webviewProviderDisposable =
@@ -1273,6 +1312,12 @@ export async function deactivate() {
     if (taskTreeViewProvider) {
       taskTreeViewProvider.dispose();
       console.log("AIDM VSCode Extension: Task tree view provider disposed");
+    }
+
+    // Dispose task file watcher if it exists
+    if (taskFileWatcher) {
+      taskFileWatcher.dispose();
+      console.log("AIDM VSCode Extension: Task file watcher disposed");
     }
 
     // Dispose MCP client if it exists
