@@ -23,6 +23,7 @@ import { TaskStatus, Task } from "./types/tasks";
 import { TaskDetailCardProvider } from "./tasks/providers/TaskDetailCardProvider";
 import { TaskTreeViewProvider, TaskTreeItem } from "./tasks/providers";
 import { TimeFormattingUtility } from "./utils";
+import { TaskErrorResponse } from "./types/tasks";
 
 /**
  * Task click event payload for UI synchronization and Cursor integration
@@ -42,6 +43,115 @@ let taskDetailProvider: TaskDetailCardProvider;
 let taskTreeViewProvider: TaskTreeViewProvider;
 let taskTreeView: vscode.TreeView<any>;
 let timeFormattingUtility: TimeFormattingUtility;
+
+/**
+ * Setup comprehensive UI event synchronization between tree view and detail panel
+ * SYNC-001: Implement bidirectional event synchronization for UI components
+ *
+ * This function wires up all event listeners to keep components synchronized:
+ * - Tree view selection updates detail panel
+ * - Detail panel status changes refresh tree view
+ * - Data service updates refresh both components
+ * - Error events display user notifications
+ */
+function setupUIEventSynchronization(): vscode.Disposable[] {
+  try {
+    // Tree view selection updates detail panel
+    const taskClickSubscription = taskTreeViewProvider.onTaskClick(
+      (event: TaskClickEvent) => {
+        try {
+          taskDetailProvider.updateTaskDetails(event.task);
+          console.debug(
+            `UI Sync: Tree selection updated detail panel for task ${event.taskId}`
+          );
+        } catch (error) {
+          console.error("UI Sync: Error updating task details:", error);
+          vscode.window.showErrorMessage("Failed to update task details");
+        }
+      }
+    );
+
+    // Detail panel status changes update tree view
+    const statusChangedSubscription = taskDetailProvider.onStatusChanged(
+      (event: { taskId: string; newStatus: TaskStatus }) => {
+        try {
+          // Refresh tree view to show updated status
+          taskTreeViewProvider.refresh();
+          console.debug(
+            `UI Sync: Status change refreshed tree view for task ${event.taskId}`
+          );
+        } catch (error) {
+          console.error("UI Sync: Error refreshing tree view:", error);
+        }
+      }
+    );
+
+    // Task data changes refresh both components
+    const tasksUpdatedSubscription = tasksDataService.onTasksUpdated.event(
+      (tasks: Task[]) => {
+        try {
+          // Refresh tree view to show updated data
+          taskTreeViewProvider.refresh();
+
+          // Keep current selection in detail panel if still valid
+          // Access currentTask property directly since it's private but we can check if it exists
+          if ((taskDetailProvider as any).currentTask) {
+            const currentTask = (taskDetailProvider as any).currentTask;
+            const updatedTask = tasks.find(
+              (task) => task.id === currentTask.id
+            );
+            if (updatedTask) {
+              taskDetailProvider.updateTaskDetails(updatedTask);
+            }
+          }
+
+          console.debug(
+            `UI Sync: Data update refreshed both components, ${tasks.length} tasks`
+          );
+        } catch (error) {
+          console.error("UI Sync: Error refreshing components:", error);
+        }
+      }
+    );
+
+    // Error events show user notifications
+    const errorSubscription = tasksDataService.onError.event(
+      (error: TaskErrorResponse) => {
+        try {
+          const errorMessage =
+            error.userInstructions ||
+            `Task operation failed: ${error.operation}`;
+          vscode.window.showErrorMessage(errorMessage);
+          console.warn("UI Sync: Service error displayed to user:", error);
+        } catch (displayError) {
+          console.error(
+            "UI Sync: Error displaying error notification:",
+            displayError
+          );
+        }
+      }
+    );
+
+    // Add all subscriptions for proper cleanup
+    // Note: context.subscriptions is not available in this scope, so we'll return the subscriptions
+    // and add them in the calling function
+    const subscriptions = [
+      taskClickSubscription,
+      statusChangedSubscription,
+      tasksUpdatedSubscription,
+      errorSubscription,
+    ];
+
+    console.log("✅ UI event synchronization setup completed");
+
+    // Return subscriptions for cleanup in the calling function
+    return subscriptions;
+  } catch (error) {
+    console.error("❌ UI event synchronization setup failed:", error);
+    // Continue without full synchronization - basic functionality still works
+    return [];
+  }
+}
 
 export async function activate(
   context: vscode.ExtensionContext
@@ -370,34 +480,13 @@ export async function activate(
       "=== ACTIVATION STEP 8.11: Wiring UI synchronization events ==="
     );
     try {
-      // Wire TaskTreeViewProvider selection to TaskDetailCardProvider updates
-      const taskClickSubscription = taskTreeViewProvider.onTaskClick(
-        (event: TaskClickEvent) => {
-          try {
-            taskDetailProvider.updateTaskDetails(event.task);
-          } catch (error) {
-            console.error("Error updating task details:", error);
-            vscode.window.showErrorMessage("Failed to update task details");
-          }
-        }
-      );
+      // Setup comprehensive UI event synchronization between components
+      const uiSyncSubscriptions = setupUIEventSynchronization();
 
-      // Connect TasksDataService events to both UI providers for data synchronization
-      const tasksUpdatedSubscription = tasksDataService.onTasksUpdated.event(
-        (tasks: Task[]) => {
-          try {
-            taskTreeViewProvider.refresh();
-          } catch (error) {
-            console.error("Error refreshing task tree:", error);
-          }
-        }
-      );
-
-      // Add all subscriptions for proper cleanup
-      context.subscriptions.push(
-        taskClickSubscription,
-        tasksUpdatedSubscription
-      );
+      // Add all UI synchronization subscriptions to context for proper cleanup
+      uiSyncSubscriptions.forEach((subscription: vscode.Disposable) => {
+        context.subscriptions.push(subscription);
+      });
 
       console.log("✅ UI synchronization events wired successfully");
     } catch (error) {
