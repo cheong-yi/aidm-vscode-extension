@@ -714,7 +714,7 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
           <meta charset="UTF-8">
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
           <title>Task Details - ${task.id}</title>
-                    <style>
+          <style>
             ${this.generateCSS()}
           </style>
         </head>
@@ -730,7 +730,7 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
                 )}">${this.getStatusDisplayName(task.status)}</span>
                 ${
                   task.isExecutable
-                    ? '<span class="executable-indicator">Robot</span>'
+                    ? '<span class="executable-indicator">🤖</span>'
                     : ""
                 }
               </div>
@@ -750,30 +750,10 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
                 )}">${this.getComplexityDisplayName(task.complexity)}</div>
               </div>
               <div class="meta-item">
-                <div class="meta-label">Duration</div>
-                <div class="meta-value duration">${this.formatEstimatedDuration(
+                <div class="meta-label">Estimated</div>
+                <div class="meta-value">${this.formatEstimatedDuration(
                   task.estimatedDuration
                 )}</div>
-              </div>
-              <div class="meta-item">
-                <div class="meta-label">Dependencies</div>
-                <div class="meta-value dependencies">${this.formatDependencies(
-                  task.dependencies
-                )}</div>
-              </div>
-              <div class="meta-item">
-                <div class="meta-label">Requirements</div>
-                <div class="meta-value requirements">${this.formatRequirements(
-                  task.requirements
-                )}</div>
-              </div>
-              <div class="meta-item">
-                <div class="meta-label">Created</div>
-                <div class="meta-value created-date">{{CREATED_DATE}}</div>
-              </div>
-              <div class="meta-item">
-                <div class="meta-label">Modified</div>
-                <div class="meta-value modified-date">{{LAST_MODIFIED}}</div>
               </div>
             </div>
             
@@ -789,7 +769,7 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
             ${this.renderTestResultsSection(task)}
             
             <!-- Action Buttons Section -->
-            <div class="action-buttons">
+            <div class="actions">
               ${this.renderActionButtons(task)}
             </div>
           </div>
@@ -1011,35 +991,12 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
         margin: 0;
       }
 
-      /* Metadata grid layout - enhanced for 6 metadata items */
+      /* Metadata grid layout - matches mockup exactly */
       .task-meta {
         display: grid;
         grid-template-columns: 1fr 1fr;
         gap: 12px;
         margin-bottom: 16px;
-      }
-
-      /* Enhanced metadata styling for specific fields */
-      .meta-value.duration {
-        color: var(--vscode-foreground, #ffffff);
-      }
-
-      .meta-value.dependencies {
-        color: #dcdcaa;
-        font-family: 'Courier New', monospace;
-        font-size: 11px;
-      }
-
-      .meta-value.requirements {
-        color: #dcdcaa;
-        font-family: 'Courier New', monospace;
-        font-size: 11px;
-      }
-
-      .meta-value.created-date,
-      .meta-value.modified-date {
-        color: var(--vscode-descriptionForeground, #969696);
-        font-size: 11px;
       }
 
       .meta-item {
@@ -1109,8 +1066,8 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
 
       /* Test results section */
       .test-results {
-        background: var(--vscode-editor-background, #1e1e1e);
-        border: 1px solid var(--vscode-panel-border, #3e3e42);
+        background: #1e1e1e;
+        border: 1px solid #3e3e42;
         border-radius: 4px;
         padding: 12px;
         margin-bottom: 12px;
@@ -1126,38 +1083,17 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
       .test-title {
         font-size: 11px;
         font-weight: 600;
-        color: var(--vscode-foreground, #ffffff);
+        color: #ffffff;
         text-transform: uppercase;
         letter-spacing: 0.5px;
       }
 
       .test-date {
         font-size: 10px;
-        color: var(--vscode-descriptionForeground, #969696);
+        color: #969696;
       }
 
-      .test-summary {
-        margin-bottom: 8px;
-        font-size: 11px;
-        color: var(--vscode-descriptionForeground, #969696);
-      }
 
-      .test-summary-stats {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        flex-wrap: wrap;
-      }
-
-      .test-summary-text {
-        font-weight: 500;
-        color: var(--vscode-foreground, #ffffff);
-      }
-
-      .test-coverage {
-        font-weight: 500;
-        color: var(--vscode-foreground, #ffffff);
-      }
 
       .test-stats {
         display: flex;
@@ -1179,7 +1115,7 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
 
       .test-stat-label {
         font-size: 9px;
-        color: var(--vscode-descriptionForeground, #969696);
+        color: #969696;
         text-transform: uppercase;
         letter-spacing: 0.5px;
       }
@@ -1196,30 +1132,7 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
         color: #dcdcaa;
       }
 
-      /* Test suite info */
-      .test-suite {
-        font-size: 10px;
-        color: var(--vscode-descriptionForeground, #969696);
-        margin-top: 8px;
-        margin-bottom: 8px;
-        padding: 4px 8px;
-        background: var(--vscode-panel-background, #2d2d30);
-        border-radius: 3px;
-        display: inline-block;
-      }
 
-      /* Coverage styling */
-      .coverage-low {
-        color: #f48771;
-      }
-
-      .coverage-medium {
-        color: #dcdcaa;
-      }
-
-      .coverage-high {
-        color: #4ec9b0;
-      }
 
       /* Failures section */
       .failures-section {
@@ -1265,129 +1178,39 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
       }
 
       .failure-item {
-        background: var(--vscode-panel-background, #2d2d30);
+        background: #2d2d30;
         border-left: 3px solid #f48771;
-        padding: 8px 10px;
-        margin-bottom: 6px;
-        border-radius: 3px;
-        transition: all 0.2s;
-        position: relative;
+        padding: 6px 8px;
+        margin-bottom: 4px;
+        border-radius: 2px;
       }
 
-      .failure-item:hover {
-        background: var(--vscode-panel-border, #3e3e42);
-        transform: translateX(2px);
-      }
 
-      .failure-header {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        margin-bottom: 6px;
-      }
-
-      .failure-category-icon {
-        font-size: 12px;
-        display: inline-block;
-        width: 16px;
-        text-align: center;
-      }
-
-      .failure-category-badge {
-        background: var(--vscode-panel-border, #3e3e42);
-        color: var(--vscode-foreground, #cccccc);
-        font-size: 8px;
-        padding: 2px 6px;
-        border-radius: 8px;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        font-weight: 600;
-        border: 1px solid transparent;
-        transition: border-color 0.2s;
-      }
-
-      .failure-item:hover .failure-category-badge {
-        border-color: var(--vscode-focusBorder, #007acc);
-      }
-
-      /* Error category specific styling */
-      .failure-item.assertion .failure-category-badge {
-        background: rgba(244, 135, 113, 0.2);
-        color: #f48771;
-        border-color: #f48771;
-      }
-
-      .failure-item.type .failure-category-badge {
-        background: rgba(220, 220, 170, 0.2);
-        color: #dcdcaa;
-        border-color: #dcdcaa;
-      }
-
-      .failure-item.filesystem .failure-category-badge {
-        background: rgba(86, 156, 214, 0.2);
-        color: #569cd6;
-        border-color: #569cd6;
-      }
-
-      .failure-item.timeout .failure-category-badge {
-        background: rgba(215, 186, 125, 0.2);
-        color: #d7ba7d;
-        border-color: #d7ba7d;
-      }
-
-      .failure-item.network .failure-category-badge {
-        background: rgba(197, 134, 192, 0.2);
-        color: #c586c0;
-        border-color: #c586c0;
-      }
-
-      .failure-item.unknown .failure-category-badge {
-        background: rgba(106, 106, 106, 0.2);
-        color: #6a6a6a;
-        border-color: #6a6a6a;
-      }
 
       .failure-name {
         font-weight: 500;
-        margin-bottom: 4px;
-        color: var(--vscode-foreground, #ffffff);
+        margin-bottom: 2px;
+        color: #ffffff;
         font-size: 11px;
-        line-height: 1.3;
       }
 
       .failure-message {
-        color: var(--vscode-descriptionForeground, #969696);
+        color: #969696;
         font-family: 'Courier New', monospace;
         font-size: 9px;
-        word-break: break-word;
-        line-height: 1.4;
-        margin-bottom: 4px;
       }
 
-      .failure-stacktrace {
-        color: var(--vscode-descriptionForeground, #6a6a6a);
-        font-family: 'Courier New', monospace;
-        font-size: 8px;
-        word-break: break-word;
-        line-height: 1.3;
-        background: var(--vscode-editor-background, #1e1e1e);
-        padding: 4px 6px;
-        border-radius: 2px;
-        border-left: 2px solid var(--vscode-panel-border, #3e3e42);
-        margin-top: 4px;
-        max-height: 80px;
-        overflow-y: auto;
-      }
+
 
       /* No tests state */
       .no-tests {
         font-size: 11px;
-        color: var(--vscode-descriptionForeground, #969696);
+        color: #969696;
         font-style: italic;
         text-align: center;
         padding: 8px;
-        background: var(--vscode-editor-background, #1e1e1e);
-        border: 1px solid var(--vscode-panel-border, #3e3e42);
+        background: #1e1e1e;
+        border: 1px solid #3e3e42;
         border-radius: 4px;
         margin-bottom: 12px;
       }
@@ -1401,99 +1224,40 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
       }
 
       .action-btn {
-        background: var(--vscode-panel-border, #3e3e42);
-        border: 1px solid transparent;
-        color: var(--vscode-foreground, #cccccc);
+        background: #3e3e42;
+        border: none;
+        color: #cccccc;
         padding: 6px 12px;
         border-radius: 3px;
         font-size: 10px;
         cursor: pointer;
-        transition: all 0.2s;
+        transition: background 0.2s;
         font-family: inherit;
-        text-decoration: none;
-        display: inline-flex;
-        align-items: center;
-        gap: 4px;
       }
 
       .action-btn:hover {
-        background: var(--vscode-panel-border, #4a4a4a);
-        border-color: var(--vscode-focusBorder, #007acc);
+        background: #4a4a4a;
+      }
+
+      .action-btn.primary {
+        background: #569cd6;
+        color: #ffffff;
+      }
+
+      .action-btn.primary:hover {
+        background: #4a86c7;
       }
 
       .action-btn:active {
         transform: translateY(1px);
+        box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.2);
       }
 
-      .action-btn.primary {
-        background: var(--vscode-button-background, #569cd6);
-        color: var(--vscode-button-foreground, #ffffff);
-      }
 
-      .action-btn.primary:hover {
-        background: var(--vscode-button-hoverBackground, #4a86c7);
-      }
 
-      /* Action button container */
-      .action-buttons {
-        display: flex;
-        gap: 8px;
-        flex-wrap: wrap;
-        margin-top: 16px;
-      }
 
-      /* Cursor integration button styling */
-      .action-btn.cursor-btn {
-        background: var(--vscode-button-background, #569cd6);
-        color: var(--vscode-button-foreground, #ffffff);
-        border: 2px solid var(--vscode-focusBorder, #007acc);
-        font-weight: 600;
-        position: relative;
-      }
 
-      .action-btn.cursor-btn:hover {
-        background: var(--vscode-button-hoverBackground, #4a86c7);
-        border-color: var(--vscode-focusBorder, #007acc);
-        transform: translateY(-1px);
-        box-shadow: 0 2px 8px rgba(0, 122, 204, 0.3);
-      }
 
-      .action-btn.cursor-btn:active {
-        transform: translateY(0);
-        box-shadow: 0 1px 4px rgba(0, 122, 204, 0.2);
-      }
-
-      /* No actions state */
-      .no-actions {
-        font-size: 11px;
-        color: var(--vscode-descriptionForeground, #969696);
-        font-style: italic;
-        text-align: center;
-        padding: 12px;
-        background: var(--vscode-panel-background, #2d2d30);
-        border: 1px solid var(--vscode-panel-border, #3e3e42);
-        border-radius: 4px;
-        margin-top: 16px;
-      }
-
-      /* Action error state */
-      .action-error {
-        font-size: 11px;
-        color: #f48771;
-        text-align: center;
-        padding: 12px;
-        background: var(--vscode-panel-background, #2d2d30);
-        border: 1px solid #f48771;
-        border-radius: 4px;
-        margin-top: 16px;
-      }
-
-      /* Section divider */
-      .section-divider {
-        height: 1px;
-        background: var(--vscode-panel-border, #3e3e42);
-        margin: 12px 0;
-      }
 
       /* Executable indicator */
       .executable-indicator {
@@ -1503,65 +1267,108 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
         display: inline-block;
       }
 
-      /* Responsive design for different sidebar widths */
-      @media (max-width: 300px) {
-        .task-details {
-          padding: 12px;
-        }
-        
-        .task-meta {
-          grid-template-columns: 1fr;
-          gap: 8px;
-        }
-        
-        .test-stats {
-          gap: 8px;
-        }
-        
-        .actions {
-          gap: 6px;
-        }
-        
-        .action-btn {
-          padding: 4px 8px;
-          font-size: 9px;
-        }
+      /* Section divider */
+      .section-divider {
+        height: 1px;
+        background: #3e3e42;
+        margin: 12px 0;
       }
 
-      @media (min-width: 400px) {
-        .task-details {
-          padding: 20px;
-        }
-        
-        .task-meta {
-          grid-template-columns: 1fr 1fr 1fr;
-          gap: 16px;
-        }
-        
-        .test-stats {
-          gap: 24px;
-        }
-        
-        .actions {
-          gap: 12px;
-        }
-      }
-
-      /* VSCode theme integration fallbacks */
+      /* Light theme support */
       @media (prefers-color-scheme: light) {
-        .task-details {
-          background: var(--vscode-panel-background, #f3f3f3);
-          border-top-color: var(--vscode-panel-border, #e1e1e1);
+        body {
+          background: var(--vscode-editor-background, #ffffff);
+          color: var(--vscode-foreground, #333333);
+        }
+        
+                    .task-details {
+              background: var(--vscode-panel-background, #f3f3f3);
+              border-top: 1px solid var(--vscode-panel-border, #e1e1e1);
+            }
+        
+        .task-header {
+          border-bottom: 1px solid var(--vscode-panel-border, #e1e1e1);
+        }
+        
+        .task-title {
+          color: var(--vscode-foreground, #000000);
+        }
+        
+        .task-id {
+          background: var(--vscode-panel-border, #e1e1e1);
+          color: #8b4513;
+        }
+        
+        .meta-label {
+          color: var(--vscode-descriptionForeground, #666666);
+        }
+        
+        .meta-value {
+          color: var(--vscode-foreground, #000000);
+        }
+        
+        .dependencies-title {
+          color: var(--vscode-panel-border, #666666);
+        }
+        
+        .dependency-tag {
+          background: var(--vscode-panel-border, #e1e1e1);
+          color: #8b4513;
         }
         
         .test-results {
-          background: var(--vscode-editor-background, #ffffff);
-          border-color: var(--vscode-panel-border, #e1e1e1);
+          background: #f8f8f8;
+          border: 1px solid #e1e1e1;
         }
         
-        .failure-item {
-          background: var(--vscode-panel-background, #f3f3f3);
+        .test-title {
+          color: #000000;
         }
+        
+        .test-date {
+          color: #666666;
+        }
+        
+        .no-tests {
+          background: #f8f8f8;
+          border: 1px solid #e1e1e1;
+          color: #666666;
+        }
+        
+        .action-btn {
+          background: #e1e1e1;
+          color: #333333;
+        }
+        
+        .action-btn:hover {
+          background: #d1d1d1;
+        }
+        
+        .action-btn.primary {
+          background: #007acc;
+          color: #ffffff;
+        }
+        
+        .action-btn.primary:hover {
+          background: #005a9e;
+        }
+        
+        .section-divider {
+          background: #e1e1e1;
+        }
+      }
+
+      /* Enhanced transitions and animations */
+      .action-btn {
+        transition: all 0.2s ease;
+      }
+      
+      .dependency-tag {
+        transition: all 0.2s ease;
+      }
+      
+      .failures-header {
+        transition: all 0.2s ease;
       }
 
       /* Focus management for accessibility */
@@ -1570,58 +1377,31 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
         outline-offset: 2px;
       }
 
-      .failures-header:focus {
-        outline: 2px solid var(--vscode-focusBorder, #007acc);
-        outline-offset: 2px;
-        border-radius: 2px;
-      }
-
-      /* Smooth transitions for all interactive elements */
-      * {
-        transition: background-color 0.2s, border-color 0.2s, color 0.2s;
-      }
-
-      /* Enhanced transitions for failures section */
-      .failures-section {
-        transition: all 0.3s ease-in-out;
-      }
-
-      .failures-list {
-        transition: all 0.3s ease-in-out;
-        opacity: 0;
-        transform: translateY(-10px);
-      }
-
-      .failures-section.expanded .failures-list {
-        opacity: 1;
-        transform: translateY(0);
-      }
-
-      .task-expand-icon {
-        transition: transform 0.3s ease-in-out;
-      }
-
-      .failure-item {
-        transition: all 0.2s ease-in-out;
-      }
-
-      .failure-category-badge {
-        transition: all 0.2s ease-in-out;
-      }
-
       /* Print styles */
       @media print {
-        .actions,
-        .failures-header {
+        .quick-actions {
           display: none;
         }
         
-        .task-details {
+        .no-task-selected {
           background: white;
           color: black;
           border: none;
         }
+        
+        .action-btn {
+          background: white !important;
+          color: black !important;
+          border: 1px solid #ccc !important;
+        }
+        
+        .task-details {
+          background: white !important;
+          color: black !important;
+          border: 1px solid #ccc !important;
+        }
       }
+
     `;
   }
 
@@ -1710,20 +1490,6 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
           <div class="test-title">Test Results</div>
           <div class="test-date">Last run: {{LAST_RUN_DATE}}</div>
         </div>
-        <div class="test-summary">
-          <div class="test-summary-stats">
-            <span class="test-summary-text">${this.formatTestSummary(
-              testStatus
-            )}</span>
-            ${
-              testStatus.coverage
-                ? `<span class="test-coverage">${this.formatCoverage(
-                    testStatus.coverage
-                  )}</span>`
-                : ""
-            }
-          </div>
-        </div>
         <div class="test-stats">
           <div class="test-stat">
             <div class="test-stat-value test-total">${
@@ -1744,13 +1510,6 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
             <div class="test-stat-label">Failed</div>
           </div>
         </div>
-        ${
-          testStatus.testSuite
-            ? `<div class="test-suite">Suite: ${this.escapeHtml(
-                testStatus.testSuite
-              )}</div>`
-            : ""
-        }
         ${
           hasFailures
             ? this.renderFailuresSection(testStatus.failingTestsList!)
@@ -1942,7 +1701,7 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
       let actions = this.getActionsForStatus(task.status);
 
       if (actions.length === 0) {
-        return '<div class="no-actions">No actions available for this task status</div>';
+        return '<div class="no-tests">No actions available for this task status</div>';
       }
 
       // Filter out Cursor action for non-executable tasks
@@ -1964,17 +1723,17 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
         // Check if this action should be executable for the current task
         const isExecutableAction = this.isExecutableAction(action, task);
         const buttonClass = isExecutableAction
-          ? "action-btn cursor-btn"
+          ? "action-btn primary"
           : "action-btn";
         const actionKey = this.getActionKey(action);
 
         return `<button class="${buttonClass}" data-action="${actionKey}" data-task-id="${task.id}">${action}</button>`;
       });
 
-      return `<div class="action-buttons">${buttons.join("")}</div>`;
+      return `<div class="actions">${buttons.join("")}</div>`;
     } catch (error) {
       console.error("Failed to render action buttons:", error);
-      return '<div class="action-error">Error loading actions</div>';
+      return '<div class="no-tests">Error loading actions</div>';
     }
   }
 
@@ -1997,7 +1756,7 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
       return `<button class="action-btn" data-action="${actionKey}" data-task-id="${task.id}">${action}</button>`;
     });
 
-    return `<div class="action-buttons">${buttons.join("")}</div>`;
+    return `<div class="actions">${buttons.join("")}</div>`;
   }
 
   /**
