@@ -29,12 +29,39 @@ export class JSONTaskParser {
   private async validateTasksFile(
     fileUri: vscode.Uri
   ): Promise<{ isValid: boolean; error?: string }> {
+    console.log(
+      `[JSONTaskParser] Validating tasks file: ${fileUri.toString()}`
+    );
+    console.log(`[JSONTaskParser] File system path: ${fileUri.fsPath}`);
+    console.log(`[JSONTaskParser] Scheme: ${fileUri.scheme}`);
+    console.log(`[JSONTaskParser] Authority: ${fileUri.authority}`);
+
     try {
       // Check if file exists and get stats using VS Code API
+      console.log(
+        `[JSONTaskParser] Attempting to stat file: ${fileUri.fsPath}`
+      );
       const stats = await vscode.workspace.fs.stat(fileUri);
+
+      console.log(`[JSONTaskParser] File stats retrieved successfully`);
+      console.log(
+        `[JSONTaskParser] File type: ${
+          stats.type === vscode.FileType.File
+            ? "File"
+            : stats.type === vscode.FileType.Directory
+            ? "Directory"
+            : "Unknown"
+        }`
+      );
+      console.log(`[JSONTaskParser] File size: ${stats.size} bytes`);
+      console.log(`[JSONTaskParser] File creation time: ${stats.ctime} ms`);
+      console.log(`[JSONTaskParser] File modification time: ${stats.mtime} ms`);
 
       // Check if path is actually a file (not a directory)
       if (stats.type !== vscode.FileType.File) {
+        console.log(
+          `[JSONTaskParser] Path exists but is not a file: ${fileUri.fsPath}`
+        );
         return {
           isValid: false,
           error: `Path exists but is not a file: ${fileUri.fsPath}`,
@@ -43,29 +70,66 @@ export class JSONTaskParser {
 
       // Check if file has content (not empty)
       if (stats.size === 0) {
+        console.log(`[JSONTaskParser] Tasks file is empty: ${fileUri.fsPath}`);
         return {
           isValid: false,
           error: `Tasks file is empty: ${fileUri.fsPath}`,
         };
       }
 
+      console.log(
+        `[JSONTaskParser] File validation successful: ${fileUri.fsPath}`
+      );
+      console.log(
+        `[JSONTaskParser] File is readable and contains ${stats.size} bytes of data`
+      );
       return { isValid: true };
     } catch (error) {
+      console.log(
+        `[JSONTaskParser] File validation error occurred: ${
+          error instanceof Error ? error.message : String(error)
+        }`
+      );
+
       if (error instanceof vscode.FileSystemError) {
+        console.log(
+          `[JSONTaskParser] VS Code FileSystemError detected with code: ${error.code}`
+        );
+
         if (error.code === "FileNotFound") {
+          console.log(
+            `[JSONTaskParser] File not found error: ${fileUri.fsPath}`
+          );
           return {
             isValid: false,
             error: `Tasks file not found: ${fileUri.fsPath}`,
           };
         }
         if (error.code === "NoPermissions") {
+          console.log(
+            `[JSONTaskParser] Permission denied error: ${fileUri.fsPath}`
+          );
           return {
             isValid: false,
             error: `Cannot read tasks file: Permission denied for ${fileUri.fsPath}`,
           };
         }
+        if (error.code === "Unavailable") {
+          console.log(
+            `[JSONTaskParser] File unavailable error: ${fileUri.fsPath}`
+          );
+          return {
+            isValid: false,
+            error: `Tasks file is unavailable: ${fileUri.fsPath}`,
+          };
+        }
       }
 
+      console.log(
+        `[JSONTaskParser] Unknown error type during validation: ${
+          error instanceof Error ? error.constructor.name : typeof error
+        }`
+      );
       return {
         isValid: false,
         error: `Cannot read tasks file: ${
