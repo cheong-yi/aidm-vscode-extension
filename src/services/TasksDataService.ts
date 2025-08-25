@@ -12,7 +12,6 @@
 
 import { EventEmitter, workspace } from "vscode";
 import axios, { AxiosInstance } from "axios";
-import * as fs from "fs";
 import * as path from "path";
 import {
   Task,
@@ -24,6 +23,7 @@ import {
 import { TaskStatusManager } from "./TaskStatusManager";
 import { JSONTaskParser } from "./JSONTaskParser";
 import { MockDataProvider } from "../mock";
+import * as vscode from "vscode";
 
 interface ITasksDataService {
   getTasks(): Promise<Task[]>;
@@ -143,10 +143,10 @@ export class TasksDataService implements ITasksDataService {
         );
         
         // PATH-002: Use existing JSONTaskParser with enhanced error handling
-        const filePath = this.getConfiguredFilePath() || "./tasks.json";
+        const fileUri = this.getConfiguredFileUri() || vscode.Uri.file("./tasks.json");
         
         try {
-          const parsedTasks = await this.jsonTaskParser.parseTasksFromFile(filePath);
+          const parsedTasks = await this.jsonTaskParser.parseTasksFromFile(fileUri);
           console.log(
             `[TasksDataService] Retrieved ${parsedTasks.length} tasks from file parser`
           );
@@ -155,7 +155,7 @@ export class TasksDataService implements ITasksDataService {
           // PATH-002: Enhanced error handling for file parsing failures
           const taskError = this.handleFileLoadingError(
             parseError as Error, 
-            filePath, 
+            fileUri.fsPath, 
             'file_validation'
           );
           this.onError.fire(taskError);
@@ -336,9 +336,9 @@ export class TasksDataService implements ITasksDataService {
       );
 
       try {
-        const filePath = this.getConfiguredFilePath();
+        const fileUri = this.getConfiguredFileUri();
         
-        if (!filePath) {
+        if (!fileUri) {
           console.warn('[TasksDataService] No file path configured, using mock data');
           await this.loadMockData();
           return;
@@ -346,7 +346,7 @@ export class TasksDataService implements ITasksDataService {
 
         // PATH-002: Use existing JSONTaskParser with enhanced error handling
         try {
-          const parsedTasks = await this.jsonTaskParser.parseTasksFromFile(filePath);
+          const parsedTasks = await this.jsonTaskParser.parseTasksFromFile(fileUri);
           console.log(
             `[TasksDataService] Retrieved ${parsedTasks.length} tasks from file parser`
           );
@@ -355,7 +355,7 @@ export class TasksDataService implements ITasksDataService {
           // PATH-002: Enhanced error handling for file parsing failures
           const taskError = this.handleFileLoadingError(
             parseError as Error, 
-            filePath, 
+            fileUri.fsPath, 
             'file_validation'
           );
           this.onError.fire(taskError);
@@ -452,27 +452,33 @@ export class TasksDataService implements ITasksDataService {
     return { isValid: errors.length === 0, errors };
   }
 
-  private async loadTasksFromFile(filePath: string): Promise<any> {
+  private async loadTasksFromFile(fileUri: vscode.Uri): Promise<any> {
     try {
-      // Check if file exists first
-      if (!fs.existsSync(filePath)) {
-        const error = new Error(`ENOENT: no such file or directory, open '${filePath}'`);
-        const taskError = this.handleFileLoadingError(error, filePath, 'file_validation');
-        this.onError.fire(taskError);
+      // Check if file exists first using VS Code API
+      try {
+        await vscode.workspace.fs.stat(fileUri);
+      } catch (error) {
+        if (error instanceof vscode.FileSystemError && error.code === 'FileNotFound') {
+          const error = new Error(`ENOENT: no such file or directory, open '${fileUri.fsPath}'`);
+          const taskError = this.handleFileLoadingError(error, fileUri.fsPath, 'file_validation');
+          this.onError.fire(taskError);
+          throw error;
+        }
         throw error;
       }
 
-      // Read file content
-      const fileContent = await fs.promises.readFile(filePath, 'utf8');
+      // Read file content using VS Code API
+      const fileContent = await vscode.workspace.fs.readFile(fileUri);
+      const contentString = Buffer.from(fileContent).toString('utf8');
       
       // Parse JSON
       let jsonData;
       try {
-        jsonData = JSON.parse(fileContent);
+        jsonData = JSON.parse(contentString);
       } catch (parseError) {
         const taskError = this.handleFileLoadingError(
           parseError as Error, 
-          filePath, 
+          fileUri.fsPath, 
           'file_validation'
         );
         this.onError.fire(taskError);
@@ -487,27 +493,30 @@ export class TasksDataService implements ITasksDataService {
         );
         const taskError = this.handleFileLoadingError(
           validationError, 
-          filePath, 
+          fileUri.fsPath, 
           'file_validation'
         );
         this.onError.fire(taskError);
         throw validationError;
       }
 
-      console.log(`[TasksDataService] Successfully loaded tasks from: ${filePath}`);
+      console.log(`[TasksDataService] Successfully loaded tasks from: ${fileUri.fsPath}`);
       return jsonData;
 
     } catch (error) {
       // Log error and re-throw (error already emitted above)
-      console.error(`[TasksDataService] File loading failed for: ${filePath}`, error);
+      console.error(`[TasksDataService] File loading failed for: ${fileUri.fsPath}`, error);
       throw error;
     }
   }
 
-  private getConfiguredFilePath(): string | null {
+  private getConfiguredFileUri(): vscode.Uri | null {
     const config = workspace.getConfiguration("aidmVscodeExtension");
     const filePath = config.get<string>("tasks.filePath");
-    return filePath || null;
+    if (filePath) {
+      return vscode.Uri.file(filePath);
+    }
+    return null;
   }
 
   private processLoadedTasks(tasksData: any): void {

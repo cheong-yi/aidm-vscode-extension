@@ -2,10 +2,10 @@
  * JSONTaskParser - Parses nested contexts JSON task files
  * CRITICAL-2: Replace markdown parser for tasks.json with nested contexts structure
  * Requirements: 3.1-3.6, 4.1-4.4, 7.1-7.6
+ * Task 6.0.1: Migrated to VS Code filesystem API
  */
 
-import { promises as fs, existsSync, constants } from "fs";
-import * as path from "path";
+import * as vscode from "vscode";
 import {
   Task,
   TaskStatus,
@@ -21,45 +21,51 @@ export class JSONTaskParser {
   }
 
   /**
-   * Validate tasks.json file exists and is readable
+   * Validate tasks.json file exists and is readable using VS Code filesystem API
    *
-   * @param filePath - Path to the tasks.json file to validate
+   * @param fileUri - VS Code URI to the tasks.json file to validate
    * @returns Promise<{isValid: boolean, error?: string}> - Validation result with error details
    */
   private async validateTasksFile(
-    filePath: string
+    fileUri: vscode.Uri
   ): Promise<{ isValid: boolean; error?: string }> {
     try {
-      // Check if file exists
-      if (!existsSync(filePath)) {
-        return {
-          isValid: false,
-          error: `Tasks file not found: ${path.basename(filePath)}`,
-        };
-      }
+      // Check if file exists and get stats using VS Code API
+      const stats = await vscode.workspace.fs.stat(fileUri);
 
       // Check if path is actually a file (not a directory)
-      const stats = await fs.stat(filePath);
-      if (!stats.isFile()) {
+      if (stats.type !== vscode.FileType.File) {
         return {
           isValid: false,
-          error: `Path exists but is not a file: ${path.basename(filePath)}`,
+          error: `Path exists but is not a file: ${fileUri.fsPath}`,
         };
       }
-
-      // Check if file is readable
-      await fs.access(filePath, constants.R_OK);
 
       // Check if file has content (not empty)
       if (stats.size === 0) {
         return {
           isValid: false,
-          error: `Tasks file is empty: ${path.basename(filePath)}`,
+          error: `Tasks file is empty: ${fileUri.fsPath}`,
         };
       }
 
       return { isValid: true };
     } catch (error) {
+      if (error instanceof vscode.FileSystemError) {
+        if (error.code === "FileNotFound") {
+          return {
+            isValid: false,
+            error: `Tasks file not found: ${fileUri.fsPath}`,
+          };
+        }
+        if (error.code === "NoPermissions") {
+          return {
+            isValid: false,
+            error: `Cannot read tasks file: Permission denied for ${fileUri.fsPath}`,
+          };
+        }
+      }
+
       return {
         isValid: false,
         error: `Cannot read tasks file: ${
@@ -70,16 +76,26 @@ export class JSONTaskParser {
   }
 
   /**
-   * Parse tasks from a JSON file and return parsed Task objects
+   * Parse tasks from a JSON file and return parsed Task objects using VS Code filesystem API
    *
-   * @param filePath - Path to the JSON file
+   * @param filePathOrUri - VS Code URI or string path to the JSON file
    * @returns Promise<Task[]> - Array of parsed Task objects from file content
    */
-  async parseTasksFromFile(filePath: string): Promise<Task[]> {
-    console.log(`[JSONTaskParser] Validating tasks file: ${filePath}`);
+  async parseTasksFromFile(
+    filePathOrUri: string | vscode.Uri
+  ): Promise<Task[]> {
+    // Convert string path to Uri if needed for backward compatibility
+    const fileUri =
+      typeof filePathOrUri === "string"
+        ? vscode.Uri.file(filePathOrUri)
+        : filePathOrUri;
+
+    console.log(
+      `[JSONTaskParser] Validating tasks file: ${fileUri.toString()}`
+    );
 
     // Validate file before attempting to parse
-    const validation = await this.validateTasksFile(filePath);
+    const validation = await this.validateTasksFile(fileUri);
     if (!validation.isValid) {
       console.error(
         `[JSONTaskParser] File validation failed: ${validation.error}`
@@ -92,12 +108,15 @@ export class JSONTaskParser {
     );
 
     try {
-      const fileContent = await fs.readFile(filePath, "utf-8");
+      // Use VS Code filesystem API instead of Node.js fs
+      const fileContent = await vscode.workspace.fs.readFile(fileUri);
+      const contentString = Buffer.from(fileContent).toString("utf8");
+
       console.log(
-        `[JSONTaskParser] Successfully read file, content length: ${fileContent.length} characters`
+        `[JSONTaskParser] Successfully read file, content length: ${contentString.length} characters`
       );
 
-      const jsonData = JSON.parse(fileContent);
+      const jsonData = JSON.parse(contentString);
       const parsedTasks = this.parseTasksFromJSONContent(jsonData);
       console.log(
         `[JSONTaskParser] Parsed ${parsedTasks.length} tasks from file content`
@@ -105,7 +124,28 @@ export class JSONTaskParser {
 
       return parsedTasks;
     } catch (error) {
-      console.error(`[JSONTaskParser] Failed to parse ${filePath}:`, error);
+      console.error(
+        `[JSONTaskParser] Failed to parse ${fileUri.toString()}:`,
+        error
+      );
+
+      // Handle VS Code filesystem errors specifically
+      if (error instanceof vscode.FileSystemError) {
+        if (error.code === "FileNotFound") {
+          throw new Error(`Tasks file not found: ${fileUri.fsPath}`);
+        }
+        if (error.code === "NoPermissions") {
+          throw new Error(
+            `Cannot read tasks file: Permission denied for ${fileUri.fsPath}`
+          );
+        }
+      }
+
+      // Handle JSON parsing errors
+      if (error instanceof SyntaxError) {
+        throw new Error(`Invalid JSON in tasks file: ${error.message}`);
+      }
+
       throw new Error(
         `Could not read tasks file: ${
           error instanceof Error ? error.message : String(error)

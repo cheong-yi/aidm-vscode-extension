@@ -3,13 +3,15 @@
  * Recovery Task 2.1.5: Minimal class that compiles and can be instantiated
  * Recovery Task 2.1.6: Connect getTasks method to generic parser interface
  * Requirements: 3.1-3.6, 4.1-4.4, 7.1-7.6
+ * Task 6.0.1: Updated to use VS Code filesystem API
  */
 
+import * as vscode from "vscode";
 import { Task, TaskStatus } from "../types/tasks";
 
 // Generic interface for task parsers
 interface ITaskParser {
-  parseTasksFromFile(filePath: string): Promise<Task[]>;
+  parseTasksFromFile(filePath: string | vscode.Uri): Promise<Task[]>;
 }
 
 export class TaskStatusManager {
@@ -20,8 +22,8 @@ export class TaskStatusManager {
   // Business logic methods (empty implementations)
   async getTasks(): Promise<Task[]> {
     // Recovery Task 2.1.6: Connect to generic parser
-    // Call parser with appropriate file path, return results
-    return await this.parser.parseTasksFromFile("./tasks.json");
+    // Call parser with appropriate file URI, return results
+    return await this.parser.parseTasksFromFile(vscode.Uri.file("./tasks.json"));
   }
 
   async getTaskById(id: string): Promise<Task | null> {
