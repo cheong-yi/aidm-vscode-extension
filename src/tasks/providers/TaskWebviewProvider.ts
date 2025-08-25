@@ -1300,41 +1300,34 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
           // Expand clicked task
           taskElement.classList.add('expanded');
           expandedTaskId = taskId;
+          
+          // Notify extension of expansion (extension handles persistence)
+          sendMessage('toggleAccordion', { taskId: taskId, expanded: true });
         } else {
           // Collapse clicked task
           expandedTaskId = null;
+          sendMessage('toggleAccordion', { taskId: taskId, expanded: false });
         }
-        
-        // Update state persistence
-        currentState.expandedTaskId = expandedTaskId;
-        currentState.lastUpdated = Date.now();
-        saveState();
-        
-        // Send message to extension
-        sendMessage('toggleAccordion', { taskId: taskId, expanded: !isCurrentlyExpanded });
       }
 
       function toggleFailures(failuresSection) {
         failuresSection.classList.toggle('expanded');
       }
       
-      // Restore expanded state on page load
-      function restoreExpandedState() {
-        if (currentState.expandedTaskId) {
-          const taskElement = document.querySelector(\`[data-task-id="\${currentState.expandedTaskId}"]\`);
+      // Initialize from extension-provided state
+      function setInitialExpandedState(taskId) {
+        if (taskId) {
+          const taskElement = document.querySelector(\`[data-task-id="\${taskId}"]\`);
           if (taskElement) {
             taskElement.classList.add('expanded');
-            expandedTaskId = currentState.expandedTaskId;
+            expandedTaskId = taskId;
           }
         }
       }
       
-      // Call restore function after DOM is ready
-      if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', restoreExpandedState);
-      } else {
-        restoreExpandedState();
-      }`;
+      // Extension will call this function to restore state
+      window.setExpandedTask = setInitialExpandedState;
+    `;
   }
 
   /**
@@ -1348,12 +1341,6 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
   private getMessageSendingScript(): string {
     return `
       const vscode = acquireVsCodeApi();
-      
-      // State persistence variables
-      let currentState = {
-        expandedTaskId: null,
-        lastUpdated: Date.now()
-      };
       
       function sendMessage(type, payload) {
         vscode.postMessage({
@@ -1371,31 +1358,6 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
         sendMessage('executeWithCursor', { taskId: taskId });
       }
       
-
-      
-      // Handle messages from extension
-      window.addEventListener('message', function(event) {
-        const message = event.data;
-        
-        switch (message.type) {
-          case 'updateAccordion':
-            updateAccordionDisplay(message.taskId, message.expanded);
-            break;
-        }
-      });
-      
-      function updateAccordionDisplay(taskId, isExpanded) {
-        // Update the visual state of the accordion
-        const taskElement = document.querySelector(\`[data-task-id="\${taskId}"]\`);
-        if (taskElement) {
-          if (isExpanded) {
-            taskElement.classList.add('expanded');
-          } else {
-            taskElement.classList.remove('expanded');
-          }
-        }
-      }
-      
       // Handle action button clicks
       document.addEventListener('click', function(event) {
         if (event.target.classList.contains('action-btn')) {
@@ -1411,11 +1373,9 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
           } else if (action.includes('Approve & Complete')) {
             updateTaskStatus(taskId, 'completed');
           }
-          // Add more action handlers as needed
         }
       });
-      
-`;
+    `;
   }
 
   /**

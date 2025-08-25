@@ -657,9 +657,12 @@ describe("TaskWebviewProvider", () => {
 
       const html = (provider as any).getHtmlContent();
 
-      // Verify message sending on accordion toggle
+      // Verify message sending on accordion toggle (new format with explicit expanded values)
       expect(html).toContain(
-        "sendMessage('toggleAccordion', { taskId: taskId, expanded: !isCurrentlyExpanded })"
+        "sendMessage('toggleAccordion', { taskId: taskId, expanded: true })"
+      );
+      expect(html).toContain(
+        "sendMessage('toggleAccordion', { taskId: taskId, expanded: false })"
       );
 
       // Verify message sending on action button clicks
