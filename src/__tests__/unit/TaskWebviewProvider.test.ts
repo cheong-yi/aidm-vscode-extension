@@ -85,8 +85,8 @@ describe("TaskWebviewProvider", () => {
       provider.resolveWebviewView(mockWebviewView, mockContext, mockToken);
 
       expect(mockWebview.html).toContain("<!DOCTYPE html>");
-      expect(mockWebview.html).toContain("Taskmaster");
-      expect(mockWebview.html).toContain("Tasks Loading...");
+      expect(mockWebview.html).toContain("Taskmaster Dashboard");
+      expect(mockWebview.html).toContain("No tasks available");
     });
 
     it("should handle errors gracefully", () => {
@@ -107,9 +107,9 @@ describe("TaskWebviewProvider", () => {
       expect(html).toMatch(/<html lang="en">/);
       expect(html).toMatch(/<head>/);
       expect(html).toMatch(/<body>/);
-      expect(html).toMatch(/<title>Taskmaster<\/title>/);
-      expect(html).toMatch(/<div id="taskmaster-root">/);
-      expect(html).toMatch(/<h3>Tasks Loading...<\/h3>/);
+      expect(html).toMatch(/<title>Taskmaster Dashboard<\/title>/);
+      expect(html).toMatch(/<div class="sidebar">/);
+      expect(html).toMatch(/TASKMASTER DASHBOARD/);
     });
 
     it("should include proper meta tags", () => {
