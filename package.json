@@ -32,6 +32,12 @@
     "vscode": "^1.80.0",
     "node": ">=20.0.0"
   },
+  "capabilities": {
+    "virtualWorkspaces": {
+      "supported": "limited",
+      "description": "Task management features work with virtual workspaces. File watching and some file operations may have limited functionality in virtual environments."
+    }
+  },
   "categories": [
     "Other",
     "Machine Learning",
