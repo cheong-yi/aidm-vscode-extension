@@ -12,7 +12,7 @@
 
 import { EventEmitter, workspace } from "vscode";
 import axios, { AxiosInstance } from "axios";
-import { posix } from "path";
+import * as path from "path";
 import {
   Task,
   TaskStatus,
@@ -790,7 +790,7 @@ export class TasksDataService implements ITasksDataService {
     }
   }
 
-  // WS-001: Replace custom path logic with VSCode APIs
+  // PATH-FIX-001: Replace posix.join with VS Code URI utilities for cross-platform compatibility
   private async getTasksFileUri(
     configuredPath: string
   ): Promise<vscode.Uri | null> {
@@ -803,13 +803,24 @@ export class TasksDataService implements ITasksDataService {
     const workspaceFolder = workspaceFolders[0];
     let fileUri: vscode.Uri;
 
-    if (posix.isAbsolute(configuredPath)) {
+    if (path.isAbsolute(configuredPath)) {
       fileUri = vscode.Uri.file(configuredPath);
     } else {
-      // CORRECTED: Use proper URI construction per VSCode API
-      const filePath = posix.join(workspaceFolder.uri.path, configuredPath);
-      fileUri = workspaceFolder.uri.with({ path: filePath });
+      // PATH-FIX-001: Use VS Code's cross-platform URI construction instead of Node.js path
+      const filePath = path.join(workspaceFolder.uri.fsPath, configuredPath);
+      fileUri = vscode.Uri.file(filePath);
     }
+
+    // Debug logging for path construction verification
+    console.log("Path Construction Debug:");
+    console.log("- Workspace folder:", workspaceFolder);
+    console.log(
+      "- Workspace URI:",
+      workspaceFolder.uri?.toString() || "undefined"
+    );
+    console.log("- Configured path:", configuredPath);
+    console.log("- Final URI:", fileUri.toString());
+    console.log("- Final fsPath:", fileUri.fsPath);
 
     // Log virtual workspace detection
     if (fileUri.scheme !== "file") {
@@ -818,7 +829,7 @@ export class TasksDataService implements ITasksDataService {
       );
     }
 
-    // CORRECTED: Use VSCode filesystem API properly with error handling
+    // Use VSCode filesystem API properly with error handling
     try {
       await vscode.workspace.fs.stat(fileUri);
       return fileUri;
