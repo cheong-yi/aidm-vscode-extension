@@ -6,11 +6,14 @@
  * Recovery Task 2.3.1: Add EventEmitter infrastructure for task updates
  * Recovery Task 2.3.2: Add Error Event Emitter infrastructure for error events
  * Recovery Task 2.4.1: Add HTTP client setup and JSON-RPC infrastructure
+ * PATH-002: Enhanced file loading error handling with user guidance
  * Requirements: 3.1-3.6, 4.1-4.4, 7.1-7.6
  */
 
 import { EventEmitter, workspace } from "vscode";
 import axios, { AxiosInstance } from "axios";
+import * as fs from "fs";
+import * as path from "path";
 import {
   Task,
   TaskStatus,
@@ -136,45 +139,33 @@ export class TasksDataService implements ITasksDataService {
 
       try {
         console.log(
-          "[TasksDataService] Attempting file parsing fallback from ./tasks.json"
+          "[TasksDataService] Attempting file parsing fallback from configured path"
         );
-        const parsedTasks = await this.jsonTaskParser.parseTasksFromFile(
-          "./tasks.json"
-        );
-        console.log(
-          `[TasksDataService] Retrieved ${parsedTasks.length} tasks from file parser`
-        );
-        return parsedTasks;
-      } catch (fileError) {
-        // Task 4: Enhanced file validation error handling with user feedback
-        const errorMessage =
-          fileError instanceof Error ? fileError.message : String(fileError);
-
-        // Check if this is a file validation error that should trigger user notification
-        if (errorMessage.includes("Tasks file validation failed:")) {
-          console.error(
-            "File validation failed, triggering user notification:",
-            errorMessage
+        
+        // PATH-002: Use existing JSONTaskParser with enhanced error handling
+        const filePath = this.getConfiguredFilePath() || "./tasks.json";
+        
+        try {
+          const parsedTasks = await this.jsonTaskParser.parseTasksFromFile(filePath);
+          console.log(
+            `[TasksDataService] Retrieved ${parsedTasks.length} tasks from file parser`
           );
-
-          // Fire error event for file validation issues
-          this.onError.fire({
-            operation: "file_validation",
-            taskId: "N/A",
-            suggestedAction: "configure_file",
-            userInstructions: `Tasks file issue: ${errorMessage.replace(
-              "Tasks file validation failed: ",
-              ""
-            )}`,
-            technicalDetails: errorMessage,
-          });
-
-          // Note: User notification will be handled by the extension.ts error handler
-          // which listens to the onError event and shows appropriate UI messages
-        } else {
-          console.error("File parsing error (non-validation):", errorMessage);
+          return parsedTasks;
+        } catch (parseError) {
+          // PATH-002: Enhanced error handling for file parsing failures
+          const taskError = this.handleFileLoadingError(
+            parseError as Error, 
+            filePath, 
+            'file_validation'
+          );
+          this.onError.fire(taskError);
+          
+          // Re-throw to trigger mock data fallback
+          throw parseError;
         }
-
+        
+      } catch (fileError) {
+        // PATH-002: Enhanced error handling for file loading failures
         console.log("[TasksDataService] Falling back to mock data provider");
         const mockTasks = await this.mockDataProvider.getTasks();
         console.log(
@@ -312,6 +303,7 @@ export class TasksDataService implements ITasksDataService {
   }
 
   // Task 4.4.1: Add refreshTasks method for manual task refresh
+  // PATH-002: Enhanced with comprehensive file loading error handling
   async refreshTasks(): Promise<void> {
     console.log("[TasksDataService] refreshTasks() called");
 
@@ -337,24 +329,215 @@ export class TasksDataService implements ITasksDataService {
         throw error;
       }
 
-      // Fallback to TaskStatusManager for HTTP failures
+      // PATH-002: Enhanced fallback with file loading and error handling
       console.warn(
-        "HTTP call failed, falling back to TaskStatusManager:",
+        "HTTP call failed, falling back to file loading:",
         error instanceof Error ? error.message : String(error)
       );
 
-      console.log(
-        "[TasksDataService] Falling back to TaskStatusManager refresh"
-      );
-      // Use TaskStatusManager's refresh method as fallback
-      await this.taskStatusManager.refreshTasksFromFile();
+      try {
+        const filePath = this.getConfiguredFilePath();
+        
+        if (!filePath) {
+          console.warn('[TasksDataService] No file path configured, using mock data');
+          await this.loadMockData();
+          return;
+        }
 
-      // Get updated tasks and fire event
-      const updatedTasks = await this.taskStatusManager.getTasks();
-      console.log(
-        `[TasksDataService] TaskStatusManager refresh returned ${updatedTasks.length} tasks`
-      );
-      this.onTasksUpdated.fire(updatedTasks);
+        // PATH-002: Use existing JSONTaskParser with enhanced error handling
+        try {
+          const parsedTasks = await this.jsonTaskParser.parseTasksFromFile(filePath);
+          console.log(
+            `[TasksDataService] Retrieved ${parsedTasks.length} tasks from file parser`
+          );
+          this.onTasksUpdated.fire(parsedTasks);
+        } catch (parseError) {
+          // PATH-002: Enhanced error handling for file parsing failures
+          const taskError = this.handleFileLoadingError(
+            parseError as Error, 
+            filePath, 
+            'file_validation'
+          );
+          this.onError.fire(taskError);
+          
+          // Re-throw to trigger mock data fallback
+          throw parseError;
+        }
+        
+      } catch (fileError) {
+        console.warn('[TasksDataService] Falling back to mock data due to file loading error');
+        await this.loadMockData();
+      }
+    }
+  }
+
+  // PATH-002: Enhanced error handling for file loading operations
+  private handleFileLoadingError(error: Error, filePath: string, operation: string): TaskErrorResponse {
+    let userInstructions: string;
+    let errorType: 'file_not_found' | 'permission_denied' | 'json_parse_error' | 'validation_error' | 'unknown_error';
+
+    if (error.message.includes('ENOENT') || error.message.includes('no such file')) {
+      errorType = 'file_not_found';
+      userInstructions = `Tasks file not found at: ${filePath}\n\nSolutions:\n1. Create a tasks.json file in your workspace root\n2. Update the 'aidmVscodeExtension.tasks.filePath' setting\n3. Use mock data for testing`;
+    } else if (error.message.includes('EACCES') || error.message.includes('permission')) {
+      errorType = 'permission_denied';
+      userInstructions = `Permission denied accessing: ${filePath}\n\nSolutions:\n1. Check file permissions\n2. Run VS Code as administrator (if needed)\n3. Move file to accessible location`;
+    } else if (error.message.includes('JSON') || error.name === 'SyntaxError') {
+      errorType = 'json_parse_error';
+      userInstructions = `Invalid JSON in tasks file: ${filePath}\n\nSolutions:\n1. Check JSON syntax with online validator\n2. Look for missing commas, brackets, or quotes\n3. View specific error: ${error.message}`;
+    } else {
+      errorType = 'unknown_error';
+      userInstructions = `Unexpected error loading tasks file: ${error.message}\n\nSolutions:\n1. Check VS Code developer console for details\n2. Try reloading the window\n3. Report issue if problem persists`;
+    }
+
+    const taskError: TaskErrorResponse = {
+      operation: operation as any,
+      userInstructions,
+      technicalDetails: error.message,
+    };
+
+    console.error(`[TasksDataService] ${operation} failed:`, {
+      error: error.message,
+      filePath,
+      errorType,
+      userInstructions
+    });
+
+    return taskError;
+  }
+
+  private validateJsonStructure(data: any): { isValid: boolean; errors: string[] } {
+    const errors: string[] = [];
+
+    if (!data || typeof data !== 'object') {
+      errors.push('Root must be an object');
+      return { isValid: false, errors };
+    }
+
+    // Check for at least one context
+    const contexts = Object.keys(data);
+    if (contexts.length === 0) {
+      errors.push('At least one context (e.g., "master") must be defined');
+      return { isValid: false, errors };
+    }
+
+    // Validate each context
+    for (const contextName of contexts) {
+      const context = data[contextName];
+      
+      if (!context || typeof context !== 'object') {
+        errors.push(`Context "${contextName}" must be an object`);
+        continue;
+      }
+
+      if (!Array.isArray(context.tasks)) {
+        errors.push(`Context "${contextName}" must have a "tasks" array`);
+        continue;
+      }
+
+      // Validate task structure
+      context.tasks.forEach((task: any, index: number) => {
+        if (!task.id) {
+          errors.push(`Task ${index + 1} in "${contextName}" missing required "id" field`);
+        }
+        if (!task.title) {
+          errors.push(`Task ${index + 1} in "${contextName}" missing required "title" field`);
+        }
+        if (!task.status) {
+          errors.push(`Task ${index + 1} in "${contextName}" missing required "status" field`);
+        }
+      });
+    }
+
+    return { isValid: errors.length === 0, errors };
+  }
+
+  private async loadTasksFromFile(filePath: string): Promise<any> {
+    try {
+      // Check if file exists first
+      if (!fs.existsSync(filePath)) {
+        const error = new Error(`ENOENT: no such file or directory, open '${filePath}'`);
+        const taskError = this.handleFileLoadingError(error, filePath, 'file_validation');
+        this.onError.fire(taskError);
+        throw error;
+      }
+
+      // Read file content
+      const fileContent = await fs.promises.readFile(filePath, 'utf8');
+      
+      // Parse JSON
+      let jsonData;
+      try {
+        jsonData = JSON.parse(fileContent);
+      } catch (parseError) {
+        const taskError = this.handleFileLoadingError(
+          parseError as Error, 
+          filePath, 
+          'file_validation'
+        );
+        this.onError.fire(taskError);
+        throw parseError;
+      }
+
+      // Validate structure
+      const validation = this.validateJsonStructure(jsonData);
+      if (!validation.isValid) {
+        const validationError = new Error(
+          `Tasks file validation failed: ${validation.errors.join('; ')}`
+        );
+        const taskError = this.handleFileLoadingError(
+          validationError, 
+          filePath, 
+          'file_validation'
+        );
+        this.onError.fire(taskError);
+        throw validationError;
+      }
+
+      console.log(`[TasksDataService] Successfully loaded tasks from: ${filePath}`);
+      return jsonData;
+
+    } catch (error) {
+      // Log error and re-throw (error already emitted above)
+      console.error(`[TasksDataService] File loading failed for: ${filePath}`, error);
+      throw error;
+    }
+  }
+
+  private getConfiguredFilePath(): string | null {
+    const config = workspace.getConfiguration("aidmVscodeExtension");
+    const filePath = config.get<string>("tasks.filePath");
+    return filePath || null;
+  }
+
+  private processLoadedTasks(tasksData: any): void {
+    // Extract tasks from the loaded data structure
+    const allTasks: Task[] = [];
+    
+    for (const contextName of Object.keys(tasksData)) {
+      const context = tasksData[contextName];
+      if (context.tasks && Array.isArray(context.tasks)) {
+        allTasks.push(...context.tasks);
+      }
+    }
+    
+    console.log(`[TasksDataService] Processed ${allTasks.length} tasks from file`);
+    this.onTasksUpdated.fire(allTasks);
+  }
+
+  private async loadMockData(): Promise<void> {
+    try {
+      const mockTasks = await this.mockDataProvider.getTasks();
+      console.log(`[TasksDataService] Loaded ${mockTasks.length} mock tasks`);
+      this.onTasksUpdated.fire(mockTasks);
+    } catch (error) {
+      console.error('[TasksDataService] Failed to load mock data:', error);
+      // Fire error event for mock data loading failure
+      this.onError.fire({
+        operation: 'file_validation',
+        userInstructions: 'Failed to load both file and mock data. Please check VS Code console for details.',
+        technicalDetails: error instanceof Error ? error.message : String(error),
+      });
     }
   }
 

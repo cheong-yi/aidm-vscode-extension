@@ -1623,4 +1623,195 @@ describe("TasksDataService", () => {
       // doesn't crash when encountering malformed data
     });
   });
+
+  // PATH-002: Enhanced File Loading Error Handling
+  describe("PATH-002: Enhanced File Loading Error Handling", () => {
+    it("should handle file not found errors with user guidance", () => {
+      // Arrange: Create a file not found error
+      const error = new Error(
+        "ENOENT: no such file or directory, open './tasks.json'"
+      );
+      const filePath = "./tasks.json";
+      const operation = "file_validation";
+
+      // Act: Call the enhanced error handling method
+      const taskError = (service as any).handleFileLoadingError(
+        error,
+        filePath,
+        operation
+      );
+
+      // Assert: Should return proper TaskErrorResponse with user guidance
+      expect(taskError.operation).toBe("file_validation");
+      expect(taskError.userInstructions).toContain("Tasks file not found at:");
+      expect(taskError.userInstructions).toContain(
+        "Create a tasks.json file in your workspace root"
+      );
+      expect(taskError.userInstructions).toContain(
+        "Update the 'aidmVscodeExtension.tasks.filePath' setting"
+      );
+      expect(taskError.userInstructions).toContain("Use mock data for testing");
+      expect(taskError.technicalDetails).toBe(error.message);
+    });
+
+    it("should handle permission denied errors with actionable solutions", () => {
+      // Arrange: Create a permission denied error
+      const error = new Error("EACCES: permission denied, open './tasks.json'");
+      const filePath = "./tasks.json";
+      const operation = "file_validation";
+
+      // Act: Call the enhanced error handling method
+      const taskError = (service as any).handleFileLoadingError(
+        error,
+        filePath,
+        operation
+      );
+
+      // Assert: Should return proper TaskErrorResponse with actionable solutions
+      expect(taskError.operation).toBe("file_validation");
+      expect(taskError.userInstructions).toContain(
+        "Permission denied accessing:"
+      );
+      expect(taskError.userInstructions).toContain("Check file permissions");
+      expect(taskError.userInstructions).toContain(
+        "Run VS Code as administrator (if needed)"
+      );
+      expect(taskError.userInstructions).toContain(
+        "Move file to accessible location"
+      );
+      expect(taskError.technicalDetails).toBe(error.message);
+    });
+
+    it("should handle JSON parsing errors with specific validation details", () => {
+      // Arrange: Create a JSON parsing error
+      const error = new SyntaxError(
+        "Unexpected token } in JSON at position 10"
+      );
+      const filePath = "./tasks.json";
+      const operation = "file_validation";
+
+      // Act: Call the enhanced error handling method
+      const taskError = (service as any).handleFileLoadingError(
+        error,
+        filePath,
+        operation
+      );
+
+      // Assert: Should return proper TaskErrorResponse with JSON guidance
+      expect(taskError.operation).toBe("file_validation");
+      expect(taskError.userInstructions).toContain(
+        "Invalid JSON in tasks file:"
+      );
+      expect(taskError.userInstructions).toContain(
+        "Check JSON syntax with online validator"
+      );
+      expect(taskError.userInstructions).toContain(
+        "Look for missing commas, brackets, or quotes"
+      );
+      expect(taskError.userInstructions).toContain("View specific error:");
+      expect(taskError.technicalDetails).toBe(error.message);
+    });
+
+    it("should handle unknown errors with general troubleshooting steps", () => {
+      // Arrange: Create an unknown error
+      const error = new Error("Unexpected network timeout");
+      const filePath = "./tasks.json";
+      const operation = "file_validation";
+
+      // Act: Call the enhanced error handling method
+      const taskError = (service as any).handleFileLoadingError(
+        error,
+        filePath,
+        operation
+      );
+
+      // Assert: Should return proper TaskErrorResponse with general guidance
+      expect(taskError.operation).toBe("file_validation");
+      expect(taskError.userInstructions).toContain(
+        "Unexpected error loading tasks file:"
+      );
+      expect(taskError.userInstructions).toContain(
+        "Check VS Code developer console for details"
+      );
+      expect(taskError.userInstructions).toContain("Try reloading the window");
+      expect(taskError.userInstructions).toContain(
+        "Report issue if problem persists"
+      );
+      expect(taskError.technicalDetails).toBe(error.message);
+    });
+
+    it("should validate JSON structure correctly for valid data", () => {
+      // Arrange: Create valid JSON data structure
+      const validData = {
+        master: {
+          tasks: [
+            {
+              id: "task-1",
+              title: "Test Task",
+              status: "not_started",
+              complexity: "low",
+              dependencies: [],
+              requirements: [],
+              createdDate: "2024-01-01T00:00:00Z",
+              lastModified: "2024-01-01T00:00:00Z",
+            },
+          ],
+        },
+      };
+
+      // Act: Call the validation method
+      const validation = (service as any).validateJsonStructure(validData);
+
+      // Assert: Should validate successfully
+      expect(validation.isValid).toBe(true);
+      expect(validation.errors).toHaveLength(0);
+    });
+
+    it("should validate JSON structure and report specific validation errors", () => {
+      // Arrange: Create invalid JSON data structure
+      const invalidData = {
+        // Missing tasks array
+        master: {
+          // No tasks property
+        },
+      };
+
+      // Act: Call the validation method
+      const validation = (service as any).validateJsonStructure(invalidData);
+
+      // Assert: Should report validation errors
+      expect(validation.isValid).toBe(false);
+      expect(validation.errors).toContain(
+        'Context "master" must have a "tasks" array'
+      );
+    });
+
+    it("should emit proper TaskErrorResponse events for file validation errors", () => {
+      // Arrange: Create a file not found error
+      const error = new Error(
+        "ENOENT: no such file or directory, open './tasks.json'"
+      );
+      const filePath = "./tasks.json";
+      const operation = "file_validation";
+
+      // Act: Call the enhanced error handling method
+      const taskError = (service as any).handleFileLoadingError(
+        error,
+        filePath,
+        operation
+      );
+
+      // Assert: Should return proper TaskErrorResponse with file not found guidance
+      expect(taskError.operation).toBe("file_validation");
+      expect(taskError.userInstructions).toContain("Tasks file not found at:");
+      expect(taskError.userInstructions).toContain(
+        "Create a tasks.json file in your workspace root"
+      );
+      expect(taskError.userInstructions).toContain(
+        "Update the 'aidmVscodeExtension.tasks.filePath' setting"
+      );
+      expect(taskError.userInstructions).toContain("Use mock data for testing");
+      expect(taskError.technicalDetails).toBe(error.message);
+    });
+  });
 });
