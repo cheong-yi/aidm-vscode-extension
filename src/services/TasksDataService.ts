@@ -659,12 +659,33 @@ export class TasksDataService implements ITasksDataService {
   }
 
   private getConfiguredFileUri(): vscode.Uri | null {
-    const config = workspace.getConfiguration();
-    const filePath = config.get<string>("aidmVscodeExtension.tasks.filePath");
-    if (filePath) {
-      return vscode.Uri.file(filePath);
+    try {
+      const config = workspace.getConfiguration();
+      const filePath = config.get<string>("aidmVscodeExtension.tasks.filePath");
+
+      if (
+        !filePath ||
+        typeof filePath !== "string" ||
+        filePath.trim().length === 0
+      ) {
+        console.log(
+          "[TasksDataService] No valid file path configured, using workspace fallback"
+        );
+        return null;
+      }
+
+      const uri = vscode.Uri.file(filePath.trim());
+      console.log(
+        `[TasksDataService] Using configured file path: ${uri.fsPath}`
+      );
+      return uri;
+    } catch (error) {
+      console.error(
+        "[TasksDataService] Failed to get configured file URI:",
+        error
+      );
+      return null;
     }
-    return null;
   }
 
   // Task 6.1.3: Replace hardcoded file path fallback with workspace-relative path resolution

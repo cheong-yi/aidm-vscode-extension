@@ -1925,11 +1925,15 @@ describe("TasksDataService", () => {
       expect(resultNull).toBe("C:\\workspace\\tasks.json");
 
       // Test configured relative path (your settings scenario)
-      const resultConfigured = (service as any).getWorkspaceFilePath("tasks.json");
+      const resultConfigured = (service as any).getWorkspaceFilePath(
+        "tasks.json"
+      );
       expect(resultConfigured).toBe("C:\\workspace\\tasks.json");
 
       // Test path with leading separators (edge case)
-      const resultLeadingSep = (service as any).getWorkspaceFilePath("\\tasks.json");
+      const resultLeadingSep = (service as any).getWorkspaceFilePath(
+        "\\tasks.json"
+      );
       expect(resultLeadingSep).toBe("C:\\workspace\\tasks.json");
     });
 
@@ -1942,6 +1946,104 @@ describe("TasksDataService", () => {
       expect(() => {
         (service as any).getWorkspaceFilePath(null);
       }).toThrow("No workspace folder available for task file resolution");
+    });
+  });
+
+  // PATH-FIX-002: Test getConfiguredFileUri method validation and fallback logic
+  describe("getConfiguredFileUri", () => {
+    it("should validate configured file path and return null for invalid values", () => {
+      // Arrange
+      const mockConfig = {
+        get: jest.fn(),
+      };
+      jest
+        .spyOn(require("vscode").workspace, "getConfiguration")
+        .mockReturnValue(mockConfig as any);
+
+      // Test empty string
+      mockConfig.get.mockReturnValue("");
+
+      // Act
+      const result = (service as any).getConfiguredFileUri();
+
+      // Assert
+      expect(result).toBeNull();
+      expect(mockConfig.get).toHaveBeenCalledWith(
+        "aidmVscodeExtension.tasks.filePath"
+      );
+    });
+
+    it("should return null for undefined configuration", () => {
+      // Arrange
+      const mockConfig = {
+        get: jest.fn(),
+      };
+      jest
+        .spyOn(require("vscode").workspace, "getConfiguration")
+        .mockReturnValue(mockConfig as any);
+
+      // Test undefined
+      mockConfig.get.mockReturnValue(undefined);
+
+      // Act
+      const result = (service as any).getConfiguredFileUri();
+
+      // Assert
+      expect(result).toBeNull();
+    });
+
+    it("should return null for whitespace-only configuration", () => {
+      // Arrange
+      const mockConfig = {
+        get: jest.fn(),
+      };
+      jest
+        .spyOn(require("vscode").workspace, "getConfiguration")
+        .mockReturnValue(mockConfig as any);
+
+      // Test whitespace only
+      mockConfig.get.mockReturnValue("   ");
+
+      // Act
+      const result = (service as any).getConfiguredFileUri();
+
+      // Assert
+      expect(result).toBeNull();
+    });
+
+    it("should return valid URI for valid configuration", () => {
+      // Arrange
+      const mockConfig = {
+        get: jest.fn(),
+      };
+      jest
+        .spyOn(require("vscode").workspace, "getConfiguration")
+        .mockReturnValue(mockConfig as any);
+
+      // Test valid path
+      mockConfig.get.mockReturnValue("valid/path.json");
+
+      // Act
+      const result = (service as any).getConfiguredFileUri();
+
+      // Assert
+      expect(result).toBeDefined();
+      expect(result.fsPath).toBe("valid/path.json");
+    });
+
+    it("should handle configuration access errors gracefully", () => {
+      // Arrange
+      jest
+        .spyOn(require("vscode").workspace, "getConfiguration")
+        .mockImplementation(() => {
+          throw new Error("Configuration access error");
+        });
+
+      // Act
+      const result = (service as any).getConfiguredFileUri();
+
+      // Assert
+      expect(result).toBeNull();
     });
   });
 });
