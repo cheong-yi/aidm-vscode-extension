@@ -431,7 +431,7 @@ export async function activate(
 
     console.log("=== ACTIVATION STEP 8.7.5: Initializing TaskFileWatcher ===");
     try {
-      // Get workspace root for configurable tasks.md path resolution
+      // Get workspace root for configurable tasks.json path resolution
       const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
 
       if (!workspaceRoot) {
@@ -449,7 +449,7 @@ export async function activate(
       const config = vscode.workspace.getConfiguration("aidmVscodeExtension");
       const configuredTasksPath = config.get<string>(
         "tasks.filePath",
-        "tasks.md"
+        "tasks.json"
       );
 
       // Create absolute path

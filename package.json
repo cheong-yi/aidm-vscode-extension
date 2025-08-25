@@ -2,8 +2,8 @@
   "name": "aidm-vscode-extension",
   "displayName": "AiDM VSCode Extension",
   "description": "Bridge business requirements and code implementation with AI-powered context for enterprise development",
-  "version": "0.33.1",
-  "_versionNotes": "Auto-packaged version 0.33.1 - 2025-08-25",
+  "version": "0.34.1",
+  "_versionNotes": "Auto-packaged version 0.34.1 - 2025-08-25",
   "publisher": "aidm-team",
   "author": {
     "name": "AiDM Team"
@@ -254,8 +254,8 @@
         },
         "aidmVscodeExtension.tasks.filePath": {
           "type": "string",
-          "default": "tasks.md",
-          "description": "Path to tasks.md file relative to workspace root"
+          "default": "tasks.json",
+          "description": "Path to tasks.json file relative to workspace root"
         }
       }
     },
