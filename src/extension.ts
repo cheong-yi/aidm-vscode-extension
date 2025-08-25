@@ -637,7 +637,20 @@ export async function activate(
 
             // Handle empty selection arrays gracefully
             if (e.selection.length === 0) {
-              console.log("🔍 MEDIUM-5A: Empty selection array, skipping");
+              console.log(
+                "🔍 MEDIUM-5A: Empty selection array, clearing webview"
+              );
+              // MEDIUM-5B: Clear webview when no task is selected
+              try {
+                taskDetailProvider.clearDetails();
+                console.log("🔍 MEDIUM-5B: Webview cleared - no task selected");
+              } catch (clearError) {
+                console.error(
+                  "❌ MEDIUM-5B: Error clearing webview:",
+                  clearError
+                );
+                // Continue without webview clear - expansion logic still works
+              }
               return;
             }
 
@@ -652,6 +665,22 @@ export async function activate(
             });
 
             if (selectedItem && selectedItem.task) {
+              // MEDIUM-5B: Connect tree selection to webview detail updates
+              try {
+                // Update webview detail panel with selected task
+                taskDetailProvider.updateTaskDetails(selectedItem.task);
+                console.log("🔍 MEDIUM-5B: Webview updated with task details", {
+                  taskId: selectedItem.task.id,
+                  taskTitle: selectedItem.task.title,
+                });
+              } catch (webviewError) {
+                console.error(
+                  `❌ MEDIUM-5B: Error updating webview for task ${selectedItem.task.id}:`,
+                  webviewError
+                );
+                // Continue without webview update - expansion still works
+              }
+
               // Task 3.2.12 - Connect Click Events to Expansion Logic
               // Wire to TaskTreeViewProvider.toggleTaskExpansion() method
               console.log("🔍 MEDIUM-5A: Calling toggleTaskExpansion", {
