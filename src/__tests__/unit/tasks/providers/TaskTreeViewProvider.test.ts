@@ -1772,13 +1772,13 @@ describe("TaskTreeViewProvider", () => {
       provider.expandNode("task-1");
       provider.dispose();
 
-      const consoleSpy = jest.spyOn(console, "debug").mockImplementation();
+      const consoleSpy = jest.spyOn(console, "warn").mockImplementation();
 
       // Act: Try to expand/collapse after disposal
       provider.expandNode("task-2");
       provider.collapseNode("task-2");
 
-      // Assert: Should log debug messages and not change state
+      // Assert: Should log warning messages and not change state
       expect(consoleSpy).toHaveBeenCalledTimes(2);
       expect(provider.getExpandedTaskId()).toBe("task-1"); // State unchanged
 
@@ -2014,7 +2014,7 @@ describe("TaskTreeViewProvider", () => {
 
       // Assert: Should log warning and not change state
       expect(consoleSpy).toHaveBeenCalledWith(
-        "TaskTreeViewProvider: Invalid taskId provided to expandNode:",
+        "🔍 MEDIUM-5A: Invalid taskId provided to expandNode:",
         ""
       );
       expect(provider.getExpandedTaskId()).toBeNull();

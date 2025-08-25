@@ -145,17 +145,17 @@ function setupUIEventSynchronization(): vscode.Disposable[] {
                 // For JSON files, we'll show instructions to create manually
                 vscode.window.showInformationMessage(
                   "Please create a tasks.json file manually with the following structure:\n" +
-                  "{\n" +
-                  '  "context1": {\n' +
-                  '    "tasks": [\n' +
-                  '      {\n' +
-                  '        "id": "task-1",\n' +
-                  '        "title": "Sample Task",\n' +
-                  '        "status": "not_started"\n' +
-                  '      }\n' +
-                  '    ]\n' +
-                  '  }\n' +
-                  "}"
+                    "{\n" +
+                    '  "context1": {\n' +
+                    '    "tasks": [\n' +
+                    "      {\n" +
+                    '        "id": "task-1",\n' +
+                    '        "title": "Sample Task",\n' +
+                    '        "status": "not_started"\n' +
+                    "      }\n" +
+                    "    ]\n" +
+                    "  }\n" +
+                    "}"
                 );
               } catch (createError) {
                 vscode.window.showErrorMessage(
@@ -364,17 +364,17 @@ export async function activate(
               // For JSON files, we'll show instructions to create manually
               vscode.window.showInformationMessage(
                 "Please create a tasks.json file manually with the following structure:\n" +
-                "{\n" +
-                '  "context1": {\n' +
-                '    "tasks": [\n' +
-                '      {\n' +
-                '        "id": "task-1",\n' +
-                '        "title": "Sample Task",\n' +
-                '        "status": "not_started"\n' +
-                '      }\n' +
-                '    ]\n' +
-                '  }\n' +
-                "}"
+                  "{\n" +
+                  '  "context1": {\n' +
+                  '    "tasks": [\n' +
+                  "      {\n" +
+                  '        "id": "task-1",\n' +
+                  '        "title": "Sample Task",\n' +
+                  '        "status": "not_started"\n' +
+                  "      }\n" +
+                  "    ]\n" +
+                  "  }\n" +
+                  "}"
               );
             } catch (createError) {
               vscode.window.showErrorMessage(
@@ -630,33 +630,83 @@ export async function activate(
       const selectionChangeDisposable = taskTreeView.onDidChangeSelection(
         async (e: vscode.TreeViewSelectionChangeEvent<any>) => {
           try {
+            console.log("🔍 MEDIUM-5A: Tree selection event fired", {
+              selectionCount: e.selection.length,
+              timestamp: new Date().toISOString(),
+            });
+
             // Handle empty selection arrays gracefully
             if (e.selection.length === 0) {
+              console.log("🔍 MEDIUM-5A: Empty selection array, skipping");
               return;
             }
 
             // Get the selected task item
             const selectedItem = e.selection[0];
+            console.log("🔍 MEDIUM-5A: Selected item details", {
+              itemType: selectedItem?.constructor?.name,
+              hasTask: !!selectedItem?.task,
+              taskId: selectedItem?.task?.id,
+              taskStatus: selectedItem?.task?.status,
+              isExecutable: selectedItem?.task?.isExecutable,
+            });
+
             if (selectedItem && selectedItem.task) {
               // Task 3.2.12 - Connect Click Events to Expansion Logic
               // Wire to TaskTreeViewProvider.toggleTaskExpansion() method
+              console.log("🔍 MEDIUM-5A: Calling toggleTaskExpansion", {
+                taskId: selectedItem.task.id,
+                currentExpandedTaskId: taskTreeViewProvider.getExpandedTaskId(),
+                wasExpanded: taskTreeViewProvider.isTaskExpanded(
+                  selectedItem.task.id
+                ),
+              });
+
               try {
                 await taskTreeViewProvider.toggleTaskExpansion(
                   selectedItem.task.id
                 );
+
+                // Verify expansion state change
+                const newExpandedTaskId =
+                  taskTreeViewProvider.getExpandedTaskId();
+                const isNowExpanded = taskTreeViewProvider.isTaskExpanded(
+                  selectedItem.task.id
+                );
+
+                console.log("🔍 MEDIUM-5A: toggleTaskExpansion completed", {
+                  taskId: selectedItem.task.id,
+                  newExpandedTaskId,
+                  isNowExpanded,
+                  expansionChanged:
+                    (newExpandedTaskId === selectedItem.task.id) !==
+                    e.selection.length > 0,
+                });
+
                 console.log(
-                  `Tree view selection changed to task: ${selectedItem.task.id}, expansion toggled`
+                  `✅ Tree view selection changed to task: ${selectedItem.task.id}, expansion toggled`
                 );
               } catch (toggleError) {
                 console.error(
-                  `Error toggling expansion for task ${selectedItem.task.id}:`,
+                  `❌ MEDIUM-5A: Error toggling expansion for task ${selectedItem.task.id}:`,
                   toggleError
                 );
                 // Continue without expansion handling
               }
+            } else {
+              console.warn(
+                "🔍 MEDIUM-5A: Selected item missing task property",
+                {
+                  selectedItem,
+                  hasTask: !!selectedItem?.task,
+                }
+              );
             }
           } catch (error) {
-            console.error("Error handling tree view selection change:", error);
+            console.error(
+              "❌ MEDIUM-5A: Error handling tree view selection change:",
+              error
+            );
             // Continue without selection handling
           }
         }
@@ -1306,6 +1356,64 @@ export async function activate(
       console.error("❌ viewTestResults command failed:", error);
     }
 
+    // Register expansion state diagnostics command - MEDIUM-5A
+    try {
+      const expansionDiagnosticsCommand = vscode.commands.registerCommand(
+        getCommandId("expansionDiagnostics"),
+        () => {
+          try {
+            if (taskTreeViewProvider) {
+              const diagnostics =
+                taskTreeViewProvider.getExpansionStateDiagnostics();
+
+              // Show diagnostics in output channel
+              const outputChannel = vscode.window.createOutputChannel(
+                "AiDM Expansion Diagnostics"
+              );
+              outputChannel.show();
+              outputChannel.appendLine(
+                "=== MEDIUM-5A: Tree View Expansion Diagnostics ==="
+              );
+              outputChannel.appendLine(`Timestamp: ${diagnostics.timestamp}`);
+              outputChannel.appendLine(
+                `Current Expanded Task ID: ${
+                  diagnostics.currentExpandedTaskId || "None"
+                }`
+              );
+              outputChannel.appendLine(
+                `Provider Disposed: ${diagnostics.isDisposed}`
+              );
+              outputChannel.appendLine(
+                `Accordion Behavior Working: ${diagnostics.accordionBehaviorWorking}`
+              );
+              outputChannel.appendLine("=== End Diagnostics ===");
+
+              vscode.window.showInformationMessage(
+                `Expansion diagnostics logged to output channel. Current expanded task: ${
+                  diagnostics.currentExpandedTaskId || "None"
+                }`
+              );
+            } else {
+              vscode.window.showWarningMessage(
+                "TaskTreeViewProvider not available"
+              );
+            }
+          } catch (error) {
+            const errorMessage =
+              error instanceof Error ? error.message : "Unknown error occurred";
+            vscode.window.showErrorMessage(
+              `Error getting expansion diagnostics: ${errorMessage}`
+            );
+            console.error("ExpansionDiagnostics command error:", error);
+          }
+        }
+      );
+      context.subscriptions.push(expansionDiagnosticsCommand);
+      console.log("✅ expansionDiagnostics command registered - MEDIUM-5A");
+    } catch (error) {
+      console.error("❌ expansionDiagnostics command failed:", error);
+    }
+
     // Register configuration change listener
     try {
       const configChangeDisposable = vscode.workspace.onDidChangeConfiguration(
@@ -1385,6 +1493,16 @@ export async function activate(
 
     console.log("=== ACTIVATION COMPLETE ===");
     console.log(`✅ ${EXTENSION_CONFIG.displayName} activated successfully!`);
+
+    // MEDIUM-5A: Confirm diagnostic logging is in place
+    console.log("🔍 MEDIUM-5A: Tree view selection event diagnostics enabled");
+    console.log(
+      "🔍 MEDIUM-5A: Use 'aidm-vscode-extension.expansionDiagnostics' command to verify expansion state"
+    );
+    console.log(
+      "🔍 MEDIUM-5A: Check console logs for detailed selection and expansion event flow"
+    );
+
     vscode.window.showInformationMessage(EXTENSION_CONFIG.successMessage);
   } catch (error) {
     console.error(`❌ ACTIVATION FAILED at step:`, error);

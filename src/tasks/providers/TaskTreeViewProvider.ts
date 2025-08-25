@@ -351,17 +351,23 @@ export class TaskTreeViewProvider
    */
   public expandNode(taskId: string): void {
     try {
+      console.log("🔍 MEDIUM-5A: expandNode called", {
+        taskId,
+        currentExpandedTaskId: this.expandedTaskId,
+        willCollapsePrevious:
+          this.expandedTaskId !== null && this.expandedTaskId !== taskId,
+        timestamp: new Date().toISOString(),
+      });
+
       if (this.isDisposed) {
-        console.debug(
-          "TaskTreeViewProvider: Cannot expand node on disposed provider"
-        );
+        console.warn("🔍 MEDIUM-5A: Cannot expand node on disposed provider");
         return;
       }
 
       // Validate taskId
       if (!taskId || typeof taskId !== "string") {
         console.warn(
-          "TaskTreeViewProvider: Invalid taskId provided to expandNode:",
+          "🔍 MEDIUM-5A: Invalid taskId provided to expandNode:",
           taskId
         );
         return;
@@ -369,15 +375,34 @@ export class TaskTreeViewProvider
 
       // If the same task is already expanded, do nothing
       if (this.expandedTaskId === taskId) {
-        console.debug("TaskTreeViewProvider: Task already expanded:", taskId);
+        console.log("🔍 MEDIUM-5A: Task already expanded, no action needed", {
+          taskId,
+        });
         return;
       }
+
+      const previousExpandedTaskId = this.expandedTaskId;
+      console.log("🔍 MEDIUM-5A: Expanding task with accordion behavior", {
+        taskId,
+        previousExpandedTaskId,
+        willCollapsePrevious: previousExpandedTaskId !== null,
+        accordionBehavior: "Only one task expanded at a time",
+      });
 
       // Set the new expanded task (accordion behavior)
       this.setExpandedTask(taskId);
 
       // Trigger tree refresh to update visual state
+      console.log("🔍 MEDIUM-5A: Triggering tree refresh after expansion");
       this.refresh();
+
+      console.log("🔍 MEDIUM-5A: Task expansion completed", {
+        taskId,
+        previousExpandedTaskId,
+        newExpandedTaskId: this.expandedTaskId,
+        accordionWorking: this.expandedTaskId === taskId,
+        timestamp: new Date().toISOString(),
+      });
 
       console.debug(
         "TaskTreeViewProvider: Task expanded with accordion behavior:",
@@ -387,7 +412,7 @@ export class TaskTreeViewProvider
         }
       );
     } catch (error) {
-      console.error("TaskTreeViewProvider: Error expanding node:", error);
+      console.error("❌ MEDIUM-5A: Error expanding node:", error);
     }
   }
 
@@ -400,10 +425,15 @@ export class TaskTreeViewProvider
    */
   public collapseNode(taskId?: string): void {
     try {
+      console.log("🔍 MEDIUM-5A: collapseNode called", {
+        taskId,
+        currentExpandedTaskId: this.expandedTaskId,
+        willCollapseCurrent: !taskId || taskId === this.expandedTaskId,
+        timestamp: new Date().toISOString(),
+      });
+
       if (this.isDisposed) {
-        console.debug(
-          "TaskTreeViewProvider: Cannot collapse node on disposed provider"
-        );
+        console.warn("🔍 MEDIUM-5A: Cannot collapse node on disposed provider");
         return;
       }
 
@@ -411,14 +441,14 @@ export class TaskTreeViewProvider
       const targetTaskId = taskId || this.expandedTaskId;
 
       if (!targetTaskId) {
-        console.debug("TaskTreeViewProvider: No task to collapse");
+        console.log("🔍 MEDIUM-5A: No task to collapse, already collapsed");
         return;
       }
 
       // Validate taskId
       if (typeof targetTaskId !== "string") {
         console.warn(
-          "TaskTreeViewProvider: Invalid taskId provided to collapseNode:",
+          "🔍 MEDIUM-5A: Invalid taskId provided to collapseNode:",
           targetTaskId
         );
         return;
@@ -426,20 +456,35 @@ export class TaskTreeViewProvider
 
       // Only collapse if the task is actually expanded
       if (this.expandedTaskId === targetTaskId) {
+        console.log("🔍 MEDIUM-5A: Collapsing expanded task", {
+          targetTaskId,
+          currentExpandedTaskId: this.expandedTaskId,
+          willSetToNull: true,
+        });
+
         this.setExpandedTask(null);
 
         // Trigger tree refresh to update visual state
+        console.log("🔍 MEDIUM-5A: Triggering tree refresh after collapse");
         this.refresh();
+
+        console.log("🔍 MEDIUM-5A: Task collapse completed", {
+          targetTaskId,
+          newExpandedTaskId: this.expandedTaskId,
+          accordionWorking: this.expandedTaskId === null,
+          timestamp: new Date().toISOString(),
+        });
 
         console.debug("TaskTreeViewProvider: Task collapsed:", targetTaskId);
       } else {
-        console.debug(
-          "TaskTreeViewProvider: Task not expanded, cannot collapse:",
-          targetTaskId
-        );
+        console.log("🔍 MEDIUM-5A: Task not expanded, cannot collapse", {
+          targetTaskId,
+          currentExpandedTaskId: this.expandedTaskId,
+          reason: "Task is not currently expanded",
+        });
       }
     } catch (error) {
-      console.error("TaskTreeViewProvider: Error collapsing node:", error);
+      console.error("❌ MEDIUM-5A: Error collapsing node:", error);
     }
   }
 
@@ -455,8 +500,24 @@ export class TaskTreeViewProvider
       // Store the previous expanded task for logging
       const previousExpandedTaskId = this.expandedTaskId;
 
+      console.log("🔍 MEDIUM-5A: setExpandedTask called", {
+        newTaskId: taskId,
+        previousExpandedTaskId,
+        willChange: previousExpandedTaskId !== taskId,
+        accordionBehavior: "Only one task expanded at a time",
+        timestamp: new Date().toISOString(),
+      });
+
       // Set the new expanded task (accordion behavior)
       this.expandedTaskId = taskId;
+
+      console.log("🔍 MEDIUM-5A: Expansion state updated successfully", {
+        previousExpandedTaskId,
+        newExpandedTaskId: this.expandedTaskId,
+        accordionBehavior: "Only one task expanded at a time",
+        stateChangeValid: this.expandedTaskId === taskId,
+        timestamp: new Date().toISOString(),
+      });
 
       console.debug("TaskTreeViewProvider: Expansion state updated:", {
         previousExpandedTaskId,
@@ -464,12 +525,10 @@ export class TaskTreeViewProvider
         accordionBehavior: "Only one task expanded at a time",
       });
     } catch (error) {
-      console.error(
-        "TaskTreeViewProvider: Error setting expanded task:",
-        error
-      );
+      console.error("❌ MEDIUM-5A: Error setting expanded task:", error);
       // Reset to safe state on error
       this.expandedTaskId = null;
+      console.warn("🔍 MEDIUM-5A: Reset expandedTaskId to null due to error");
     }
   }
 
@@ -495,6 +554,30 @@ export class TaskTreeViewProvider
   }
 
   /**
+   * Diagnostic method to verify expansion state consistency
+   * MEDIUM-5A: Verify accordion behavior and expansion state management
+   *
+   * @returns Object containing current expansion state information
+   */
+  public getExpansionStateDiagnostics(): {
+    currentExpandedTaskId: string | null;
+    isDisposed: boolean;
+    accordionBehaviorWorking: boolean;
+    timestamp: string;
+  } {
+    const diagnostics = {
+      currentExpandedTaskId: this.expandedTaskId,
+      isDisposed: this.isDisposed,
+      accordionBehaviorWorking:
+        this.expandedTaskId === null || typeof this.expandedTaskId === "string",
+      timestamp: new Date().toISOString(),
+    };
+
+    console.log("🔍 MEDIUM-5A: Expansion state diagnostics", diagnostics);
+    return diagnostics;
+  }
+
+  /**
    * Toggle task expansion state - expand if collapsed, collapse if expanded
    * Task 3.2.12: Connect Click Events to Expansion Logic
    * This method bridges selection events to existing accordion logic
@@ -503,11 +586,19 @@ export class TaskTreeViewProvider
    */
   public async toggleTaskExpansion(taskId: string): Promise<void> {
     try {
+      console.log("🔍 MEDIUM-5A: toggleTaskExpansion called", {
+        taskId,
+        currentExpandedTaskId: this.expandedTaskId,
+        wasExpanded: this.expandedTaskId === taskId,
+        isDisposed: this.isDisposed,
+        timestamp: new Date().toISOString(),
+      });
+
       const wasExpanded = this.expandedTaskId === taskId;
 
       if (this.isDisposed) {
-        console.debug(
-          "TaskTreeViewProvider: Cannot toggle expansion on disposed provider"
+        console.warn(
+          "🔍 MEDIUM-5A: Cannot toggle expansion on disposed provider"
         );
         return;
       }
@@ -515,20 +606,48 @@ export class TaskTreeViewProvider
       // Validate taskId
       if (!taskId || typeof taskId !== "string") {
         console.warn(
-          "TaskTreeViewProvider: Invalid taskId provided to toggleTaskExpansion:",
+          "🔍 MEDIUM-5A: Invalid taskId provided to toggleTaskExpansion:",
           taskId
         );
         return;
       }
 
+      console.log("🔍 MEDIUM-5A: Proceeding with expansion toggle", {
+        taskId,
+        wasExpanded,
+        willExpand: !wasExpanded,
+        accordionBehavior: "Only one task expanded at a time",
+      });
+
       // Toggle expansion state using existing accordion logic
       if (this.expandedTaskId === taskId) {
         // Task is currently expanded, collapse it
+        console.log("🔍 MEDIUM-5A: Collapsing currently expanded task", {
+          taskId,
+        });
         this.collapseNode(taskId);
       } else {
         // Task is currently collapsed, expand it (accordion behavior will handle the rest)
+        console.log("🔍 MEDIUM-5A: Expanding currently collapsed task", {
+          taskId,
+        });
         this.expandNode(taskId);
       }
+
+      // Verify final state after toggle
+      const finalExpandedTaskId = this.expandedTaskId;
+      const isNowExpanded = this.expandedTaskId === taskId;
+
+      console.log("🔍 MEDIUM-5A: Task expansion toggle completed", {
+        taskId,
+        wasExpanded,
+        isNowExpanded,
+        finalExpandedTaskId,
+        expansionChanged: wasExpanded !== isNowExpanded,
+        accordionBehavior: "Only one task expanded at a time",
+        accordionWorking:
+          finalExpandedTaskId === taskId || finalExpandedTaskId === null,
+      });
 
       console.debug("TaskTreeViewProvider: Task expansion toggled:", {
         taskId,
@@ -536,10 +655,7 @@ export class TaskTreeViewProvider
         accordionBehavior: "Only one task expanded at a time",
       });
     } catch (error) {
-      console.error(
-        "TaskTreeViewProvider: Error toggling task expansion:",
-        error
-      );
+      console.error("❌ MEDIUM-5A: Error toggling task expansion:", error);
     }
   }
 
@@ -554,6 +670,7 @@ export class TaskTreeViewProvider
       // For TaskTreeItem elements, update collapsible state based on expansion state
       if (element instanceof TaskTreeItem) {
         const isExpanded = this.expandedTaskId === element.id;
+        const previousCollapsibleState = element.collapsibleState;
 
         // Check if this task should be expanded based on accordion state
         if (isExpanded) {
@@ -563,12 +680,26 @@ export class TaskTreeViewProvider
           // Task is collapsed - set to collapsed state
           element.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
         }
+
+        // Log expansion state changes for debugging
+        if (previousCollapsibleState !== element.collapsibleState) {
+          console.log("🔍 MEDIUM-5A: TreeItem collapsible state updated", {
+            taskId: element.id,
+            previousState: previousCollapsibleState,
+            newState: element.collapsibleState,
+            isExpanded,
+            expectedExpandedTaskId: this.expandedTaskId,
+            accordionWorking:
+              this.expandedTaskId === element.id ||
+              this.expandedTaskId === null,
+          });
+        }
       }
 
       // Return the element with updated collapsible state
       return element;
     } catch (error) {
-      console.error("TaskTreeViewProvider: Error in getTreeItem:", error);
+      console.error("❌ MEDIUM-5A: Error in getTreeItem:", error);
       // Return element as-is on error
       return element;
     }
