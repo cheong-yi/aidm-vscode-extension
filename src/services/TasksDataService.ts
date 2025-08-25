@@ -183,8 +183,10 @@ export class TasksDataService implements ITasksDataService {
         );
 
         // PATH-002: Use existing JSONTaskParser with enhanced error handling
+        // Task 6.1.3: Replace hardcoded path fallback with workspace-relative path resolution
+        const configuredUri = this.getConfiguredFileUri();
         const fileUri =
-          this.getConfiguredFileUri() || vscode.Uri.file("./tasks.json");
+          configuredUri || vscode.Uri.file(this.getWorkspaceFilePath(null));
 
         try {
           const parsedTasks = await this.jsonTaskParser.parseTasksFromFile(
@@ -605,6 +607,17 @@ export class TasksDataService implements ITasksDataService {
       return vscode.Uri.file(filePath);
     }
     return null;
+  }
+
+  // Task 6.1.3: Replace hardcoded file path fallback with workspace-relative path resolution
+  private getWorkspaceFilePath(configuredPath: string | null): string {
+    const workspaceRoot = workspace.workspaceFolders?.[0]?.uri.fsPath;
+    if (!workspaceRoot) {
+      throw new Error("No workspace folder available for task file resolution");
+    }
+
+    const fileName = configuredPath || "tasks.json";
+    return path.join(workspaceRoot, fileName);
   }
 
   private processLoadedTasks(tasksData: any): void {
