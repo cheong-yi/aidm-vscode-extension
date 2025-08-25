@@ -961,7 +961,7 @@ export class TasksDataService implements ITasksDataService {
     }
   }
 
-  // PATH-FIX-001: Replace posix.join with VS Code URI utilities for cross-platform compatibility
+  // PATH-FIX-001: Manual path construction to bypass VS Code joinPath issues on Windows
   private async getTasksFileUri(
     configuredPath: string
   ): Promise<vscode.Uri | null> {
@@ -977,21 +977,22 @@ export class TasksDataService implements ITasksDataService {
     if (path.isAbsolute(configuredPath)) {
       fileUri = vscode.Uri.file(configuredPath);
     } else {
-      // PATH-FIX-001: Use VS Code's cross-platform URI construction instead of Node.js path
-      const filePath = path.join(workspaceFolder.uri.fsPath, configuredPath);
-      fileUri = vscode.Uri.file(filePath);
-    }
+      // Manual path construction to bypass VS Code joinPath issues
+      const workspacePath = workspaceFolder.uri.fsPath;
+      const fullPath = path.resolve(workspacePath, configuredPath);
+      fileUri = vscode.Uri.file(fullPath);
 
-    // Debug logging for path construction verification
-    console.log("Path Construction Debug:");
-    console.log("- Workspace folder:", workspaceFolder);
-    console.log(
-      "- Workspace URI:",
-      workspaceFolder.uri?.toString() || "undefined"
-    );
-    console.log("- Configured path:", configuredPath);
-    console.log("- Final URI:", fileUri.toString());
-    console.log("- Final fsPath:", fileUri.fsPath);
+      // Enhanced debug logging for path construction verification
+      console.log("=== MANUAL PATH CONSTRUCTION DEBUG ===");
+      console.log("- Workspace path:", workspacePath);
+      console.log("- Configured path:", configuredPath);
+      console.log("- Resolved path:", fullPath);
+      console.log("- Final URI:", fileUri.toString());
+      console.log("- Final fsPath:", fileUri.fsPath);
+      console.log("- Path separator check:", path.sep);
+      console.log("- Platform:", process.platform);
+      console.log("=== END PATH DEBUG ===");
+    }
 
     // Log virtual workspace detection
     if (fileUri.scheme !== "file") {

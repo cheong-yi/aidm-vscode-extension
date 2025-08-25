@@ -51,6 +51,14 @@ export const workspace = {
     lineCount: 10,
     getText: jest.fn().mockReturnValue("export class TestService {}"),
   }),
+  fs: {
+    stat: jest.fn().mockResolvedValue({
+      type: 1, // File
+      ctime: Date.now(),
+      mtime: Date.now(),
+      size: 1024,
+    }),
+  },
 };
 
 export const commands = {
@@ -84,6 +92,14 @@ export const ConfigurationTarget = {
 export const Uri = {
   file: jest.fn((path: string) => ({ scheme: "file", fsPath: path })),
   parse: jest.fn((uri: string) => ({ scheme: "file", fsPath: uri })),
+  joinPath: jest.fn((baseUri: any, ...pathSegments: string[]) => {
+    const basePath = baseUri.fsPath || baseUri.path || "";
+    const joinedPath = pathSegments.join("/");
+    const fullPath = basePath ? `${basePath}/${joinedPath}` : joinedPath;
+    // Preserve the scheme from the base URI
+    const scheme = baseUri.scheme || "file";
+    return { scheme, fsPath: fullPath, path: fullPath };
+  }),
 };
 
 export class ThemeColor {

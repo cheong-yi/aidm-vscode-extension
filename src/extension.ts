@@ -41,7 +41,7 @@ function debugPathConstruction() {
     workspaceFolders?.map((f) => ({
       name: f.name,
       uri: f.uri.toString(),
-      fsPath: f.fsPath,
+      fsPath: f.uri.fsPath,
       scheme: f.uri.scheme,
     }))
   );
