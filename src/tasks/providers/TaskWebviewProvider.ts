@@ -7,6 +7,7 @@
  * Task WV-005: Implement Webview Message Handling
  * Task WV-007: Connect to TasksDataService with Workspace Initialization
  * Task WV-009: Implement State Persistence for Accordion Expansion
+ * Task API-1: Replace localStorage with VSCode Memento API
  *
  * This provider handles webview-based task management display with basic
  * HTML template generation infrastructure for future taskmaster dashboard.
@@ -56,6 +57,7 @@ interface WebviewState {
  * - Foundation for webview message handling system
  * - TasksDataService integration with workspace initialization
  * - State persistence for accordion expansion across sessions
+ * - VSCode Memento API for native state management
  */
 export class TaskWebviewProvider implements vscode.WebviewViewProvider {
   /**
@@ -75,6 +77,12 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
    * Task WV-007: Store service reference for data integration
    */
   private readonly tasksDataService: TasksDataService;
+
+  /**
+   * VSCode extension context for state persistence
+   * Task API-1: Use VSCode Memento API for native state management
+   */
+  private readonly context: vscode.ExtensionContext;
 
   /**
    * Event listener disposables for proper cleanup
@@ -98,14 +106,22 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
   /**
    * Constructor for TaskWebviewProvider
    * Task WV-007: Accept TasksDataService for data integration
+   * Task API-1: Accept ExtensionContext for VSCode Memento API
    *
    * @param tasksDataService - TasksDataService instance for data retrieval and events
+   * @param context - VSCode ExtensionContext for native state management
    */
-  constructor(tasksDataService: TasksDataService) {
+  constructor(
+    tasksDataService: TasksDataService,
+    context: vscode.ExtensionContext
+  ) {
     this.tasksDataService = tasksDataService;
+    this.context = context;
 
     // Task WV-007: Setup event listeners but defer data loading until initializeData() called
     this.setupEventListeners();
+
+    console.debug("TaskWebviewProvider: Constructor with context completed");
   }
 
   /**
@@ -161,7 +177,8 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
       this._isDataInitialized = true;
 
       // Load state from storage
-      await this.loadState();
+      const expandedTaskId = await this.loadWebviewState();
+      this.currentExpandedTaskId = expandedTaskId;
 
       // Now it's safe to load initial data
       await this.loadAndDisplayTasks();
@@ -301,47 +318,61 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
   }
 
   /**
-   * Save current webview state to VSCode storage
-   * Task WV-009: Persist accordion expansion state across sessions
+   * Save current webview state to VSCode workspace storage
+   * Task API-1: Use VSCode Memento API for native state management
    */
-  private saveState(): void {
-    if (!this._view) return;
-
+  private async saveWebviewState(expandedTaskId: string | null): Promise<void> {
     try {
-      const state: WebviewState = {
-        expandedTaskId: this.currentExpandedTaskId,
-        lastUpdated: Date.now(),
-      };
+      await this.context.workspaceState.update(
+        "taskmaster.expandedTask",
+        expandedTaskId
+      );
+      await this.context.workspaceState.update(
+        "taskmaster.lastUpdated",
+        Date.now()
+      );
 
-      // Store state in memory and send to webview for persistence
-      this._view.webview.postMessage({
-        type: "saveState",
-        state: state,
+      console.debug("TaskWebviewProvider: State saved to workspace storage:", {
+        expandedTaskId,
+        timestamp: Date.now(),
       });
-
-      console.debug("TaskWebviewProvider: State save message sent:", state);
     } catch (error) {
-      console.warn("TaskWebviewProvider: Failed to save webview state:", error);
+      console.warn(
+        "TaskWebviewProvider: Failed to save state to workspace storage:",
+        error
+      );
     }
   }
 
   /**
-   * Load webview state from VSCode storage
-   * Task WV-009: Restore accordion expansion state on initialization
+   * Load webview state from VSCode workspace storage
+   * Task API-1: Use VSCode Memento API for native state management
    */
-  private loadState(): WebviewState | null {
-    if (!this._view) return null;
-
+  private async loadWebviewState(): Promise<string | null> {
     try {
-      // Request state from webview
-      this._view.webview.postMessage({
-        type: "loadState",
-      });
+      const expandedTaskId = this.context.workspaceState.get<string | null>(
+        "taskmaster.expandedTask",
+        null
+      );
+      const lastUpdated = this.context.workspaceState.get<number>(
+        "taskmaster.lastUpdated",
+        0
+      );
 
-      console.debug("TaskWebviewProvider: State load message sent");
-      return null; // State will be loaded asynchronously via message
+      console.debug(
+        "TaskWebviewProvider: State loaded from workspace storage:",
+        {
+          expandedTaskId,
+          lastUpdated: new Date(lastUpdated).toISOString(),
+        }
+      );
+
+      return expandedTaskId;
     } catch (error) {
-      console.warn("TaskWebviewProvider: Failed to load webview state:", error);
+      console.warn(
+        "TaskWebviewProvider: Failed to load state from workspace storage:",
+        error
+      );
       return null;
     }
   }
@@ -365,7 +396,7 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
       }
 
       // Persist state
-      this.saveState();
+      await this.saveWebviewState(this.currentExpandedTaskId);
 
       // Update webview display
       await this.updateAccordionState(taskId, !wasExpanded);
@@ -451,7 +482,9 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
       this.setupMessageHandling();
 
       // Task WV-009: Initialize state loading for accordion persistence
-      this.loadState();
+      this.loadWebviewState().then((expandedTaskId) => {
+        this.currentExpandedTaskId = expandedTaskId;
+      });
     } catch (error) {
       // Basic error handling for webview resolution
       console.error("Error resolving webview view:", error);
@@ -1338,39 +1371,7 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
         sendMessage('executeWithCursor', { taskId: taskId });
       }
       
-      // State persistence functions
-      function saveState() {
-        try {
-          // Store state in localStorage as fallback
-          localStorage.setItem('taskmaster-state', JSON.stringify(currentState));
-          
-          // Send state to extension
-          vscode.postMessage({
-            type: 'saveState',
-            state: currentState
-          });
-        } catch (error) {
-          console.warn('Failed to save state:', error);
-        }
-      }
-      
-      function loadState() {
-        try {
-          // Try to load from localStorage first
-          const savedState = localStorage.getItem('taskmaster-state');
-          if (savedState) {
-            currentState = JSON.parse(savedState);
-            console.log('State loaded from localStorage:', currentState);
-          }
-          
-          // Request state from extension
-          vscode.postMessage({
-            type: 'loadState'
-          });
-        } catch (error) {
-          console.warn('Failed to load state:', error);
-        }
-      }
+
       
       // Handle messages from extension
       window.addEventListener('message', function(event) {
@@ -1379,13 +1380,6 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
         switch (message.type) {
           case 'updateAccordion':
             updateAccordionDisplay(message.taskId, message.expanded);
-            break;
-          case 'saveState':
-            currentState = message.state;
-            saveState();
-            break;
-          case 'loadState':
-            loadState();
             break;
         }
       });
@@ -1421,10 +1415,7 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
         }
       });
       
-      // Initialize state on page load
-      document.addEventListener('DOMContentLoaded', function() {
-        loadState();
-      });`;
+`;
   }
 
   /**
@@ -1478,12 +1469,7 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
         case "toggleAccordion":
           this.handleToggleAccordion(message.taskId);
           break;
-        case "saveState":
-          this.handleSaveState(message.state);
-          break;
-        case "loadState":
-          this.handleLoadState();
-          break;
+
         default:
           console.warn("Unknown message type:", message.type);
           break;
@@ -1566,36 +1552,6 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
    *
    * @param state - The current webview state to save
    */
-  private handleSaveState(state: WebviewState): void {
-    try {
-      this.currentExpandedTaskId = state.expandedTaskId;
-      console.debug("TaskWebviewProvider: State loaded from webview:", state);
-    } catch (error) {
-      console.warn(
-        "TaskWebviewProvider: Failed to load state from webview:",
-        error
-      );
-    }
-  }
-
-  /**
-   * Task WV-009: Handle message to load webview state
-   * Requests the current expanded task ID from VSCode storage.
-   */
-  private handleLoadState(): void {
-    try {
-      // Send a message to the webview to request its current state
-      this._view?.webview.postMessage({
-        type: "loadState",
-      });
-      console.debug("TaskWebviewProvider: Requesting state from webview");
-    } catch (error) {
-      console.warn(
-        "TaskWebviewProvider: Failed to request state from webview:",
-        error
-      );
-    }
-  }
 
   /**
    * Dispose method for cleanup

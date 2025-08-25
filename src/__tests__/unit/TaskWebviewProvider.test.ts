@@ -24,6 +24,7 @@ describe("TaskWebviewProvider", () => {
   let mockContext: vscode.WebviewViewResolveContext;
   let mockToken: vscode.CancellationToken;
   let mockTasksDataService: jest.Mocked<TasksDataService>;
+  let mockExtensionContext: vscode.ExtensionContext;
 
   beforeEach(() => {
     // Create mock TasksDataService with minimal implementation
@@ -42,7 +43,37 @@ describe("TaskWebviewProvider", () => {
       dispose: jest.fn(),
     } as unknown as jest.Mocked<TasksDataService>;
 
-    provider = new TaskWebviewProvider(mockTasksDataService);
+    // Create mock ExtensionContext
+    mockExtensionContext = {
+      subscriptions: [],
+      workspaceState: {
+        get: jest.fn(),
+        update: jest.fn(),
+        keys: jest.fn(),
+      },
+      globalState: {
+        get: jest.fn(),
+        update: jest.fn(),
+        keys: jest.fn(),
+      },
+      extensionPath: "",
+      extensionUri: {} as vscode.Uri,
+      storagePath: "",
+      globalStoragePath: "",
+      logPath: "",
+      extensionMode: 1, // Production mode value
+      environmentVariableCollection: {} as vscode.EnvironmentVariableCollection,
+      asAbsolutePath: jest.fn(),
+      storageUri: undefined,
+      globalStorageUri: undefined,
+      logUri: undefined,
+      extension: {} as vscode.Extension<any>,
+    } as unknown as vscode.ExtensionContext;
+
+    provider = new TaskWebviewProvider(
+      mockTasksDataService,
+      mockExtensionContext
+    );
 
     // Mock webview view
     mockWebview = {
@@ -117,7 +148,10 @@ describe("TaskWebviewProvider", () => {
 
   describe("Constructor", () => {
     it("should create instance without errors", () => {
-      expect(() => new TaskWebviewProvider(mockTasksDataService)).not.toThrow();
+      expect(
+        () =>
+          new TaskWebviewProvider(mockTasksDataService, mockExtensionContext)
+      ).not.toThrow();
     });
 
     it("should accept TasksDataService parameter and store it as private property", () => {
@@ -391,7 +425,10 @@ describe("TaskWebviewProvider", () => {
 
     it("should show loading HTML before initialization", () => {
       // Create a new provider instance to ensure clean state
-      const freshProvider = new TaskWebviewProvider(mockTasksDataService);
+      const freshProvider = new TaskWebviewProvider(
+        mockTasksDataService,
+        mockExtensionContext
+      );
       const freshMockWebviewView = {
         ...mockWebviewView,
         webview: {
@@ -417,7 +454,10 @@ describe("TaskWebviewProvider", () => {
 
     it("should initialize data successfully", async () => {
       // Create a new provider instance to ensure clean state
-      const freshProvider = new TaskWebviewProvider(mockTasksDataService);
+      const freshProvider = new TaskWebviewProvider(
+        mockTasksDataService,
+        mockExtensionContext
+      );
       const freshMockWebviewView = {
         ...mockWebviewView,
         webview: {
@@ -444,7 +484,10 @@ describe("TaskWebviewProvider", () => {
 
     it("should handle initialization errors gracefully", async () => {
       // Create a provider without a webview to simulate error condition
-      const freshProvider = new TaskWebviewProvider(mockTasksDataService);
+      const freshProvider = new TaskWebviewProvider(
+        mockTasksDataService,
+        mockExtensionContext
+      );
 
       // Should not throw error
       await expect(freshProvider.initializeData()).resolves.not.toThrow();
@@ -455,7 +498,10 @@ describe("TaskWebviewProvider", () => {
 
     it("should show tasks HTML after initialization", async () => {
       // Create a new provider instance to ensure clean state
-      const freshProvider = new TaskWebviewProvider(mockTasksDataService);
+      const freshProvider = new TaskWebviewProvider(
+        mockTasksDataService,
+        mockExtensionContext
+      );
       const freshMockWebviewView = {
         ...mockWebviewView,
         webview: {

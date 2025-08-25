@@ -874,8 +874,8 @@ export async function activate(
       "=== ACTIVATION STEP 8.10: Initializing TaskWebviewProvider ==="
     );
     try {
-      // Create TaskWebviewProvider with TasksDataService
-      taskWebviewProvider = new TaskWebviewProvider(tasksDataService);
+      // Create TaskWebviewProvider with TasksDataService and context
+      taskWebviewProvider = new TaskWebviewProvider(tasksDataService, context);
 
       // Register webview view provider with VSCode
       const webviewProviderDisposable =
