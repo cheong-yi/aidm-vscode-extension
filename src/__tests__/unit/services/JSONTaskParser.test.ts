@@ -17,6 +17,8 @@ jest.mock("vscode", () => ({
     file: jest.fn((path: string) => ({
       fsPath: path,
       toString: () => `file://${path}`,
+      scheme: "file",
+      authority: "",
     })),
   },
   workspace: {
@@ -25,7 +27,7 @@ jest.mock("vscode", () => ({
       stat: jest.fn(),
     },
   },
-  FileSystemError: class extends Error {
+  FileSystemError: class MockFileSystemError extends Error {
     code: string;
     constructor(code: string, message: string) {
       super(message);
@@ -127,6 +129,42 @@ describe("JSONTaskParser", () => {
       await expect(parser.parseTasksFromFile(fileUri)).rejects.toThrow(
         "Tasks file validation failed: Cannot read tasks file: Permission denied for /restricted/tasks.json"
       );
+    });
+
+    it("should log comprehensive path validation details", async () => {
+      // Arrange
+      const consoleSpy = jest.spyOn(console, "log");
+      const fileUri = mockVscode.Uri.file("\\tasks.json");
+      mockVscode.workspace.fs.stat = jest
+        .fn()
+        .mockRejectedValue(
+          new mockVscode.FileSystemError("FileNotFound", "File not found")
+        );
+
+      // Act
+      try {
+        await parser.parseTasksFromFile(fileUri);
+      } catch (error) {
+        // Expected to fail, we're testing logging
+      }
+
+      // Assert - Verify our enhanced path validation logging statements
+      expect(consoleSpy).toHaveBeenCalledWith(
+        "[JSONTaskParser] Validating tasks file: file://\\tasks.json"
+      );
+      expect(consoleSpy).toHaveBeenCalledWith(
+        "[JSONTaskParser] File system path: \\tasks.json"
+      );
+      expect(consoleSpy).toHaveBeenCalledWith("[JSONTaskParser] Scheme: file");
+      expect(consoleSpy).toHaveBeenCalledWith("[JSONTaskParser] Authority: ");
+      expect(consoleSpy).toHaveBeenCalledWith(
+        "[JSONTaskParser] Attempting to stat file: \\tasks.json"
+      );
+
+      // Verify that we're getting comprehensive logging (13 total calls)
+      expect(consoleSpy).toHaveBeenCalledTimes(13);
+
+      consoleSpy.mockRestore();
     });
   });
 

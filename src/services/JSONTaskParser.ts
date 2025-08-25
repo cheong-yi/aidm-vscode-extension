@@ -154,9 +154,16 @@ export class JSONTaskParser {
         ? vscode.Uri.file(filePathOrUri)
         : filePathOrUri;
 
+    // PATH-FIX-003: Enhanced debug logging to trace path handling
     console.log(
       `[JSONTaskParser] Validating tasks file: ${fileUri.toString()}`
     );
+    console.log(`[JSONTaskParser] File system path: ${fileUri.fsPath}`);
+    console.log(`[JSONTaskParser] Scheme: ${fileUri.scheme}`);
+    console.log(`[JSONTaskParser] Authority: ${fileUri.authority}`);
+
+    // Add file existence check with logging
+    console.log(`[JSONTaskParser] Attempting to stat file: ${fileUri.fsPath}`);
 
     // Validate file before attempting to parse
     const validation = await this.validateTasksFile(fileUri);
@@ -170,9 +177,15 @@ export class JSONTaskParser {
     console.log(
       `[JSONTaskParser] File validation passed, proceeding with parsing`
     );
+    console.log(
+      `[JSONTaskParser] File exists and is accessible: ${fileUri.fsPath}`
+    );
 
     try {
       // Use VS Code filesystem API instead of Node.js fs
+      console.log(
+        `[JSONTaskParser] Reading file content from: ${fileUri.fsPath}`
+      );
       const fileContent = await vscode.workspace.fs.readFile(fileUri);
       const contentString = Buffer.from(fileContent).toString("utf8");
 
@@ -192,6 +205,21 @@ export class JSONTaskParser {
         `[JSONTaskParser] Failed to parse ${fileUri.toString()}:`,
         error
       );
+
+      // PATH-FIX-003: Enhanced error logging for debugging
+      console.log(
+        `[JSONTaskParser] Error type: ${
+          error instanceof Error ? error.constructor.name : typeof error
+        }`
+      );
+      if (error instanceof vscode.FileSystemError) {
+        console.log(
+          `[JSONTaskParser] VS Code FileSystemError detected with code: ${error.code}`
+        );
+        console.log(
+          `[JSONTaskParser] File system error details: ${error.message}`
+        );
+      }
 
       // Handle VS Code filesystem errors specifically
       if (error instanceof vscode.FileSystemError) {
