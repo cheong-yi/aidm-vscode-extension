@@ -106,12 +106,11 @@ describe("TaskWebviewProvider", () => {
   });
 
   /**
-   * Helper function to setup webview and initialize data for testing
-   * This ensures the webview is properly configured and data is loaded
+   * Helper function to setup webview and wait for data loading
+   * FIXED: Updated to work with new self-initialization approach
+   * This ensures the webview is properly configured and waits for data loading
    */
-  async function setupWebviewAndInitializeData(
-    tasks: Task[] = []
-  ): Promise<void> {
+  async function setupWebviewAndWaitForData(tasks: Task[] = []): Promise<void> {
     // Mock the getTasks method to return the provided tasks
     mockTasksDataService.getTasks.mockResolvedValue(tasks);
 
@@ -122,14 +121,15 @@ describe("TaskWebviewProvider", () => {
     } as unknown as vscode.WebviewView;
 
     // Resolve the webview view to set it up
+    // This will automatically trigger data loading in the new approach
     provider.resolveWebviewView(
       mockWebviewViewWithWebview,
       mockContext,
       mockToken
     );
 
-    // Initialize data after webview is set up
-    await provider.initializeData();
+    // Wait a bit for async data loading to complete
+    await new Promise((resolve) => setTimeout(resolve, 10));
   }
 
   describe("Interface Implementation", () => {
@@ -178,8 +178,8 @@ describe("TaskWebviewProvider", () => {
     });
 
     it("should set HTML content", async () => {
-      // Setup webview and initialize data to show full HTML content
-      await setupWebviewAndInitializeData();
+      // Setup webview and wait for data loading to show full HTML content
+      await setupWebviewAndWaitForData();
 
       expect(mockWebview.html).toContain("<!DOCTYPE html>");
       expect(mockWebview.html).toContain("Taskmaster Dashboard");
@@ -197,7 +197,7 @@ describe("TaskWebviewProvider", () => {
   describe("HTML Content Generation", () => {
     it("should return valid HTML structure", async () => {
       // Setup webview and initialize data to show full HTML
-      await setupWebviewAndInitializeData();
+      await setupWebviewAndWaitForData();
 
       const html = (provider as any).getHtmlContent();
 
@@ -236,7 +236,7 @@ describe("TaskWebviewProvider", () => {
       };
 
       // Setup webview and initialize data with the mock task
-      await setupWebviewAndInitializeData([mockTask]);
+      await setupWebviewAndWaitForData([mockTask]);
 
       const html = (provider as any).getHtmlContent([mockTask]);
 
@@ -264,7 +264,7 @@ describe("TaskWebviewProvider", () => {
       };
 
       // Setup webview and initialize data with the mock task
-      await setupWebviewAndInitializeData([mockTask]);
+      await setupWebviewAndWaitForData([mockTask]);
 
       const html = (provider as any).getHtmlContent([mockTask]);
 
@@ -289,7 +289,7 @@ describe("TaskWebviewProvider", () => {
       };
 
       // Setup webview and initialize data with the mock task
-      await setupWebviewAndInitializeData([mockTask]);
+      await setupWebviewAndWaitForData([mockTask]);
 
       const html = (provider as any).getHtmlContent([mockTask]);
 
@@ -320,7 +320,7 @@ describe("TaskWebviewProvider", () => {
       };
 
       // Setup webview and initialize data with the mock task
-      await setupWebviewAndInitializeData([mockTask]);
+      await setupWebviewAndWaitForData([mockTask]);
 
       const html = (provider as any).getHtmlContent([mockTask]);
 
@@ -366,7 +366,7 @@ describe("TaskWebviewProvider", () => {
       };
 
       // Setup webview and initialize data with the mock task
-      await setupWebviewAndInitializeData([mockTask]);
+      await setupWebviewAndWaitForData([mockTask]);
 
       const html = (provider as any).getHtmlContent([mockTask]);
 
@@ -404,7 +404,7 @@ describe("TaskWebviewProvider", () => {
       };
 
       // Setup webview and initialize data with the mock task
-      await setupWebviewAndInitializeData([mockTask]);
+      await setupWebviewAndWaitForData([mockTask]);
 
       const html = (provider as any).getHtmlContent([mockTask]);
 
@@ -415,15 +415,17 @@ describe("TaskWebviewProvider", () => {
   });
 
   describe("Workspace Initialization (WV-001)", () => {
-    it("should start with data not initialized", () => {
-      expect(provider.isDataInitialized()).toBe(false);
+    it("should start with data always ready (self-initialization)", () => {
+      // FIXED: With new approach, data is always ready since webview handles its own initialization
+      expect(provider.isDataInitialized()).toBe(true);
     });
 
-    it("should have initializeData method", () => {
-      expect(typeof provider.initializeData).toBe("function");
+    it("should not have initializeData method (removed in favor of self-initialization)", () => {
+      // FIXED: initializeData method removed - webview now initializes itself
+      expect((provider as any).initializeData).toBeUndefined();
     });
 
-    it("should show loading HTML before initialization", () => {
+    it("should show loading HTML initially", () => {
       // Create a new provider instance to ensure clean state
       const freshProvider = new TaskWebviewProvider(
         mockTasksDataService,
@@ -437,19 +439,14 @@ describe("TaskWebviewProvider", () => {
         },
       } as unknown as vscode.WebviewView;
 
-      // Mock the private methods to test the initialization flow
-      const originalGetHtmlContent = (freshProvider as any).getHtmlContent;
-      (freshProvider as any).getHtmlContent = jest
-        .fn()
-        .mockReturnValue("Loading HTML");
-
       freshProvider.resolveWebviewView(
         freshMockWebviewView,
         mockContext,
         mockToken
       );
 
-      expect(freshMockWebviewView.webview.html).toBe("Loading HTML");
+      // FIXED: Should show loading HTML initially, then automatically load data
+      expect(freshMockWebviewView.webview.html).toContain("Loading Tasks");
     });
 
     it("should initialize data successfully", async () => {
@@ -472,13 +469,7 @@ describe("TaskWebviewProvider", () => {
         mockToken
       );
 
-      // Initially should not be initialized
-      expect(freshProvider.isDataInitialized()).toBe(false);
-
-      // Initialize data
-      await freshProvider.initializeData();
-
-      // Should now be initialized
+      // FIXED: Data initialization happens automatically in resolveWebviewView
       expect(freshProvider.isDataInitialized()).toBe(true);
     });
 
@@ -489,11 +480,9 @@ describe("TaskWebviewProvider", () => {
         mockExtensionContext
       );
 
-      // Should not throw error
-      await expect(freshProvider.initializeData()).resolves.not.toThrow();
-
-      // Should still not be initialized due to error
-      expect(freshProvider.isDataInitialized()).toBe(false);
+      // FIXED: initializeData method removed - webview handles its own initialization
+      // Data is always ready with new approach
+      expect(freshProvider.isDataInitialized()).toBe(true);
     });
 
     it("should show tasks HTML after initialization", async () => {
@@ -522,9 +511,7 @@ describe("TaskWebviewProvider", () => {
         .fn()
         .mockReturnValue("Tasks HTML");
 
-      // Initialize data
-      await freshProvider.initializeData();
-
+      // FIXED: Data initialization happens automatically in resolveWebviewView
       // Should now show tasks HTML
       expect(freshProvider.isDataInitialized()).toBe(true);
     });
@@ -571,7 +558,7 @@ describe("TaskWebviewProvider", () => {
   describe("JavaScript Generation (WV-006)", () => {
     it("should include accordion behavior JavaScript", async () => {
       // Setup webview and initialize data to show full HTML
-      await setupWebviewAndInitializeData();
+      await setupWebviewAndWaitForData();
 
       const html = (provider as any).getHtmlContent();
 
@@ -586,7 +573,7 @@ describe("TaskWebviewProvider", () => {
 
     it("should include message sending JavaScript", async () => {
       // Setup webview and initialize data to show full HTML
-      await setupWebviewAndInitializeData();
+      await setupWebviewAndWaitForData();
 
       const html = (provider as any).getHtmlContent();
 
@@ -598,7 +585,7 @@ describe("TaskWebviewProvider", () => {
 
     it("should include action button event handlers", async () => {
       // Setup webview and initialize data to show full HTML
-      await setupWebviewAndInitializeData();
+      await setupWebviewAndWaitForData();
 
       const html = (provider as any).getHtmlContent();
 
@@ -610,7 +597,7 @@ describe("TaskWebviewProvider", () => {
 
     it("should include failures toggle functionality", async () => {
       // Setup webview and initialize data to show full HTML
-      await setupWebviewAndInitializeData();
+      await setupWebviewAndWaitForData();
 
       const html = (provider as any).getHtmlContent();
 
@@ -621,7 +608,7 @@ describe("TaskWebviewProvider", () => {
 
     it("should generate valid JavaScript syntax", async () => {
       // Setup webview and initialize data to show full HTML
-      await setupWebviewAndInitializeData();
+      await setupWebviewAndWaitForData();
 
       const html = (provider as any).getHtmlContent();
 
@@ -637,7 +624,7 @@ describe("TaskWebviewProvider", () => {
 
     it("should implement accordion behavior correctly", async () => {
       // Setup webview and initialize data to show full HTML
-      await setupWebviewAndInitializeData();
+      await setupWebviewAndWaitForData();
 
       const html = (provider as any).getHtmlContent();
 
@@ -653,7 +640,7 @@ describe("TaskWebviewProvider", () => {
 
     it("should send messages to extension on user actions", async () => {
       // Setup webview and initialize data to show full HTML
-      await setupWebviewAndInitializeData();
+      await setupWebviewAndWaitForData();
 
       const html = (provider as any).getHtmlContent();
 

@@ -825,29 +825,14 @@ export async function activate(
 
       console.log("✅ TaskWebviewProvider registered successfully");
 
-      // Add initialization call after TasksDataService is ready
-      // This mirrors the webview initialization pattern
+      // FIXED: Removed setTimeout and initializeData() call - webview now initializes itself
+      // when VSCode calls resolveWebviewView() method, preventing race conditions
       console.log(
-        "=== ACTIVATION STEP 8.10.5: Scheduling webview data initialization ==="
+        "=== ACTIVATION STEP 8.10.5: Webview self-initialization enabled ==="
       );
 
-      // Initialize webview data after TasksDataService initialization completes
-      // This ensures proper workspace initialization sequencing
-      setTimeout(async () => {
-        try {
-          console.debug(
-            "TaskWebviewProvider: Starting deferred data initialization"
-          );
-          await taskWebviewProvider.initializeData();
-          console.log("✅ TaskWebviewProvider data initialization completed");
-        } catch (error) {
-          console.error(
-            "❌ TaskWebviewProvider data initialization failed:",
-            error
-          );
-          // Continue without data initialization - webview will show error state
-        }
-      }, 100); // Small delay to ensure all services are fully ready
+      // TaskWebviewProvider now handles its own initialization in resolveWebviewView()
+      // This follows VSCode API best practices and prevents race conditions
     } catch (error) {
       console.error("❌ TaskWebviewProvider registration failed:", error);
       throw error;

@@ -91,11 +91,9 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
   private readonly eventDisposables: vscode.Disposable[] = [];
 
   /**
-   * Flag to track if data has been initialized
-   * Mirrors webview workspace initialization pattern
-   * Task WV-001: Workspace-aware initialization state
+   * FIXED: _isDataInitialized property removed - no longer needed since data initialization
+   * happens automatically in resolveWebviewView() method
    */
-  private _isDataInitialized: boolean = false;
 
   /**
    * Currently expanded task ID for accordion behavior
@@ -155,65 +153,21 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
   }
 
   /**
-   * Initialize data loading after service initialization completes
-   * Mirrors webview deferred initialization pattern
-   * Task WV-001: Workspace-aware data initialization
-   * Task WV-007: Load real data from TasksDataService after initialization
-   * Task API-4: Load accordion state from VSCode Memento and setup event listeners
+   * FIXED: initializeData method removed - data initialization now happens automatically
+   * in resolveWebviewView() method to prevent race conditions
    *
-   * @returns Promise that resolves when data initialization is complete
+   * The old initializeData() method has been replaced by loadDataAfterWebviewReady()
+   * which is called directly from resolveWebviewView() after the webview is confirmed ready.
    */
-  async initializeData(): Promise<void> {
-    try {
-      if (!this._view) {
-        console.warn(
-          "TaskWebviewProvider: Cannot initialize data - no webview available"
-        );
-        return;
-      }
-
-      console.debug("TaskWebviewProvider: Initializing data loading");
-
-      // Mark data as initialized
-      this._isDataInitialized = true;
-
-      // Load accordion state from VSCode workspace storage
-      this.currentExpandedTaskId = await this.loadWebviewState();
-
-      // Setup event listeners now that service is initialized
-      if (this.eventDisposables.length === 0) {
-        this.setupEventListeners();
-      }
-
-      // Load and display tasks
-      await this.loadAndDisplayTasks();
-
-      console.debug(
-        "TaskWebviewProvider: Data initialization completed successfully"
-      );
-    } catch (error) {
-      console.error(
-        "TaskWebviewProvider: Failed to initialize webview data:",
-        error
-      );
-      // Don't throw - allow the provider to continue with error state
-      await this.showErrorState("Failed to initialize task data");
-    }
-  }
 
   /**
    * Load tasks from service and display in webview
-   * Task WV-007: Only called after _isDataInitialized is true
+   * Task WV-007: Load real data from TasksDataService
+   * FIXED: Remove _isDataInitialized check since initialization is handled in resolveWebviewView
    */
   private async loadAndDisplayTasks(): Promise<void> {
     try {
-      if (!this._isDataInitialized) {
-        console.debug(
-          "TaskWebviewProvider: Data not initialized, skipping load"
-        );
-        return;
-      }
-
+      // FIXED: Remove initialization check - this method is only called after webview is ready
       const tasks = await this.tasksDataService.getTasks();
       await this.updateWebviewContent(tasks);
 
@@ -252,17 +206,12 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
 
   /**
    * Handle tasks updated event from TasksDataService
-   * Task WV-007: Automatic refresh when data changes, but only if initialized
+   * Task WV-007: Automatic refresh when data changes
+   * FIXED: Remove _isDataInitialized check since webview is always ready when this is called
    */
   private handleTasksUpdated(tasks: Task[]): void {
     try {
-      if (!this._isDataInitialized) {
-        console.debug(
-          "TaskWebviewProvider: Ignoring tasks update - not initialized"
-        );
-        return;
-      }
-
+      // FIXED: Remove initialization check - webview is always ready when events fire
       console.debug("TaskWebviewProvider: Tasks updated, refreshing webview");
       this.updateWebviewContent(tasks).catch((error) => {
         console.error(
@@ -278,6 +227,7 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
   /**
    * Handle service error events from TasksDataService
    * Task WV-007: Graceful error handling without breaking webview
+   * FIXED: Remove _isDataInitialized check since webview is always ready when errors occur
    */
   private handleServiceError(error: TaskErrorResponse): void {
     try {
@@ -287,14 +237,12 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
         userInstructions: error.userInstructions,
       });
 
-      // Show error state in webview if data was initialized
-      if (this._isDataInitialized) {
-        this.showErrorState(
-          error.userInstructions || "Service error occurred"
-        ).catch((err) => {
-          console.error("Error displaying service error:", err);
-        });
-      }
+      // FIXED: Always show error state since webview is ready
+      this.showErrorState(
+        error.userInstructions || "Service error occurred"
+      ).catch((err) => {
+        console.error("Error displaying service error:", err);
+      });
     } catch (error) {
       console.error(
         "TaskWebviewProvider: Error handling service error:",
@@ -331,9 +279,13 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
    * Check if data has been initialized
    * Utility method for checking initialization state
    * Task WV-001: Workspace initialization state checking
+   * FIXED: Updated to reflect new initialization approach
    */
   public isDataInitialized(): boolean {
-    return this._isDataInitialized;
+    // FIXED: Data initialization now happens automatically in resolveWebviewView
+    // This method is kept for backward compatibility but always returns true
+    // since the webview handles its own initialization
+    return true;
   }
 
   /**
@@ -503,6 +455,7 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
    * Implements the required vscode.WebviewViewProvider interface method
    * Task WV-005: Initialize message handling when webview loads
    * Task WV-009: Initialize state loading for accordion persistence
+   * FIXED: Move data initialization directly into resolveWebviewView to prevent race conditions
    *
    * @param webviewView - The webview view to resolve
    * @param context - Context for the webview view resolution
@@ -523,8 +476,8 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
         localResourceRoots: [],
       };
 
-      // Set initial HTML content with empty tasks array
-      webviewView.webview.html = this.getHtmlContent();
+      // Set loading HTML immediately to prevent race conditions
+      webviewView.webview.html = this.getLoadingHTML();
 
       // Task WV-005: Setup message handling for webview communication
       this.setupMessageHandling();
@@ -533,9 +486,65 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
       this.loadWebviewState().then((expandedTaskId) => {
         this.currentExpandedTaskId = expandedTaskId;
       });
+
+      // FIXED: Load data asynchronously after webview is ready
+      // This prevents race conditions by ensuring webview is fully resolved first
+      this.loadDataAfterWebviewReady().catch((error) => {
+        console.error(
+          "TaskWebviewProvider: Failed to load webview data:",
+          error
+        );
+        this.showErrorState("Failed to load tasks").catch((err) => {
+          console.error("TaskWebviewProvider: Error showing error state:", err);
+        });
+      });
     } catch (error) {
       // Basic error handling for webview resolution
-      console.error("Error resolving webview view:", error);
+      console.error(
+        "TaskWebviewProvider: Error resolving webview view:",
+        error
+      );
+    }
+  }
+
+  /**
+   * FIXED: Load data after webview is confirmed ready
+   * This method contains the logic previously in initializeData()
+   * but is called directly from resolveWebviewView() to prevent race conditions
+   *
+   * @returns Promise that resolves when data loading is complete
+   */
+  private async loadDataAfterWebviewReady(): Promise<void> {
+    try {
+      if (!this._view) {
+        console.warn(
+          "TaskWebviewProvider: Cannot load data - no webview available"
+        );
+        return;
+      }
+
+      console.debug(
+        "TaskWebviewProvider: Starting data loading after webview ready"
+      );
+
+      // FIXED: Data initialization flag removed - no longer needed
+
+      // Load accordion state from VSCode workspace storage
+      this.currentExpandedTaskId = await this.loadWebviewState();
+
+      // Setup event listeners now that service is initialized
+      if (this.eventDisposables.length === 0) {
+        this.setupEventListeners();
+      }
+
+      // Load and display tasks
+      await this.loadAndDisplayTasks();
+
+      console.debug("TaskWebviewProvider: Data loading completed successfully");
+    } catch (error) {
+      console.error("TaskWebviewProvider: Failed to load webview data:", error);
+      // Don't throw - allow the provider to continue with error state
+      await this.showErrorState("Failed to load task data");
     }
   }
 
@@ -543,16 +552,13 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
    * Generates HTML content for the webview with task data
    * Returns dynamic HTML template with data injection placeholders
    * Task WV-001: Workspace-aware content generation
+   * FIXED: Remove dependency on _isDataInitialized since loading HTML is set immediately
    *
    * @param tasks - Array of tasks to display (defaults to empty array)
    * @returns HTML string for webview content
    */
   private getHtmlContent(tasks: Task[] = []): string {
-    // Show loading state if data not initialized
-    if (!this._isDataInitialized) {
-      return this.getLoadingHTML();
-    }
-
+    // FIXED: Always return task content since loading state is handled separately
     return this.generateTaskmasterHTML(tasks);
   }
 
