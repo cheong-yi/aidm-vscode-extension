@@ -55,12 +55,44 @@ export class TasksDataService implements ITasksDataService {
   }
 
   // Task 6.1.2: Async initialization method to fix workspace configuration race condition
+  // WS-002: Add workspace availability check to ensure safe initialization
   async initialize(): Promise<void> {
     if (this.isInitialized) {
       return; // Already initialized
     }
 
     try {
+      // WS-002: Check workspace availability using VSCode API before proceeding
+      const workspaceFolders = vscode.workspace.workspaceFolders;
+
+      if (!workspaceFolders || workspaceFolders.length === 0) {
+        throw new Error(
+          "No workspace folders available. Please open a folder or workspace."
+        );
+      }
+
+      console.log(
+        `[TasksDataService] Workspace available with ${workspaceFolders.length} folder(s)`
+      );
+
+      // WS-002: Proceed with existing initialization logic using new getTasksFileUri method
+      const configuredPath = vscode.workspace
+        .getConfiguration()
+        .get<string>("aidmVscodeExtension.tasks.filePath", "tasks.json");
+
+      const tasksFileUri = await this.getTasksFileUri(configuredPath);
+
+      if (!tasksFileUri) {
+        // File doesn't exist, but workspace is available - this is acceptable
+        console.warn(
+          `[TasksDataService] Tasks file not found: ${configuredPath}. Will use mock data.`
+        );
+      } else {
+        console.log(
+          `[TasksDataService] Tasks file found at: ${tasksFileUri.fsPath}`
+        );
+      }
+
       // Get port from VS Code configuration when workspace is ready
       const config = workspace.getConfiguration();
       const port = config.get<number>(
