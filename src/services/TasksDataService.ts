@@ -7,6 +7,7 @@
  * Recovery Task 2.3.2: Add Error Event Emitter infrastructure for error events
  * Recovery Task 2.4.1: Add HTTP client setup and JSON-RPC infrastructure
  * PATH-002: Enhanced file loading error handling with user guidance
+ * PATH-FIX-004: Enhanced error context logging with workspace and path information for debugging
  * Requirements: 3.1-3.6, 4.1-4.4, 7.1-7.6
  */
 
@@ -109,6 +110,20 @@ export class TasksDataService implements ITasksDataService {
         `[TasksDataService] Initialized with server URL: ${this.serverUrl}`
       );
     } catch (error) {
+      // PATH-FIX-004: Enhanced error logging with path context for debugging
+      console.error("TasksDataService.initialize Error Details:");
+      console.error(
+        "- Workspace folders:",
+        vscode.workspace.workspaceFolders?.map((f) => f.uri.toString())
+      );
+      console.error(
+        "- Configured path:",
+        vscode.workspace
+          .getConfiguration("aidmVscodeExtension")
+          .get("tasks.filePath")
+      );
+      console.error("- Error:", error);
+
       console.error("[TasksDataService] Initialization failed:", error);
       throw new Error(
         `Failed to initialize TasksDataService: ${
@@ -160,6 +175,22 @@ export class TasksDataService implements ITasksDataService {
       const response = await this.httpClient.post("/jsonrpc", request);
       return response.data;
     } catch (error) {
+      // PATH-FIX-004: Enhanced error logging with path context for debugging
+      console.error("TasksDataService.makeJSONRPCCall Error Details:");
+      console.error(
+        "- Workspace folders:",
+        vscode.workspace.workspaceFolders?.map((f) => f.uri.toString())
+      );
+      console.error(
+        "- Configured path:",
+        vscode.workspace
+          .getConfiguration("aidmVscodeExtension")
+          .get("tasks.filePath")
+      );
+      console.error("- Server URL:", this.serverUrl);
+      console.error("- Method:", method);
+      console.error("- Error:", error);
+
       throw new Error(
         `HTTP request failed: ${
           error instanceof Error ? error.message : String(error)
@@ -193,6 +224,22 @@ export class TasksDataService implements ITasksDataService {
           );
           return mcpTasks;
         } catch (parseError) {
+          // PATH-FIX-004: Enhanced error logging with path context for debugging
+          console.error(
+            "TasksDataService.getTasks MCP Response Parse Error Details:"
+          );
+          console.error(
+            "- Workspace folders:",
+            vscode.workspace.workspaceFolders?.map((f) => f.uri.toString())
+          );
+          console.error(
+            "- Configured path:",
+            vscode.workspace
+              .getConfiguration("aidmVscodeExtension")
+              .get("tasks.filePath")
+          );
+          console.error("- Parse Error:", parseError);
+
           console.warn("Failed to parse MCP response content:", parseError);
           return [];
         }
@@ -312,6 +359,20 @@ export class TasksDataService implements ITasksDataService {
           throw parseError;
         }
       } catch (fileError) {
+        // PATH-FIX-004: Enhanced error logging with path context for debugging
+        console.error("TasksDataService.getTasks File Loading Error Details:");
+        console.error(
+          "- Workspace folders:",
+          vscode.workspace.workspaceFolders?.map((f) => f.uri.toString())
+        );
+        console.error(
+          "- Configured path:",
+          vscode.workspace
+            .getConfiguration("aidmVscodeExtension")
+            .get("tasks.filePath")
+        );
+        console.error("- File Error:", fileError);
+
         // PATH-002: Enhanced error handling for file loading failures
         console.log("[TasksDataService] Falling back to mock data provider");
         const mockTasks = await this.mockDataProvider.getTasks();
@@ -345,6 +406,21 @@ export class TasksDataService implements ITasksDataService {
       }
       return task;
     } catch (error) {
+      // PATH-FIX-004: Enhanced error logging with path context for debugging
+      console.error("TasksDataService.getTaskById Error Details:");
+      console.error(
+        "- Workspace folders:",
+        vscode.workspace.workspaceFolders?.map((f) => f.uri.toString())
+      );
+      console.error(
+        "- Configured path:",
+        vscode.workspace
+          .getConfiguration("aidmVscodeExtension")
+          .get("tasks.filePath")
+      );
+      console.error("- Task ID:", id);
+      console.error("- Error:", error);
+
       // Only fallback to TaskStatusManager on actual HTTP failures, not MCP server errors
       if (
         error instanceof Error &&
@@ -411,6 +487,22 @@ export class TasksDataService implements ITasksDataService {
 
       return success;
     } catch (error) {
+      // PATH-FIX-004: Enhanced error logging with path context for debugging
+      console.error("TasksDataService.updateTaskStatus Error Details:");
+      console.error(
+        "- Workspace folders:",
+        vscode.workspace.workspaceFolders?.map((f) => f.uri.toString())
+      );
+      console.error(
+        "- Configured path:",
+        vscode.workspace
+          .getConfiguration("aidmVscodeExtension")
+          .get("tasks.filePath")
+      );
+      console.error("- Task ID:", id);
+      console.error("- New Status:", status);
+      console.error("- Error:", error);
+
       // Check if this is an MCP server error - if so, re-throw it
       if (
         error instanceof Error &&
@@ -480,6 +572,20 @@ export class TasksDataService implements ITasksDataService {
         );
       }
     } catch (error) {
+      // PATH-FIX-004: Enhanced error logging with path context for debugging
+      console.error("TasksDataService.refreshTasks Error Details:");
+      console.error(
+        "- Workspace folders:",
+        vscode.workspace.workspaceFolders?.map((f) => f.uri.toString())
+      );
+      console.error(
+        "- Configured path:",
+        vscode.workspace
+          .getConfiguration("aidmVscodeExtension")
+          .get("tasks.filePath")
+      );
+      console.error("- Error:", error);
+
       // Check if this is an MCP server error - if so, re-throw it
       if (
         error instanceof Error &&
@@ -530,6 +636,21 @@ export class TasksDataService implements ITasksDataService {
             throw new Error("Parsed data validation failed");
           }
         } catch (parseError) {
+          // PATH-FIX-004: Enhanced error logging with path context for debugging
+          console.error("TasksDataService.refreshTasks Parse Error Details:");
+          console.error(
+            "- Workspace folders:",
+            vscode.workspace.workspaceFolders?.map((f) => f.uri.toString())
+          );
+          console.error(
+            "- Configured path:",
+            vscode.workspace
+              .getConfiguration("aidmVscodeExtension")
+              .get("tasks.filePath")
+          );
+          console.error("- File URI:", fileUri?.toString());
+          console.error("- Parse Error:", parseError);
+
           // PATH-002: Enhanced error handling for file parsing failures
           const taskError = this.handleFileLoadingError(
             parseError as Error,
@@ -542,6 +663,22 @@ export class TasksDataService implements ITasksDataService {
           throw parseError;
         }
       } catch (fileError) {
+        // PATH-FIX-004: Enhanced error logging with path context for debugging
+        console.error(
+          "TasksDataService.refreshTasks File Loading Error Details:"
+        );
+        console.error(
+          "- Workspace folders:",
+          vscode.workspace.workspaceFolders?.map((f) => f.uri.toString())
+        );
+        console.error(
+          "- Configured path:",
+          vscode.workspace
+            .getConfiguration("aidmVscodeExtension")
+            .get("tasks.filePath")
+        );
+        console.error("- File Error:", fileError);
+
         console.warn(
           "[TasksDataService] Falling back to mock data due to file loading error"
         );
@@ -755,6 +892,22 @@ export class TasksDataService implements ITasksDataService {
       );
       return jsonData;
     } catch (error) {
+      // PATH-FIX-004: Enhanced error logging with path context for debugging
+      console.error("TasksDataService.loadTasksFromFile Error Details:");
+      console.error(
+        "- Workspace folders:",
+        vscode.workspace.workspaceFolders?.map((f) => f.uri.toString())
+      );
+      console.error(
+        "- Configured path:",
+        vscode.workspace
+          .getConfiguration("aidmVscodeExtension")
+          .get("tasks.filePath")
+      );
+      console.error("- File URI:", fileUri.toString());
+      console.error("- File fsPath:", fileUri.fsPath);
+      console.error("- Error:", error);
+
       // Log error and re-throw (error already emitted above)
       console.error(
         `[TasksDataService] File loading failed for: ${fileUri.fsPath}`,
@@ -786,6 +939,20 @@ export class TasksDataService implements ITasksDataService {
       );
       return uri;
     } catch (error) {
+      // PATH-FIX-004: Enhanced error logging with path context for debugging
+      console.error("TasksDataService.getConfiguredFileUri Error Details:");
+      console.error(
+        "- Workspace folders:",
+        vscode.workspace.workspaceFolders?.map((f) => f.uri.toString())
+      );
+      console.error(
+        "- Configured path:",
+        vscode.workspace
+          .getConfiguration("aidmVscodeExtension")
+          .get("tasks.filePath")
+      );
+      console.error("- Error:", error);
+
       console.error(
         "[TasksDataService] Failed to get configured file URI:",
         error
@@ -838,6 +1005,24 @@ export class TasksDataService implements ITasksDataService {
       await vscode.workspace.fs.stat(fileUri);
       return fileUri;
     } catch (error: any) {
+      // PATH-FIX-004: Enhanced error logging with path context for debugging
+      console.error("TasksDataService.getTasksFileUri Error Details:");
+      console.error(
+        "- Workspace folders:",
+        vscode.workspace.workspaceFolders?.map((f) => f.uri.toString())
+      );
+      console.error(
+        "- Configured path:",
+        vscode.workspace
+          .getConfiguration("aidmVscodeExtension")
+          .get("tasks.filePath")
+      );
+      console.error("- Input configuredPath:", configuredPath);
+      console.error("- Workspace folder URI:", workspaceFolder.uri.toString());
+      console.error("- Final file URI:", fileUri.toString());
+      console.error("- Final fsPath:", fileUri.fsPath);
+      console.error("- Error:", error);
+
       if (error.code === "FileNotFound") {
         return null; // File doesn't exist - acceptable condition
       }
@@ -881,6 +1066,20 @@ export class TasksDataService implements ITasksDataService {
       // Task 6.1.6: Event firing is now handled by the calling method for proper timing
       // this.onTasksUpdated.fire(mockTasks); // Removed - handled by caller
     } catch (error) {
+      // PATH-FIX-004: Enhanced error logging with path context for debugging
+      console.error("TasksDataService.loadMockData Error Details:");
+      console.error(
+        "- Workspace folders:",
+        vscode.workspace.workspaceFolders?.map((f) => f.uri.toString())
+      );
+      console.error(
+        "- Configured path:",
+        vscode.workspace
+          .getConfiguration("aidmVscodeExtension")
+          .get("tasks.filePath")
+      );
+      console.error("- Error:", error);
+
       console.error("[TasksDataService] Failed to load mock data:", error);
       // Fire error event for mock data loading failure
       this.onError.fire({
@@ -901,3 +1100,11 @@ export class TasksDataService implements ITasksDataService {
     this.onError.dispose();
   }
 }
+
+// PATH-FIX-004: Enhanced error context logging completed ✅
+// All catch blocks now include comprehensive debugging information:
+// - Workspace folders information
+// - Configured path from VS Code settings
+// - Method-specific context (file URIs, task IDs, etc.)
+// - Detailed error information
+// This will help debug future path construction and file access issues
