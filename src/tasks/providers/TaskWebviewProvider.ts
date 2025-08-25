@@ -1326,6 +1326,7 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
    * Implements single-task expansion logic following TreeViewProvider pattern
    * Task WV-006: Accordion behavior with only one task expanded at a time
    * Task WV-009: State persistence integration for accordion expansion
+   * Task API-5: State restoration function for extension message handling
    *
    * @returns JavaScript string for accordion functionality
    */
@@ -1362,19 +1363,27 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
         failuresSection.classList.toggle('expanded');
       }
       
-      // Initialize from extension-provided state
+      // State restoration function called by extension via message
       function setInitialExpandedState(taskId) {
         if (taskId) {
           const taskElement = document.querySelector(\`[data-task-id="\${taskId}"]\`);
           if (taskElement) {
+            // Collapse all tasks first
+            document.querySelectorAll('.task-item.expanded').forEach(item => {
+              item.classList.remove('expanded');
+            });
+            
+            // Expand the specified task
             taskElement.classList.add('expanded');
             expandedTaskId = taskId;
+            
+            console.debug('Webview: Accordion state restored for task:', taskId);
           }
         }
       }
       
-      // Extension will call this function to restore state
-      window.setExpandedTask = setInitialExpandedState;
+      // Make function available globally for message handler
+      window.setInitialExpandedState = setInitialExpandedState;
     `;
   }
 
@@ -1383,6 +1392,7 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
    * Implements VSCode webview API integration for extension communication
    * Task WV-006: Webview message sending to extension
    * Task WV-009: State persistence message handling
+   * Task API-5: Handle 'restoreState' messages from extension for accordion state restoration
    *
    * @returns JavaScript string for message handling functionality
    */
@@ -1405,6 +1415,22 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
       function executeWithCursor(taskId) {
         sendMessage('executeWithCursor', { taskId: taskId });
       }
+      
+      // Handle messages from extension
+      window.addEventListener('message', function(event) {
+        const message = event.data;
+        
+        switch (message.type) {
+          case 'restoreState':
+            if (message.expandedTaskId) {
+              setInitialExpandedState(message.expandedTaskId);
+            }
+            break;
+          default:
+            // Ignore unknown message types
+            break;
+        }
+      });
       
       // Handle action button clicks
       document.addEventListener('click', function(event) {
