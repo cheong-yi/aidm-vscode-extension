@@ -19,7 +19,7 @@ import {
   TaskErrorResponse,
 } from "../types/tasks";
 import { TaskStatusManager } from "./TaskStatusManager";
-import { MarkdownTaskParser } from "./MarkdownTaskParser";
+import { JSONTaskParser } from "./JSONTaskParser";
 import { MockDataProvider } from "../mock";
 
 interface ITasksDataService {
@@ -43,10 +43,10 @@ export class TasksDataService implements ITasksDataService {
 
   constructor(
     private taskStatusManager: TaskStatusManager,
-    private markdownTaskParser: MarkdownTaskParser,
+    private jsonTaskParser: JSONTaskParser,
     private mockDataProvider: MockDataProvider
   ) {
-    // Constructor now accepts TaskStatusManager, MarkdownTaskParser, and MockDataProvider dependencies
+    // Constructor now accepts TaskStatusManager, JSONTaskParser, and MockDataProvider dependencies
     // Get port from VS Code configuration
     const config = workspace.getConfiguration("aidmVscodeExtension");
     const port = config.get<number>("mcpServer.port", 3001);
@@ -136,10 +136,10 @@ export class TasksDataService implements ITasksDataService {
 
       try {
         console.log(
-          "[TasksDataService] Attempting file parsing fallback from ./tasks.md"
+          "[TasksDataService] Attempting file parsing fallback from ./tasks.json"
         );
-        const parsedTasks = await this.markdownTaskParser.parseTasksFromFile(
-          "./tasks.md"
+        const parsedTasks = await this.jsonTaskParser.parseTasksFromFile(
+          "./tasks.json"
         );
         console.log(
           `[TasksDataService] Retrieved ${parsedTasks.length} tasks from file parser`

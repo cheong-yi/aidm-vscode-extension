@@ -17,7 +17,7 @@ import { MockCache } from "./server/MockCache";
 import { PortFinder } from "./utils/portFinder";
 import {
   TasksDataService,
-  MarkdownTaskParser,
+  JSONTaskParser,
   TaskStatusManager,
   TaskFileWatcher,
 } from "./services";
@@ -130,7 +130,7 @@ function setupUIEventSynchronization(): vscode.Disposable[] {
             const action = await vscode.window.showErrorMessage(
               errorMessage,
               "Open Settings",
-              "Create tasks.md",
+              "Create tasks.json",
               "Use Mock Data"
             );
 
@@ -140,36 +140,26 @@ function setupUIEventSynchronization(): vscode.Disposable[] {
                 "workbench.action.openSettings",
                 "aidmVscodeExtension.tasks.filePath"
               );
-            } else if (action === "Create tasks.md") {
+            } else if (action === "Create tasks.json") {
               try {
-                // Access markdownParser through TasksDataService for file creation
-                const markdownParser = (tasksDataService as any).markdownParser;
-                if (
-                  markdownParser &&
-                  typeof markdownParser.createEmptyTasksFile === "function"
-                ) {
-                  const success = await markdownParser.createEmptyTasksFile(
-                    "./tasks.md"
-                  );
-                  if (success) {
-                    vscode.window.showInformationMessage(
-                      `Created tasks.md file at: ${path.basename("./tasks.md")}`
-                    );
-                    // Refresh tasks after creating the file
-                    await tasksDataService.refreshTasks();
-                  } else {
-                    vscode.window.showErrorMessage(
-                      `Failed to create tasks.md file. Please create it manually.`
-                    );
-                  }
-                } else {
-                  vscode.window.showErrorMessage(
-                    `Cannot create tasks.md file - parser not available. Please create it manually.`
-                  );
-                }
+                // For JSON files, we'll show instructions to create manually
+                vscode.window.showInformationMessage(
+                  "Please create a tasks.json file manually with the following structure:\n" +
+                  "{\n" +
+                  '  "context1": {\n' +
+                  '    "tasks": [\n' +
+                  '      {\n' +
+                  '        "id": "task-1",\n' +
+                  '        "title": "Sample Task",\n' +
+                  '        "status": "not_started"\n' +
+                  '      }\n' +
+                  '    ]\n' +
+                  '  }\n' +
+                  "}"
+                );
               } catch (createError) {
                 vscode.window.showErrorMessage(
-                  `Failed to create tasks.md file: ${
+                  `Failed to show JSON file instructions: ${
                     createError instanceof Error
                       ? createError.message
                       : "Unknown error"
@@ -323,12 +313,12 @@ export async function activate(
 
     console.log("=== ACTIVATION STEP 8.5: Initializing TasksDataService ===");
     try {
-      const markdownParser = new MarkdownTaskParser();
-      const taskStatusManager = new TaskStatusManager(markdownParser);
+      const jsonParser = new JSONTaskParser();
+      const taskStatusManager = new TaskStatusManager(jsonParser);
       const mockDataProvider = new MockDataProvider();
       tasksDataService = new TasksDataService(
         taskStatusManager,
-        markdownParser,
+        jsonParser,
         mockDataProvider
       );
       console.log("✅ TasksDataService initialized");
@@ -359,7 +349,7 @@ export async function activate(
           const action = await vscode.window.showErrorMessage(
             `Tasks file issue: ${validationError}`,
             "Open Settings",
-            "Create tasks.md",
+            "Create tasks.json",
             "Use Mock Data"
           );
 
@@ -369,36 +359,26 @@ export async function activate(
               "workbench.action.openSettings",
               "aidmVscodeExtension.tasks.filePath"
             );
-          } else if (action === "Create tasks.md") {
+          } else if (action === "Create tasks.json") {
             try {
-              // Access markdownParser through TasksDataService for file creation
-              const markdownParser = (tasksDataService as any).markdownParser;
-              if (
-                markdownParser &&
-                typeof markdownParser.createEmptyTasksFile === "function"
-              ) {
-                const success = await markdownParser.createEmptyTasksFile(
-                  filePath
-                );
-                if (success) {
-                  vscode.window.showInformationMessage(
-                    `Created tasks.md file at: ${path.basename(filePath)}`
-                  );
-                  // Refresh tasks after creating the file
-                  await tasksDataService.refreshTasks();
-                } else {
-                  vscode.window.showErrorMessage(
-                    `Failed to create tasks.md file. Please create it manually.`
-                  );
-                }
-              } else {
-                vscode.window.showErrorMessage(
-                  `Cannot create tasks.md file - parser not available. Please create it manually.`
-                );
-              }
+              // For JSON files, we'll show instructions to create manually
+              vscode.window.showInformationMessage(
+                "Please create a tasks.json file manually with the following structure:\n" +
+                "{\n" +
+                '  "context1": {\n' +
+                '    "tasks": [\n' +
+                '      {\n' +
+                '        "id": "task-1",\n' +
+                '        "title": "Sample Task",\n' +
+                '        "status": "not_started"\n' +
+                '      }\n' +
+                '    ]\n' +
+                '  }\n' +
+                "}"
+              );
             } catch (createError) {
               vscode.window.showErrorMessage(
-                `Failed to create tasks.md file: ${
+                `Failed to show JSON file instructions: ${
                   createError instanceof Error
                     ? createError.message
                     : "Unknown error"
