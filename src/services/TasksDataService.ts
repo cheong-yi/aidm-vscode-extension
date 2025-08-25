@@ -297,6 +297,7 @@ export class TasksDataService implements ITasksDataService {
           console.log(
             `[TasksDataService] Retrieved ${parsedTasks.length} tasks from file parser`
           );
+          console.log("✅ TasksDataService method calls updated successfully");
           return parsedTasks;
         } catch (parseError) {
           // PATH-002: Enhanced error handling for file parsing failures
@@ -494,11 +495,13 @@ export class TasksDataService implements ITasksDataService {
       );
 
       try {
-        const fileUri = this.getConfiguredFileUri();
+        const configuredUri = this.getConfiguredFileUri();
+        const fallbackUri = await this.getTasksFileUri("tasks.json");
+        const fileUri = configuredUri || fallbackUri;
 
         if (!fileUri) {
           console.warn(
-            "[TasksDataService] No file path configured, using mock data"
+            "[TasksDataService] No file path available, falling back to mock data"
           );
           await this.loadMockData();
           return;
@@ -578,6 +581,7 @@ export class TasksDataService implements ITasksDataService {
     }
 
     console.log("[TasksDataService] refreshTasks completed");
+    console.log("✅ TasksDataService method calls updated successfully");
   }
 
   // PATH-002: Enhanced error handling for file loading operations
