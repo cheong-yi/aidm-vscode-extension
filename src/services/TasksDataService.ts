@@ -674,7 +674,8 @@ export class TasksDataService implements ITasksDataService {
       throw new Error("No workspace folder available for task file resolution");
     }
 
-    const fileName = configuredPath || "tasks.json";
+    // Fix: Use nullish coalescing operator to handle null/undefined correctly
+    const fileName = configuredPath ?? "tasks.json";
     return path.join(workspaceRoot, fileName);
   }
 

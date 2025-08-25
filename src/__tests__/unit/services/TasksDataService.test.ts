@@ -1911,4 +1911,37 @@ describe("TasksDataService", () => {
       mockFileUri
     );
   });
+
+  // PATH-FIX-001: Test getWorkspaceFilePath method null parameter handling
+  describe("getWorkspaceFilePath", () => {
+    it("should handle null and relative path parameters correctly", () => {
+      // Arrange: Mock workspace folder
+      const mockWorkspaceFolder = { uri: { fsPath: "C:\\workspace" } };
+      const vscode = require("vscode");
+      vscode.workspace.workspaceFolders = [mockWorkspaceFolder];
+
+      // Test null parameter (fallback scenario)
+      const resultNull = (service as any).getWorkspaceFilePath(null);
+      expect(resultNull).toBe("C:\\workspace\\tasks.json");
+
+      // Test configured relative path (your settings scenario)
+      const resultConfigured = (service as any).getWorkspaceFilePath("tasks.json");
+      expect(resultConfigured).toBe("C:\\workspace\\tasks.json");
+
+      // Test path with leading separators (edge case)
+      const resultLeadingSep = (service as any).getWorkspaceFilePath("\\tasks.json");
+      expect(resultLeadingSep).toBe("C:\\workspace\\tasks.json");
+    });
+
+    it("should throw error when no workspace folder is available", () => {
+      // Arrange: Mock no workspace folder
+      const vscode = require("vscode");
+      vscode.workspace.workspaceFolders = undefined;
+
+      // Act & Assert: Should throw error
+      expect(() => {
+        (service as any).getWorkspaceFilePath(null);
+      }).toThrow("No workspace folder available for task file resolution");
+    });
+  });
 });
