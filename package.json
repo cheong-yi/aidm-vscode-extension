@@ -287,9 +287,8 @@
         {
           "id": "aidm-vscode-extension.tasks-list",
           "name": "Tasks",
-          "type": "tree",
-          "when": "workspaceFolderCount > 0",
-          "group": "taskmaster@1"
+          "type": "webview",
+          "when": "workspaceFolderCount > 0"
         }
       ]
     },

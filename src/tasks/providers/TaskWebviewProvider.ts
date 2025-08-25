@@ -81,12 +81,12 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
   /**
    * Constructor for TaskWebviewProvider
    * Task WV-007: Accept TasksDataService for data integration
-   * 
+   *
    * @param tasksDataService - TasksDataService instance for data retrieval and events
    */
   constructor(tasksDataService: TasksDataService) {
     this.tasksDataService = tasksDataService;
-    
+
     // Task WV-007: Setup event listeners but defer data loading until initializeData() called
     this.setupEventListeners();
   }
@@ -109,9 +109,14 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
       );
       this.eventDisposables.push(errorDisposable);
 
-      console.debug("TaskWebviewProvider: Event listeners connected successfully");
+      console.debug(
+        "TaskWebviewProvider: Event listeners connected successfully"
+      );
     } catch (error) {
-      console.error("TaskWebviewProvider: Failed to setup event listeners:", error);
+      console.error(
+        "TaskWebviewProvider: Failed to setup event listeners:",
+        error
+      );
       // Continue without automatic refresh - manual refresh still works
     }
   }
@@ -150,7 +155,7 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
         error
       );
       // Don't throw - allow the provider to continue with error state
-      await this.showErrorState('Failed to initialize task data');
+      await this.showErrorState("Failed to initialize task data");
     }
   }
 
@@ -161,17 +166,21 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
   private async loadAndDisplayTasks(): Promise<void> {
     try {
       if (!this._isDataInitialized) {
-        console.debug("TaskWebviewProvider: Data not initialized, skipping load");
+        console.debug(
+          "TaskWebviewProvider: Data not initialized, skipping load"
+        );
         return;
       }
 
       const tasks = await this.tasksDataService.getTasks();
       await this.updateWebviewContent(tasks);
-      
-      console.debug(`TaskWebviewProvider: Loaded and displayed ${tasks.length} tasks`);
+
+      console.debug(
+        `TaskWebviewProvider: Loaded and displayed ${tasks.length} tasks`
+      );
     } catch (error) {
-      console.error('TaskWebviewProvider: Failed to load tasks:', error);
-      await this.showErrorState('Failed to load tasks');
+      console.error("TaskWebviewProvider: Failed to load tasks:", error);
+      await this.showErrorState("Failed to load tasks");
     }
   }
 
@@ -181,7 +190,7 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
    */
   private async updateWebviewContent(tasks: Task[]): Promise<void> {
     if (!this._view) return;
-    
+
     this._view.webview.html = this.getHtmlContent(tasks);
   }
 
@@ -192,16 +201,21 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
   private handleTasksUpdated(tasks: Task[]): void {
     try {
       if (!this._isDataInitialized) {
-        console.debug("TaskWebviewProvider: Ignoring tasks update - not initialized");
+        console.debug(
+          "TaskWebviewProvider: Ignoring tasks update - not initialized"
+        );
         return;
       }
 
       console.debug("TaskWebviewProvider: Tasks updated, refreshing webview");
-      this.updateWebviewContent(tasks).catch(error => {
-        console.error('TaskWebviewProvider: Error updating webview content:', error);
+      this.updateWebviewContent(tasks).catch((error) => {
+        console.error(
+          "TaskWebviewProvider: Error updating webview content:",
+          error
+        );
       });
     } catch (error) {
-      console.error('TaskWebviewProvider: Error handling tasks update:', error);
+      console.error("TaskWebviewProvider: Error handling tasks update:", error);
     }
   }
 
@@ -211,20 +225,25 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
    */
   private handleServiceError(error: TaskErrorResponse): void {
     try {
-      console.warn('TaskWebviewProvider: Service error received:', {
+      console.warn("TaskWebviewProvider: Service error received:", {
         operation: error.operation,
         taskId: error.taskId,
-        userInstructions: error.userInstructions
+        userInstructions: error.userInstructions,
       });
 
       // Show error state in webview if data was initialized
       if (this._isDataInitialized) {
-        this.showErrorState(error.userInstructions || 'Service error occurred').catch(err => {
-          console.error('Error displaying service error:', err);
+        this.showErrorState(
+          error.userInstructions || "Service error occurred"
+        ).catch((err) => {
+          console.error("Error displaying service error:", err);
         });
       }
     } catch (error) {
-      console.error('TaskWebviewProvider: Error handling service error:', error);
+      console.error(
+        "TaskWebviewProvider: Error handling service error:",
+        error
+      );
     }
   }
 
@@ -234,7 +253,7 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
    */
   private async showErrorState(message: string): Promise<void> {
     if (!this._view) return;
-    
+
     this._view.webview.html = `<!DOCTYPE html>
 <html lang="en">
 <head>

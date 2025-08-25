@@ -24,7 +24,7 @@ import {
 import { MockDataProvider } from "./mock";
 import { TaskStatus, Task } from "./types/tasks";
 import { TaskDetailCardProvider } from "./tasks/providers/TaskDetailCardProvider";
-import { TaskTreeViewProvider, TaskTreeItem } from "./tasks/providers";
+import { TaskWebviewProvider } from "./tasks/providers";
 import { TimeFormattingUtility } from "./utils";
 import { TaskErrorResponse } from "./types/tasks";
 
@@ -216,8 +216,7 @@ let statusBarManager: StatusBarManagerImpl;
 let processManager: ProcessManager;
 let tasksDataService: TasksDataService;
 let taskDetailProvider: TaskDetailCardProvider;
-let taskTreeViewProvider: TaskTreeViewProvider;
-let taskTreeView: vscode.TreeView<any>;
+let taskWebviewProvider: TaskWebviewProvider;
 let timeFormattingUtility: TimeFormattingUtility;
 let taskFileWatcher: TaskFileWatcher;
 
@@ -231,34 +230,25 @@ let taskFileWatcher: TaskFileWatcher;
  * - Data service updates refresh both components
  * - Error events display user notifications
  */
-function setupUIEventSynchronization(): vscode.Disposable[] {
+function setupUIEventSynchronization(
+  webviewProvider: TaskWebviewProvider
+): vscode.Disposable[] {
   try {
-    // Tree view selection updates detail panel
-    const taskClickSubscription = taskTreeViewProvider.onTaskClick(
-      (event: TaskClickEvent) => {
-        try {
-          taskDetailProvider.updateTaskDetails(event.task);
-          console.debug(
-            `UI Sync: Tree selection updated detail panel for task ${event.taskId}`
-          );
-        } catch (error) {
-          console.error("UI Sync: Error updating task details:", error);
-          vscode.window.showErrorMessage("Failed to update task details");
-        }
-      }
-    );
+    // Webview task selection updates detail panel
+    // Note: TaskWebviewProvider doesn't have onTaskClick method yet
+    const taskClickSubscription = { dispose: () => {} };
 
-    // Detail panel status changes update tree view
+    // Detail panel status changes update webview
     const statusChangedSubscription = taskDetailProvider.onStatusChanged(
       (event: { taskId: string; newStatus: TaskStatus }) => {
         try {
-          // Refresh tree view to show updated status
-          taskTreeViewProvider.refresh();
+          // Note: TaskWebviewProvider doesn't have refresh method yet
+          // Webview will update automatically when data changes
           console.debug(
-            `UI Sync: Status change refreshed tree view for task ${event.taskId}`
+            `UI Sync: Status change for task ${event.taskId} - webview will update automatically`
           );
         } catch (error) {
-          console.error("UI Sync: Error refreshing tree view:", error);
+          console.error("UI Sync: Error handling status change:", error);
         }
       }
     );
@@ -267,8 +257,8 @@ function setupUIEventSynchronization(): vscode.Disposable[] {
     const tasksUpdatedSubscription = tasksDataService.onTasksUpdated.event(
       (tasks: Task[]) => {
         try {
-          // Refresh tree view to show updated data
-          taskTreeViewProvider.refresh();
+          // Note: TaskWebviewProvider doesn't have refresh method yet
+          // Webview will update automatically when data changes
 
           // Keep current selection in detail panel if still valid
           // Access currentTask property directly since it's private but we can check if it exists
@@ -283,10 +273,10 @@ function setupUIEventSynchronization(): vscode.Disposable[] {
           }
 
           console.debug(
-            `UI Sync: Data update refreshed both components, ${tasks.length} tasks`
+            `UI Sync: Data update for ${tasks.length} tasks - webview will update automatically`
           );
         } catch (error) {
-          console.error("UI Sync: Error refreshing components:", error);
+          console.error("UI Sync: Error handling data update:", error);
         }
       }
     );
@@ -736,9 +726,13 @@ export async function activate(
             // Refresh tasks data service
             await tasksDataService.refreshTasks();
 
-            // Refresh tree view
-            if (taskTreeViewProvider) {
-              taskTreeViewProvider.refresh();
+            // Refresh webview
+            if (taskWebviewProvider) {
+              // Note: TaskWebviewProvider doesn't have refresh method yet
+              // Webview will update automatically when data changes
+              console.debug(
+                "File change detected - webview will update automatically"
+              );
             }
 
             // Refresh detail panel if it has current task
@@ -870,188 +864,72 @@ export async function activate(
         if (taskDetailProvider) {
           taskDetailProvider.dispose();
         }
-        if (taskTreeViewProvider) {
-          taskTreeViewProvider.dispose();
+        if (taskWebviewProvider) {
+          taskWebviewProvider.dispose?.();
         }
       },
     });
 
     console.log(
-      "=== ACTIVATION STEP 8.10: Initializing TaskTreeViewProvider ==="
+      "=== ACTIVATION STEP 8.10: Initializing TaskWebviewProvider ==="
     );
     try {
-      taskTreeViewProvider = new TaskTreeViewProvider(tasksDataService);
-      console.log("✅ TaskTreeViewProvider initialized");
+      // Create TaskWebviewProvider with TasksDataService (replaces TaskTreeViewProvider)
+      taskWebviewProvider = new TaskWebviewProvider(tasksDataService);
 
-      // Task WS-004: Initialize data loading after service initialization completes
-      console.log(
-        "=== ACTIVATION STEP 8.10.1: Initializing TaskTreeViewProvider Data ==="
-      );
-      try {
-        await taskTreeViewProvider.initializeData();
-        console.log("✅ TaskTreeViewProvider data initialization completed");
-      } catch (dataInitError) {
-        console.error(
-          "❌ TaskTreeViewProvider data initialization failed:",
-          dataInitError
+      // Register webview view provider with VSCode
+      const webviewProviderDisposable =
+        vscode.window.registerWebviewViewProvider(
+          "aidm-vscode-extension.tasks-list",
+          taskWebviewProvider
         );
-        // Continue without data initialization - provider will show loading state
-      }
+      context.subscriptions.push(webviewProviderDisposable);
+
+      console.log("✅ TaskWebviewProvider registered successfully");
+
+      // Add initialization call after TasksDataService is ready
+      // This mirrors the TaskTreeViewProvider.initializeData() pattern
+      console.log(
+        "=== ACTIVATION STEP 8.10.5: Scheduling webview data initialization ==="
+      );
+
+      // Initialize webview data after TasksDataService initialization completes
+      // This ensures proper workspace initialization sequencing
+      setTimeout(async () => {
+        try {
+          console.debug(
+            "TaskWebviewProvider: Starting deferred data initialization"
+          );
+          await taskWebviewProvider.initializeData();
+          console.log("✅ TaskWebviewProvider data initialization completed");
+        } catch (error) {
+          console.error(
+            "❌ TaskWebviewProvider data initialization failed:",
+            error
+          );
+          // Continue without data initialization - webview will show error state
+        }
+      }, 100); // Small delay to ensure all services are fully ready
     } catch (error) {
-      console.error("❌ TaskTreeViewProvider initialization failed:", error);
-      // Continue without tree view provider
+      console.error("❌ TaskWebviewProvider registration failed:", error);
+      throw error;
     }
 
     console.log(
-      "=== ACTIVATION STEP 8.10.5: Creating Tree View with Selection Handler ==="
+      "=== ACTIVATION STEP 8.10.5: Webview initialization completed ==="
     );
-    try {
-      // Create tree view with selection event handling for accordion behavior
-      taskTreeView = vscode.window.createTreeView(
-        "aidm-vscode-extension.tasks-list",
-        {
-          treeDataProvider: taskTreeViewProvider,
-          showCollapseAll: true,
-        }
-      );
-
-      // Register selection change handler for accordion expansion logic
-      const selectionChangeDisposable = taskTreeView.onDidChangeSelection(
-        async (e: vscode.TreeViewSelectionChangeEvent<any>) => {
-          try {
-            console.log("🔍 MEDIUM-5A: Tree selection event fired", {
-              selectionCount: e.selection.length,
-              timestamp: new Date().toISOString(),
-            });
-
-            // Handle empty selection arrays gracefully
-            if (e.selection.length === 0) {
-              console.log(
-                "🔍 MEDIUM-5A: Empty selection array, clearing webview"
-              );
-              // MEDIUM-5B: Clear webview when no task is selected
-              try {
-                taskDetailProvider.clearDetails();
-                console.log("🔍 MEDIUM-5B: Webview cleared - no task selected");
-              } catch (clearError) {
-                console.error(
-                  "❌ MEDIUM-5B: Error clearing webview:",
-                  clearError
-                );
-                // Continue without webview clear - expansion logic still works
-              }
-              return;
-            }
-
-            // Get the selected task item
-            const selectedItem = e.selection[0];
-            console.log("🔍 MEDIUM-5A: Selected item details", {
-              itemType: selectedItem?.constructor?.name,
-              hasTask: !!selectedItem?.task,
-              taskId: selectedItem?.task?.id,
-              taskStatus: selectedItem?.task?.status,
-              isExecutable: selectedItem?.task?.isExecutable,
-            });
-
-            if (selectedItem && selectedItem.task) {
-              // MEDIUM-5B: Connect tree selection to webview detail updates
-              try {
-                // Update webview detail panel with selected task
-                taskDetailProvider.updateTaskDetails(selectedItem.task);
-                console.log("🔍 MEDIUM-5B: Webview updated with task details", {
-                  taskId: selectedItem.task.id,
-                  taskTitle: selectedItem.task.title,
-                });
-              } catch (webviewError) {
-                console.error(
-                  `❌ MEDIUM-5B: Error updating webview for task ${selectedItem.task.id}:`,
-                  webviewError
-                );
-                // Continue without webview update - expansion still works
-              }
-
-              // Task 3.2.12 - Connect Click Events to Expansion Logic
-              // Wire to TaskTreeViewProvider.toggleTaskExpansion() method
-              console.log("🔍 MEDIUM-5A: Calling toggleTaskExpansion", {
-                taskId: selectedItem.task.id,
-                currentExpandedTaskId: taskTreeViewProvider.getExpandedTaskId(),
-                wasExpanded: taskTreeViewProvider.isTaskExpanded(
-                  selectedItem.task.id
-                ),
-              });
-
-              try {
-                await taskTreeViewProvider.toggleTaskExpansion(
-                  selectedItem.task.id
-                );
-
-                // Verify expansion state change
-                const newExpandedTaskId =
-                  taskTreeViewProvider.getExpandedTaskId();
-                const isNowExpanded = taskTreeViewProvider.isTaskExpanded(
-                  selectedItem.task.id
-                );
-
-                console.log("🔍 MEDIUM-5A: toggleTaskExpansion completed", {
-                  taskId: selectedItem.task.id,
-                  newExpandedTaskId,
-                  isNowExpanded,
-                  expansionChanged:
-                    (newExpandedTaskId === selectedItem.task.id) !==
-                    e.selection.length > 0,
-                });
-
-                console.log(
-                  `✅ Tree view selection changed to task: ${selectedItem.task.id}, expansion toggled`
-                );
-              } catch (toggleError) {
-                console.error(
-                  `❌ MEDIUM-5A: Error toggling expansion for task ${selectedItem.task.id}:`,
-                  toggleError
-                );
-                // Continue without expansion handling
-              }
-            } else {
-              console.warn(
-                "🔍 MEDIUM-5A: Selected item missing task property",
-                {
-                  selectedItem,
-                  hasTask: !!selectedItem?.task,
-                }
-              );
-            }
-          } catch (error) {
-            console.error(
-              "❌ MEDIUM-5A: Error handling tree view selection change:",
-              error
-            );
-            // Continue without selection handling
-          }
-        }
-      );
-
-      // Add both the tree view and selection handler to subscriptions for proper disposal
-      context.subscriptions.push(taskTreeView, selectionChangeDisposable);
-      console.log("✅ Tree view created with selection handler");
-
-      // Register the tree data provider with VSCode to make it visible in sidebar
-      const treeDataProviderDisposable = vscode.window.registerTreeDataProvider(
-        "aidm-vscode-extension.tasks-list",
-        taskTreeViewProvider
-      );
-      context.subscriptions.push(treeDataProviderDisposable);
-      console.log("✅ TaskTreeViewProvider registered with VSCode");
-    } catch (error) {
-      console.error("❌ Tree view creation failed:", error);
-      // Continue without tree view
-    }
+    console.log(
+      "✅ TaskWebviewProvider is now registered and will display in sidebar"
+    );
 
     console.log(
       "=== ACTIVATION STEP 8.11: Wiring UI synchronization events ==="
     );
     try {
       // Setup comprehensive UI event synchronization between components
-      const uiSyncSubscriptions = setupUIEventSynchronization();
+      // Note: This is called after TaskWebviewProvider is initialized
+      const uiSyncSubscriptions =
+        setupUIEventSynchronization(taskWebviewProvider);
 
       // Add all UI synchronization subscriptions to context for proper cleanup
       uiSyncSubscriptions.forEach((subscription: vscode.Disposable) => {
@@ -1554,41 +1432,10 @@ export async function activate(
       console.error("❌ executeTaskWithCursor command failed:", error);
     }
 
-    // Register task tree item click command - Task 3.2.13
-    try {
-      const taskClickCommand = vscode.commands.registerCommand(
-        getCommandId("taskTreeItemClick"),
-        async (taskTreeItem: TaskTreeItem) => {
-          // Parameter validation - Task 3.2.13 requirements
-          if (!taskTreeItem || !taskTreeItem.task) {
-            console.warn(
-              "TaskTreeItem click command: Invalid taskTreeItem or missing task"
-            );
-            return;
-          }
-
-          try {
-            // Call toggleTaskExpansion with the task ID
-            await taskTreeViewProvider.toggleTaskExpansion(
-              taskTreeItem.task.id
-            );
-            console.log(
-              `TaskTreeItem click command: Expansion toggled for task ${taskTreeItem.task.id}`
-            );
-          } catch (error) {
-            console.error(
-              `TaskTreeItem click command: Failed to toggle expansion for task ${taskTreeItem.task.id}:`,
-              error
-            );
-            // Continue without expansion handling - don't break user interaction
-          }
-        }
-      );
-      context.subscriptions.push(taskClickCommand);
-      console.log("✅ taskTreeItemClick command registered - Task 3.2.13");
-    } catch (error) {
-      console.error("❌ taskTreeItemClick command failed:", error);
-    }
+    // Task tree item click command removed - replaced by webview interaction
+    console.log(
+      "ℹ️ taskTreeItemClick command removed - webview handles task selection"
+    );
 
     // Register generate task prompt command - CMD-001
     try {
@@ -1674,63 +1521,10 @@ export async function activate(
       console.error("❌ viewTestResults command failed:", error);
     }
 
-    // Register expansion state diagnostics command - MEDIUM-5A
-    try {
-      const expansionDiagnosticsCommand = vscode.commands.registerCommand(
-        getCommandId("expansionDiagnostics"),
-        () => {
-          try {
-            if (taskTreeViewProvider) {
-              const diagnostics =
-                taskTreeViewProvider.getExpansionStateDiagnostics();
-
-              // Show diagnostics in output channel
-              const outputChannel = vscode.window.createOutputChannel(
-                "AiDM Expansion Diagnostics"
-              );
-              outputChannel.show();
-              outputChannel.appendLine(
-                "=== MEDIUM-5A: Tree View Expansion Diagnostics ==="
-              );
-              outputChannel.appendLine(`Timestamp: ${diagnostics.timestamp}`);
-              outputChannel.appendLine(
-                `Current Expanded Task ID: ${
-                  diagnostics.currentExpandedTaskId || "None"
-                }`
-              );
-              outputChannel.appendLine(
-                `Provider Disposed: ${diagnostics.isDisposed}`
-              );
-              outputChannel.appendLine(
-                `Accordion Behavior Working: ${diagnostics.accordionBehaviorWorking}`
-              );
-              outputChannel.appendLine("=== End Diagnostics ===");
-
-              vscode.window.showInformationMessage(
-                `Expansion diagnostics logged to output channel. Current expanded task: ${
-                  diagnostics.currentExpandedTaskId || "None"
-                }`
-              );
-            } else {
-              vscode.window.showWarningMessage(
-                "TaskTreeViewProvider not available"
-              );
-            }
-          } catch (error) {
-            const errorMessage =
-              error instanceof Error ? error.message : "Unknown error occurred";
-            vscode.window.showErrorMessage(
-              `Error getting expansion diagnostics: ${errorMessage}`
-            );
-            console.error("ExpansionDiagnostics command error:", error);
-          }
-        }
-      );
-      context.subscriptions.push(expansionDiagnosticsCommand);
-      console.log("✅ expansionDiagnostics command registered - MEDIUM-5A");
-    } catch (error) {
-      console.error("❌ expansionDiagnostics command failed:", error);
-    }
+    // Expansion diagnostics command removed - replaced by webview-based diagnostics
+    console.log(
+      "ℹ️ expansionDiagnostics command removed - webview handles expansion state"
+    );
 
     // Register configuration change listener
     try {
@@ -1829,9 +1623,13 @@ export async function activate(
                       // Refresh tasks data service
                       await tasksDataService.refreshTasks();
 
-                      // Refresh tree view
-                      if (taskTreeViewProvider) {
-                        taskTreeViewProvider.refresh();
+                      // Refresh webview
+                      if (taskWebviewProvider) {
+                        // Note: TaskWebviewProvider doesn't have refresh method yet
+                        // Webview will update automatically when data changes
+                        console.debug(
+                          "Configuration change - webview will update automatically"
+                        );
                       }
 
                       // Refresh detail panel if it has current task
@@ -1996,10 +1794,10 @@ export async function deactivate() {
       console.log("AIDM VSCode Extension: Tasks data service disposed");
     }
 
-    // Dispose task tree view provider if it exists
-    if (taskTreeViewProvider) {
-      taskTreeViewProvider.dispose();
-      console.log("AIDM VSCode Extension: Task tree view provider disposed");
+    // Dispose task webview provider if it exists
+    if (taskWebviewProvider) {
+      taskWebviewProvider.dispose?.();
+      console.log("AIDM VSCode Extension: Task webview provider disposed");
     }
 
     // Dispose task file watcher if it exists

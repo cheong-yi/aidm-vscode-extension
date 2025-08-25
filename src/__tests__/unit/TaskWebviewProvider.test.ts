@@ -78,19 +78,25 @@ describe("TaskWebviewProvider", () => {
    * Helper function to setup webview and initialize data for testing
    * This ensures the webview is properly configured and data is loaded
    */
-  async function setupWebviewAndInitializeData(tasks: Task[] = []): Promise<void> {
+  async function setupWebviewAndInitializeData(
+    tasks: Task[] = []
+  ): Promise<void> {
     // Mock the getTasks method to return the provided tasks
     mockTasksDataService.getTasks.mockResolvedValue(tasks);
-    
+
     // Create a proper webview view with webview property
     const mockWebviewViewWithWebview = {
       ...mockWebviewView,
       webview: mockWebview,
     } as unknown as vscode.WebviewView;
-    
+
     // Resolve the webview view to set it up
-    provider.resolveWebviewView(mockWebviewViewWithWebview, mockContext, mockToken);
-    
+    provider.resolveWebviewView(
+      mockWebviewViewWithWebview,
+      mockContext,
+      mockToken
+    );
+
     // Initialize data after webview is set up
     await provider.initializeData();
   }
@@ -140,7 +146,7 @@ describe("TaskWebviewProvider", () => {
     it("should set HTML content", async () => {
       // Setup webview and initialize data to show full HTML content
       await setupWebviewAndInitializeData();
-      
+
       expect(mockWebview.html).toContain("<!DOCTYPE html>");
       expect(mockWebview.html).toContain("Taskmaster Dashboard");
       expect(mockWebview.html).toContain("No tasks available");
@@ -158,9 +164,9 @@ describe("TaskWebviewProvider", () => {
     it("should return valid HTML structure", async () => {
       // Setup webview and initialize data to show full HTML
       await setupWebviewAndInitializeData();
-      
+
       const html = (provider as any).getHtmlContent();
-      
+
       expect(html).toMatch(/<!DOCTYPE html>/);
       expect(html).toMatch(/<html lang="en">/);
       expect(html).toMatch(/<head>/);
@@ -172,9 +178,11 @@ describe("TaskWebviewProvider", () => {
 
     it("should include proper meta tags", () => {
       const html = (provider as any).getHtmlContent();
-      
+
       expect(html).toMatch(/<meta charset="UTF-8">/);
-      expect(html).toMatch(/<meta name="viewport" content="width=device-width, initial-scale=1.0">/);
+      expect(html).toMatch(
+        /<meta name="viewport" content="width=device-width, initial-scale=1.0">/
+      );
     });
   });
 
@@ -195,9 +203,9 @@ describe("TaskWebviewProvider", () => {
 
       // Setup webview and initialize data with the mock task
       await setupWebviewAndInitializeData([mockTask]);
-      
+
       const html = (provider as any).getHtmlContent([mockTask]);
-      
+
       // Verify task item structure
       expect(html).toContain('class="task-item"');
       expect(html).toContain('data-task-id="test-1"');
@@ -223,9 +231,9 @@ describe("TaskWebviewProvider", () => {
 
       // Setup webview and initialize data with the mock task
       await setupWebviewAndInitializeData([mockTask]);
-      
+
       const html = (provider as any).getHtmlContent([mockTask]);
-      
+
       // Verify executable task indicators
       expect(html).toContain("executable");
       expect(html).toContain("🤖");
@@ -248,16 +256,16 @@ describe("TaskWebviewProvider", () => {
 
       // Setup webview and initialize data with the mock task
       await setupWebviewAndInitializeData([mockTask]);
-      
+
       const html = (provider as any).getHtmlContent([mockTask]);
-      
+
       // Verify non-executable task indicators
       // Note: The word "executable" may appear in CSS, but the task header should not have the class
       expect(html).not.toContain('class="task-header executable"');
       expect(html).not.toContain("🤖");
       expect(html).toContain("in progress");
       expect(html).toContain("in-progress");
-      
+
       // Verify the task header is generated correctly without executable styling
       expect(html).toContain('class="task-header"');
       expect(html).toContain("Non-Executable Task");
@@ -279,14 +287,14 @@ describe("TaskWebviewProvider", () => {
 
       // Setup webview and initialize data with the mock task
       await setupWebviewAndInitializeData([mockTask]);
-      
+
       const html = (provider as any).getHtmlContent([mockTask]);
-      
+
       // Should not show executable indicators when isExecutable is undefined
       // Note: The word "executable" may appear in CSS, but the task header should not have the class
       expect(html).not.toContain('class="task-header executable"');
       expect(html).not.toContain("🤖");
-      
+
       // Verify the task header is generated correctly without executable styling
       expect(html).toContain('class="task-header"');
       expect(html).toContain("Undefined Executable Task");
@@ -325,9 +333,9 @@ describe("TaskWebviewProvider", () => {
 
       // Setup webview and initialize data with the mock task
       await setupWebviewAndInitializeData([mockTask]);
-      
+
       const html = (provider as any).getHtmlContent([mockTask]);
-      
+
       // Verify task details structure
       expect(html).toContain('class="task-details"');
       expect(html).toContain('class="task-description"');
@@ -363,9 +371,9 @@ describe("TaskWebviewProvider", () => {
 
       // Setup webview and initialize data with the mock task
       await setupWebviewAndInitializeData([mockTask]);
-      
+
       const html = (provider as any).getHtmlContent([mockTask]);
-      
+
       // Verify no-tests message is displayed
       expect(html).toContain('class="no-tests"');
       expect(html).toContain("No tests available yet");
@@ -491,8 +499,12 @@ describe("TaskWebviewProvider", () => {
       } as unknown as vscode.WebviewView;
 
       // Resolve the webview view to set up message handling
-      provider.resolveWebviewView(mockWebviewViewWithMessageHandling, mockContext, mockToken);
-      
+      provider.resolveWebviewView(
+        mockWebviewViewWithMessageHandling,
+        mockContext,
+        mockToken
+      );
+
       // Verify message handling was set up
       expect(
         mockWebviewWithMessageHandling.onDidReceiveMessage
@@ -514,9 +526,9 @@ describe("TaskWebviewProvider", () => {
     it("should include accordion behavior JavaScript", async () => {
       // Setup webview and initialize data to show full HTML
       await setupWebviewAndInitializeData();
-      
+
       const html = (provider as any).getHtmlContent();
-      
+
       // Verify accordion behavior JavaScript is included
       expect(html).toContain("let expandedTaskId = null");
       expect(html).toContain("function toggleTask(taskElement)");
@@ -529,9 +541,9 @@ describe("TaskWebviewProvider", () => {
     it("should include message sending JavaScript", async () => {
       // Setup webview and initialize data to show full HTML
       await setupWebviewAndInitializeData();
-      
+
       const html = (provider as any).getHtmlContent();
-      
+
       // Verify VSCode API integration
       expect(html).toContain("const vscode = acquireVsCodeApi()");
       expect(html).toContain("function sendMessage(type, payload)");
@@ -541,9 +553,9 @@ describe("TaskWebviewProvider", () => {
     it("should include action button event handlers", async () => {
       // Setup webview and initialize data to show full HTML
       await setupWebviewAndInitializeData();
-      
+
       const html = (provider as any).getHtmlContent();
-      
+
       // Verify event listener for action buttons
       expect(html).toContain("document.addEventListener('click'");
       expect(html).toContain("event.target.classList.contains('action-btn')");
@@ -553,9 +565,9 @@ describe("TaskWebviewProvider", () => {
     it("should include failures toggle functionality", async () => {
       // Setup webview and initialize data to show full HTML
       await setupWebviewAndInitializeData();
-      
+
       const html = (provider as any).getHtmlContent();
-      
+
       // Verify failures toggle function
       expect(html).toContain("function toggleFailures(failuresSection)");
       expect(html).toContain("failuresSection.classList.toggle('expanded')");
@@ -564,9 +576,9 @@ describe("TaskWebviewProvider", () => {
     it("should generate valid JavaScript syntax", async () => {
       // Setup webview and initialize data to show full HTML
       await setupWebviewAndInitializeData();
-      
+
       const html = (provider as any).getHtmlContent();
-      
+
       // Verify script tags are properly formatted
       expect(html).toContain("<script>");
       expect(html).toContain("</script>");
@@ -580,23 +592,25 @@ describe("TaskWebviewProvider", () => {
     it("should implement accordion behavior correctly", async () => {
       // Setup webview and initialize data to show full HTML
       await setupWebviewAndInitializeData();
-      
+
       const html = (provider as any).getHtmlContent();
-      
+
       // Verify accordion logic prevents multiple expanded tasks
       expect(html).toContain(
         "// Collapse all tasks first (accordion behavior)"
       );
-      expect(html).toContain("document.querySelectorAll('.task-item.expanded')");
+      expect(html).toContain(
+        "document.querySelectorAll('.task-item.expanded')"
+      );
       expect(html).toContain("item.classList.remove('expanded')");
     });
 
     it("should send messages to extension on user actions", async () => {
       // Setup webview and initialize data to show full HTML
       await setupWebviewAndInitializeData();
-      
+
       const html = (provider as any).getHtmlContent();
-      
+
       // Verify message sending on accordion toggle
       expect(html).toContain(
         "sendMessage('toggleAccordion', { taskId: taskId, expanded: !isCurrentlyExpanded })"
