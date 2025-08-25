@@ -12,7 +12,7 @@
 
 import { EventEmitter, workspace } from "vscode";
 import axios, { AxiosInstance } from "axios";
-import * as path from "path";
+import { posix } from "path";
 import {
   Task,
   TaskStatus,
@@ -244,8 +244,19 @@ export class TasksDataService implements ITasksDataService {
         console.log("[TasksDataService] === END WORKSPACE DIAGNOSTIC ===");
 
         const configuredUri = this.getConfiguredFileUri();
-        const fileUri =
-          configuredUri || vscode.Uri.file(this.getWorkspaceFilePath(null));
+        const fallbackUri = await this.getTasksFileUri("tasks.json");
+        const fileUri = configuredUri || fallbackUri;
+
+        if (!fileUri) {
+          console.warn(
+            "[TasksDataService] No file path available, falling back to mock data"
+          );
+          const mockTasks = await this.mockDataProvider.getTasks();
+          console.log(
+            `[TasksDataService] Retrieved ${mockTasks.length} tasks from mock data provider`
+          );
+          return mockTasks;
+        }
 
         try {
           const parsedTasks = await this.jsonTaskParser.parseTasksFromFile(
@@ -747,16 +758,56 @@ export class TasksDataService implements ITasksDataService {
     }
   }
 
-  // Task 6.1.3: Replace hardcoded file path fallback with workspace-relative path resolution
-  private getWorkspaceFilePath(configuredPath: string | null): string {
-    const workspaceRoot = workspace.workspaceFolders?.[0]?.uri.fsPath;
-    if (!workspaceRoot) {
-      throw new Error("No workspace folder available for task file resolution");
+  // WS-001: Replace custom path logic with VSCode APIs
+  private async getTasksFileUri(
+    configuredPath: string
+  ): Promise<vscode.Uri | null> {
+    const workspaceFolders = vscode.workspace.workspaceFolders;
+
+    if (!workspaceFolders || workspaceFolders.length === 0) {
+      return null; // No workspace available
     }
 
-    // Fix: Use nullish coalescing operator to handle null/undefined correctly
-    const fileName = configuredPath ?? "tasks.json";
-    return path.join(workspaceRoot, fileName);
+    const workspaceFolder = workspaceFolders[0];
+    let fileUri: vscode.Uri;
+
+    if (posix.isAbsolute(configuredPath)) {
+      fileUri = vscode.Uri.file(configuredPath);
+    } else {
+      // CORRECTED: Use proper URI construction per VSCode API
+      const filePath = posix.join(workspaceFolder.uri.path, configuredPath);
+      fileUri = workspaceFolder.uri.with({ path: filePath });
+    }
+
+    // Log virtual workspace detection
+    if (fileUri.scheme !== "file") {
+      console.warn(
+        "Virtual workspace detected - using VSCode filesystem API only"
+      );
+    }
+
+    // CORRECTED: Use VSCode filesystem API properly with error handling
+    try {
+      await vscode.workspace.fs.stat(fileUri);
+      return fileUri;
+    } catch (error: any) {
+      if (error.code === "FileNotFound") {
+        return null; // File doesn't exist - acceptable condition
+      }
+      // Re-throw other errors (permissions, network issues, etc.)
+      throw error;
+    }
+  }
+
+  // ADDITION: Support resource-scoped configuration
+  private getResourceScopedConfig(
+    workspaceFolder: vscode.WorkspaceFolder
+  ): string {
+    const config = vscode.workspace.getConfiguration(
+      "aidmVscodeExtension",
+      workspaceFolder.uri
+    );
+    return config.get<string>("tasks.filePath", "tasks.json");
   }
 
   private processLoadedTasks(tasksData: any): void {

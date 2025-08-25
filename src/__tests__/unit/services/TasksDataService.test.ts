@@ -51,6 +51,14 @@ describe("TasksDataService", () => {
     const vscode = require("vscode");
     vscode.workspace.getConfiguration = jest.fn().mockReturnValue(mockConfig);
 
+    // Mock VSCode workspace and filesystem APIs
+    Object.defineProperty(vscode.workspace, "workspaceFolders", {
+      value: [],
+      writable: true,
+    });
+    vscode.workspace.fs = { stat: jest.fn() };
+    vscode.Uri.file = jest.fn();
+
     // Create mock TaskStatusManager instance
     mockTaskStatusManager = {
       getTasks: jest.fn(),
@@ -1978,40 +1986,142 @@ describe("TasksDataService", () => {
     );
   });
 
-  // PATH-FIX-001: Test getWorkspaceFilePath method null parameter handling
-  describe("getWorkspaceFilePath", () => {
-    it("should handle null and relative path parameters correctly", () => {
-      // Arrange: Mock workspace folder
-      const mockWorkspaceFolder = { uri: { fsPath: "C:\\workspace" } };
+  // WS-001: Test getTasksFileUri method using VSCode APIs
+  describe("getTasksFileUri", () => {
+    it("should resolve tasks file URI using VSCode APIs with proper error handling", async () => {
+      // Arrange
+      const mockWorkspaceFolder = {
+        uri: {
+          fsPath: "C:\\workspace",
+          path: "/c:/workspace",
+          scheme: "file",
+          with: jest.fn().mockReturnValue({
+            scheme: "file",
+            path: "/c:/workspace/tasks.json",
+          }),
+        },
+      };
       const vscode = require("vscode");
       vscode.workspace.workspaceFolders = [mockWorkspaceFolder];
 
-      // Test null parameter (fallback scenario)
-      const resultNull = (service as any).getWorkspaceFilePath(null);
-      expect(resultNull).toBe("C:\\workspace\\tasks.json");
+      // Configure mocks for this test
+      vscode.workspace.fs.stat.mockResolvedValue({});
+      vscode.Uri.file.mockReturnValue({
+        scheme: "file",
+        path: "/c:/workspace/tasks.json",
+      });
 
-      // Test configured relative path (your settings scenario)
-      const resultConfigured = (service as any).getWorkspaceFilePath(
-        "tasks.json"
-      );
-      expect(resultConfigured).toBe("C:\\workspace\\tasks.json");
+      // Act
+      const fileUri = await (service as any).getTasksFileUri("tasks.json");
 
-      // Test path with leading separators (edge case)
-      const resultLeadingSep = (service as any).getWorkspaceFilePath(
-        "\\tasks.json"
-      );
-      expect(resultLeadingSep).toBe("C:\\workspace\\tasks.json");
+      // Assert
+      expect(fileUri).toBeDefined();
+      expect(fileUri.scheme).toMatch(/^(file|vscode-vfs)$/); // Support virtual workspaces
     });
 
-    it("should throw error when no workspace folder is available", () => {
-      // Arrange: Mock no workspace folder
+    it("should handle FileNotFound without throwing", async () => {
+      // Arrange
+      const mockWorkspaceFolder = {
+        uri: {
+          fsPath: "C:\\workspace",
+          path: "/c:/workspace",
+          scheme: "file",
+          with: jest.fn().mockReturnValue({
+            scheme: "file",
+            path: "/c:/workspace/nonexistent.json",
+          }),
+        },
+      };
+      const vscode = require("vscode");
+      vscode.workspace.workspaceFolders = [mockWorkspaceFolder];
+
+      // Configure mocks for this test
+      const fileNotFoundError = new Error("File not found");
+      (fileNotFoundError as any).code = "FileNotFound";
+      vscode.workspace.fs.stat.mockRejectedValue(fileNotFoundError);
+
+      // Act
+      const fileUri = await (service as any).getTasksFileUri(
+        "nonexistent.json"
+      );
+
+      // Assert
+      expect(fileUri).toBeNull();
+    });
+
+    it("should handle virtual workspace URI schemes correctly", async () => {
+      // Arrange
+      const mockWorkspaceFolder = {
+        uri: {
+          fsPath: "C:\\workspace",
+          path: "/c:/workspace",
+          scheme: "vscode-vfs",
+          with: jest.fn().mockReturnValue({
+            scheme: "vscode-vfs",
+            path: "/c:/workspace/tasks.json",
+          }),
+        },
+      };
+      const vscode = require("vscode");
+      vscode.workspace.workspaceFolders = [mockWorkspaceFolder];
+      vscode.workspace.fs.stat.mockResolvedValue({});
+
+      // Spy on console.warn
+      const consoleSpy = jest
+        .spyOn(console, "warn")
+        .mockImplementation(() => {});
+
+      // Act
+      await (service as any).getTasksFileUri("tasks.json");
+
+      // Assert
+      expect(consoleSpy).toHaveBeenCalledWith(
+        "Virtual workspace detected - using VSCode filesystem API only"
+      );
+
+      // Cleanup
+      consoleSpy.mockRestore();
+    });
+
+    it("should return null when no workspace folder is available", async () => {
+      // Arrange
       const vscode = require("vscode");
       vscode.workspace.workspaceFolders = undefined;
 
-      // Act & Assert: Should throw error
-      expect(() => {
-        (service as any).getWorkspaceFilePath(null);
-      }).toThrow("No workspace folder available for task file resolution");
+      // Act
+      const fileUri = await (service as any).getTasksFileUri("tasks.json");
+
+      // Assert
+      expect(fileUri).toBeNull();
+    });
+
+    it("should handle absolute paths correctly", async () => {
+      // Arrange
+      const mockWorkspaceFolder = {
+        uri: {
+          fsPath: "C:\\workspace",
+          path: "/c:/workspace",
+          scheme: "file",
+        },
+      };
+      const vscode = require("vscode");
+      vscode.workspace.workspaceFolders = [mockWorkspaceFolder];
+      vscode.workspace.fs.stat.mockResolvedValue({});
+
+      // Configure mock for absolute path test
+      vscode.Uri.file.mockReturnValue({
+        scheme: "file",
+        path: "/absolute/path/tasks.json",
+      });
+
+      // Act
+      const fileUri = await (service as any).getTasksFileUri(
+        "/absolute/path/tasks.json"
+      );
+
+      // Assert
+      expect(fileUri).toBeDefined();
+      expect(vscode.Uri.file).toHaveBeenCalledWith("/absolute/path/tasks.json");
     });
   });
 
