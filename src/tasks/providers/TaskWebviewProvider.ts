@@ -159,6 +159,7 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
    * Mirrors webview deferred initialization pattern
    * Task WV-001: Workspace-aware data initialization
    * Task WV-007: Load real data from TasksDataService after initialization
+   * Task API-4: Load accordion state from VSCode Memento and setup event listeners
    *
    * @returns Promise that resolves when data initialization is complete
    */
@@ -176,11 +177,15 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
       // Mark data as initialized
       this._isDataInitialized = true;
 
-      // Load state from storage
-      const expandedTaskId = await this.loadWebviewState();
-      this.currentExpandedTaskId = expandedTaskId;
+      // Load accordion state from VSCode workspace storage
+      this.currentExpandedTaskId = await this.loadWebviewState();
 
-      // Now it's safe to load initial data
+      // Setup event listeners now that service is initialized
+      if (this.eventDisposables.length === 0) {
+        this.setupEventListeners();
+      }
+
+      // Load and display tasks
       await this.loadAndDisplayTasks();
 
       console.debug(
@@ -224,11 +229,25 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
   /**
    * Update webview HTML content with task data
    * Task WV-007: Update webview with real task data
+   * Task API-4: Restore accordion state after content updates
    */
   private async updateWebviewContent(tasks: Task[]): Promise<void> {
     if (!this._view) return;
 
+    // Update webview HTML content
     this._view.webview.html = this.getHtmlContent(tasks);
+
+    // Restore accordion state after content loads
+    if (this.currentExpandedTaskId) {
+      // Small delay to ensure HTML is rendered before state restoration
+      setTimeout(() => {
+        this.restoreAccordionState(this.currentExpandedTaskId!);
+      }, 100);
+    }
+
+    console.debug(
+      `TaskWebviewProvider: Content updated with ${tasks.length} tasks, expanded: ${this.currentExpandedTaskId}`
+    );
   }
 
   /**
@@ -380,6 +399,7 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
   /**
    * Handle accordion toggle with state persistence
    * Task WV-009: Update both memory and persistent state on user interaction
+   * Task API-4: Save state to VSCode workspace storage
    */
   private async handleAccordionToggle(taskId: string): Promise<void> {
     try {
@@ -395,11 +415,12 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
         console.debug("TaskWebviewProvider: Task expanded:", taskId);
       }
 
-      // Persist state
+      // Save state to VSCode workspace storage
       await this.saveWebviewState(this.currentExpandedTaskId);
 
-      // Update webview display
-      await this.updateAccordionState(taskId, !wasExpanded);
+      console.debug(
+        `TaskWebviewProvider: Accordion toggled and state saved: ${taskId}`
+      );
     } catch (error) {
       console.error(
         "TaskWebviewProvider: Error handling accordion toggle:",
@@ -433,6 +454,33 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
     } catch (error) {
       console.error(
         "TaskWebviewProvider: Error updating accordion state:",
+        error
+      );
+    }
+  }
+
+  /**
+   * Restore accordion state after webview content updates
+   * Task API-4: Send state restoration message to webview JavaScript
+   *
+   * @param expandedTaskId - The task ID to restore as expanded
+   */
+  private restoreAccordionState(expandedTaskId: string): void {
+    if (!this._view || !expandedTaskId) return;
+
+    try {
+      // Send message to webview to restore accordion state
+      this._view.webview.postMessage({
+        type: "restoreState",
+        expandedTaskId: expandedTaskId,
+      });
+
+      console.debug(
+        `TaskWebviewProvider: Accordion state restoration sent: ${expandedTaskId}`
+      );
+    } catch (error) {
+      console.warn(
+        "TaskWebviewProvider: Failed to restore accordion state:",
         error
       );
     }
@@ -1428,6 +1476,9 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
           break;
         case "toggleAccordion":
           this.handleToggleAccordion(message.taskId);
+          break;
+        case "restoreState":
+          // This message is sent TO the webview, so no handler needed here
           break;
 
         default:
