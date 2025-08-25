@@ -290,6 +290,12 @@
     "webviewViews": {
       "taskmaster": [
         {
+          "id": "aidm-vscode-extension.tasks-list",
+          "name": "Tasks",
+          "type": "webview",
+          "when": "workspaceFolderCount > 0"
+        },
+        {
           "id": "aidm-vscode-extension.task-details",
           "name": "Task Details",
           "type": "webview",
