@@ -19,7 +19,6 @@ import {
   TasksDataService,
   JSONTaskParser,
   TaskStatusManager,
-  TaskFileWatcher,
 } from "./services";
 import { MockDataProvider } from "./mock";
 import { TaskStatus, Task } from "./types/tasks";
@@ -218,7 +217,6 @@ let tasksDataService: TasksDataService;
 let taskDetailProvider: TaskDetailCardProvider;
 let taskWebviewProvider: TaskWebviewProvider;
 let timeFormattingUtility: TimeFormattingUtility;
-let taskFileWatcher: TaskFileWatcher;
 
 /**
  * Setup comprehensive UI event synchronization between tree view and detail panel
@@ -596,27 +594,24 @@ export async function activate(
       throw error;
     }
 
-    console.log("=== ACTIVATION STEP 8.7.5: Initializing TaskFileWatcher ===");
+    console.log(
+      "=== ACTIVATION STEP 8.7.5: Initializing VSCode FileSystemWatcher ==="
+    );
     try {
-      // PATH-001: Use robust path resolution helpers for tasks.json
-      const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+      // Get configured tasks file path
       const config = vscode.workspace.getConfiguration("aidmVscodeExtension");
       const configuredTasksPath = config.get<string>(
         "tasks.filePath",
         "tasks.json"
       );
 
-      let tasksFilePath: string | null = null;
-      let shouldWatch = false;
-
-      // PATH-003: Validate configuration path format before resolution
+      // Validate path format using existing validation
       const pathValidation = validateTasksFilePath(configuredTasksPath);
       if (!pathValidation.isValid) {
         console.warn(
-          `[Extension] PATH-003: Invalid tasks file path configuration: ${pathValidation.error}`
+          `[Extension] Invalid tasks file path: ${pathValidation.error}`
         );
 
-        // Show user-friendly error message with action buttons
         const action = await vscode.window.showErrorMessage(
           `Invalid tasks file path: ${pathValidation.error}`,
           "Open Settings",
@@ -628,12 +623,7 @@ export async function activate(
             "workbench.action.openSettings",
             "aidmVscodeExtension.tasks.filePath"
           );
-          console.log(
-            "[Extension] Continuing without tasks.json file watching"
-          );
-          return;
         } else if (action === "Use Default") {
-          // Reset to default
           await config.update(
             "tasks.filePath",
             "tasks.json",
@@ -642,120 +632,68 @@ export async function activate(
           vscode.window.showInformationMessage(
             "Tasks file path reset to default: tasks.json"
           );
-          // Use default path for this session
-          const defaultPath = "tasks.json";
-          tasksFilePath = resolveTasksFilePath(workspaceRoot, defaultPath);
-          const validation = validateTasksFile(tasksFilePath);
-
-          if (!validation.isValid) {
-            console.warn(
-              `[Extension] Default path also invalid: ${validation.error}`
-            );
-            console.log(
-              "[Extension] Continuing without tasks.json file watching"
-            );
-            return;
-          }
-
-          shouldWatch = true;
-          console.log(`[Extension] Using default tasks file: ${tasksFilePath}`);
-        } else {
-          // User dismissed, continue without file watching
-          console.log(
-            "[Extension] Continuing without tasks.json file watching"
-          );
-          return;
         }
-      } else {
-        // PATH-003: Configuration path is valid, proceed with resolution
-        tasksFilePath = resolveTasksFilePath(
-          workspaceRoot,
-          configuredTasksPath
+
+        console.log(
+          "[Extension] Continuing without file watching due to invalid path"
         );
-        const validation = validateTasksFile(tasksFilePath);
-
-        if (!validation.isValid) {
-          console.warn(`[Extension] ${validation.error}`);
-
-          // Show user-friendly error message with action buttons
-          vscode.window
-            .showWarningMessage(
-              validation.error || "Tasks file configuration issue",
-              "Open Settings",
-              "Create File"
-            )
-            .then((action) => {
-              if (action === "Open Settings") {
-                vscode.commands.executeCommand(
-                  "workbench.action.openSettings",
-                  "aidmVscodeExtension.tasks.filePath"
-                );
-              } else if (action === "Create File") {
-                // Show file creation guidance
-                vscode.window.showInformationMessage(
-                  "Create a tasks.json file in your workspace root with the structure shown in the extension documentation."
-                );
-              }
-            });
-
-          // Continue without file watching but don't fail activation
-          console.log(
-            "[Extension] Continuing without tasks.json file watching"
-          );
-          return;
-        }
-
-        shouldWatch = true;
-        console.log(`[Extension] Using tasks file: ${tasksFilePath}`);
-        if (tasksFilePath) {
-          console.log(
-            `[Extension] File exists: ${fs.existsSync(tasksFilePath)}`
-          );
-        }
+        return; // Skip file watching setup
       }
 
-      // Initialize file watcher if we have a valid path
-      if (shouldWatch && tasksFilePath) {
-        taskFileWatcher = new TaskFileWatcher(tasksFilePath);
+      // Create VSCode native file system watcher
+      const workspaceFolders = vscode.workspace.workspaceFolders;
+      if (workspaceFolders && workspaceFolders.length > 0) {
+        const workspaceFolder = workspaceFolders[0];
+        const filePattern = new vscode.RelativePattern(
+          workspaceFolder,
+          configuredTasksPath
+        );
+        const fileWatcher =
+          vscode.workspace.createFileSystemWatcher(filePattern);
 
-        // Start watching for file changes and wire to UI refresh
-        taskFileWatcher.startWatching(async () => {
+        // Setup change handlers
+        const handleFileChange = async () => {
           try {
-            console.log("🔄 File change detected, refreshing UI components...");
-
-            // Refresh tasks data service
+            console.log("📁 Tasks file changed, refreshing data...");
             await tasksDataService.refreshTasks();
 
-            // Refresh webview
-            if (taskWebviewProvider) {
-              // Note: TaskWebviewProvider doesn't have refresh method yet
-              // Webview will update automatically when data changes
-              console.debug(
-                "File change detected - webview will update automatically"
-              );
-            }
-
-            // Refresh detail panel if it has current task
             if (taskDetailProvider) {
               taskDetailProvider.refreshRelativeTimes().catch((error) => {
                 console.error("Failed to refresh detail panel times:", error);
               });
             }
 
-            console.log("✅ UI refresh completed after file change");
+            console.log("✅ Data refresh completed after file change");
           } catch (error) {
-            console.error("❌ Error refreshing UI after file change:", error);
+            console.error("❌ Error refreshing data after file change:", error);
           }
+        };
+
+        fileWatcher.onDidChange(handleFileChange);
+        fileWatcher.onDidCreate(handleFileChange);
+        fileWatcher.onDidDelete(() => {
+          console.log("⚠️ Tasks file deleted, using fallback data");
+          // TasksDataService will handle fallback automatically
         });
 
+        // Add to subscriptions for proper cleanup
+        context.subscriptions.push(fileWatcher);
+
         console.log(
-          `✅ TaskFileWatcher initialized and watching: ${tasksFilePath}`
+          `✅ VSCode FileSystemWatcher initialized for: ${configuredTasksPath}`
+        );
+      } else {
+        console.log(
+          "[Extension] No workspace folders available for file watching"
         );
       }
     } catch (error) {
-      console.error("❌ TaskFileWatcher initialization failed:", error);
+      console.error(
+        "❌ VSCode FileSystemWatcher initialization failed:",
+        error
+      );
       vscode.window.showErrorMessage(
-        `Failed to setup task file monitoring: ${
+        `Failed to setup file monitoring: ${
           error instanceof Error ? error.message : "Unknown error"
         }`
       );
@@ -1590,73 +1528,73 @@ export async function activate(
                   "[Extension] Tasks file path changed, reinitializing file watcher..."
                 );
 
-                // Dispose existing watcher
-                if (taskFileWatcher) {
-                  taskFileWatcher.dispose();
-                }
-
-                // Reinitialize with new path
-                const workspaceRoot =
-                  vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+                // Get new tasks path
                 const newTasksPath = config.get<string>(
                   getConfigKey("tasks.filePath"),
                   "tasks.json"
                 );
-                const newTasksFilePath = resolveTasksFilePath(
-                  workspaceRoot,
-                  newTasksPath
-                );
-                const validation = validateTasksFile(newTasksFilePath);
 
-                if (validation.isValid && newTasksFilePath) {
-                  taskFileWatcher = new TaskFileWatcher(newTasksFilePath);
+                // Validate new path
+                const pathValidation = validateTasksFilePath(newTasksPath);
+                if (pathValidation.isValid) {
+                  // Create new VSCode FileSystemWatcher
+                  const workspaceFolders = vscode.workspace.workspaceFolders;
+                  if (workspaceFolders && workspaceFolders.length > 0) {
+                    const workspaceFolder = workspaceFolders[0];
+                    const filePattern = new vscode.RelativePattern(
+                      workspaceFolder,
+                      newTasksPath
+                    );
+                    const fileWatcher =
+                      vscode.workspace.createFileSystemWatcher(filePattern);
 
-                  // Start watching for file changes and wire to UI refresh
-                  taskFileWatcher.startWatching(async () => {
-                    try {
-                      console.log(
-                        "🔄 File change detected, refreshing UI components..."
-                      );
+                    // Setup change handlers
+                    const handleFileChange = async () => {
+                      try {
+                        console.log(
+                          "📁 Tasks file changed, refreshing data..."
+                        );
+                        await tasksDataService.refreshTasks();
 
-                      // Refresh tasks data service
-                      await tasksDataService.refreshTasks();
+                        if (taskDetailProvider) {
+                          taskDetailProvider
+                            .refreshRelativeTimes()
+                            .catch((error) => {
+                              console.error(
+                                "Failed to refresh detail panel times:",
+                                error
+                              );
+                            });
+                        }
 
-                      // Refresh webview
-                      if (taskWebviewProvider) {
-                        // Note: TaskWebviewProvider doesn't have refresh method yet
-                        // Webview will update automatically when data changes
-                        console.debug(
-                          "Configuration change - webview will update automatically"
+                        console.log(
+                          "✅ Data refresh completed after file change"
+                        );
+                      } catch (error) {
+                        console.error(
+                          "❌ Error refreshing data after file change:",
+                          error
                         );
                       }
+                    };
 
-                      // Refresh detail panel if it has current task
-                      if (taskDetailProvider) {
-                        taskDetailProvider
-                          .refreshRelativeTimes()
-                          .catch((error) => {
-                            console.error(
-                              "Failed to refresh detail panel times:",
-                              error
-                            );
-                          });
-                      }
+                    fileWatcher.onDidChange(handleFileChange);
+                    fileWatcher.onDidCreate(handleFileChange);
+                    fileWatcher.onDidDelete(() => {
+                      console.log("⚠️ Tasks file deleted, using fallback data");
+                      // TasksDataService will handle fallback automatically
+                    });
 
-                      console.log("✅ UI refresh completed after file change");
-                    } catch (error) {
-                      console.error(
-                        "❌ Error refreshing UI after file change:",
-                        error
-                      );
-                    }
-                  });
+                    // Add to subscriptions for proper cleanup
+                    context.subscriptions.push(fileWatcher);
 
-                  console.log(
-                    `[Extension] File watcher reinitialized for: ${newTasksFilePath}`
-                  );
+                    console.log(
+                      `[Extension] VSCode FileSystemWatcher reinitialized for: ${newTasksPath}`
+                    );
+                  }
                 } else {
                   console.warn(
-                    `[Extension] Cannot watch new tasks file: ${validation.error}`
+                    `[Extension] Cannot watch new tasks file: ${pathValidation.error}`
                   );
                 }
               }
@@ -1796,12 +1734,6 @@ export async function deactivate() {
     if (taskWebviewProvider) {
       taskWebviewProvider.dispose?.();
       console.log("AIDM VSCode Extension: Task webview provider disposed");
-    }
-
-    // Dispose task file watcher if it exists
-    if (taskFileWatcher) {
-      taskFileWatcher.dispose();
-      console.log("AIDM VSCode Extension: Task file watcher disposed");
     }
 
     // Dispose MCP client if it exists
