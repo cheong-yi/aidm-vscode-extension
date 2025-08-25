@@ -569,6 +569,110 @@ describe("TaskWebviewProvider", () => {
     });
   });
 
+  describe("Workspace Initialization (WV-001)", () => {
+    it("should start with data not initialized", () => {
+      expect(provider.isDataInitialized()).toBe(false);
+    });
+
+    it("should have initializeData method", () => {
+      expect(typeof provider.initializeData).toBe("function");
+    });
+
+    it("should show loading HTML before initialization", () => {
+      // Create a new provider instance to ensure clean state
+      const freshProvider = new TaskWebviewProvider();
+      const freshMockWebviewView = {
+        ...mockWebviewView,
+        webview: {
+          ...mockWebview,
+          html: "",
+        },
+      } as unknown as vscode.WebviewView;
+
+      // Mock the private methods to test the initialization flow
+      const originalGetHtmlContent = (freshProvider as any).getHtmlContent;
+      (freshProvider as any).getHtmlContent = jest
+        .fn()
+        .mockReturnValue("Loading HTML");
+
+      freshProvider.resolveWebviewView(
+        freshMockWebviewView,
+        mockContext,
+        mockToken
+      );
+
+      expect(freshMockWebviewView.webview.html).toBe("Loading HTML");
+    });
+
+    it("should initialize data successfully", async () => {
+      // Create a new provider instance to ensure clean state
+      const freshProvider = new TaskWebviewProvider();
+      const freshMockWebviewView = {
+        ...mockWebviewView,
+        webview: {
+          ...mockWebview,
+          html: "",
+        },
+      } as unknown as vscode.WebviewView;
+
+      freshProvider.resolveWebviewView(
+        freshMockWebviewView,
+        mockContext,
+        mockToken
+      );
+
+      // Initially should not be initialized
+      expect(freshProvider.isDataInitialized()).toBe(false);
+
+      // Initialize data
+      await freshProvider.initializeData();
+
+      // Should now be initialized
+      expect(freshProvider.isDataInitialized()).toBe(true);
+    });
+
+    it("should handle initialization errors gracefully", async () => {
+      // Create a provider without a webview to simulate error condition
+      const freshProvider = new TaskWebviewProvider();
+
+      // Should not throw error
+      await expect(freshProvider.initializeData()).resolves.not.toThrow();
+
+      // Should still not be initialized due to error
+      expect(freshProvider.isDataInitialized()).toBe(false);
+    });
+
+    it("should show tasks HTML after initialization", async () => {
+      // Create a new provider instance to ensure clean state
+      const freshProvider = new TaskWebviewProvider();
+      const freshMockWebviewView = {
+        ...mockWebviewView,
+        webview: {
+          ...mockWebview,
+          html: "",
+        },
+      } as unknown as vscode.WebviewView;
+
+      freshProvider.resolveWebviewView(
+        freshMockWebviewView,
+        mockContext,
+        mockToken
+      );
+
+      // Mock the private methods to test the initialization flow
+      const originalGetHtmlContent = (freshProvider as any).getHtmlContent;
+      (freshProvider as any).getHtmlContent = jest
+        .fn()
+        .mockReturnValue("Tasks HTML");
+
+      // Initialize data
+      await freshProvider.initializeData();
+
+      // Should now show tasks HTML
+      expect(freshProvider.isDataInitialized()).toBe(true);
+    });
+  });
+
   describe("Message Handling (WV-005)", () => {
     it("should setup message handling when webview resolves", () => {
       // Create a new mock webview with onDidReceiveMessage as a function

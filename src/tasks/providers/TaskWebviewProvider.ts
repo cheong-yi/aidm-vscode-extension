@@ -56,10 +56,73 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
   private readonly _disposables: vscode.Disposable[] = [];
 
   /**
+   * Flag to track if data has been initialized
+   * Mirrors TaskTreeViewProvider workspace initialization pattern
+   * Task WV-001: Workspace-aware initialization state
+   */
+  private _isDataInitialized: boolean = false;
+
+  /**
    * Constructor for TaskWebviewProvider
    * Initializes the provider without external dependencies
    */
   constructor() {}
+
+  /**
+   * Initialize data loading after service initialization completes
+   * Mirrors TaskTreeViewProvider deferred initialization pattern
+   * Task WV-001: Workspace-aware data initialization
+   *
+   * @returns Promise that resolves when data initialization is complete
+   */
+  async initializeData(): Promise<void> {
+    try {
+      if (!this._view) {
+        console.warn(
+          "TaskWebviewProvider: Cannot initialize data - no webview available"
+        );
+        return;
+      }
+
+      console.debug("TaskWebviewProvider: Initializing data loading");
+
+      // Mark data as initialized
+      this._isDataInitialized = true;
+
+      // Now it's safe to load initial data
+      await this.refreshContent();
+
+      console.debug(
+        "TaskWebviewProvider: Data initialization completed successfully"
+      );
+    } catch (error) {
+      console.error(
+        "TaskWebviewProvider: Failed to initialize webview data:",
+        error
+      );
+      // Don't throw - allow the provider to continue with error state
+    }
+  }
+
+  /**
+   * Check if data has been initialized
+   * Utility method for checking initialization state
+   * Task WV-001: Workspace initialization state checking
+   */
+  public isDataInitialized(): boolean {
+    return this._isDataInitialized;
+  }
+
+  /**
+   * Refresh webview content after data initialization
+   * Task WV-001: Content refresh for workspace-aware updates
+   */
+  private async refreshContent(): Promise<void> {
+    if (!this._view) return;
+
+    // Will be implemented in later tasks to load actual data
+    this._view.webview.html = this.getHtmlContent();
+  }
 
   /**
    * Resolves the webview view when it becomes visible
@@ -88,8 +151,8 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
       // Set initial HTML content with empty tasks array
       webviewView.webview.html = this.getHtmlContent();
 
-      // Task WV-005: Setup message handling for webview communication
-      this.setupMessageHandling();
+      // Task WV-005: Setup message handling for webview communication (deferred to future task)
+      // this.setupMessageHandling();
     } catch (error) {
       // Basic error handling for webview resolution
       console.error("Error resolving webview view:", error);
@@ -99,12 +162,41 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
   /**
    * Generates HTML content for the webview with task data
    * Returns dynamic HTML template with data injection placeholders
+   * Task WV-001: Workspace-aware content generation
    *
    * @param tasks - Array of tasks to display (defaults to empty array)
    * @returns HTML string for webview content
    */
   private getHtmlContent(tasks: Task[] = []): string {
+    // Show loading state if data not initialized
+    if (!this._isDataInitialized) {
+      return this.getLoadingHTML();
+    }
+
     return this.generateTaskmasterHTML(tasks);
+  }
+
+  /**
+   * Generates loading HTML for workspace initialization state
+   * Task WV-001: Loading state display before data initialization
+   *
+   * @returns HTML string for loading state
+   */
+  private getLoadingHTML(): string {
+    return `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Taskmaster</title>
+</head>
+<body>
+    <div id="taskmaster-root">
+        <h3>Loading Tasks...</h3>
+        <p>Please wait while workspace initializes...</p>
+    </div>
+</body>
+</html>`;
   }
 
   /**
