@@ -638,11 +638,44 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
     const isExecutable =
       Boolean(task.isExecutable) && task.status === TaskStatus.NOT_STARTED;
 
+    // ADD: Generate subtasks HTML if subtasks exist
+    const subtasksHtml = this.generateSubtasksSection(task);
+
     return `<div class="task-item" data-task-id="${
       task.id
     }" onclick="toggleTask(this)">
       ${this.generateTaskHeader(task, statusClass, statusDisplay, isExecutable)}
       ${this.generateTaskDetails(task)}
+      ${subtasksHtml}
+    </div>`;
+  }
+
+  /**
+   * Generates subtasks section HTML for tasks with subtasks
+   * Renders hierarchical task relationships with proper indentation
+   *
+   * @param task - Task object to generate subtasks for
+   * @returns HTML string for subtasks section or empty string if no subtasks
+   */
+  private generateSubtasksSection(task: Task): string {
+    if (!task.subtasks || task.subtasks.length === 0) {
+      return "";
+    }
+
+    const subtaskItems = task.subtasks
+      .map(
+        (subtaskId) =>
+          `<div class="subtask-item" data-subtask-id="${subtaskId}">
+        <span class="subtask-id">${subtaskId}</span>
+        <span class="subtask-title">Subtask: ${subtaskId}</span>
+        <span class="subtask-status">pending</span>
+       </div>`
+      )
+      .join("");
+
+    return `<div class="subtasks-section">
+      <div class="subtasks-header">Subtasks (${task.subtasks.length})</div>
+      <div class="subtasks-list">${subtaskItems}</div>
     </div>`;
   }
 
@@ -1312,6 +1345,54 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
 
         .failures-section.expanded .failure-toggle-icon {
             transform: rotate(90deg);
+        }
+
+        .subtasks-section {
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid var(--vscode-sideBar-border);
+        }
+
+        .subtasks-header {
+            font-size: 10px;
+            font-weight: 600;
+            color: var(--vscode-sideBar-foreground);
+            margin-bottom: 6px;
+            opacity: 0.8;
+        }
+
+        .subtask-item {
+            padding: 6px 0 6px 16px;
+            border-left: 2px solid var(--vscode-sideBar-border);
+            margin-left: 8px;
+            margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 11px;
+        }
+
+        .subtask-id {
+            font-family: 'Courier New', monospace;
+            background: var(--vscode-badge-background);
+            color: var(--vscode-badge-foreground);
+            padding: 1px 4px;
+            border-radius: 2px;
+            flex-shrink: 0;
+        }
+
+        .subtask-title {
+            flex: 1;
+            color: var(--vscode-sideBar-foreground);
+            opacity: 0.9;
+        }
+
+        .subtask-status {
+            font-size: 9px;
+            padding: 2px 6px;
+            border-radius: 8px;
+            background: var(--vscode-button-secondaryBackground);
+            color: var(--vscode-button-secondaryForeground);
         }
 
         /* Responsive breakpoints for very narrow panels */
