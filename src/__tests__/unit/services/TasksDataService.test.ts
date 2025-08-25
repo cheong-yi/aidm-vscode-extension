@@ -62,12 +62,25 @@ describe("TasksDataService", () => {
         fsPath: "C:\\test-workspace",
         path: "/c:/test-workspace",
         scheme: "file",
+        toString: jest.fn().mockReturnValue("file:///c:/test-workspace"),
         with: jest.fn().mockReturnValue({
           scheme: "file",
           path: "/c:/test-workspace/tasks.json",
         }),
       },
     };
+
+    // Mock vscode.Uri.joinPath for the new implementation
+    (vscode.Uri.joinPath as any) = jest
+      .fn()
+      .mockImplementation((baseUri: any, relativePath: string) => ({
+        fsPath: `${baseUri.fsPath}\\${relativePath}`,
+        path: `${baseUri.path}/${relativePath}`,
+        scheme: "file",
+        toString: jest
+          .fn()
+          .mockReturnValue(`file://${baseUri.path}/${relativePath}`),
+      }));
 
     Object.defineProperty(vscode.workspace, "workspaceFolders", {
       value: [mockWorkspaceFolder],
@@ -2245,7 +2258,7 @@ describe("TasksDataService", () => {
       expect(result).toBeNull();
     });
 
-    it("should return valid URI for valid configuration", () => {
+    it("should return valid URI for workspace-relative path", () => {
       // Arrange
       const mockConfig = {
         get: jest.fn(),
@@ -2254,15 +2267,64 @@ describe("TasksDataService", () => {
         .spyOn(require("vscode").workspace, "getConfiguration")
         .mockReturnValue(mockConfig as any);
 
-      // Test valid path
-      mockConfig.get.mockReturnValue("valid/path.json");
+      // Test relative path
+      mockConfig.get.mockReturnValue("tasks.json");
 
       // Act
       const result = (service as any).getConfiguredFileUri();
 
       // Assert
       expect(result).toBeDefined();
-      expect(result.fsPath).toBe("valid/path.json");
+      expect(result.scheme).toBe("file");
+      expect(result.fsPath).toContain("test-workspace");
+      expect(result.fsPath).toContain("tasks.json");
+    });
+
+    it("should return valid URI for absolute path", () => {
+      // Arrange
+      const mockConfig = {
+        get: jest.fn(),
+      };
+      jest
+        .spyOn(require("vscode").workspace, "getConfiguration")
+        .mockReturnValue(mockConfig as any);
+
+      // Test absolute path
+      mockConfig.get.mockReturnValue("/absolute/path/tasks.json");
+
+      // Act
+      const result = (service as any).getConfiguredFileUri();
+
+      // Assert
+      expect(result).toBeDefined();
+      expect(result.scheme).toBe("file");
+      expect(result.fsPath).toBe("/absolute/path/tasks.json");
+    });
+
+    it("should return null when no workspace folders available", () => {
+      // Arrange
+      const mockConfig = {
+        get: jest.fn(),
+      };
+      jest
+        .spyOn(require("vscode").workspace, "getConfiguration")
+        .mockReturnValue(mockConfig as any);
+
+      // Temporarily remove workspace folders
+      const vscode = require("vscode");
+      Object.defineProperty(vscode.workspace, "workspaceFolders", {
+        value: [],
+        writable: true,
+      });
+
+      // Test relative path
+      mockConfig.get.mockReturnValue("tasks.json");
+
+      // Act
+      const result = (service as any).getConfiguredFileUri();
+
+      // Assert
+      expect(result).toBeNull();
     });
 
     it("should handle configuration access errors gracefully", () => {

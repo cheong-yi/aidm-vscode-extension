@@ -933,9 +933,31 @@ export class TasksDataService implements ITasksDataService {
         return null;
       }
 
-      const uri = vscode.Uri.file(filePath.trim());
+      const trimmedPath = filePath.trim();
+
+      // Handle absolute paths directly
+      if (path.isAbsolute(trimmedPath)) {
+        const uri = vscode.Uri.file(trimmedPath);
+        console.log(
+          `[TasksDataService] Using absolute configured path: ${uri.fsPath}`
+        );
+        return uri;
+      }
+
+      // Handle relative paths with workspace resolution
+      const workspaceFolders = vscode.workspace.workspaceFolders;
+      if (!workspaceFolders || workspaceFolders.length === 0) {
+        console.warn(
+          "[TasksDataService] No workspace folders available for relative path resolution"
+        );
+        return null;
+      }
+
+      // Use VS Code recommended Uri.joinPath for workspace-relative paths
+      const workspaceFolder = workspaceFolders[0];
+      const uri = vscode.Uri.joinPath(workspaceFolder.uri, trimmedPath);
       console.log(
-        `[TasksDataService] Using configured file path: ${uri.fsPath}`
+        `[TasksDataService] Using workspace-relative path: ${uri.fsPath}`
       );
       return uri;
     } catch (error) {
