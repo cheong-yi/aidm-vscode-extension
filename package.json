@@ -255,7 +255,15 @@
         "aidmVscodeExtension.tasks.filePath": {
           "type": "string",
           "default": "tasks.json",
-          "description": "Path to tasks.json file relative to workspace root"
+          "description": "Path to tasks.json file relative to workspace root. Can be a filename (tasks.json) or relative path (config/tasks.json).",
+          "pattern": "^[^<>:\"|?*\\x00-\\x1f]*\\.(json|JSON)$",
+          "patternErrorMessage": "Must be a valid file path ending with .json (e.g., 'tasks.json' or 'config/tasks.json')",
+          "examples": [
+            "tasks.json",
+            "config/tasks.json",
+            ".taskmaster/tasks.json",
+            "project-tasks.json"
+          ]
         }
       }
     },

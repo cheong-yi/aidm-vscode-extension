@@ -79,6 +79,138 @@ function validateTasksFile(filePath: string | null): {
   return { isValid: true };
 }
 
+/**
+ * PATH-003: Validate tasks file path configuration setting
+ * Ensures the configured path is a valid file path format
+ */
+export function validateTasksFilePath(filePath: string): {
+  isValid: boolean;
+  error?: string;
+} {
+  // Handle empty or undefined
+  if (!filePath || typeof filePath !== "string") {
+    return {
+      isValid: false,
+      error:
+        "Tasks file path cannot be empty. Use 'tasks.json' for default location.",
+    };
+  }
+
+  // Trim whitespace
+  const trimmedPath = filePath.trim();
+  if (trimmedPath !== filePath) {
+    return {
+      isValid: false,
+      error: "Tasks file path contains leading or trailing whitespace.",
+    };
+  }
+
+  // Check for invalid characters (Windows + Unix)
+  // Allow colons in Windows absolute paths (e.g., C:\path\to\file.json)
+  // but reject them in relative paths
+  const isWindowsAbsolutePath = /^[A-Za-z]:[\\\/]/;
+  const hasInvalidChars = /[<>"|?*\x00-\x1f]/;
+
+  if (isWindowsAbsolutePath.test(trimmedPath)) {
+    // For Windows absolute paths, only check for truly invalid characters
+    if (hasInvalidChars.test(trimmedPath)) {
+      return {
+        isValid: false,
+        error:
+          'Windows absolute path contains invalid characters. Avoid: < > " | ? * and control characters.',
+      };
+    }
+  } else {
+    // For relative paths and Unix absolute paths, reject colons
+    const invalidChars = /[<>:"|?*\x00-\x1f]/;
+    if (invalidChars.test(trimmedPath)) {
+      return {
+        isValid: false,
+        error:
+          'Tasks file path contains invalid characters. Avoid: < > : " | ? * and control characters.',
+      };
+    }
+  }
+
+  // Must end with .json
+  if (!trimmedPath.toLowerCase().endsWith(".json")) {
+    return {
+      isValid: false,
+      error: "Tasks file must have .json extension (e.g., 'tasks.json').",
+    };
+  }
+
+  // Check for relative path components that could be problematic
+  if (trimmedPath.includes("../") || trimmedPath.includes("..\\")) {
+    return {
+      isValid: false,
+      error:
+        "Tasks file path cannot navigate outside workspace (no '../' allowed).",
+    };
+  }
+
+  // If it looks like an absolute path, warn but allow
+  if (path.isAbsolute(trimmedPath)) {
+    console.warn(
+      `[Extension] Absolute path configured for tasks file: ${trimmedPath}`
+    );
+    // Allow absolute paths but log warning
+  }
+
+  return { isValid: true };
+}
+
+/**
+ * PATH-003: Handle configuration validation with user feedback
+ * Validates configuration changes and shows helpful error messages
+ */
+async function handleConfigurationValidation(
+  config: vscode.WorkspaceConfiguration,
+  configKey: string
+): Promise<boolean> {
+  const filePath = config.get<string>(configKey);
+
+  if (!filePath) {
+    // Use default value
+    console.log(
+      "[Extension] No tasks file path configured, using default: tasks.json"
+    );
+    return true;
+  }
+
+  const validation = validateTasksFilePath(filePath);
+
+  if (!validation.isValid) {
+    // Show error to user with option to fix
+    const action = await vscode.window.showErrorMessage(
+      `Invalid tasks file path: ${validation.error}`,
+      "Open Settings",
+      "Use Default"
+    );
+
+    if (action === "Open Settings") {
+      vscode.commands.executeCommand(
+        "workbench.action.openSettings",
+        "aidmVscodeExtension.tasks.filePath"
+      );
+    } else if (action === "Use Default") {
+      // Reset to default
+      await config.update(
+        "tasks.filePath",
+        "tasks.json",
+        vscode.ConfigurationTarget.Workspace
+      );
+      vscode.window.showInformationMessage(
+        "Tasks file path reset to default: tasks.json"
+      );
+    }
+
+    return false;
+  }
+
+  return true;
+}
+
 let mcpClient: MCPClient;
 let statusBarManager: StatusBarManagerImpl;
 let processManager: ProcessManager;
@@ -480,76 +612,148 @@ export async function activate(
         "tasks.json"
       );
 
-      // Use new helper functions for robust path resolution
-      const tasksFilePath = resolveTasksFilePath(
-        workspaceRoot,
-        configuredTasksPath
-      );
-      const validation = validateTasksFile(tasksFilePath);
+      let tasksFilePath: string | null = null;
+      let shouldWatch = false;
 
-      if (!validation.isValid) {
-        console.warn(`[Extension] ${validation.error}`);
+      // PATH-003: Validate configuration path format before resolution
+      const pathValidation = validateTasksFilePath(configuredTasksPath);
+      if (!pathValidation.isValid) {
+        console.warn(
+          `[Extension] PATH-003: Invalid tasks file path configuration: ${pathValidation.error}`
+        );
 
         // Show user-friendly error message with action buttons
-        vscode.window
-          .showWarningMessage(
-            validation.error || "Tasks file configuration issue",
-            "Open Settings",
-            "Create File"
-          )
-          .then((action) => {
-            if (action === "Open Settings") {
-              vscode.commands.executeCommand(
-                "workbench.action.openSettings",
-                "aidmVscodeExtension.tasks.filePath"
-              );
-            } else if (action === "Create File") {
-              // Show file creation guidance
-              vscode.window.showInformationMessage(
-                "Create a tasks.json file in your workspace root with the structure shown in the extension documentation."
-              );
-            }
-          });
+        const action = await vscode.window.showErrorMessage(
+          `Invalid tasks file path: ${pathValidation.error}`,
+          "Open Settings",
+          "Use Default"
+        );
 
-        // Continue without file watching but don't fail activation
-        console.log("[Extension] Continuing without tasks.json file watching");
-        return;
+        if (action === "Open Settings") {
+          vscode.commands.executeCommand(
+            "workbench.action.openSettings",
+            "aidmVscodeExtension.tasks.filePath"
+          );
+          console.log(
+            "[Extension] Continuing without tasks.json file watching"
+          );
+          return;
+        } else if (action === "Use Default") {
+          // Reset to default
+          await config.update(
+            "tasks.filePath",
+            "tasks.json",
+            vscode.ConfigurationTarget.Workspace
+          );
+          vscode.window.showInformationMessage(
+            "Tasks file path reset to default: tasks.json"
+          );
+          // Use default path for this session
+          const defaultPath = "tasks.json";
+          tasksFilePath = resolveTasksFilePath(workspaceRoot, defaultPath);
+          const validation = validateTasksFile(tasksFilePath);
+
+          if (!validation.isValid) {
+            console.warn(
+              `[Extension] Default path also invalid: ${validation.error}`
+            );
+            console.log(
+              "[Extension] Continuing without tasks.json file watching"
+            );
+            return;
+          }
+
+          shouldWatch = true;
+          console.log(`[Extension] Using default tasks file: ${tasksFilePath}`);
+        } else {
+          // User dismissed, continue without file watching
+          console.log(
+            "[Extension] Continuing without tasks.json file watching"
+          );
+          return;
+        }
+      } else {
+        // PATH-003: Configuration path is valid, proceed with resolution
+        tasksFilePath = resolveTasksFilePath(
+          workspaceRoot,
+          configuredTasksPath
+        );
+        const validation = validateTasksFile(tasksFilePath);
+
+        if (!validation.isValid) {
+          console.warn(`[Extension] ${validation.error}`);
+
+          // Show user-friendly error message with action buttons
+          vscode.window
+            .showWarningMessage(
+              validation.error || "Tasks file configuration issue",
+              "Open Settings",
+              "Create File"
+            )
+            .then((action) => {
+              if (action === "Open Settings") {
+                vscode.commands.executeCommand(
+                  "workbench.action.openSettings",
+                  "aidmVscodeExtension.tasks.filePath"
+                );
+              } else if (action === "Create File") {
+                // Show file creation guidance
+                vscode.window.showInformationMessage(
+                  "Create a tasks.json file in your workspace root with the structure shown in the extension documentation."
+                );
+              }
+            });
+
+          // Continue without file watching but don't fail activation
+          console.log(
+            "[Extension] Continuing without tasks.json file watching"
+          );
+          return;
+        }
+
+        shouldWatch = true;
+        console.log(`[Extension] Using tasks file: ${tasksFilePath}`);
+        if (tasksFilePath) {
+          console.log(
+            `[Extension] File exists: ${fs.existsSync(tasksFilePath)}`
+          );
+        }
       }
 
-      // Initialize file watcher only if file exists and is valid
-      taskFileWatcher = new TaskFileWatcher(tasksFilePath!);
-      console.log(`[Extension] Using tasks file: ${tasksFilePath}`);
-      console.log(`[Extension] File exists: ${fs.existsSync(tasksFilePath!)}`);
+      // Initialize file watcher if we have a valid path
+      if (shouldWatch && tasksFilePath) {
+        taskFileWatcher = new TaskFileWatcher(tasksFilePath);
 
-      // Start watching for file changes and wire to UI refresh
-      taskFileWatcher.startWatching(async () => {
-        try {
-          console.log("🔄 File change detected, refreshing UI components...");
+        // Start watching for file changes and wire to UI refresh
+        taskFileWatcher.startWatching(async () => {
+          try {
+            console.log("🔄 File change detected, refreshing UI components...");
 
-          // Refresh tasks data service
-          await tasksDataService.refreshTasks();
+            // Refresh tasks data service
+            await tasksDataService.refreshTasks();
 
-          // Refresh tree view
-          if (taskTreeViewProvider) {
-            taskTreeViewProvider.refresh();
+            // Refresh tree view
+            if (taskTreeViewProvider) {
+              taskTreeViewProvider.refresh();
+            }
+
+            // Refresh detail panel if it has current task
+            if (taskDetailProvider) {
+              taskDetailProvider.refreshRelativeTimes().catch((error) => {
+                console.error("Failed to refresh detail panel times:", error);
+              });
+            }
+
+            console.log("✅ UI refresh completed after file change");
+          } catch (error) {
+            console.error("❌ Error refreshing UI after file change:", error);
           }
+        });
 
-          // Refresh detail panel if it has current task
-          if (taskDetailProvider) {
-            taskDetailProvider.refreshRelativeTimes().catch((error) => {
-              console.error("Failed to refresh detail panel times:", error);
-            });
-          }
-
-          console.log("✅ UI refresh completed after file change");
-        } catch (error) {
-          console.error("❌ Error refreshing UI after file change:", error);
-        }
-      });
-
-      console.log(
-        `✅ TaskFileWatcher initialized and watching: ${tasksFilePath}`
-      );
+        console.log(
+          `✅ TaskFileWatcher initialized and watching: ${tasksFilePath}`
+        );
+      }
     } catch (error) {
       console.error("❌ TaskFileWatcher initialization failed:", error);
       vscode.window.showErrorMessage(
@@ -1514,8 +1718,24 @@ export async function activate(
       const configChangeDisposable = vscode.workspace.onDidChangeConfiguration(
         async (event) => {
           if (event.affectsConfiguration(EXTENSION_CONFIG.configNamespace)) {
-            console.log("Configuration changed, updating process manager...");
+            console.log("Configuration changed, validating and updating...");
 
+            const config = vscode.workspace.getConfiguration();
+
+            // PATH-003: Validate tasks file path configuration
+            const tasksPathValid = await handleConfigurationValidation(
+              config,
+              getConfigKey("tasks.filePath")
+            );
+
+            if (!tasksPathValid) {
+              console.warn(
+                "[Extension] Tasks file path validation failed, skipping update"
+              );
+              return;
+            }
+
+            // Continue with existing configuration update logic only if validation passes
             const newProcessConfig: ProcessManagerConfig = {
               port: config.get<number>(getConfigKey("mcpServer.port"), 3001),
               timeout: config.get<number>(
@@ -1548,12 +1768,83 @@ export async function activate(
 
             try {
               await processManager.updateConfig(newProcessConfig);
-
-              // Update MCP client configuration
               mcpClient.updateConfig(
                 newProcessConfig.port!,
                 newProcessConfig.timeout!
               );
+
+              // PATH-003: If tasks path changed, reinitialize file watcher
+              if (event.affectsConfiguration(getConfigKey("tasks.filePath"))) {
+                console.log(
+                  "[Extension] Tasks file path changed, reinitializing file watcher..."
+                );
+
+                // Dispose existing watcher
+                if (taskFileWatcher) {
+                  taskFileWatcher.dispose();
+                }
+
+                // Reinitialize with new path
+                const workspaceRoot =
+                  vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+                const newTasksPath = config.get<string>(
+                  getConfigKey("tasks.filePath"),
+                  "tasks.json"
+                );
+                const newTasksFilePath = resolveTasksFilePath(
+                  workspaceRoot,
+                  newTasksPath
+                );
+                const validation = validateTasksFile(newTasksFilePath);
+
+                if (validation.isValid && newTasksFilePath) {
+                  taskFileWatcher = new TaskFileWatcher(newTasksFilePath);
+
+                  // Start watching for file changes and wire to UI refresh
+                  taskFileWatcher.startWatching(async () => {
+                    try {
+                      console.log(
+                        "🔄 File change detected, refreshing UI components..."
+                      );
+
+                      // Refresh tasks data service
+                      await tasksDataService.refreshTasks();
+
+                      // Refresh tree view
+                      if (taskTreeViewProvider) {
+                        taskTreeViewProvider.refresh();
+                      }
+
+                      // Refresh detail panel if it has current task
+                      if (taskDetailProvider) {
+                        taskDetailProvider
+                          .refreshRelativeTimes()
+                          .catch((error) => {
+                            console.error(
+                              "Failed to refresh detail panel times:",
+                              error
+                            );
+                          });
+                      }
+
+                      console.log("✅ UI refresh completed after file change");
+                    } catch (error) {
+                      console.error(
+                        "❌ Error refreshing UI after file change:",
+                        error
+                      );
+                    }
+                  });
+
+                  console.log(
+                    `[Extension] File watcher reinitialized for: ${newTasksFilePath}`
+                  );
+                } else {
+                  console.warn(
+                    `[Extension] Cannot watch new tasks file: ${validation.error}`
+                  );
+                }
+              }
 
               console.log("Configuration updated successfully");
             } catch (error) {
@@ -1568,7 +1859,9 @@ export async function activate(
         }
       );
       context.subscriptions.push(configChangeDisposable);
-      console.log("✅ Configuration change listener registered");
+      console.log(
+        "✅ Configuration change listener registered with PATH-003 validation"
+      );
     } catch (error) {
       console.error("❌ Configuration change listener failed:", error);
     }
