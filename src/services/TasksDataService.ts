@@ -348,6 +348,7 @@ export class TasksDataService implements ITasksDataService {
 
   // Task 4.4.1: Add refreshTasks method for manual task refresh
   // PATH-002: Enhanced with comprehensive file loading error handling
+  // Task 6.1.6: Fixed event timing to ensure complete data before UI notification
   async refreshTasks(): Promise<void> {
     console.log("[TasksDataService] refreshTasks() called");
 
@@ -363,7 +364,18 @@ export class TasksDataService implements ITasksDataService {
       console.log("[TasksDataService] MCP server refresh successful");
       // If MCP server refresh successful, get updated tasks and fire event
       const updatedTasks = await this.getTasks();
-      this.onTasksUpdated.fire(updatedTasks);
+
+      // Task 6.1.6: Only fire event after successful completion with complete data
+      if (updatedTasks && Array.isArray(updatedTasks)) {
+        console.log(
+          `[TasksDataService] Firing onTasksUpdated event with ${updatedTasks.length} tasks from MCP server`
+        );
+        this.onTasksUpdated.fire(updatedTasks);
+      } else {
+        console.log(
+          "[TasksDataService] MCP server returned invalid data, not firing event"
+        );
+      }
     } catch (error) {
       // Check if this is an MCP server error - if so, re-throw it
       if (
@@ -398,7 +410,20 @@ export class TasksDataService implements ITasksDataService {
           console.log(
             `[TasksDataService] Retrieved ${parsedTasks.length} tasks from file parser`
           );
-          this.onTasksUpdated.fire(parsedTasks);
+
+          // Task 6.1.6: Only fire event after successful parsing with complete data validation
+          if (parsedTasks && Array.isArray(parsedTasks)) {
+            console.log(
+              `[TasksDataService] Firing onTasksUpdated event with ${parsedTasks.length} parsed tasks`
+            );
+            this.onTasksUpdated.fire(parsedTasks);
+          } else {
+            console.log(
+              "[TasksDataService] Parsed data is invalid, not firing event"
+            );
+            // Fall through to mock data since parsed data is invalid
+            throw new Error("Parsed data validation failed");
+          }
         } catch (parseError) {
           // PATH-002: Enhanced error handling for file parsing failures
           const taskError = this.handleFileLoadingError(
@@ -415,9 +440,42 @@ export class TasksDataService implements ITasksDataService {
         console.warn(
           "[TasksDataService] Falling back to mock data due to file loading error"
         );
-        await this.loadMockData();
+
+        // Task 6.1.6: Ensure mock data fallback also follows proper event timing
+        try {
+          const mockTasks = await this.mockDataProvider.getTasks();
+          console.log(
+            `[TasksDataService] Retrieved ${mockTasks.length} tasks from mock data provider`
+          );
+
+          // Task 6.1.6: Only fire event after successful mock data retrieval with complete data
+          if (mockTasks && Array.isArray(mockTasks)) {
+            console.log(
+              `[TasksDataService] Firing onTasksUpdated event with ${mockTasks.length} mock tasks`
+            );
+            this.onTasksUpdated.fire(mockTasks);
+          } else {
+            console.log(
+              "[TasksDataService] Mock data is invalid, firing event with empty array"
+            );
+            this.onTasksUpdated.fire([]);
+          }
+        } catch (mockError) {
+          console.error(
+            "[TasksDataService] All data sources failed:",
+            mockError
+          );
+
+          // Task 6.1.6: Fire event with empty array when all fallbacks fail
+          console.log(
+            "[TasksDataService] Firing onTasksUpdated event with empty array due to complete failure"
+          );
+          this.onTasksUpdated.fire([]);
+        }
       }
     }
+
+    console.log("[TasksDataService] refreshTasks completed");
   }
 
   // PATH-002: Enhanced error handling for file loading operations
@@ -641,7 +699,8 @@ export class TasksDataService implements ITasksDataService {
     try {
       const mockTasks = await this.mockDataProvider.getTasks();
       console.log(`[TasksDataService] Loaded ${mockTasks.length} mock tasks`);
-      this.onTasksUpdated.fire(mockTasks);
+      // Task 6.1.6: Event firing is now handled by the calling method for proper timing
+      // this.onTasksUpdated.fire(mockTasks); // Removed - handled by caller
     } catch (error) {
       console.error("[TasksDataService] Failed to load mock data:", error);
       // Fire error event for mock data loading failure
@@ -652,6 +711,8 @@ export class TasksDataService implements ITasksDataService {
         technicalDetails:
           error instanceof Error ? error.message : String(error),
       });
+      // Re-throw to allow caller to handle the error
+      throw error;
     }
   }
 

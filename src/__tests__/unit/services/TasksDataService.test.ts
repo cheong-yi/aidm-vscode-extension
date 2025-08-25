@@ -1862,4 +1862,53 @@ describe("TasksDataService", () => {
       expect(taskError.technicalDetails).toBe(error.message);
     });
   });
+
+  // Task 6.1.6: Event timing validation for refreshTasks method
+  it("should fire onTasksUpdated event only after successful parsing completion", async () => {
+    // Arrange
+    const eventSpy = jest.fn();
+    const mockTasks = [
+      {
+        id: "test-task-1",
+        title: "Test Task 1",
+        description: "Test task description", // Added missing required field
+        status: "not_started" as TaskStatus,
+        complexity: "low" as TaskComplexity,
+        priority: "medium" as TaskPriority,
+        dependencies: [],
+        requirements: ["Test requirement"],
+        createdDate: "2024-01-01T00:00:00.000Z",
+        lastModified: "2024-01-01T00:00:00.000Z",
+      },
+    ];
+
+    // Mock the HTTP client to fail (triggering fallback path) - follow existing pattern
+    const mockHttpClient = {
+      post: jest.fn(),
+    } as unknown as jest.Mocked<AxiosInstance>;
+    mockHttpClient.post.mockRejectedValue(new Error("Network error"));
+    (service as any).setHttpClientForTesting(mockHttpClient);
+
+    // Mock the JSONTaskParser to return valid tasks
+    mockJSONTaskParser.parseTasksFromFile.mockResolvedValue(mockTasks);
+
+    // Mock the configured file URI using the existing vscode mock
+    const mockFileUri = { fsPath: "./tasks.json" } as any;
+    jest
+      .spyOn(service as any, "getConfiguredFileUri")
+      .mockReturnValue(mockFileUri);
+
+    // Attach event listener
+    service.onTasksUpdated.fire = eventSpy;
+
+    // Act
+    await service.refreshTasks();
+
+    // Assert
+    expect(eventSpy).toHaveBeenCalledTimes(1);
+    expect(eventSpy).toHaveBeenCalledWith(mockTasks);
+    expect(mockJSONTaskParser.parseTasksFromFile).toHaveBeenCalledWith(
+      mockFileUri
+    );
+  });
 });
