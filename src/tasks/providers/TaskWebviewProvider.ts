@@ -4,6 +4,7 @@
  * Requirements: 2.1, 3.1-3.6, 4.1-4.4
  * Task WV-001: Create WebviewViewProvider Base Class
  * Task WV-002: Implement HTML Template System
+ * Task WV-005: Implement Webview Message Handling
  *
  * This provider handles webview-based task management display with basic
  * HTML template generation infrastructure for future taskmaster dashboard.
@@ -16,6 +17,17 @@ import {
   STATUS_DISPLAY_NAMES,
   STATUS_ACTIONS,
 } from "../../types/tasks";
+
+/**
+ * Webview message interface for task interactions
+ * Task WV-005: Message structure for webview-to-extension communication
+ */
+interface WebviewMessage {
+  type: "updateTaskStatus" | "executeWithCursor" | "toggleAccordion";
+  taskId: string;
+  newStatus?: TaskStatus;
+  payload?: any;
+}
 
 /**
  * TaskWebviewProvider implements vscode.WebviewViewProvider to provide
@@ -38,6 +50,12 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
   private _view?: vscode.WebviewView;
 
   /**
+   * Disposables for cleanup of event listeners and message handlers
+   * Task WV-005: Track disposables for proper cleanup
+   */
+  private readonly _disposables: vscode.Disposable[] = [];
+
+  /**
    * Constructor for TaskWebviewProvider
    * Initializes the provider without external dependencies
    */
@@ -46,6 +64,7 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
   /**
    * Resolves the webview view when it becomes visible
    * Implements the required vscode.WebviewViewProvider interface method
+   * Task WV-005: Initialize message handling when webview loads
    *
    * @param webviewView - The webview view to resolve
    * @param context - Context for the webview view resolution
@@ -68,6 +87,9 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
 
       // Set initial HTML content with empty tasks array
       webviewView.webview.html = this.getHtmlContent();
+
+      // Task WV-005: Setup message handling for webview communication
+      this.setupMessageHandling();
     } catch (error) {
       // Basic error handling for webview resolution
       console.error("Error resolving webview view:", error);
@@ -237,11 +259,15 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
     return `<div class="task-meta">
       <div class="meta-item">
         <div class="meta-label">Complexity</div>
-        <div class="meta-value ${complexityClass}">${task.complexity.charAt(0).toUpperCase() + task.complexity.slice(1)}</div>
+        <div class="meta-value ${complexityClass}">${
+      task.complexity.charAt(0).toUpperCase() + task.complexity.slice(1)
+    }</div>
       </div>
       <div class="meta-item">
         <div class="meta-label">Estimated</div>
-        <div class="meta-value">${task.estimatedDuration || 'Not specified'}</div>
+        <div class="meta-value">${
+          task.estimatedDuration || "Not specified"
+        }</div>
       </div>
     </div>`;
   }
@@ -257,11 +283,17 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
     return `<div class="dependencies">
       <div class="dependencies-title">Dependencies</div>
       <div class="dependency-list">
-        ${task.dependencies.length > 0
-          ? task.dependencies
-              .map(dep => `<span class="dependency-tag">${this.escapeHtml(dep)}</span>`)
-              .join("")
-          : '<span class="dependency-tag">None</span>'
+        ${
+          task.dependencies.length > 0
+            ? task.dependencies
+                .map(
+                  (dep) =>
+                    `<span class="dependency-tag">${this.escapeHtml(
+                      dep
+                    )}</span>`
+                )
+                .join("")
+            : '<span class="dependency-tag">None</span>'
         }
       </div>
     </div>`;
@@ -281,14 +313,22 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
 
     const testStatus = task.testStatus;
     const hasFailures = testStatus.failedTests > 0;
-    
+
     return `<div class="test-results">
       <div class="test-header">
         <div class="test-title">Test Results</div>
-        <div class="test-date">Last run: ${testStatus.lastRunDate ? this.formatRelativeTime(testStatus.lastRunDate) : 'Not run yet'}</div>
+        <div class="test-date">Last run: ${
+          testStatus.lastRunDate
+            ? this.formatRelativeTime(testStatus.lastRunDate)
+            : "Not run yet"
+        }</div>
       </div>
       ${this.generateTestStats(testStatus)}
-      ${hasFailures ? this.generateFailuresSection(testStatus.failingTestsList || []) : ''}
+      ${
+        hasFailures
+          ? this.generateFailuresSection(testStatus.failingTestsList || [])
+          : ""
+      }
     </div>`;
   }
 
@@ -329,12 +369,14 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
     }
 
     const failuresHTML = failingTestsList
-      .map(failure => `
+      .map(
+        (failure) => `
         <div class="failure-item">
           <div class="failure-name">${this.escapeHtml(failure.name)}</div>
           <div class="failure-message">${this.escapeHtml(failure.message)}</div>
         </div>
-      `)
+      `
+      )
       .join("");
 
     return `<div class="failures-section">
@@ -834,6 +876,124 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
       return `${diffDays} days ago`;
     } catch (error) {
       return "Unknown time";
+    }
+  }
+
+  /**
+   * Task WV-005: Setup message handling for webview communication
+   * Registers listeners for messages from the webview
+   */
+  private setupMessageHandling(): void {
+    if (!this._view) {
+      console.warn(
+        "Webview view not initialized, cannot setup message handling."
+      );
+      return;
+    }
+
+    const onMessage = (message: any) => {
+      console.log("Received message from webview:", message);
+
+      switch (message.type) {
+        case "updateTaskStatus":
+          this.handleUpdateTaskStatus(message.taskId, message.newStatus);
+          break;
+        case "executeWithCursor":
+          this.handleExecuteWithCursor(message.taskId);
+          break;
+        case "toggleAccordion":
+          this.handleToggleAccordion(message.taskId);
+          break;
+        default:
+          console.warn("Unknown message type:", message.type);
+          break;
+      }
+    };
+
+    this._view.webview.onDidReceiveMessage(
+      onMessage,
+      undefined,
+      this._disposables
+    );
+  }
+
+  /**
+   * Task WV-005: Handle message to update task status
+   * Updates the status of a task in the extension's task list.
+   *
+   * @param taskId - The ID of the task to update
+   * @param newStatus - The new status to set
+   */
+  private async handleUpdateTaskStatus(
+    taskId: string,
+    newStatus?: TaskStatus
+  ): Promise<void> {
+    try {
+      if (!newStatus) {
+        console.warn("No new status provided for task status update");
+        return;
+      }
+
+      await vscode.commands.executeCommand(
+        "aidm-vscode-extension.updateTaskStatus",
+        taskId,
+        newStatus
+      );
+
+      console.log(`Task status updated: ${taskId} -> ${newStatus}`);
+    } catch (error) {
+      console.error("Error updating task status:", error);
+    }
+  }
+
+  /**
+   * Task WV-005: Handle message to execute task with Cursor
+   * Executes a task using the Cursor extension.
+   *
+   * @param taskId - The ID of the task to execute
+   */
+  private async handleExecuteWithCursor(taskId: string): Promise<void> {
+    try {
+      await vscode.commands.executeCommand(
+        "aidm-vscode-extension.executeTaskWithCursor",
+        taskId
+      );
+
+      console.log(`Task executed with Cursor: ${taskId}`);
+    } catch (error) {
+      console.error("Error executing task with Cursor:", error);
+    }
+  }
+
+  /**
+   * Task WV-005: Handle message to toggle accordion
+   * Toggles the expanded state of a task's details section.
+   *
+   * @param taskId - The ID of the task to toggle
+   */
+  private async handleToggleAccordion(taskId: string): Promise<void> {
+    try {
+      // For now, just log the accordion toggle
+      // Future implementation can integrate with TaskTreeViewProvider accordion behavior
+      console.log(`Task accordion toggled: ${taskId}`);
+    } catch (error) {
+      console.error("Error toggling task accordion:", error);
+    }
+  }
+
+  /**
+   * Dispose method for cleanup
+   * Task WV-005: Clean up disposables and event listeners
+   */
+  dispose(): void {
+    try {
+      // Dispose all registered disposables
+      this._disposables.forEach((disposable) => disposable.dispose());
+      this._disposables.length = 0;
+
+      console.debug("TaskWebviewProvider: Disposed successfully");
+    } catch (error) {
+      console.error("TaskWebviewProvider: Error during disposal:", error);
     }
   }
 }

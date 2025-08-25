@@ -364,15 +364,15 @@ describe("TaskWebviewProvider", () => {
           {
             name: "should validate task status transitions",
             message: "AssertionError: Expected 400 but got 200",
-            category: "assertion"
+            category: "assertion",
           },
           {
             name: "should handle invalid task IDs",
             message: "TypeError: Cannot read property 'id' of undefined",
-            category: "type"
-          }
-        ]
-      }
+            category: "type",
+          },
+        ],
+      },
     };
 
     it("should generate complete task details HTML with all sections", () => {
@@ -519,7 +519,7 @@ describe("TaskWebviewProvider", () => {
     it("should handle tasks without test status gracefully", () => {
       const taskWithoutTests: Task = {
         ...mockTaskWithTestStatus,
-        testStatus: undefined
+        testStatus: undefined,
       };
 
       const mockWebviewWithTasks = {
@@ -566,6 +566,42 @@ describe("TaskWebviewProvider", () => {
 
       // Restore original method
       (provider as any).generateTaskmasterHTML = originalMethod;
+    });
+  });
+
+  describe("Message Handling (WV-005)", () => {
+    it("should setup message handling when webview resolves", () => {
+      // Create a new mock webview with onDidReceiveMessage as a function
+      const mockWebviewWithMessageHandling = {
+        ...mockWebview,
+        onDidReceiveMessage: jest.fn(),
+      } as unknown as vscode.Webview;
+
+      const mockWebviewViewWithMessageHandling = {
+        ...mockWebviewView,
+        webview: mockWebviewWithMessageHandling,
+      } as unknown as vscode.WebviewView;
+
+      provider.resolveWebviewView(
+        mockWebviewViewWithMessageHandling,
+        mockContext,
+        mockToken
+      );
+
+      // Verify that message handling was set up
+      expect(
+        mockWebviewWithMessageHandling.onDidReceiveMessage
+      ).toHaveBeenCalled();
+    });
+
+    it("should have dispose method for cleanup", () => {
+      expect(typeof provider.dispose).toBe("function");
+    });
+
+    it("should handle dispose without errors", () => {
+      expect(() => {
+        provider.dispose();
+      }).not.toThrow();
     });
   });
 });
