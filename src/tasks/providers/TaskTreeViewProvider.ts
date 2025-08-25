@@ -8,6 +8,7 @@
  * Task 3.2.8: Connect refresh mechanism to TasksDataService events
  * Task 3.2.9: Add click-to-execute event emitter
  * Task 3.2.10: Implement accordion expansion behavior
+ * Task WS-004: Defer data loading until after service initialization completes
  */
 
 import * as vscode from "vscode";
@@ -97,6 +98,12 @@ export class TaskTreeViewProvider
    */
   private expandedTaskId: string | null = null;
 
+  /**
+   * Flag to track if data has been initialized
+   * Task WS-004: Prevent data loading until after service initialization
+   */
+  private _isDataInitialized: boolean = false;
+
   constructor(tasksDataService: TasksDataService) {
     // Task 3.2.3: Store TasksDataService reference
     this.tasksDataService = tasksDataService;
@@ -112,7 +119,43 @@ export class TaskTreeViewProvider
     this.onTaskClick = this._onTaskClick.event;
 
     // Task 3.2.8: Setup event listeners for automatic refresh
+    // Task WS-004: Setup event listeners but defer initial data load
     this.setupEventListeners();
+  }
+
+  /**
+   * Initialize data loading after service initialization completes
+   * Task WS-004: Explicit initialization method for deferred data loading
+   *
+   * @returns Promise that resolves when data initialization is complete
+   */
+  async initializeData(): Promise<void> {
+    try {
+      if (this.isDisposed) {
+        console.warn(
+          "TaskTreeViewProvider: Cannot initialize data on disposed provider"
+        );
+        return;
+      }
+
+      console.debug("TaskTreeViewProvider: Initializing data loading");
+
+      // Mark data as initialized
+      this._isDataInitialized = true;
+
+      // Now it's safe to load initial data
+      this.refresh();
+
+      console.debug(
+        "TaskTreeViewProvider: Data initialization completed successfully"
+      );
+    } catch (error) {
+      console.error(
+        "TaskTreeViewProvider: Failed to initialize tree view data:",
+        error
+      );
+      // Don't throw - allow the provider to continue with error state
+    }
   }
 
   /**
@@ -554,6 +597,16 @@ export class TaskTreeViewProvider
   }
 
   /**
+   * Check if data has been initialized
+   * Task WS-004: Utility method for checking initialization state
+   *
+   * @returns True if data has been initialized, false otherwise
+   */
+  public isDataInitialized(): boolean {
+    return this._isDataInitialized;
+  }
+
+  /**
    * Diagnostic method to verify expansion state consistency
    * MEDIUM-5A: Verify accordion behavior and expansion state management
    *
@@ -714,6 +767,7 @@ export class TaskTreeViewProvider
    * - Element call (element provided): Returns empty array for flat list structure
    *
    * Task 3.2.3: Uses TasksDataService for data retrieval
+   * Task WS-004: Defer data loading until after service initialization completes
    */
   async getChildren(element?: TreeItemType): Promise<TreeItemType[]> {
     try {
@@ -721,6 +775,14 @@ export class TaskTreeViewProvider
       // If element is provided, return empty array (no hierarchy)
       if (element) {
         return [];
+      }
+
+      // Task WS-004: Check if data has been initialized before calling getTasks()
+      if (!this._isDataInitialized) {
+        console.debug(
+          "TaskTreeViewProvider: Data not yet initialized, returning loading state"
+        );
+        return [this.createEmptyStateItem("loading")];
       }
 
       // Task 3.2.3: Use TasksDataService to retrieve tasks for root level

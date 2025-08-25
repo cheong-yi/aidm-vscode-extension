@@ -83,6 +83,9 @@ describe("TaskTreeViewProvider", () => {
 
     // Create provider instance with mocked service
     provider = new TaskTreeViewProvider(mockTasksDataService);
+
+    // Task WS-004: Initialize data for existing tests to work properly
+    provider.initializeData();
   });
 
   describe("Constructor and Dependency Injection", () => {
@@ -92,6 +95,17 @@ describe("TaskTreeViewProvider", () => {
       // Assert: Verify service is stored and accessible
       expect(provider).toBeInstanceOf(TaskTreeViewProvider);
       expect(mockTasksDataService.getTasks).toBeDefined();
+    });
+
+    it("should not call getTasks during construction - WS-004", () => {
+      // Arrange: Mock service with spy
+      const getTasksSpy = jest.spyOn(mockTasksDataService, "getTasks");
+
+      // Act: Create provider instance
+      const newProvider = new TaskTreeViewProvider(mockTasksDataService);
+
+      // Assert: getTasks should not have been called during construction
+      expect(getTasksSpy).not.toHaveBeenCalled();
     });
 
     it("should follow existing project dependency injection patterns", () => {
@@ -110,16 +124,33 @@ describe("TaskTreeViewProvider", () => {
   });
 
   describe("Service Integration", () => {
-    it("should call TasksDataService.getTasks() in getChildren method", async () => {
+    it("should not call getTasks until initializeData is called - WS-004", async () => {
+      // Arrange: Create a fresh provider instance
+      const freshProvider = new TaskTreeViewProvider(mockTasksDataService);
+      const getTasksSpy = jest.spyOn(mockTasksDataService, "getTasks");
+
+      // Act: Call getChildren before initialization
+      const result = await freshProvider.getChildren();
+
+      // Assert: Should return loading state without calling getTasks
+      expect(getTasksSpy).not.toHaveBeenCalled();
+      expect(result).toHaveLength(1);
+      expect(result[0]).toHaveProperty("contextValue", "empty-state-loading");
+    });
+
+    it("should call TasksDataService.getTasks() in getChildren method after initialization", async () => {
       // Arrange
       mockTasksDataService.getTasks.mockResolvedValue(mockTasks);
 
-      // Act
-      await provider.getChildren();
+      // Act: Initialize data first, then call getChildren
+      await provider.initializeData();
+      const result = await provider.getChildren();
 
       // Assert
       expect(mockTasksDataService.getTasks).toHaveBeenCalledTimes(1);
       expect(mockTasksDataService.getTasks).toHaveBeenCalledWith();
+      expect(result).toHaveLength(1);
+      expect(result[0]).toBeInstanceOf(TaskTreeItem);
     });
 
     it("should convert returned tasks to TaskTreeItems with enhanced status display", async () => {
@@ -168,6 +199,7 @@ describe("TaskTreeViewProvider", () => {
     it("should transition from empty state to populated state correctly", async () => {
       // Arrange: Start with empty state
       mockTasksDataService.getTasks.mockResolvedValue([]);
+      await provider.initializeData(); // WS-004: Must initialize first
       const emptyResult = await provider.getChildren();
       expect(emptyResult).toHaveLength(1);
       expect(emptyResult[0]).toHaveProperty("contextValue", "empty-state");
@@ -180,6 +212,23 @@ describe("TaskTreeViewProvider", () => {
       expect(populatedResult).toHaveLength(1);
       expect(populatedResult[0]).toBeInstanceOf(TaskTreeItem);
       expect(populatedResult[0]).toHaveProperty("id", "test-task-1");
+    });
+
+    it("should properly initialize data when initializeData is called - WS-004", async () => {
+      // Arrange: Create fresh provider
+      const freshProvider = new TaskTreeViewProvider(mockTasksDataService);
+      mockTasksDataService.getTasks.mockResolvedValue(mockTasks);
+
+      // Act: Initialize data
+      await freshProvider.initializeData();
+
+      // Assert: Data should now be initialized
+      expect(freshProvider.isDataInitialized()).toBe(true);
+
+      // Verify getChildren now works properly
+      const result = await freshProvider.getChildren();
+      expect(result).toHaveLength(1);
+      expect(result[0]).toBeInstanceOf(TaskTreeItem);
     });
 
     it("should set correct contextValue for empty state styling", async () => {

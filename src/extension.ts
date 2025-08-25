@@ -494,10 +494,10 @@ export async function activate(
         jsonParser,
         mockDataProvider
       );
-      
+
       // Task 6.1.2: Initialize TasksDataService after workspace is ready
       await tasksDataService.initialize();
-      
+
       console.log("✅ TasksDataService initialized");
     } catch (error) {
       console.error("❌ TasksDataService initialization failed:", error);
@@ -882,6 +882,21 @@ export async function activate(
     try {
       taskTreeViewProvider = new TaskTreeViewProvider(tasksDataService);
       console.log("✅ TaskTreeViewProvider initialized");
+
+      // Task WS-004: Initialize data loading after service initialization completes
+      console.log(
+        "=== ACTIVATION STEP 8.10.1: Initializing TaskTreeViewProvider Data ==="
+      );
+      try {
+        await taskTreeViewProvider.initializeData();
+        console.log("✅ TaskTreeViewProvider data initialization completed");
+      } catch (dataInitError) {
+        console.error(
+          "❌ TaskTreeViewProvider data initialization failed:",
+          dataInitError
+        );
+        // Continue without data initialization - provider will show loading state
+      }
     } catch (error) {
       console.error("❌ TaskTreeViewProvider initialization failed:", error);
       // Continue without tree view provider
