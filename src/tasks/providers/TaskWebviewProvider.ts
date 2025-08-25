@@ -10,7 +10,12 @@
  */
 
 import * as vscode from "vscode";
-import { Task } from "../../types/tasks";
+import {
+  Task,
+  TaskStatus,
+  STATUS_DISPLAY_NAMES,
+  STATUS_ACTIONS,
+} from "../../types/tasks";
 
 /**
  * TaskWebviewProvider implements vscode.WebviewViewProvider to provide
@@ -121,67 +126,138 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
   }
 
   /**
-   * Generates individual task item HTML with placeholder data
-   * Creates task item structure following mockup design
+   * Generates individual task item HTML with status badges and accordion structure
+   * Creates task item structure following mockup design with proper type safety
    *
    * @param task - Task object to render
    * @returns HTML string for single task item
    */
   private generateTaskItem(task: Task): string {
-    const isExecutable = task.isExecutable && task.status === "not_started";
-    const executableClass = isExecutable ? " executable" : "";
-    const statusClass = `task-status ${task.status.replace("_", "-")}`;
-    const statusDisplayName =
-      task.statusDisplayName || task.status.replace("_", " ");
+    const statusClass = this.getStatusClass(task.status);
+    const statusDisplay = STATUS_DISPLAY_NAMES[task.status] || task.status;
+    const isExecutable =
+      Boolean(task.isExecutable) && task.status === TaskStatus.NOT_STARTED;
 
-    return `<div class="task-item${executableClass}" onclick="toggleTask(this)">
-        <div class="task-header">
-            <svg class="task-expand-icon" viewBox="0 0 16 16" fill="currentColor">
-                <path d="m12.14 8.753-5.482 4.796c-.646.566-1.658.106-1.658-.753V3.204a1 1 0 0 1 1.659-.753l5.48 4.796a1 1 0 0 1 0 1.506z"/>
-            </svg>
-            <span class="task-id">${task.id}</span>
-            <span class="task-title">${task.title}</span>
-            <span class="${statusClass}">${statusDisplayName}</span>
+    return `<div class="task-item" data-task-id="${
+      task.id
+    }" onclick="toggleTask(this)">
+      ${this.generateTaskHeader(task, statusClass, statusDisplay, isExecutable)}
+      ${this.generateTaskDetails(task)}
+    </div>`;
+  }
+
+  /**
+   * Generates task header HTML with expand icon, ID, title, status, and executable indicator
+   * Creates header structure following mockup design with proper styling
+   *
+   * @param task - Task object to generate header for
+   * @param statusClass - CSS class for status styling
+   * @param statusDisplay - Human-readable status display name
+   * @param isExecutable - Whether task is executable with Cursor
+   * @returns HTML string for task header
+   */
+  private generateTaskHeader(
+    task: Task,
+    statusClass: string,
+    statusDisplay: string,
+    isExecutable: boolean
+  ): string {
+    const executableIcon = isExecutable
+      ? '<span class="cursor-icon">🤖</span>'
+      : "";
+    const executableClass = isExecutable ? " executable" : "";
+
+    return `<div class="task-header${executableClass}">
+      <svg class="task-expand-icon" viewBox="0 0 16 16" fill="currentColor">
+        <path d="m12.14 8.753-5.482 4.796c-.646.566-1.658.106-1.658-.753V3.204a1 1 0 0 1 1.659-.753l5.48 4.796a1 1 0 0 1 0 1.506z"/>
+      </svg>
+      <span class="task-id">${task.id}</span>
+      <span class="task-title">${this.escapeHtml(task.title)}</span>
+      <span class="task-status ${statusClass}">${statusDisplay}</span>
+      ${executableIcon}
+    </div>`;
+  }
+
+  /**
+   * Generates CSS class for task status styling
+   * Maps TaskStatus enum values to CSS class names
+   *
+   * @param status - TaskStatus enum value
+   * @returns CSS class string for status styling
+   */
+  private getStatusClass(status: TaskStatus): string {
+    return status.replace("_", "-");
+  }
+
+  /**
+   * Escapes HTML content to prevent injection vulnerabilities
+   * Converts special characters to HTML entities
+   *
+   * @param text - Raw text to escape
+   * @returns Escaped HTML-safe string
+   */
+  private escapeHtml(text: string): string {
+    const htmlEntities: Record<string, string> = {
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      '"': "&quot;",
+      "'": "&#39;",
+    };
+
+    return text.replace(/[&<>"']/g, (char) => htmlEntities[char] || char);
+  }
+
+  /**
+   * Generates task details HTML with description, meta, dependencies, test results, and actions
+   * Creates details section following mockup design with proper styling
+   *
+   * @param task - Task object to generate details for
+   * @returns HTML string for task details
+   */
+  private generateTaskDetails(task: Task): string {
+    return `
+      <div class="task-details">
+        <div class="task-description">
+          ${this.escapeHtml(task.description)}
         </div>
-        <div class="task-details">
-            <div class="task-description">
-                ${task.description}
-            </div>
-            <div class="task-meta">
-                <div class="meta-item">
-                    <div class="meta-label">Complexity</div>
-                    <div class="meta-value complexity-${task.complexity}">${
+        <div class="task-meta">
+          <div class="meta-item">
+            <div class="meta-label">Complexity</div>
+            <div class="meta-value complexity-${task.complexity}">${
       task.complexity.charAt(0).toUpperCase() + task.complexity.slice(1)
     }</div>
-                </div>
-                <div class="meta-item">
-                    <div class="meta-label">Estimated</div>
-                    <div class="meta-value">${
-                      task.estimatedDuration || "Not specified"
-                    }</div>
-                </div>
-            </div>
-            <div class="dependencies">
-                <div class="dependencies-title">Dependencies</div>
-                <div class="dependency-list">
-                    ${
-                      task.dependencies.length > 0
-                        ? task.dependencies
-                            .map(
-                              (dep) =>
-                                `<span class="dependency-tag">${dep}</span>`
-                            )
-                            .join("")
-                        : '<span class="dependency-tag">None</span>'
-                    }
-                </div>
-            </div>
-            ${this.generateTestResults(task)}
-            <div class="actions">
-                ${this.generateActionButtons(task)}
-            </div>
+          </div>
+          <div class="meta-item">
+            <div class="meta-label">Estimated</div>
+            <div class="meta-value">${
+              task.estimatedDuration || "Not specified"
+            }</div>
+          </div>
         </div>
-    </div>`;
+        <div class="dependencies">
+          <div class="dependencies-title">Dependencies</div>
+          <div class="dependency-list">
+            ${
+              task.dependencies.length > 0
+                ? task.dependencies
+                    .map(
+                      (dep) =>
+                        `<span class="dependency-tag">${this.escapeHtml(
+                          dep
+                        )}</span>`
+                    )
+                    .join("")
+                : '<span class="dependency-tag">None</span>'
+            }
+          </div>
+        </div>
+        ${this.generateTestResults(task)}
+        <div class="actions">
+          ${this.generateActionButtons(task)}
+        </div>
+      </div>
+    `;
   }
 
   /**
@@ -249,8 +325,10 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
       .map(
         (failure: any) => `
         <div class="failure-item">
-            <div class="failure-name">${failure.name}</div>
-            <div class="failure-message">${failure.message}</div>
+            <div class="failure-name">${this.escapeHtml(failure.name)}</div>
+            <div class="failure-message">${this.escapeHtml(
+              failure.message
+            )}</div>
         </div>
     `
       )
@@ -277,28 +355,15 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
    * @returns HTML string for action buttons
    */
   private generateActionButtons(task: Task): string {
-    // Import STATUS_ACTIONS from types/tasks.ts for proper action mapping
-    const STATUS_ACTIONS = {
-      not_started: [
-        "🤖 Execute with Cursor",
-        "Generate Prompt",
-        "View Requirements",
-      ],
-      in_progress: ["Continue Work", "Mark Complete", "View Dependencies"],
-      review: ["Approve & Complete", "Request Changes", "View Implementation"],
-      completed: ["View Code", "View Tests", "History"],
-      blocked: ["View Blockers", "Update Dependencies", "Report Issue"],
-      deprecated: ["Archive", "View History"],
-    };
-
-    const actions =
-      STATUS_ACTIONS[task.status as keyof typeof STATUS_ACTIONS] || [];
+    // Use STATUS_ACTIONS from types/tasks.ts for proper action mapping
+    const actions = STATUS_ACTIONS[task.status] || [];
 
     return actions
-      .map((action, index) => {
+      .map((action: string, index: number) => {
         const isPrimary =
           index === 0 &&
-          (task.status === "not_started" || task.status === "in_progress");
+          (task.status === TaskStatus.NOT_STARTED ||
+            task.status === TaskStatus.IN_PROGRESS);
         const buttonClass = isPrimary ? "action-btn primary" : "action-btn";
         return `<button class="${buttonClass}">${action}</button>`;
       })
