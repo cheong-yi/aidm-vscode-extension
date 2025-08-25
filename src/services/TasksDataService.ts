@@ -184,6 +184,65 @@ export class TasksDataService implements ITasksDataService {
 
         // PATH-002: Use existing JSONTaskParser with enhanced error handling
         // Task 6.1.3: Replace hardcoded path fallback with workspace-relative path resolution
+
+        // PATH-DEBUG-001: Comprehensive workspace root diagnostic logging
+        console.log("[TasksDataService] === WORKSPACE ROOT DIAGNOSTIC ===");
+
+        // Validate workspace folders array
+        const workspaceFolders = workspace.workspaceFolders;
+        console.log(
+          `[TasksDataService] Workspace folders count: ${
+            workspaceFolders?.length || 0
+          }`
+        );
+        console.log(
+          `[TasksDataService] Workspace folders array:`,
+          workspaceFolders
+        );
+
+        if (workspaceFolders && workspaceFolders.length > 0) {
+          const firstFolder = workspaceFolders[0];
+          console.log(
+            `[TasksDataService] First workspace folder:`,
+            firstFolder
+          );
+          console.log(`[TasksDataService] First folder URI:`, firstFolder.uri);
+          console.log(
+            `[TasksDataService] First folder URI.toString():`,
+            firstFolder.uri.toString()
+          );
+          console.log(
+            `[TasksDataService] First folder fsPath:`,
+            firstFolder.uri.fsPath
+          );
+          console.log(
+            `[TasksDataService] fsPath length: ${
+              firstFolder.uri.fsPath?.length || 0
+            }`
+          );
+          console.log(
+            `[TasksDataService] fsPath type: ${typeof firstFolder.uri.fsPath}`
+          );
+
+          // Character-by-character analysis for path corruption detection
+          if (firstFolder.uri.fsPath) {
+            console.log(
+              `[TasksDataService] fsPath first 5 characters:`,
+              JSON.stringify(firstFolder.uri.fsPath.substring(0, 5))
+            );
+            console.log(
+              `[TasksDataService] fsPath last 5 characters:`,
+              JSON.stringify(firstFolder.uri.fsPath.substring(-5))
+            );
+          }
+        } else {
+          console.log(
+            `[TasksDataService] ERROR: No workspace folders detected`
+          );
+        }
+
+        console.log("[TasksDataService] === END WORKSPACE DIAGNOSTIC ===");
+
         const configuredUri = this.getConfiguredFileUri();
         const fileUri =
           configuredUri || vscode.Uri.file(this.getWorkspaceFilePath(null));

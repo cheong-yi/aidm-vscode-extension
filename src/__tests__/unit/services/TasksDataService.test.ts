@@ -319,6 +319,72 @@ describe("TasksDataService", () => {
       expect(mockTaskStatusManager.getTasks).not.toHaveBeenCalled();
     });
 
+    // PATH-DEBUG-001: Test workspace root diagnostic logging in fallback scenario
+    it("should log comprehensive workspace root diagnostic information", async () => {
+      // Arrange
+      const consoleSpy = jest.spyOn(console, "log");
+
+      // Mock workspace.workspaceFolders to return a test workspace
+      const mockWorkspaceFolder = {
+        uri: {
+          fsPath: "C:\\workspace",
+          toString: () => "file:///c:/workspace",
+        },
+      };
+
+      // Mock the workspace.workspaceFolders property
+      const vscode = require("vscode");
+      Object.defineProperty(vscode.workspace, "workspaceFolders", {
+        get: jest.fn().mockReturnValue([mockWorkspaceFolder]),
+      });
+
+      // Mock JSONTaskParser to fail so we trigger the fallback logic
+      mockJSONTaskParser.parseTasksFromFile.mockRejectedValue(
+        new Error("File not found")
+      );
+
+      // Mock MockDataProvider to return mock tasks
+      const mockTasks = [
+        {
+          id: "test-task-1",
+          title: "Test Task 1",
+          description: "Task for testing workspace diagnostic",
+          status: TaskStatus.NOT_STARTED,
+          complexity: TaskComplexity.LOW,
+          dependencies: [],
+          requirements: ["1.1"],
+          createdDate: "2024-01-01T00:00:00Z",
+          lastModified: "2024-01-02T00:00:00Z",
+          priority: TaskPriority.MEDIUM,
+          estimatedDuration: "15-20 min",
+          isExecutable: true,
+          statusDisplayName: STATUS_DISPLAY_NAMES[TaskStatus.NOT_STARTED],
+        },
+      ];
+      mockMockDataProvider.getTasks.mockResolvedValue(mockTasks);
+
+      // Act - Call getTasks which should trigger the diagnostic logging in the fallback path
+      const result = await service.getTasks();
+
+      // Assert - Verify diagnostic logging was called
+      expect(consoleSpy).toHaveBeenCalledWith(
+        "[TasksDataService] === WORKSPACE ROOT DIAGNOSTIC ==="
+      );
+      expect(consoleSpy).toHaveBeenCalledWith(
+        "[TasksDataService] Workspace folders count: 1"
+      );
+      expect(consoleSpy).toHaveBeenCalledWith(
+        "[TasksDataService] First folder fsPath:",
+        "C:\\workspace"
+      );
+      expect(consoleSpy).toHaveBeenCalledWith(
+        "[TasksDataService] === END WORKSPACE DIAGNOSTIC ==="
+      );
+
+      // Clean up
+      consoleSpy.mockRestore();
+    });
+
     it("should delegate getTaskById to TaskStatusManager when HTTP call fails", async () => {
       // Arrange - Override mock to simulate HTTP failure for fallback testing
       const mockPost = (service as any).httpClient.post as jest.Mock;
