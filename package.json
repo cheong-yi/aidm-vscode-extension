@@ -2,8 +2,8 @@
   "name": "aidm-vscode-extension",
   "displayName": "AiDM VSCode Extension",
   "description": "Bridge business requirements and code implementation with AI-powered context for enterprise development",
-  "version": "0.37.1",
-  "_versionNotes": "Auto-packaged version 0.37.1 - 2025-08-25",
+  "version": "0.38.1",
+  "_versionNotes": "Auto-packaged version 0.38.1 - 2025-08-25",
   "publisher": "aidm-team",
   "author": {
     "name": "AiDM Team"
@@ -143,11 +143,6 @@
         "title": "View Test Results",
         "category": "Taskmaster",
         "icon": "$(beaker)"
-      },
-      {
-        "command": "aidm-vscode-extension.taskTreeItemClick",
-        "title": "Task Tree Item Click",
-        "category": "Taskmaster"
       }
     ],
     "configuration": {

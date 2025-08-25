@@ -84,7 +84,7 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
 
   /**
    * Flag to track if data has been initialized
-   * Mirrors TaskTreeViewProvider workspace initialization pattern
+   * Mirrors webview workspace initialization pattern
    * Task WV-001: Workspace-aware initialization state
    */
   private _isDataInitialized: boolean = false;
@@ -140,7 +140,7 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
 
   /**
    * Initialize data loading after service initialization completes
-   * Mirrors TaskTreeViewProvider deferred initialization pattern
+   * Mirrors webview deferred initialization pattern
    * Task WV-001: Workspace-aware data initialization
    * Task WV-007: Load real data from TasksDataService after initialization
    *

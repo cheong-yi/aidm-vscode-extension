@@ -73,7 +73,7 @@ export class FailingTestScenarios {
         message:
           "TypeError: Cannot read property 'estimatedDuration' of undefined",
         stackTrace:
-          "at TaskTreeItem.formatDuration (/src/tasks/providers/TaskTreeItem.ts:23:8)\n    at renderTaskDetails (/src/ui/task-details.ts:67:15)",
+          "at TaskWebviewProvider.formatDuration (/src/tasks/providers/TaskWebviewProvider.ts:23:8)\n    at renderTaskDetails (/src/ui/task-details.ts:67:15)",
         category: "type",
       },
       {

@@ -98,22 +98,6 @@ export interface TasksDataService {
 // TASK TREE VIEW PROVIDER INTERFACE
 // ============================================================================
 
-/**
- * Task Tree View Provider Interface
- * Manages the VSCode tree view for task display
- */
-export interface TaskTreeViewProvider
-  extends vscode.TreeDataProvider<TaskTreeItem> {
-  getTreeItem(element: TaskTreeItem): vscode.TreeItem;
-  getChildren(element?: TaskTreeItem): Promise<TaskTreeItem[]>;
-  refresh(): void;
-  onDidChangeTreeData: vscode.Event<TaskTreeItem | undefined | null>;
-  expandNode(taskId: string): void;
-  collapseNode(taskId: string): void;
-  selectTask(taskId: string): void;
-  getSelectedTask(): TaskTreeItem | undefined;
-}
-
 // ============================================================================
 // TASK DETAIL CARD PROVIDER INTERFACE
 // ============================================================================
@@ -137,28 +121,6 @@ export interface TaskDetailCardProvider {
     testStatus: TestStatus;
   }>;
   refresh(): void;
-}
-
-// ============================================================================
-// TASK TREE ITEM INTERFACE
-// ============================================================================
-
-/**
- * Task Tree Item Interface
- * Represents individual items in the task tree view
- */
-export interface TaskTreeItem extends vscode.TreeItem {
-  id: string;
-  label: string;
-  description?: string;
-  iconPath?: vscode.ThemeIcon;
-  contextValue: string;
-  collapsibleState: vscode.TreeItemCollapsibleState;
-  task: Task;
-  hasChildren: boolean;
-  dependencyLevel: number;
-  priority: string;
-  testStatus?: string;
 }
 
 // ============================================================================

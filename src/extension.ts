@@ -874,7 +874,7 @@ export async function activate(
       "=== ACTIVATION STEP 8.10: Initializing TaskWebviewProvider ==="
     );
     try {
-      // Create TaskWebviewProvider with TasksDataService (replaces TaskTreeViewProvider)
+      // Create TaskWebviewProvider with TasksDataService
       taskWebviewProvider = new TaskWebviewProvider(tasksDataService);
 
       // Register webview view provider with VSCode
@@ -888,7 +888,7 @@ export async function activate(
       console.log("✅ TaskWebviewProvider registered successfully");
 
       // Add initialization call after TasksDataService is ready
-      // This mirrors the TaskTreeViewProvider.initializeData() pattern
+      // This mirrors the webview initialization pattern
       console.log(
         "=== ACTIVATION STEP 8.10.5: Scheduling webview data initialization ==="
       );
@@ -1433,9 +1433,7 @@ export async function activate(
     }
 
     // Task tree item click command removed - replaced by webview interaction
-    console.log(
-      "ℹ️ taskTreeItemClick command removed - webview handles task selection"
-    );
+    console.log("ℹ️ Task selection now handled by webview interaction");
 
     // Register generate task prompt command - CMD-001
     try {

@@ -168,9 +168,9 @@ export class MockDataProvider {
       },
       {
         id: "3.1.1",
-        title: "Create TaskTreeItem class with basic properties",
+        title: "Create TaskWebviewProvider class with basic properties",
         description:
-          "Implement TaskTreeItem extending vscode.TreeItem with required properties.",
+          "Implement TaskWebviewProvider extending vscode.WebviewViewProvider with required properties.",
         status: TaskStatus.COMPLETED,
         complexity: TaskComplexity.LOW,
         dependencies: ["1.1.1", "2.1.1"], // Depends on directory and data service
@@ -190,18 +190,25 @@ export class MockDataProvider {
       },
       {
         id: "4.1.1",
-        title: "Register TaskTreeViewProvider in extension activate function",
+        title: "Register TaskWebviewProvider in extension activate function",
         description:
-          "Add vscode.window.registerTreeDataProvider call to extension.ts activate function.",
-        status: TaskStatus.NOT_STARTED,
+          "Add vscode.window.registerWebviewViewProvider call to extension.ts activate function.",
+        status: TaskStatus.COMPLETED,
         complexity: TaskComplexity.LOW,
-        dependencies: ["3.1.1"], // Depends on tree item creation
+        dependencies: ["3.1.1"], // Depends on webview provider creation
         requirements: ["10.1"],
         createdDate: hoursAgo(1), // "1 hour ago"
         lastModified: hoursAgo(1), // Same as created
         estimatedDuration: "10-15 min",
-        isExecutable: true,
-        testStatus: undefined, // No tests yet for registration task
+        isExecutable: false, // false because status is COMPLETED
+        testStatus: {
+          lastRunDate: "2024-08-22T16:00:00Z",
+          totalTests: 12,
+          passedTests: 12,
+          failedTests: 0,
+          failingTestsList: [],
+          coverage: 95,
+        },
       },
       {
         id: "4.2.2",
