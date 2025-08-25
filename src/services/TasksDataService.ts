@@ -42,20 +42,57 @@ export class TasksDataService implements ITasksDataService {
 
   // HTTP client for JSON-RPC communication - Recovery Task 2.4.1
   protected httpClient!: AxiosInstance;
-  private readonly serverUrl: string;
+  private serverUrl: string; // Changed from readonly to mutable for initialization
+  private isInitialized: boolean = false;
 
   constructor(
     private taskStatusManager: TaskStatusManager,
     private jsonTaskParser: JSONTaskParser,
     private mockDataProvider: MockDataProvider
   ) {
-    // Constructor now accepts TaskStatusManager, JSONTaskParser, and MockDataProvider dependencies
-    // Get port from VS Code configuration
-    const config = workspace.getConfiguration();
-    const port = config.get<number>("aidmVscodeExtension.mcpServer.port", 3001);
-    this.serverUrl = `http://localhost:${port}`;
+    // Configuration will be set in initialize() method to avoid timing race condition
+    this.serverUrl = ""; // Will be set by initialize()
+  }
 
-    this.setupHttpClient();
+  // Task 6.1.2: Async initialization method to fix workspace configuration race condition
+  async initialize(): Promise<void> {
+    if (this.isInitialized) {
+      return; // Already initialized
+    }
+
+    try {
+      // Get port from VS Code configuration when workspace is ready
+      const config = workspace.getConfiguration();
+      const port = config.get<number>(
+        "aidmVscodeExtension.mcpServer.port",
+        3001
+      );
+      this.serverUrl = `http://localhost:${port}`;
+
+      // Setup HTTP client after configuration is loaded
+      this.setupHttpClient();
+
+      this.isInitialized = true;
+      console.log(
+        `[TasksDataService] Initialized with server URL: ${this.serverUrl}`
+      );
+    } catch (error) {
+      console.error("[TasksDataService] Initialization failed:", error);
+      throw new Error(
+        `Failed to initialize TasksDataService: ${
+          error instanceof Error ? error.message : String(error)
+        }`
+      );
+    }
+  }
+
+  // Task 6.1.2: Helper method to ensure service is initialized
+  private ensureInitialized(): void {
+    if (!this.isInitialized) {
+      throw new Error(
+        "TasksDataService must be initialized before use. Call initialize() first."
+      );
+    }
   }
 
   // Recovery Task 2.4.1: Setup HTTP client with axios configuration
@@ -77,6 +114,9 @@ export class TasksDataService implements ITasksDataService {
 
   // Recovery Task 2.4.2: Real JSON-RPC communication implementation
   public async makeJSONRPCCall(method: string, params?: any): Promise<any> {
+    // Ensure service is initialized before making HTTP calls
+    this.ensureInitialized();
+
     const request = {
       jsonrpc: "2.0",
       id: Date.now(),

@@ -33,9 +33,23 @@ describe("TasksDataService", () => {
   let mockJSONTaskParser: jest.Mocked<JSONTaskParser>;
   let mockMockDataProvider: jest.Mocked<MockDataProvider>;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     // Clear all mocks before each test
     jest.clearAllMocks();
+
+    // Mock workspace.getConfiguration to return a valid port
+    const mockConfig = {
+      get: jest.fn((key: string, defaultValue?: any) => {
+        if (key === "aidmVscodeExtension.mcpServer.port") {
+          return 3001;
+        }
+        return defaultValue;
+      }),
+    };
+
+    // Mock the workspace.getConfiguration call
+    const vscode = require("vscode");
+    vscode.workspace.getConfiguration = jest.fn().mockReturnValue(mockConfig);
 
     // Create mock TaskStatusManager instance
     mockTaskStatusManager = {
@@ -85,6 +99,9 @@ describe("TasksDataService", () => {
     });
 
     (service as any).setHttpClientForTesting(defaultMockHttpClient);
+
+    // Task 6.1.2: Initialize the service for tests to avoid initialization errors
+    await service.initialize();
   });
 
   // Task 2.1.1: Basic instantiation tests
@@ -102,6 +119,37 @@ describe("TasksDataService", () => {
           mockMockDataProvider
         );
       }).not.toThrow();
+    });
+
+    // Task 6.1.2: Test initialization behavior
+    it("should initialize configuration correctly after constructor", async () => {
+      // Create a new service instance without calling initialize
+      const newService = new TasksDataService(
+        mockTaskStatusManager,
+        mockJSONTaskParser,
+        mockMockDataProvider
+      );
+
+      // Before initialization, serverUrl should be empty
+      expect((newService as any).serverUrl).toBe("");
+
+      // After initialization, serverUrl should be set
+      await newService.initialize();
+      expect((newService as any).serverUrl).toBe("http://localhost:3001");
+    });
+
+    it("should not allow HTTP calls before initialization", async () => {
+      // Create a new service instance without calling initialize
+      const newService = new TasksDataService(
+        mockTaskStatusManager,
+        mockJSONTaskParser,
+        mockMockDataProvider
+      );
+
+      // Should throw error when trying to make HTTP calls before initialization
+      await expect(newService.makeJSONRPCCall("test", {})).rejects.toThrow(
+        "TasksDataService must be initialized before use. Call initialize() first."
+      );
     });
 
     it("should be importable as a class", () => {

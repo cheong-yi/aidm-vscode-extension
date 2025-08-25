@@ -494,6 +494,10 @@ export async function activate(
         jsonParser,
         mockDataProvider
       );
+      
+      // Task 6.1.2: Initialize TasksDataService after workspace is ready
+      await tasksDataService.initialize();
+      
       console.log("✅ TasksDataService initialized");
     } catch (error) {
       console.error("❌ TasksDataService initialization failed:", error);
