@@ -12,6 +12,8 @@ export interface Task {
   id: string;
   title: string;
   description: string;
+  details?: string; // Added: matches JSON "details" field
+  testStrategy?: string; // Added: matches JSON "testStrategy" field
   status: TaskStatus;
   complexity: TaskComplexity;
   priority?: TaskPriority; // Made optional to support test scenarios
@@ -27,7 +29,8 @@ export interface Task {
   testStatus?: TestStatus;
   tags?: string[];
   parentTaskId?: string;
-  subTasks?: string[];
+  subTasks?: string[]; // Keep existing casing for backward compatibility
+  subtasks?: string[]; // Added: matches JSON "subtasks" field casing
   notes?: string;
   dueDate?: string; // ISO date string
   statusDisplayName?: string; // From STATUS_DISPLAY_NAMES mapping

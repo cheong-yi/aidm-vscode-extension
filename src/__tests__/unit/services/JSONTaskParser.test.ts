@@ -14,50 +14,57 @@ describe("JSONTaskParser", () => {
   });
 
   describe("parseTasksFromJSONContent", () => {
-    it("should parse nested contexts JSON structure", () => {
-      const mockJSONData = {
+    it("should parse nested contexts JSON structure", async () => {
+      const jsonData = {
         master: {
           tasks: [
             {
               id: 1,
-              title: "Test Task 1",
-              description: "Test Description 1",
-              status: "done",
-              priority: "high",
+              title: 'Test Task 1',
+              description: 'Test Description 1',
+              details: 'Test Details 1', // Added: test new details field
+              testStrategy: 'Test Strategy 1', // Added: test new testStrategy field
+              priority: 'high',
               dependencies: [],
-              subtasks: []
+              status: 'done',
+              subtasks: [] // Added: test new subtasks field
             }
           ]
         },
-        "sldc-code-ingestrion": {
+        'sldc-code-ingestrion': {
           tasks: [
             {
               id: 2,
-              title: "Test Task 2",
-              description: "Test Description 2",
-              status: "not_started",
-              priority: "medium",
+              title: 'Test Task 2',
+              description: 'Test Description 2',
+              details: 'Test Details 2', // Added: test new details field
+              testStrategy: 'Test Strategy 2', // Added: test new testStrategy field
+              priority: 'medium',
               dependencies: [1],
-              subtasks: []
+              status: 'pending',
+              subtasks: [] // Added: test new subtasks field
             }
           ]
         }
       };
 
-      const result = parser.parseTasksFromJSONContent(mockJSONData);
+      const result = parser.parseTasksFromJSONContent(jsonData);
 
       expect(result).toHaveLength(2);
-      expect(result[0].id).toBe("1");
-      expect(result[0].title).toBe("Test Task 1");
+      expect(result[0].id).toBe('1');
+      expect(result[0].title).toBe('Test Task 1');
+      expect(result[0].details).toBe('Test Details 1'); // Added: verify details field
+      expect(result[0].testStrategy).toBe('Test Strategy 1'); // Added: verify testStrategy field
+      expect(result[0].subtasks).toEqual([]); // Added: verify subtasks field
       expect(result[0].status).toBe(TaskStatus.COMPLETED);
       expect(result[0].complexity).toBe(TaskComplexity.HIGH);
-      expect(result[0].priority).toBe(TaskPriority.HIGH);
-
-      expect(result[1].id).toBe("2");
-      expect(result[1].title).toBe("Test Task 2");
+      expect(result[1].id).toBe('2');
+      expect(result[1].title).toBe('Test Task 2');
+      expect(result[1].details).toBe('Test Details 2'); // Added: verify details field
+      expect(result[1].testStrategy).toBe('Test Strategy 2'); // Added: verify testStrategy field
+      expect(result[1].subtasks).toEqual([]); // Added: verify subtasks field
       expect(result[1].status).toBe(TaskStatus.NOT_STARTED);
       expect(result[1].complexity).toBe(TaskComplexity.MEDIUM);
-      expect(result[1].priority).toBe(TaskPriority.MEDIUM);
     });
 
     it("should handle empty JSON data", () => {

@@ -229,6 +229,8 @@ export class JSONTaskParser {
           this.convertToString(taskObj.description) ||
           this.convertToString(taskObj.title) ||
           "No description",
+        details: this.convertToString(taskObj.details), // Added: map JSON details field
+        testStrategy: this.convertToString(taskObj.testStrategy), // Added: map JSON testStrategy field
         status: this.mapStatus(taskObj.status),
         complexity: this.mapComplexity(taskObj.priority || taskObj.complexity),
         dependencies: this.convertToStringArray(taskObj.dependencies),
@@ -253,7 +255,8 @@ export class JSONTaskParser {
         statusDisplayName: STATUS_DISPLAY_NAMES[this.mapStatus(taskObj.status)],
         testStatus: this.parseTestStatus(taskObj.testStatus),
         parentTaskId: this.convertToString(taskObj.parentTaskId),
-        subTasks: this.convertToStringArray(taskObj.subTasks),
+        subTasks: this.convertToStringArray(taskObj.subTasks), // Keep existing field
+        subtasks: this.convertToStringArray(taskObj.subtasks), // Added: map JSON subtasks field
         notes: this.convertToString(taskObj.notes),
         dueDate: this.convertToISOString(taskObj.dueDate),
       };
