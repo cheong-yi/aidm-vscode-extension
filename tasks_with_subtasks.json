@@ -1,0 +1,1468 @@
+{
+  "master": {
+    "tasks": [
+      {
+        "id": 1,
+        "title": "Foundational Setup: Base Agent & Docker Compose",
+        "description": "Create the foundational `BaseAgent` class providing common services and set up the `docker-compose.yml` for a complete local development environment.",
+        "details": "Implement the Base Agent to initialize clients for Consul (config), Redis (state), and LiteLLM. Create a `docker-compose` file that includes all services: FastAPI orchestrator, agents, Redis, Consul, LiteLLM, and a mock Taskmaster/ADO server for testing.",
+        "testStrategy": "Unit test client initializations in the Base Agent. Validate that `docker-compose up` successfully starts all required services without errors.",
+        "priority": "high",
+        "dependencies": [],
+        "status": "done",
+        "subtasks": [
+          {
+            "id": "1.1",
+            "description": "Implement user authentication endpoint",
+            "status": "pending"
+          },
+          {
+            "id": "1.2",
+            "description": "Create data validation logic",
+            "status": "pending"
+          }
+        ]
+      },
+      {
+        "id": 2,
+        "title": "API Orchestration Engine (FastAPI)",
+        "description": "Implement the main FastAPI service to act as the central orchestrator, defining all API endpoints and generating interactive OpenAPI/Swagger documentation.",
+        "details": "Set up the FastAPI application. Implement core endpoints like `/health` and `/api/config/keys`. Structure the project with routers for different agents (repo, prd, ado). Auto-generate OpenAPI spec from code.",
+        "testStrategy": "Unit test each endpoint for correct responses and status codes. Verify that the `/docs` endpoint renders a complete and interactive API specification.",
+        "priority": "high",
+        "dependencies": [1],
+        "status": "done",
+        "subtasks": []
+      },
+      {
+        "id": 3,
+        "title": "Repo & KG Agent Implementation (MVP)",
+        "description": "Develop the agent to clone a remote Git repository and perform basic Knowledge Graph ingestion to generate a code summary and metrics.",
+        "details": "Implement the `POST /api/repo/clone` endpoint using Git. Implement `POST /api/kg/ingest` to walk the codebase, parse Python files using AST, and persist graph metrics (node/edge counts). The agent should inherit from BaseAgent.",
+        "testStrategy": "Unit test the clone functionality with a public repo. Integration test the KG ingestion on a sample Python project, verifying the generated summary and metrics are accurate. Test error handling for non-existent repos or unparseable files.",
+        "priority": "high",
+        "dependencies": [1, 2],
+        "status": "done",
+        "subtasks": []
+      },
+      {
+        "id": 4,
+        "title": "PRD Authoring & Planning Agent (MVP)",
+        "description": "Build the agent to generate a structured PRD using LiteLLM and orchestrate Taskmaster to convert the PRD into an actionable plan.",
+        "details": "Implement `POST /api/prd/generate` which takes form inputs, merges with the KG summary, and calls LiteLLM. Implement `POST /api/taskmaster/sync` to invoke the MCP toolchain: `parse_prd`, `analyze_project_complexity`, and `expand_all`. Store outputs in the `.taskmaster/` directory.",
+        "testStrategy": "Unit test the prompt construction and LiteLLM client call. Integration test the full flow from PRD generation to Taskmaster plan creation, ensuring all artifacts are saved to the correct locations.",
+        "priority": "high",
+        "dependencies": [1, 2, 3],
+        "status": "done",
+        "subtasks": []
+      },
+      {
+        "id": 5,
+        "title": "Azure DevOps Sync Agent (MVP)",
+        "description": "Create the agent to connect to Azure DevOps and push the generated Taskmaster plan as linked User Stories and Tasks.",
+        "details": "Implement `POST /api/azure-devops/push`. Use the ADO REST API with a PAT from Consul. For each top-level task, create a User Story. For each subtask, create a Task and link it to the parent User Story using the `Hierarchy-Reverse` relation.",
+        "testStrategy": "Unit test the transformation logic from Taskmaster format to ADO work item payloads. Integration test against a mock ADO API to verify correct creation and linking of User Stories and Tasks.",
+        "priority": "high",
+        "dependencies": [1, 2, 4],
+        "status": "done",
+        "subtasks": []
+      },
+      {
+        "id": 6,
+        "title": "Initial Frontend UI for Core Workflow",
+        "description": "Develop the basic frontend components to allow a user to execute the end-to-end Repo-to-Plan workflow.",
+        "details": "Create UI components for: 1) Repository URL input and clone button. 2) Azure DevOps settings form. 3) PRD builder form with sectioned inputs. 4) Taskmaster action buttons. 5) A button to trigger the ADO sync and a panel to show progress/logs.",
+        "testStrategy": "Component tests for each UI element. End-to-end UI tests using a framework like Cypress or Playwright to simulate a user completing the full workflow, from entering a repo URL to seeing the created ADO item IDs.",
+        "priority": "medium",
+        "dependencies": [2, 3, 4, 5],
+        "status": "done",
+        "subtasks": []
+      },
+      {
+        "id": 7,
+        "title": "Implement ADO Sync Idempotency",
+        "description": "Enhance the Azure DevOps Sync Agent to prevent creating duplicate work items when the sync process is run multiple times.",
+        "details": "Implement a strategy to check for existing work items before creation. This can be done by checking for items with a matching deterministic title (e.g., a hash of the content) or by applying a unique run-specific tag to created items and querying for that tag.",
+        "testStrategy": "Write an integration test that runs the ADO push function twice with the same input. Assert that work items are created on the first run and that no new items are created on the second run.",
+        "priority": "medium",
+        "dependencies": [5],
+        "status": "done",
+        "subtasks": []
+      },
+      {
+        "id": 8,
+        "title": "Implement KG-Enhanced Prompting for PRD Generation",
+        "description": "Refine the PRD Authoring agent to use the structured summary from the Knowledge Graph to enrich the prompts sent to the LLM.",
+        "details": "Modify the prompt template for PRD generation. Systematically inject the KG summary (key modules, components, file structures) into the context provided to the LLM to seed the 'Technical Architecture' and other relevant sections of the PRD.",
+        "testStrategy": "Qualitative review of generated PRDs with and without KG context to assess improvement. Unit test the prompt generation logic to ensure KG data is correctly formatted and included.",
+        "priority": "medium",
+        "dependencies": [3, 4],
+        "status": "done",
+        "subtasks": []
+      },
+      {
+        "id": 9,
+        "title": "Implement Standardized Logging and Error Handling",
+        "description": "Establish and enforce consistent structured logging (JSON) and a standardized API error response format across the entire system.",
+        "details": "Configure Python's logging to output structured JSON logs. Create a FastAPI exception handler to catch common errors and return a consistent JSON shape: `{code, message, details}` with appropriate HTTP status codes (400, 404, 500, etc.).",
+        "testStrategy": "Unit test the exception handler to ensure it catches various exception types and returns the correct JSON structure and status code. Inspect logs from a test run to confirm they are in a valid, structured JSON format.",
+        "priority": "medium",
+        "dependencies": [2],
+        "status": "To Do",
+        "subtasks": []
+      },
+      {
+        "id": 10,
+        "title": "Create Comprehensive Integration and E2E Tests",
+        "description": "Develop an automated test suite that validates the interactions between components and the full end-to-end workflow.",
+        "details": "Using Pytest, create integration tests that mock external API calls (ADO, LiteLLM, MCP) to test agent logic. Create an end-to-end test script that runs against the local `docker-compose` environment, calling the APIs in sequence to validate the entire chain from `/repo/clone` to `/azure-devops/push`.",
+        "testStrategy": "The task is the test strategy. Success is a CI pipeline that successfully executes these tests on every commit, ensuring the system remains stable.",
+        "priority": "medium",
+        "dependencies": [1, 6],
+        "status": "To Do",
+        "subtasks": []
+      },
+      {
+        "id": 11,
+        "title": "Implement Workflow Selection UI",
+        "description": "Add workflow type selection interface to support both Brownfield (existing codebase) and Greenfield (new project) workflows as specified in the PRD.",
+        "details": "Create a workflow selection screen that allows users to choose between: 1) CodeGen Brownfield Flow (4-step existing codebase analysis), 2) Traditional PRD Workflow (new project planning). Implement separate UI flows for each workflow type with appropriate navigation and state management.",
+        "testStrategy": "Component tests for workflow selection interface. Integration tests to verify proper routing to different workflow types. User acceptance tests to ensure clear workflow distinction and appropriate UI presentation.",
+        "priority": "high",
+        "dependencies": [6],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 12,
+        "title": "Enhance Azure DevOps Integration",
+        "description": "Implement comprehensive Azure DevOps integration matching PRD requirements including detailed configuration, idempotency controls, and work item linking.",
+        "details": "Enhance the ADO integration to include: 1) Detailed ADO configuration form with org, project, team, board settings, 2) Idempotency controls to prevent duplicate work items on re-runs, 3) Work item linking visualization showing User Stories and Tasks hierarchy, 4) Validation of ADO settings before sync operations.",
+        "testStrategy": "Unit tests for ADO configuration validation. Integration tests with mock ADO API to verify idempotency. End-to-end tests for complete work item creation and linking workflow.",
+        "priority": "high",
+        "dependencies": [5, 6],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 13,
+        "title": "Integrate Knowledge Graph Context",
+        "description": "Implement Knowledge Graph integration to enhance PRD generation with codebase context and technical architecture insights.",
+        "details": "Enhance PRD generation to utilize Knowledge Graph data: 1) Display KG summary in PRD generation step, 2) Implement KG-enhanced prompting for better PRD quality, 3) Add technical architecture suggestions based on codebase analysis, 4) Provide context injection from KG into PRD prompts for more accurate requirements.",
+        "testStrategy": "Unit tests for KG context integration logic. Integration tests to verify enhanced PRD quality with KG data. Comparative tests between PRDs generated with and without KG context.",
+        "priority": "high",
+        "dependencies": [3, 4, 6],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 14,
+        "title": "Complete Taskmaster Pipeline Integration",
+        "description": "Implement full Taskmaster pipeline integration including parse/analyze/expand workflow, complexity analysis, and task preview functionality.",
+        "details": "Complete the Taskmaster integration to include: 1) Full parse/analyze/expand workflow with proper error handling, 2) Complexity analysis display with detailed metrics, 3) Task preview and editing interface before ADO push, 4) Tag management for organizing different task sets, 5) Progress tracking for long-running operations.",
+        "testStrategy": "Unit tests for Taskmaster pipeline steps. Integration tests with MCP server to verify proper task generation. User acceptance tests for task preview and editing functionality.",
+        "priority": "high",
+        "dependencies": [4, 6],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 15,
+        "title": "Update API Integration Layer",
+        "description": "Align frontend API integration with PRD-defined endpoints and implement proper error handling and progress tracking.",
+        "details": "Update the API integration layer to match PRD specifications: 1) Align API calls with defined endpoints (/api/repo/clone, /api/kg/ingest, /api/prd/generate, /api/taskmaster/sync, /api/azure-devops/push), 2) Implement comprehensive error handling with user-friendly messages, 3) Add progress tracking for long-running operations, 4) Ensure proper data flow between workflow steps.",
+        "testStrategy": "Unit tests for API integration functions. Integration tests to verify proper endpoint communication. Error handling tests to ensure robust failure recovery.",
+        "priority": "high",
+        "dependencies": [2, 6],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 16,
+        "title": "Implement BFF (Backend for Frontend) Route",
+        "description": "Create a consolidated BFF route `/api/sdlc/build/bff` that orchestrates the complete SDLC workflow for frontend consumption.",
+        "details": "Implement a BFF route that consolidates the complete SDLC workflow: 1) Single endpoint `/api/sdlc/build/bff` that handles the entire workflow from repo clone to ADO push, 2) Orchestrates calls to individual service APIs (repo, prd, taskmaster, ado), 3) Provides unified error handling and progress tracking, 4) Maintains backward compatibility with individual service endpoints, 5) Implements proper workflow state management and rollback capabilities.",
+        "testStrategy": "Unit tests for BFF orchestration logic. Integration tests for complete workflow execution. End-to-end tests to verify BFF route handles the full SDLC workflow correctly. Performance tests to ensure BFF doesn't add significant latency.",
+        "priority": "high",
+        "dependencies": [2, 3, 4, 5],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 17,
+        "title": "Integrate Temporal Workflow Engine",
+        "description": "Replace the current background task workflow orchestration with Temporal for reliable, scalable, and fault-tolerant SDLC workflow execution.",
+        "details": "Integrate Temporal as the workflow orchestration engine: 1) Set up Temporal server in docker-compose, 2) Create Temporal workflow definitions for SDLC processes (repo clone, KG ingestion, PRD generation, task breakdown, ADO push), 3) Implement Temporal activities for each workflow step with proper error handling and retry logic, 4) Replace current BFF background tasks with Temporal workflow execution, 5) Implement workflow state persistence and recovery mechanisms, 6) Add Temporal UI for workflow monitoring and debugging.",
+        "testStrategy": "Unit tests for Temporal workflow definitions and activities. Integration tests for complete workflow execution with Temporal. End-to-end tests to verify fault tolerance and recovery mechanisms. Performance tests to ensure Temporal doesn't add significant overhead.",
+        "priority": "high",
+        "dependencies": [16],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 18,
+        "title": "Implement Report Page with Task Status Dashboard",
+        "description": "Create a comprehensive report page that displays project status by reading tasks.json from the git repository.",
+        "details": "Implement a report dashboard: 1) Create ReportPage component with task status visualization, 2) Add API endpoint to read tasks.json from repository, 3) Implement filtering and search functionality for tasks, 4) Add progress tracking and statistics display, 5) Include export functionality for task data, 6) Add real-time status updates and refresh capabilities.",
+        "testStrategy": "Unit tests for ReportPage component. Integration tests for task data retrieval and display. End-to-end tests to verify report functionality. Performance tests for large task datasets.",
+        "priority": "high",
+        "dependencies": [16],
+        "status": "pending",
+        "subtasks": []
+      }
+    ],
+    "metadata": {
+      "created": "2025-08-02T09:23:21.146Z",
+      "updated": "2025-01-27T13:00:00.000Z",
+      "description": "Tasks for master context"
+    }
+  },
+  "sldc-code-ingestrion": {
+    "tasks": [
+      {
+        "id": 1,
+        "title": "Setup Project Infrastructure with Docker Compose",
+        "description": "Create a `docker-compose.yml` file to orchestrate all system components (FastAPI, Agents, Redis, Consul, LiteLLM, Taskmaster) for a consistent local development and testing environment.",
+        "details": "The setup must include all necessary services as defined in the Technical Architecture section. This is a foundational step for all subsequent development and testing.",
+        "testStrategy": "Manual validation by running `docker-compose up` and ensuring all services start without errors. Integration tests will rely on this setup.",
+        "priority": "high",
+        "dependencies": [],
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Define Core Infrastructure Services (Redis & Consul)",
+            "description": "Add the foundational, third-party services Redis and Consul to the `docker-compose.yml` file. These services are prerequisites for our custom application components.",
+            "dependencies": [],
+            "details": "Use official Docker images for Redis (e.g., `redis:alpine`) and Consul. Configure a shared Docker network for all services. Define persistent volumes for Redis data and Consul data to ensure state is not lost between restarts.",
+            "status": "done",
+            "testStrategy": "Run `docker-compose up redis consul`. Verify both containers start successfully and are on the same Docker network using `docker network inspect`."
+          },
+          {
+            "id": 2,
+            "title": "Dockerize and Configure the FastAPI Service",
+            "description": "Create a Dockerfile for the main FastAPI application and add its service definition to the `docker-compose.yml` file.",
+            "dependencies": [],
+            "details": "The Dockerfile should install dependencies from a `requirements.txt` file. The `docker-compose.yml` service entry must mount the application source code for live-reloading, expose the necessary port (e.g., 8000), and include environment variables for connecting to the Redis and Consul services.",
+            "status": "done",
+            "testStrategy": "Run `docker-compose up fastapi`. Check logs to confirm the application starts and successfully connects to Redis and Consul. Access the API's interactive docs (e.g., at http://localhost:8000/docs) in a browser."
+          },
+          {
+            "id": 3,
+            "title": "Integrate and Configure the LiteLLM Proxy Service",
+            "description": "Add the LiteLLM service to the `docker-compose.yml` to act as a centralized proxy for all Large Language Model API calls.",
+            "dependencies": [],
+            "details": "Use the official LiteLLM Docker image. Create a `litellm_config.yaml` to define model mappings and mount it into the container. Use a `.env` file to manage sensitive API keys and reference it in the service definition. Ensure the service joins the shared Docker network.\n<info added on 2025-08-14T12:55:00.581Z>\nIntegrated LiteLLM with support for OpenAI, Anthropic, Google Gemini, Vertex AI, Perplexity, and OpenRouter models, including comprehensive model routing and budget controls.  A SETUP.md file with complete environment setup instructions and a .env template has been created. The LiteLLM service is now configured in docker-compose.yml and is ready to act as the central LLM proxy.\n</info added on 2025-08-14T12:55:00.581Z>",
+            "status": "done",
+            "testStrategy": "Start the LiteLLM service via `docker-compose up litellm`. Send a test `curl` request to the LiteLLM proxy endpoint to verify it can successfully route a request to a configured LLM provider."
+          },
+          {
+            "id": 4,
+            "title": "Dockerize and Configure Agent and Taskmaster Services",
+            "description": "Create Dockerfiles for the 'Agents' and 'Taskmaster' components and add their respective service definitions to the `docker-compose.yml` file.",
+            "dependencies": [],
+            "details": "For each service, create a Dockerfile to install its Python dependencies. In the `docker-compose.yml`, define services that mount their source code for development. Configure environment variables for each to connect to Redis, Consul, and the LiteLLM service endpoint.\n<info added on 2025-08-14T12:59:13.957Z>\nAdded orchestration-service to docker-compose.yml with proper networking and environment variables. Fixed the orchestration service Dockerfile build context. Created a template agent implementation with the proper module structure including __init__.py and __main__.py. Added volume mounts for the development workflow. Updated SETUP.md with new service endpoints. All services are now properly configured for Redis, Consul, and LiteLLM connectivity.\n</info added on 2025-08-14T12:59:13.957Z>",
+            "status": "done",
+            "testStrategy": "Run `docker-compose up agents taskmaster`. Monitor the logs for each service to ensure they start without errors and establish connections to their dependencies (Redis, Consul, LiteLLM)."
+          },
+          {
+            "id": 5,
+            "title": "Finalize Environment, Networking, and Documentation",
+            "description": "Tie all services together, establish a clear environment variable template, and document the complete setup for other developers.",
+            "dependencies": [],
+            "details": "Create a `.env.template` file listing all required environment variables. Verify that all services can communicate with each other over the Docker network using their service names. Add a section to the project's `README.md` with clear instructions on how to launch the entire stack using `docker-compose up`.",
+            "status": "done",
+            "testStrategy": "From a fresh clone of the repository, follow the new `README.md` instructions. Run `docker-compose up --build`. Verify all containers start, remain running, and that there are no connection error messages in any of the service logs."
+          }
+        ]
+      },
+      {
+        "id": 2,
+        "title": "Implement Base Agent Framework",
+        "description": "Develop the common `BaseAgent` class that provides a foundational framework for all specialized agents. It should handle client initializations and provide shared utilities.",
+        "details": "The Base Agent must initialize clients for Consul (config), Redis (state/history), and LiteLLM (LLM access). It should also provide helper methods for making LLM calls.",
+        "testStrategy": "Unit tests for client initialization logic and helper methods. Mock external services like Consul and Redis.",
+        "priority": "high",
+        "dependencies": [1],
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Define BaseAgent Class and Implement Consul Client Initialization",
+            "description": "Create the basic `BaseAgent` class structure in a new file. Implement the initial logic in the `__init__` method to connect to Consul and load all necessary configuration parameters for itself and other clients.",
+            "dependencies": [],
+            "details": "The class should read Consul connection details from environment variables. It will then fetch and store configuration keys (e.g., Redis host, LiteLLM API keys) as instance attributes. Implement error handling for missing keys.",
+            "status": "done",
+            "testStrategy": "Unit test the initialization. Mock the Consul client to return a predefined configuration dictionary and verify that the `BaseAgent` instance correctly populates its attributes."
+          },
+          {
+            "id": 2,
+            "title": "Integrate Redis Client for State and History",
+            "description": "Extend the `BaseAgent`'s `__init__` method to initialize a Redis client. This client will be used by inheriting agents for state management and conversation history.",
+            "dependencies": ["2.1"],
+            "details": "Use the configuration loaded from Consul (subtask 2.1) to establish a connection to the Redis server. The initialized Redis client object should be stored as an instance attribute, e.g., `self.redis_client`.",
+            "status": "done",
+            "testStrategy": "Extend the unit tests. Using the mocked Consul config, verify that the Redis client is instantiated with the correct host, port, and db parameters."
+          },
+          {
+            "id": 3,
+            "title": "Integrate LiteLLM for LLM Access",
+            "description": "Further extend the `BaseAgent`'s `__init__` method to configure the LiteLLM library. This sets up the primary interface for all LLM interactions.",
+            "dependencies": ["2.1"],
+            "details": "Using the API keys and model settings retrieved from Consul, call the necessary LiteLLM setup functions or set the required environment variables within the initializer. This ensures all subsequent LLM calls are properly authenticated.",
+            "status": "done",
+            "testStrategy": "Unit test that the LiteLLM configuration functions are called or environment variables are set with the correct values from the mocked Consul configuration."
+          },
+          {
+            "id": 4,
+            "title": "Implement Generic LLM Call Helper Method",
+            "description": "Create a reusable helper method within the `BaseAgent` class to abstract the process of making a call to an LLM via LiteLLM.",
+            "dependencies": ["2.3"],
+            "details": "Create a method such as `_make_llm_call(self, messages, model, **kwargs)`. This method will wrap the `litellm.completion()` function, adding standardized error handling, logging, and potentially retry logic.",
+            "status": "done",
+            "testStrategy": "Unit test the helper method in isolation. Mock the `litellm.completion` function to verify that the method correctly formats and passes parameters, and properly handles both successful responses and exceptions."
+          },
+          {
+            "id": 5,
+            "title": "Finalize Unit Test Suite with Mocking",
+            "description": "Develop a comprehensive unit test suite for the `BaseAgent` class, mocking all external services to ensure the class can be tested in isolation.",
+            "dependencies": ["2.1", "2.2", "2.3", "2.4"],
+            "details": "Using a mocking library (e.g., `unittest.mock`), create mocks for Consul, Redis, and LiteLLM. Consolidate all tests to verify the complete initialization flow and the functionality of all helper methods under various conditions.",
+            "status": "done",
+            "testStrategy": "This subtask is the implementation of the overall test strategy. Run the full test suite and ensure high code coverage for the `BaseAgent` class."
+          }
+        ]
+      },
+      {
+        "id": 3,
+        "title": "Develop Orchestration Engine with FastAPI",
+        "description": "Set up the main FastAPI service that will serve as the orchestration engine, exposing all UI and API endpoints for the application.",
+        "details": "The service will coordinate the different agents and services. Initial setup should include basic routing and the `/health` endpoint.",
+        "testStrategy": "Unit tests for basic endpoint routing. An integration test to confirm the service runs correctly within the Docker environment.",
+        "priority": "high",
+        "dependencies": [2],
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Initialize FastAPI Project Structure and Dependencies",
+            "description": "Create the basic directory structure for the orchestration engine service. Initialize a `pyproject.toml` or `requirements.txt` file and add core dependencies like `fastapi` and `uvicorn`.",
+            "dependencies": [],
+            "details": "Set up a root directory for the service (e.g., `orchestration_engine/`). Inside, create a main application file (e.g., `main.py`), a configuration file for dependencies, and an empty `tests/` directory.",
+            "status": "done",
+            "testStrategy": "Verify that `pip install` successfully installs the defined dependencies."
+          },
+          {
+            "id": 2,
+            "title": "Implement Basic FastAPI Application Instance",
+            "description": "In the main application file, instantiate the core `FastAPI` class. This will serve as the entry point for the web server and the foundation for all routing.",
+            "dependencies": ["3.1"],
+            "details": "In `main.py`, add the necessary imports and create the application object: `from fastapi import FastAPI; app = FastAPI()`.",
+            "status": "done",
+            "testStrategy": "Run the application with Uvicorn and ensure it starts without errors, though it will have no endpoints yet."
+          },
+          {
+            "id": 3,
+            "title": "Create the /health Endpoint",
+            "description": "Implement the mandatory `/health` GET endpoint. This endpoint will be used for service monitoring and to confirm that the application is running and responsive.",
+            "dependencies": ["3.2"],
+            "details": "Add a function decorated with `@app.get(\"/health\")` to `main.py`. The function should return a simple JSON response, such as `{\"status\": \"ok\"}`, with a 200 OK status code.",
+            "status": "done",
+            "testStrategy": "Write a unit test that makes a request to the `/health` endpoint and asserts a 200 status code and the expected JSON body."
+          },
+          {
+            "id": 4,
+            "title": "Set Up Modular API Router",
+            "description": "Establish a scalable routing structure using FastAPI's `APIRouter` to organize future API endpoints. This prepares the application to host endpoints for different agents.",
+            "dependencies": ["3.2"],
+            "details": "Create a new module for API routes (e.g., `api/router.py`). Define an `APIRouter` instance and include it in the main `app` object using `app.include_router()` with a prefix like `/api`.",
+            "status": "done",
+            "testStrategy": "Unit test to ensure the router is correctly included by checking the application's generated OpenAPI schema for the `/api` prefix."
+          },
+          {
+            "id": 5,
+            "title": "Containerize the Service with a Dockerfile",
+            "description": "Create a `Dockerfile` to build a container image for the FastAPI service. This ensures a consistent and reproducible deployment environment, as required by the task's test strategy.",
+            "dependencies": ["3.3"],
+            "details": "The Dockerfile should use a Python base image, copy the application source code, install dependencies from the requirements file, and specify the `CMD` to launch the Uvicorn server, exposing the application port.",
+            "status": "done",
+            "testStrategy": "Build the Docker image and run a container. Perform an integration test by making an HTTP request to the `/health` endpoint of the running container from the host machine."
+          }
+        ]
+      },
+      {
+        "id": 4,
+        "title": "Implement Structured Logging and Monitoring",
+        "description": "Integrate structured logging (e.g., JSON format) across all agents and services to facilitate easy parsing and analysis. Log execution times for key processes.",
+        "details": "All logs must be in a structured format. Key operations should log start time, end time, and total duration. Implement a `/health` check endpoint in the main orchestrator.",
+        "testStrategy": "Inspect log outputs to confirm JSON structure and the presence of performance metrics. Write a test to query the `/health` endpoint.",
+        "priority": "high",
+        "dependencies": [3],
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Configure Centralized Structured Logging Library",
+            "description": "Select and configure a standard logging library to enforce JSON-formatted output across all services. This will serve as the foundation for all subsequent logging work.",
+            "dependencies": [],
+            "details": "Choose a library (e.g., structlog for Python) and create a reusable configuration module. The default JSON output must include standard fields like `timestamp`, `level`, `message`, and `service_name`.",
+            "status": "done",
+            "testStrategy": "Create a small test script that imports the new logging configuration and emits a log message. Verify the console output is a single line of valid JSON containing the required fields."
+          },
+          {
+            "id": 2,
+            "title": "Integrate Structured Logger into All Services and Agents",
+            "description": "Refactor all existing services (Orchestrator, ADO Sync, KG Agent, etc.) to use the new centralized structured logging library, replacing all previous logging methods like `print()`.",
+            "dependencies": ["4.1"],
+            "details": "Go through each service, import the logging module, and replace all instances of unstructured logging. Add context-specific fields where appropriate, such as `request_id` or `correlation_id`.",
+            "status": "done",
+            "testStrategy": "Start each service and perform a basic operation. Inspect the log output to confirm all messages from that service now appear in the standard JSON format."
+          },
+          {
+            "id": 3,
+            "title": "Implement Performance Timers for Key Operations",
+            "description": "Create and apply a utility (e.g., a decorator or context manager) to log the execution time of critical processes as specified in the task requirements.",
+            "dependencies": ["4.1"],
+            "details": "The timer should log a structured message containing `operation_name`, `start_time`, `end_time`, and `duration_ms`. Apply this to key functions in the ADO sync agent and KG summary agent.",
+            "status": "done",
+            "testStrategy": "Write a unit test for the timing utility itself. Inspect the logs after running a timed operation (like ADO push) to verify that the performance log message is present and contains the correct fields."
+          },
+          {
+            "id": 4,
+            "title": "Implement /health Check Endpoint in Main Orchestrator",
+            "description": "Create a simple, unauthenticated `GET /health` endpoint in the main orchestrator service to provide a basic health status.",
+            "dependencies": [],
+            "details": "The endpoint should return an HTTP 200 status code and a JSON body of `{\"status\": \"healthy\"}`. This is a standard practice for service monitoring and load balancers.",
+            "status": "done",
+            "testStrategy": "Write an automated integration test that sends a request to the `/health` endpoint and asserts the response code is 200 and the body matches the expected JSON."
+          },
+          {
+            "id": 5,
+            "title": "Verify End-to-End Logging and Document Standards",
+            "description": "Perform a full workflow run to verify that logs from all services are structured correctly and consistently. Document the logging standards for future development.",
+            "dependencies": ["4.2", "4.3", "4.4"],
+            "details": "Document the standard log format, required fields, and provide examples of how to add new logs and performance timers. The end-to-end verification should check for any remaining unstructured logs.",
+            "status": "done",
+            "testStrategy": "Execute a complete process (e.g., from plan generation to ADO push). Collect all logs and use a tool like `jq` to parse them, confirming structure, and verifying that key performance metrics and health checks are working as expected."
+          }
+        ]
+      },
+      {
+        "id": 5,
+        "title": "Implement Repo & KG Agent: Repository Cloning",
+        "description": "Implement the repository cloning functionality within the Repo & KG Agent. This includes the API endpoint and the underlying Git logic.",
+        "details": "Create the `POST /api/repo/clone` endpoint. Use Git to clone the provided remote URL into a configured workspace path. Handle cases where the repository already exists by re-cloning.",
+        "testStrategy": "Unit test the cloning logic with a mock Git process. Integration test by calling the API endpoint and verifying the repository is cloned to the correct directory.",
+        "priority": "high",
+        "dependencies": [3],
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Define API Route and Request Model for Repository Cloning",
+            "description": "Set up the `POST /api/repo/clone` endpoint within the application's web framework. Define and validate the request body schema, which must contain the `remote_url` of the repository to be cloned.",
+            "dependencies": [],
+            "details": "The request model should enforce that `remote_url` is a non-empty string and preferably a valid URL format. The route should be registered in the main API router.",
+            "status": "done",
+            "testStrategy": "Manually test the endpoint with a tool like cURL or Postman to ensure it accepts valid requests and rejects invalid ones (e.g., missing `remote_url`)."
+          },
+          {
+            "id": 2,
+            "title": "Implement Workspace Path Configuration Loading",
+            "description": "Create a configuration service or utility to securely read the repository workspace path from the application's configuration source (e.g., environment variables, Consul, or a config file).",
+            "dependencies": [],
+            "details": "The service should provide a simple function, e.g., `get_workspace_path()`, that returns the configured string. This isolates configuration access from the business logic.",
+            "status": "done",
+            "testStrategy": "Unit test the configuration loader to ensure it correctly reads the path from a mock environment or config file."
+          },
+          {
+            "id": 3,
+            "title": "Develop the Core Git Cloning Service",
+            "description": "Implement a standalone service or function that encapsulates the logic for executing the `git clone` command using a system subprocess. This service will take a remote URL and a full destination path as arguments.",
+            "dependencies": [],
+            "details": "The service should be responsible for constructing and running the `git clone <url> <path>` command. It should capture stdout/stderr to log results and detect errors.",
+            "status": "done",
+            "testStrategy": "Unit test this service by mocking the subprocess call to verify that the correct git command is generated and executed."
+          },
+          {
+            "id": 4,
+            "title": "Implement Endpoint Handler with Re-cloning Logic",
+            "description": "Create the handler function for the API endpoint. This function will orchestrate the cloning process by using the previously created services. It must handle the case where a repository already exists by removing the old directory before cloning.",
+            "dependencies": ["5.1", "5.2", "5.3"],
+            "details": "The handler will: 1. Get the workspace path. 2. Construct the full target path from the repository name. 3. Check if the target path exists; if so, delete it recursively. 4. Call the Git Cloning Service. 5. Return a 200 OK response on success or an appropriate error code on failure.",
+            "status": "done",
+            "testStrategy": "Integration test this logic as part of the full end-to-end test in the next subtask."
+          },
+          {
+            "id": 5,
+            "title": "Create Full Integration Test for the Cloning Endpoint",
+            "description": "Develop an integration test that calls the `POST /api/repo/clone` endpoint with a public test repository URL. The test must verify that the repository is successfully cloned into the configured workspace directory.",
+            "dependencies": ["5.4"],
+            "details": "The test should perform setup to ensure the workspace directory is clean, call the API, and then use filesystem assertions to check for the existence of the cloned repository and key files within it (e.g., `.git` directory). It should also test the re-cloning case.",
+            "status": "done",
+            "testStrategy": "Execute the test against a running instance of the application in a controlled test environment."
+          }
+        ]
+      },
+      {
+        "id": 6,
+        "title": "Implement Repo & KG Agent: Knowledge Graph Ingestion",
+        "description": "Implement the KG ingestion feature to parse source files and build a lightweight knowledge graph.",
+        "details": "Create the `POST /api/kg/ingest` endpoint. For the MVP, focus on Python files, using the AST module to extract symbols (files, classes, functions). Persist graph metrics like node and edge counts.",
+        "testStrategy": "Unit test the AST parsing logic on sample Python files. Integration test the full flow from API call to KG metric generation.",
+        "priority": "high",
+        "dependencies": [5],
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Create POST /api/kg/ingest API Endpoint Shell",
+            "description": "Establish the initial API endpoint structure for knowledge graph ingestion. This will serve as the entry point for the feature.",
+            "dependencies": [],
+            "details": "Using a web framework like FastAPI or Flask, define the route for `POST /api/kg/ingest`. Create a placeholder handler function that accepts a request (e.g., specifying a repository to scan) and returns a static success message. This sets up the API contract early.",
+            "status": "done",
+            "testStrategy": "Manually test the endpoint using an API client like cURL or Postman to ensure it's reachable and returns the placeholder response."
+          },
+          {
+            "id": 2,
+            "title": "Implement Python AST Parser for Symbol Extraction",
+            "description": "Develop a dedicated module to parse the content of a single Python file and extract key symbols like classes and functions.",
+            "dependencies": [],
+            "details": "Create a parser function that takes a Python source code string as input. Use Python's built-in `ast` module to walk the Abstract Syntax Tree. Extract nodes of type `ast.ClassDef` and `ast.FunctionDef`, capturing their names and locations. The output should be a structured list of these symbols.",
+            "status": "done",
+            "testStrategy": "Unit test the parser against various sample Python files, including those with nested classes, complex functions, and edge cases, to verify accurate symbol extraction."
+          },
+          {
+            "id": 3,
+            "title": "Design and Implement In-Memory Graph Data Structure",
+            "description": "Create the core data structures to represent the knowledge graph, including nodes for symbols and edges for their relationships.",
+            "dependencies": ["6.2"],
+            "details": "Define classes for `Node` (attributes: id, type, name) and `Edge` (attributes: source_id, target_id, type). Create a `Graph` class to manage the collection of nodes and edges. Implement methods like `add_node()` and `add_edge()` to build the graph from the symbols extracted by the AST parser. For the MVP, focus on 'CONTAINS' relationships (file contains class, class contains function).",
+            "status": "done",
+            "testStrategy": "Unit test the Graph class to ensure nodes and edges can be added and retrieved correctly."
+          },
+          {
+            "id": 4,
+            "title": "Implement File Discovery and Graph Population Logic",
+            "description": "Create the orchestration logic that scans a repository, parses each Python file, and populates the in-memory knowledge graph.",
+            "dependencies": ["6.2", "6.3"],
+            "details": "Write a service that recursively scans a given directory for files ending in `.py`. For each file found, create a 'file' node in the graph. Then, use the AST parser (from subtask 6.2) to extract symbols and populate the graph (from subtask 6.3) with 'class' and 'function' nodes, linking them to their parent file or class with 'CONTAINS' edges.",
+            "status": "done",
+            "testStrategy": "Write an integration test that runs this logic on a small, sample directory of Python files and inspects the resulting in-memory graph object to verify its structure is correct."
+          },
+          {
+            "id": 5,
+            "title": "Calculate Metrics and Finalize API Integration",
+            "description": "Compute graph metrics, implement their persistence, and integrate the full ingestion workflow into the API endpoint.",
+            "dependencies": ["6.1", "6.4"],
+            "details": "Add methods to the `Graph` class to calculate total node and edge counts. After the graph is populated, persist these metrics to a simple storage (e.g., a JSON file). Wire the full orchestration logic from subtask 6.4 into the `POST /api/kg/ingest` endpoint created in subtask 6.1. The endpoint should return the calculated metrics in its JSON response.",
+            "status": "done",
+            "testStrategy": "Write a full integration test for the `POST /api/kg/ingest` endpoint. The test should call the API, which triggers a scan of a test repository, and then assert that the API response contains the correct node and edge counts."
+          }
+        ]
+      },
+      {
+        "id": 7,
+        "title": "Implement Repo & KG Agent: Repo Summary Extraction",
+        "description": "Implement the logic to generate a textual summary from the knowledge graph.",
+        "details": "Create the `GET /api/kg/summary` endpoint. This service will aggregate features from the KG to produce a short textual summary that can be used to seed the PRD.",
+        "testStrategy": "Unit test the summary generation logic against a pre-defined KG structure. Verify the endpoint returns the summary and metrics.",
+        "priority": "high",
+        "dependencies": [6],
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Set up the GET /api/kg/summary API Endpoint and Controller",
+            "description": "Create the basic API route and controller/handler structure for the `GET /api/kg/summary` endpoint. This will serve as the entry point for the summary generation feature.",
+            "dependencies": [],
+            "details": "Implement the necessary server-side routing and a placeholder controller function. Initially, this endpoint can return a static, hardcoded JSON response to confirm it is wired up correctly.",
+            "status": "done",
+            "testStrategy": "Manually test the endpoint using a tool like curl or Postman to verify it is reachable and returns the expected placeholder 200 OK response."
+          },
+          {
+            "id": 2,
+            "title": "Implement KG Data Access Logic to Fetch Repository Features",
+            "description": "Develop the data access layer responsible for connecting to the knowledge graph and executing queries to retrieve the raw data needed for the summary.",
+            "dependencies": [],
+            "details": "Write the specific queries (e.g., using Cypher or SPARQL) to extract key features from the KG, such as file counts, language distribution, primary dependencies, and identified architectural components. This module should return raw, unprocessed data.",
+            "status": "done",
+            "testStrategy": "Unit test the query functions against a mock or test instance of the knowledge graph to ensure they retrieve the correct data structures."
+          },
+          {
+            "id": 3,
+            "title": "Develop the Feature Aggregation Service",
+            "description": "Create a service that processes the raw data retrieved from the KG and aggregates it into a structured set of metrics.",
+            "dependencies": ["7.2"],
+            "details": "This service will take the raw query results as input. It will perform calculations and transformations to produce a clean, structured object containing key metrics like language percentages, a list of top-level directories, and a consolidated list of major frameworks.",
+            "status": "done",
+            "testStrategy": "Unit test the aggregation logic by providing sample raw data inputs and asserting that the output metric object is structured and calculated correctly."
+          },
+          {
+            "id": 4,
+            "title": "Implement Textual Summary Generation from Metrics",
+            "description": "Create the logic that takes the structured metrics and synthesizes them into a concise, human-readable textual summary.",
+            "dependencies": ["7.3"],
+            "details": "Use a template-based approach to construct the summary string. The function will accept the aggregated metrics object and populate a template, such as: 'This repository is a [primary_language] project with [file_count] files. Key components include [list_of_components].'",
+            "status": "done",
+            "testStrategy": "Unit test the summary generation function with various metric object inputs to verify that the output string is well-formed and accurately reflects the input data."
+          },
+          {
+            "id": 5,
+            "title": "Integrate Components and Format the Final API Response",
+            "description": "Combine the data access, aggregation, and summary generation logic within the API controller and format the final JSON response.",
+            "dependencies": ["7.1", "7.4"],
+            "details": "Update the controller from subtask 1 to orchestrate the calls: fetch raw data (subtask 2), aggregate metrics (subtask 3), and generate the summary (subtask 4). The final response must be a JSON object containing both the textual summary and the structured metrics, like `{ \"summary\": \"...\", \"metrics\": { ... } }`.",
+            "status": "done",
+            "testStrategy": "Write an integration test for the `/api/kg/summary` endpoint that, given a pre-defined KG state, verifies the entire response payload, including the summary text and all metrics, is correct."
+          }
+        ]
+      },
+      {
+        "id": 8,
+        "title": "Implement PRD Agent: LLM-Oriented Drafting",
+        "description": "Develop the backend logic for the PRD Authoring Agent to generate a PRD draft using LiteLLM.",
+        "details": "Create the `POST /api/prd/generate` endpoint. It should accept structured inputs, merge them with the KG summary, construct a prompt, and use `BaseAgent` helpers to call LiteLLM. The generated PRD text should be saved to `.taskmaster/docs/`.",
+        "testStrategy": "Unit test the prompt construction logic. Integration test the API endpoint with a mocked LiteLLM call to ensure the file is created correctly.",
+        "priority": "high",
+        "dependencies": [3, 7],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Define and Implement POST /api/prd/generate Endpoint and Request Model",
+            "description": "Set up the API route, controller, and request body validation for the `/api/prd/generate` endpoint. This includes defining the data structure for the structured inputs required to draft a PRD.",
+            "dependencies": [],
+            "details": "Create the FastAPI (or equivalent) route for `POST /api/prd/generate`. Define a Pydantic model to represent the expected JSON payload, including fields like 'title', 'user_persona', 'problem_statement', and 'proposed_solution'. The initial handler should validate the incoming request against this model.",
+            "status": "pending",
+            "testStrategy": "Unit test the request model for validation rules. Create a basic integration test that calls the endpoint with valid and invalid data to ensure correct status codes are returned."
+          },
+          {
+            "id": 2,
+            "title": "Integrate KG Summary Fetching Logic",
+            "description": "Within the endpoint logic, implement a call to the `GET /api/kg/summary` service to retrieve the contextual summary from the knowledge graph.",
+            "dependencies": ["8.1"],
+            "details": "Use an internal HTTP client to make a GET request to the `/api/kg/summary` endpoint (from Task 7). The fetched summary text needs to be stored and made available for the next step. Implement error handling for cases where the KG summary service is unavailable or returns an error.",
+            "status": "pending",
+            "testStrategy": "Unit test this integration point by mocking the HTTP client and simulating successful and error responses from the `/api/kg/summary` endpoint."
+          },
+          {
+            "id": 3,
+            "title": "Develop Prompt Construction Service",
+            "description": "Create a dedicated function or service that merges the structured user inputs from the request and the fetched KG summary into a single, well-formatted prompt for the LLM.",
+            "dependencies": ["8.2"],
+            "details": "This component will be responsible for all prompt engineering. It should take the request body data and the KG summary as inputs and use a template to construct the final prompt string. The prompt should clearly instruct the LLM to generate a PRD based on the provided context.",
+            "status": "pending",
+            "testStrategy": "Unit test the prompt construction logic with various combinations of user inputs and KG summaries to ensure the output prompt is correctly formatted and contains all necessary information."
+          },
+          {
+            "id": 4,
+            "title": "Invoke LiteLLM using BaseAgent Helper",
+            "description": "Use the `BaseAgent` helper class to pass the constructed prompt to the LiteLLM service and retrieve the generated PRD text.",
+            "dependencies": ["8.3"],
+            "details": "Instantiate or get an instance of the `BaseAgent`. Call its generation method, passing the prompt created in the previous subtask. Await the response from the LLM and extract the generated text content.",
+            "status": "pending",
+            "testStrategy": "Write an integration test for the endpoint that mocks the `BaseAgent`'s call to LiteLLM, ensuring the correct prompt is passed and the handler can process a simulated LLM response."
+          },
+          {
+            "id": 5,
+            "title": "Save Generated PRD to File and Return Response",
+            "description": "Implement the final step to persist the LLM-generated text to a file in the `.taskmaster/docs/` directory and return a success response from the API.",
+            "dependencies": ["8.4"],
+            "details": "Take the generated text from LiteLLM and write it to a file. The filename should be sanitized and derived from the PRD title (e.g., `prd-feature-name.md`). The API should then return a 201 Created or 200 OK response containing a confirmation message and the path to the new file.",
+            "status": "pending",
+            "testStrategy": "In an integration test (mocking the LLM call), verify that a file with the expected name and content is created in the `.taskmaster/docs/` directory. Assert the structure of the final API JSON response."
+          }
+        ]
+      },
+      {
+        "id": 9,
+        "title": "Implement PRD Agent: Taskmaster Orchestration",
+        "description": "Develop the functionality to convert a generated PRD into a structured Taskmaster plan.",
+        "details": "Create the `POST /api/taskmaster/sync` endpoint. This will invoke the sequence of MCP tools: `parse_prd`, `analyze_project_complexity`, and `expand_all`. Store the outputs in the `.taskmaster/` directory.",
+        "testStrategy": "Integration test the endpoint by mocking the Taskmaster MCP server responses and verifying that the correct sequence of tools is called.",
+        "priority": "high",
+        "dependencies": [8],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Create POST /api/taskmaster/sync Endpoint Structure",
+            "description": "Set up the basic API route and controller for the Taskmaster sync process. This initial implementation will establish the endpoint without the full orchestration logic.",
+            "dependencies": [],
+            "details": "Define the route `POST /api/taskmaster/sync`. Create a corresponding controller method that accepts the request and returns a placeholder success response (e.g., HTTP 202 Accepted).",
+            "status": "pending",
+            "testStrategy": "Unit test the route to ensure it's registered and returns the correct status code."
+          },
+          {
+            "id": 2,
+            "title": "Integrate 'parse_prd' MCP Tool Call",
+            "description": "Implement the first step of the orchestration sequence by invoking the 'parse_prd' tool via the MCP client.",
+            "dependencies": ["9.1"],
+            "details": "Within the sync endpoint handler, add logic to call the MCP client with the 'parse_prd' tool name. The PRD content will be the input. The output from this call should be captured for the next step.",
+            "status": "pending",
+            "testStrategy": "Integration test by mocking the MCP client's response for 'parse_prd' and verifying the endpoint correctly calls it with the expected input."
+          },
+          {
+            "id": 3,
+            "title": "Chain 'analyze_project_complexity' Tool Call",
+            "description": "Extend the orchestration to invoke the 'analyze_project_complexity' tool, using the output from the 'parse_prd' step as its input.",
+            "dependencies": ["9.2"],
+            "details": "Modify the endpoint handler to take the result from the 'parse_prd' call and pass it as the input to a second MCP client call for the 'analyze_project_complexity' tool.",
+            "status": "pending",
+            "testStrategy": "Extend the integration test to mock responses for both 'parse_prd' and 'analyze_project_complexity', ensuring they are called in the correct sequence."
+          },
+          {
+            "id": 4,
+            "title": "Finalize Orchestration with 'expand_all' Tool Call",
+            "description": "Complete the tool invocation sequence by calling the 'expand_all' tool with the output from the complexity analysis step.",
+            "dependencies": ["9.3"],
+            "details": "Add the final MCP client call to the 'expand_all' tool, passing the output from 'analyze_project_complexity'. This call will produce the final, structured Taskmaster plan.",
+            "status": "pending",
+            "testStrategy": "Update the integration test to cover the full three-step chain, mocking all MCP tool responses and verifying the final plan is correctly generated in memory."
+          },
+          {
+            "id": 5,
+            "title": "Implement File Persistence for the Final Plan",
+            "description": "Store the final Taskmaster plan, generated by the 'expand_all' tool, into a file within the '.taskmaster/' directory.",
+            "dependencies": ["9.4"],
+            "details": "After the 'expand_all' tool returns successfully, implement the logic to write its JSON output to a file (e.g., `.taskmaster/plan.json`). Ensure the `.taskmaster/` directory is created if it does not exist.",
+            "status": "pending",
+            "testStrategy": "Unit test the file writing logic. In the main integration test, use a temporary directory to verify that the endpoint correctly creates the directory and writes the expected file content."
+          }
+        ]
+      },
+      {
+        "id": 10,
+        "title": "Implement ADO Sync Agent: Work Item Creation",
+        "description": "Implement the core logic to create work items in Azure DevOps based on the Taskmaster plan.",
+        "details": "Create the `POST /api/azure-devops/push` endpoint. It will iterate through the Taskmaster plan, creating one User Story per top-level task and a Task for each subtask. Tasks must be linked to their parent User Story.",
+        "testStrategy": "Unit test the transformation logic from Taskmaster format to ADO API payload. Integration test with a mocked ADO REST API to verify correct API calls and payload structure.",
+        "priority": "high",
+        "dependencies": [9],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Create Endpoint Skeleton and Request Handling",
+            "description": "Establish the `POST /api/azure-devops/push` endpoint. This includes setting up the router, controller, and basic request/response structure without the core sync logic.",
+            "dependencies": [],
+            "details": "Implement the basic HTTP handler for the endpoint. Initially, it can accept a POST request and return a static '202 Accepted' or '501 Not Implemented' response. This sets up the entry point for the sync process.",
+            "status": "pending",
+            "testStrategy": "Unit test the endpoint to ensure it's registered correctly and handles basic requests."
+          },
+          {
+            "id": 2,
+            "title": "Implement Taskmaster Plan Loading and Parsing",
+            "description": "Develop the internal logic to read the Taskmaster plan file from the `.taskmaster/` directory and parse it into a structured object that the sync agent can iterate through.",
+            "dependencies": [],
+            "details": "Create a service/module responsible for file system access to read the plan. It should handle potential file-not-found errors and parse the plan (e.g., from YAML or JSON) into a defined data structure/class.",
+            "status": "pending",
+            "testStrategy": "Unit test the parser with various valid and invalid plan files to ensure correct parsing and error handling."
+          },
+          {
+            "id": 3,
+            "title": "Implement ADO User Story Creation",
+            "description": "Iterate through the top-level tasks from the parsed plan and create a corresponding 'User Story' work item in Azure DevOps for each one.",
+            "dependencies": ["10.1", "10.2"],
+            "details": "For each top-level task, map its properties (title, description) to the ADO User Story payload format. Use an ADO client/service to make the `POST` request to the ADO work items API. The ID of the created User Story must be stored for the next step.",
+            "status": "pending",
+            "testStrategy": "Integration test against a mocked ADO API to verify that the correct number of User Stories are created with the correct payload structure."
+          },
+          {
+            "id": 4,
+            "title": "Implement ADO Task Creation and Parent Linking",
+            "description": "For each newly created User Story, iterate through its corresponding subtasks from the plan, create them as 'Task' work items in ADO, and link them as children to the parent User Story.",
+            "dependencies": ["10.3"],
+            "details": "After a User Story is created, use its returned ID to construct the child Task payloads. The payload for each Task must include a 'relations' field to establish the 'System.LinkTypes.Hierarchy-Reverse' (Parent) link to the User Story.",
+            "status": "pending",
+            "testStrategy": "Integration test with a mocked ADO API. Verify that for each User Story creation call, subsequent calls are made to create Tasks, and that the Task payloads contain the correct parent URL in the relations array."
+          },
+          {
+            "id": 5,
+            "title": "Implement Error Handling and Final Response Aggregation",
+            "description": "Wrap the entire creation process in robust error handling and aggregate the results into a final, meaningful API response.",
+            "dependencies": ["10.4"],
+            "details": "Implement try-catch blocks for ADO API calls to handle network issues, authentication failures, or invalid data. The final response from the endpoint should summarize the operation, including a list of successfully created work item IDs and details of any failures.",
+            "status": "pending",
+            "testStrategy": "Unit test the error handling logic by mocking ADO API failures. Integration test the full flow to ensure a partial success (e.g., User Story created but a Task fails) is reported correctly in the final response."
+          }
+        ]
+      },
+      {
+        "id": 11,
+        "title": "Implement ADO Sync Agent: Project Binding and Validation",
+        "description": "Implement the functionality to configure and validate Azure DevOps connection settings.",
+        "details": "Create the `POST /api/azure-devops/validate` endpoint. This will use the provided org, project, team, and PAT (from Consul) to make a test call to the ADO REST API to confirm validity.",
+        "testStrategy": "Integration test against a mocked ADO API to check successful validation and correct error handling for invalid credentials or projects.",
+        "priority": "high",
+        "dependencies": [3],
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Implement API Endpoint Logic",
+            "description": "Implement the logic for the `POST /api/azure-devops/validate` endpoint to handle requests, extract data, and call the validation function.",
+            "dependencies": [],
+            "details": "This subtask focuses on the request handling and routing aspect of the endpoint, not the validation logic itself.",
+            "status": "done",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "Integrate with Consul for Settings",
+            "description": "Fetch the necessary Azure DevOps organization, project, team, and PAT settings from Consul.",
+            "dependencies": [],
+            "details": "Ensure secure retrieval and handling of the PAT from Consul.",
+            "status": "done",
+            "testStrategy": ""
+          },
+          {
+            "id": 3,
+            "title": "Handle ADO API Validation Responses",
+            "description": "Process the response from the Azure DevOps API validation call, handling both success and error scenarios.",
+            "dependencies": ["11.1", "11.2"],
+            "details": "Return appropriate status codes and messages to the client based on the validation outcome. Log detailed error information for debugging.",
+            "status": "done",
+            "testStrategy": ""
+          }
+        ]
+      },
+      {
+        "id": 12,
+        "title": "UI Component: Repository Selector",
+        "description": "Build the frontend UI component that allows a user to input a Git URL and trigger the clone and ingest process.",
+        "details": "The component should consist of a text input field for the Git URL and a button that calls the `/api/repo/clone` and `/api/kg/ingest` endpoints.",
+        "testStrategy": "E2E test: Enter a valid URL, click the button, and verify the backend processes are triggered and the UI receives a success confirmation.",
+        "priority": "high",
+        "dependencies": [5, 6],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "UI Implementation: Input and Button",
+            "description": "Create the UI elements for the repository URL input field and the trigger button.",
+            "dependencies": [],
+            "details": "Use a suitable UI library to create a text input field for the Git URL and a button labeled 'Clone and Ingest'.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "API Integration and Response Handling",
+            "description": "Implement the logic to call the API endpoints on button click and handle the responses.",
+            "dependencies": ["12.1"],
+            "details": "On button click, retrieve the Git URL from the input field. Make sequential calls to `/api/repo/clone` and `/api/kg/ingest`, passing the URL. Handle success and error responses from the API, providing feedback to the user.",
+            "status": "pending",
+            "testStrategy": ""
+          }
+        ]
+      },
+      {
+        "id": 13,
+        "title": "UI Component: Azure DevOps Settings",
+        "description": "Build the frontend UI component for configuring Azure DevOps connection details.",
+        "details": "The component should have input fields for ADO organization, project, team, and board. A 'Validate' button should call the `/api/azure-devops/validate` endpoint.",
+        "testStrategy": "E2E test: Enter ADO details, click 'Validate', and verify the UI displays a success or error message based on the API response.",
+        "priority": "high",
+        "dependencies": [11],
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Create UI form for Azure DevOps settings",
+            "description": "Develop the UI form with input fields for ADO organization, project, team, and board.",
+            "dependencies": [],
+            "details": "Use a suitable UI library and ensure the form is responsive and user-friendly.",
+            "status": "done",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "Implement validation logic and display",
+            "description": "Implement the validation logic that calls the `/api/azure-devops/validate` endpoint and displays the result.",
+            "dependencies": ["13.1"],
+            "details": "Display clear success or error messages based on the API response. Handle potential error scenarios gracefully.",
+            "status": "done",
+            "testStrategy": ""
+          }
+        ]
+      },
+      {
+        "id": 14,
+        "title": "UI Component: PRD Builder Form",
+        "description": "Build the frontend UI form for authoring the PRD.",
+        "details": "The form should have sectioned text inputs corresponding to the PRD template (Overview, Technical Architecture, etc.). A 'Generate' button will submit the form data to the `/api/prd/generate` endpoint.",
+        "testStrategy": "E2E test: Fill out the form fields, click 'Generate', and verify that a PRD is created on the backend.",
+        "priority": "high",
+        "dependencies": [8],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Design and build PRD Builder UI form with sections",
+            "description": "Create a multi-section form layout, inputs, validation states, and UX for the PRD builder.",
+            "details": "",
+            "status": "pending",
+            "dependencies": [],
+            "parentTaskId": 14
+          },
+          {
+            "id": 2,
+            "title": "Implement form submission and API response handling",
+            "description": "Wire up submission handler, call backend, manage loading/error states, and map results into UI.",
+            "details": "",
+            "status": "pending",
+            "dependencies": [],
+            "parentTaskId": 14
+          }
+        ]
+      },
+      {
+        "id": 15,
+        "title": "UI Component: Taskmaster Actions & Board Sync",
+        "description": "Build the UI components to run the Taskmaster pipeline and push the results to Azure DevOps.",
+        "details": "This includes buttons to trigger the `/api/taskmaster/sync` and `/api/azure-devops/push` endpoints. A progress/log panel should display the status and IDs of created work items.",
+        "testStrategy": "E2E test: After generating a PRD, click the Taskmaster sync button, then the ADO push button. Verify the UI log panel shows the expected output.",
+        "priority": "high",
+        "dependencies": [9, 10],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "UI for Buttons and Log Panel",
+            "description": "Create the UI elements for triggering Taskmaster sync and Azure DevOps push, including a progress/log panel.",
+            "dependencies": [],
+            "details": "Design and implement buttons for '/api/taskmaster/sync' and '/api/azure-devops/push'. Create a log panel to display progress and work item IDs.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "API Integration for Taskmaster and ADO",
+            "description": "Implement the API calls for Taskmaster synchronization and pushing data to Azure DevOps.",
+            "dependencies": ["15.1"],
+            "details": "Write the frontend logic to call '/api/taskmaster/sync' and '/api/azure-devops/push' endpoints with appropriate data and handle responses.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 3,
+            "title": "Progress/Log Handling and Display",
+            "description": "Manage, format, and display progress updates and logs from API calls in the UI log panel.",
+            "dependencies": ["15.2"],
+            "details": "Process API responses, extract relevant information like progress status and work item IDs, and display them in a user-friendly format within the log panel.",
+            "status": "pending",
+            "testStrategy": ""
+          }
+        ]
+      },
+      {
+        "id": 16,
+        "title": "Implement API Documentation with OpenAPI/Swagger",
+        "description": "Automatically generate interactive API documentation for all endpoints using FastAPI's built-in OpenAPI/Swagger support.",
+        "details": "Ensure all API endpoints have proper Pydantic models, descriptions, and examples so the generated documentation is clear and useful.",
+        "testStrategy": "Manual validation by navigating to the `/docs` URL of the running application and reviewing the generated specification for completeness and accuracy.",
+        "priority": "medium",
+        "dependencies": [3],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Review and Update Pydantic Models",
+            "description": "Ensure all API endpoints have well-defined Pydantic models with appropriate data types, field descriptions, and validation rules.",
+            "dependencies": [],
+            "details": "Review existing Pydantic models for completeness and accuracy. Update or create models as needed to reflect the API endpoint data structures.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "Add Endpoint Descriptions and Summaries",
+            "description": "Provide clear and concise descriptions for all API endpoints using FastAPI's docstring support.",
+            "dependencies": [],
+            "details": "Write descriptive docstrings for each endpoint function, including a brief summary and detailed explanation of the endpoint's purpose, expected input, and output.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 3,
+            "title": "Include Examples and Schema Information",
+            "description": "Enhance documentation with practical examples and detailed schema definitions for request and response payloads.",
+            "dependencies": ["16.1", "16.2"],
+            "details": "Add example request and response payloads to the docstrings. Utilize FastAPI's features to automatically generate schema definitions from Pydantic models.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 4,
+            "title": "Test and Validate Generated Documentation",
+            "description": "Thoroughly test the automatically generated API documentation for completeness, accuracy, and usability.",
+            "dependencies": ["16.3"],
+            "details": "Access the `/docs` endpoint of the running application. Review the generated documentation, ensuring all endpoints, descriptions, examples, and schemas are present and correct.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 5,
+            "title": "Document Common Error Responses",
+            "description": "Include documentation for common API error responses, providing clear explanations and potential solutions.",
+            "dependencies": ["16.3"],
+            "details": "Identify common error scenarios for API endpoints. Document these errors with appropriate HTTP status codes, error messages, and guidance for resolution.",
+            "status": "pending",
+            "testStrategy": ""
+          }
+        ]
+      },
+      {
+        "id": 17,
+        "title": "Implement ADO Sync Idempotency",
+        "description": "Enhance the Azure DevOps sync process to prevent the creation of duplicate work items on subsequent runs.",
+        "details": "Implement a strategy to check for existing work items before creation. This can be done by checking for items with a deterministic title or by using a unique tag.",
+        "testStrategy": "Integration test: Run the ADO push operation twice with the same input plan. Verify that work items are created on the first run and updated or skipped on the second, but not duplicated.",
+        "priority": "medium",
+        "dependencies": [10],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Choose Idempotency Strategy",
+            "description": "Determine the strategy for ensuring idempotency in work item creation. Evaluate using deterministic titles versus unique tags, considering factors like readability, maintainability, and potential collisions.",
+            "dependencies": [],
+            "details": "Decision to be documented in the task implementation details.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "Implement ADO API Calls for Item Check",
+            "description": "Implement API calls to Azure DevOps to check for the existence of work items before attempting creation. This should use the chosen idempotency strategy (title or tag).",
+            "dependencies": ["17.1"],
+            "details": "API calls should be efficient and well-documented. Error handling for API failures should be included.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 3,
+            "title": "Modify Sync Logic for Update/Skip",
+            "description": "Update the ADO sync process to incorporate the work item check. If an item exists, update it based on the latest data. If not, create a new work item.",
+            "dependencies": ["17.2"],
+            "details": "Ensure the update logic handles changes to titles, descriptions, and other relevant fields. Logging should be added to track item creation, updates, and skips.",
+            "status": "pending",
+            "testStrategy": ""
+          }
+        ]
+      },
+      {
+        "id": 18,
+        "title": "UI Component: Task Preview and Editing",
+        "description": "Create a UI view that allows users to preview the Taskmaster-generated plan and make edits before pushing to Azure DevOps.",
+        "details": "The UI should fetch data from `/api/taskmaster/tasks` and display it in an editable format. Changes should be persisted before the ADO push is triggered.",
+        "testStrategy": "E2E test: Generate a plan, view it in the preview UI, edit a task title, and then push to ADO. Verify the edited title appears in the created ADO work item.",
+        "priority": "medium",
+        "dependencies": [9, 15],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Fetch task data from API",
+            "description": "Create data fetching service and hook to load and refresh task data for the preview/editor.",
+            "details": "",
+            "status": "pending",
+            "dependencies": [],
+            "parentTaskId": 18
+          },
+          {
+            "id": 2,
+            "title": "Implement an editable UI for the task list",
+            "description": "Build editing interactions (inline fields/modals), optimistic UI, and validation for task editing.",
+            "details": "",
+            "status": "pending",
+            "dependencies": [],
+            "parentTaskId": 18
+          },
+          {
+            "id": 3,
+            "title": "Persist edits and pass to ADO push process",
+            "description": "Save edits to local plan and ensure the ADO sync uses updated fields reliably.",
+            "details": "",
+            "status": "pending",
+            "dependencies": [],
+            "parentTaskId": 18
+          }
+        ]
+      },
+      {
+        "id": 19,
+        "title": "Enhance PRD Generation with KG Context",
+        "description": "Refine the LLM prompting strategy to more effectively use the knowledge graph summary, improving the contextual quality of the generated PRD.",
+        "details": "Modify the prompt template sent to LiteLLM to explicitly instruct the model on how to incorporate the provided KG summary into the PRD sections.",
+        "testStrategy": "Qualitative review of generated PRDs with and without the enhanced prompt. Acceptance requires a noticeable improvement in code-specific details within the PRD.",
+        "priority": "medium",
+        "dependencies": [8],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Experiment with prompts to better utilize KG data",
+            "description": "Iterate on prompt patterns that bring KG context into PRD generation (few-shot, chain-of-thought, tool hints).",
+            "details": "",
+            "status": "pending",
+            "dependencies": [],
+            "parentTaskId": 19
+          }
+        ]
+      },
+      {
+        "id": 20,
+        "title": "Implement ADO Board Enrichment",
+        "description": "Extend the ADO sync logic to populate additional fields like Area Path, Iteration Path, and Story Points.",
+        "details": "Map Taskmaster complexity scores to ADO Story Points. Allow users to specify Area and Iteration paths in the UI, and include them in the work item creation payload.",
+        "testStrategy": "Integration test with a mocked ADO API. Verify that the payloads for creating work items contain the correct Area, Iteration, and Story Point fields.",
+        "priority": "medium",
+        "dependencies": [10, 13],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Add UI inputs for Area/Iteration/Story Points",
+            "description": "Add fields and validation in the UI for ADO Area, Iteration, and Story Points.",
+            "details": "",
+            "status": "pending",
+            "dependencies": [],
+            "parentTaskId": 20
+          }
+        ]
+      },
+      {
+        "id": 21,
+        "title": "Implement Automated Tagging for Taskmaster",
+        "description": "Automate the generation of Taskmaster tags to ensure consistency and traceability for each run.",
+        "details": "Derive a unique tag automatically from a combination of the repository name and a run identifier (e.g., timestamp or UUID).",
+        "testStrategy": "Unit test the tag generation logic. E2E test to confirm that runs initiated from the UI use an auto-generated tag.",
+        "priority": "low",
+        "dependencies": [9],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Implement tag generation logic",
+            "description": "Generate a stable tag from repo name and unique identifier; ensure idempotency and collision handling.",
+            "details": "",
+            "status": "pending",
+            "dependencies": [],
+            "parentTaskId": 21
+          }
+        ]
+      },
+      {
+        "id": 22,
+        "title": "Implement Repository Change Detection",
+        "description": "Add a mechanism to detect changes in the source repository and prompt the user to update the PRD and plan.",
+        "details": "Before running the pipeline, perform a `git pull` or check the latest commit hash. If changes are detected since the last run, display a notification in the UI.",
+        "testStrategy": "Integration test: Clone a repo, run the plan. Manually push a new commit to the remote. Re-run the tool and verify the change detection notification appears.",
+        "priority": "low",
+        "dependencies": [5],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 23,
+        "title": "Implement One-Click E2E Orchestration Pipeline",
+        "description": "Create a single button in the UI that executes the entire end-to-end pipeline: clone -> PRD -> tasks -> ADO sync.",
+        "details": "This will orchestrate the sequence of API calls required for the full workflow. The UI should provide real-time progress streaming to the user.",
+        "testStrategy": "E2E test: Provide all necessary inputs (repo URL, ADO details), click the single 'Run All' button, and verify that work items are successfully created in ADO.",
+        "priority": "low",
+        "dependencies": [12, 13, 14, 15],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 24,
+        "title": "Implement Security: API Input Validation",
+        "description": "Implement robust validation and sanitization for all user-provided inputs to prevent security vulnerabilities.",
+        "details": "Validate the format of the Git URL to prevent command injection. Sanitize all fields sent to external services like ADO and LiteLLM.",
+        "testStrategy": "Unit tests with invalid inputs (e.g., malicious repo URLs, script tags in text fields) to ensure the application handles them gracefully and returns a 400 Bad Request error.",
+        "priority": "high",
+        "dependencies": [3],
+        "status": "in-progress",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Implement Git URL validation and sanitization",
+            "description": "Create robust validation for Git URLs to prevent command injection attacks",
+            "details": "Validate Git URL format, sanitize input, and implement allowlist for trusted Git providers",
+            "status": "done",
+            "dependencies": [],
+            "parentTaskId": 24
+          },
+          {
+            "id": 2,
+            "title": "Implement ADO input validation and sanitization",
+            "description": "Create validation for Azure DevOps inputs to prevent injection attacks",
+            "details": "Validate organization URLs, project names, team names, area paths, and iteration paths. Implement input length limits and character allowlists.",
+            "status": "done",
+            "dependencies": [],
+            "parentTaskId": 24
+          },
+          {
+            "id": 3,
+            "title": "Implement LiteLLM input validation and sanitization",
+            "description": "Create validation for LiteLLM service inputs to prevent injection attacks",
+            "details": "Validate model names, prompts, API keys, and service URLs. Implement input length limits and content filtering.",
+            "status": "done",
+            "dependencies": [],
+            "parentTaskId": 24
+          },
+          {
+            "id": 4,
+            "title": "Create centralized validation utilities",
+            "description": "Implement reusable validation functions and error handling",
+            "details": "Create a validation module with common validation functions, error messages, and logging for security events.",
+            "status": "done",
+            "dependencies": [],
+            "parentTaskId": 24
+          },
+          {
+            "id": 5,
+            "title": "Implement security testing and validation",
+            "description": "Create comprehensive tests for all security validations",
+            "details": "Implement unit tests, integration tests, and security tests to ensure all validation logic works correctly and prevents common attack vectors.",
+            "status": "in-progress",
+            "dependencies": [],
+            "parentTaskId": 24
+          }
+        ]
+      },
+      {
+        "id": 25,
+        "title": "Implement Security: TLS Encryption for Production",
+        "description": "Configure the production deployment environment to enforce TLS for all external API communications.",
+        "details": "This is an infrastructure task, likely involving a reverse proxy like Nginx or Traefik to handle TLS termination for the FastAPI service.",
+        "testStrategy": "Manual testing in a staging environment to confirm that all traffic is served over HTTPS and HTTP traffic is redirected or rejected.",
+        "priority": "medium",
+        "dependencies": [1],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 26,
+        "title": "Setup Unit and Integration Testing Framework",
+        "description": "Establish the project structure and configuration for unit and integration tests using tools like pytest, and setup mocking for external services.",
+        "details": "Configure pytest, create directories for tests, and establish patterns for mocking services like ADO, LiteLLM, and Taskmaster MCP for reliable and fast test execution.",
+        "testStrategy": "Create a sample unit test and a sample integration test to prove the framework is configured correctly and runs in the CI/CD pipeline.",
+        "priority": "high",
+        "dependencies": [1],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 27,
+        "title": "Implement API: Get Taskmaster Tasks",
+        "description": "Implement an endpoint to retrieve the current set of tasks from the Taskmaster plan.",
+        "details": "Create the `GET /api/taskmaster/tasks` endpoint. This will read the latest plan from the `.taskmaster/` directory and return it as JSON. This is needed for the Task Preview UI.",
+        "testStrategy": "Integration test: Run the Taskmaster sync process, then call this endpoint and verify it returns the expected task structure.",
+        "priority": "medium",
+        "dependencies": [9],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 28,
+        "title": "Implement API: Get Non-Secret Configuration",
+        "description": "Implement a read-only endpoint to dump non-secret operational keys for debugging purposes.",
+        "details": "Create the `GET /api/config/keys` endpoint. It should read configuration from Consul but explicitly filter out any secrets like API keys or PATs.",
+        "testStrategy": "Unit test to ensure that secrets are properly filtered from the response. Manual test to check the endpoint output in a development environment.",
+        "priority": "low",
+        "dependencies": [3],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 29,
+        "title": "Define Data Models for RepositoryGraph and TaskPlan",
+        "description": "Implement the Pydantic models for `RepositoryGraph` and `TaskPlan` to ensure type safety and data consistency throughout the application.",
+        "details": "The `RepositoryGraph` model should represent files, classes, functions, and their relationships. The `TaskPlan` model should align with the output structure of Taskmaster.",
+        "testStrategy": "Unit tests for the Pydantic models to ensure they correctly parse valid data and raise errors for invalid data.",
+        "priority": "high",
+        "dependencies": [2],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 30,
+        "title": "Implement Standardized API Error Handling",
+        "description": "Implement a standardized error handling mechanism for the FastAPI application to ensure consistent and informative error responses.",
+        "details": "Use FastAPI exception handlers to catch common errors and return a JSON response with the shape `{code, message, details}`. Map application exceptions to appropriate HTTP status codes (4xx, 5xx).",
+        "testStrategy": "Unit tests for the exception handlers. For example, trigger a known error condition and assert that the API returns the correct HTTP status and JSON error body.",
+        "priority": "high",
+        "dependencies": [3],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 31,
+        "title": "Implement CodeGen Brownfield Flow: Code Ingestion Agent",
+        "description": "Develop the enhanced Code Ingestion Agent for the 4-step Brownfield workflow, providing comprehensive codebase analysis and Knowledge Graph generation.",
+        "details": "Enhance the existing Repo & KG Agent to become the Code Ingestion Agent. Implement deep static analysis, technology stack identification, dependency mapping, and comprehensive metrics generation. Build detailed Knowledge Graph with architectural patterns and code complexity analysis.",
+        "testStrategy": "Unit tests for each analysis component. Integration tests with various repository types (Python, JavaScript, mixed) to ensure comprehensive analysis. Performance tests to ensure analysis completes within reasonable timeframes.",
+        "priority": "high",
+        "dependencies": [3],
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Enhance Repo & KG Agent to Code Ingestion Agent",
+            "description": "Refactor the existing Repo & KG Agent to function as the unified Code Ingestion Agent, handling both repository analysis and knowledge graph construction.",
+            "dependencies": [],
+            "details": "Adapt existing codebase, consolidate functionalities, and prepare for integration of new analysis features.",
+            "status": "done",
+            "testStrategy": "Regression tests to ensure existing functionality is preserved. Unit tests for new code integration points."
+          },
+          {
+            "id": 2,
+            "title": "Implement Deep Static Analysis",
+            "description": "Implement static analysis capabilities to extract code structure, function calls, and variable usage.",
+            "dependencies": ["31.1"],
+            "details": "Integrate a static analysis tool or library. Define analysis rules and metrics to capture relevant code characteristics.",
+            "status": "done",
+            "testStrategy": "Unit tests for individual analysis rules. Integration tests with sample codebases to validate analysis accuracy."
+          },
+          {
+            "id": 3,
+            "title": "Implement Technology Stack Identification and Dependency Mapping",
+            "description": "Identify used technologies and libraries, and map dependencies between code components.",
+            "dependencies": ["31.1"],
+            "details": "Develop algorithms or utilize existing tools to detect technology usage and build a dependency graph.",
+            "status": "done",
+            "testStrategy": "Unit tests for technology detection and dependency mapping. Integration tests with diverse codebases to validate accuracy."
+          },
+          {
+            "id": 4,
+            "title": "Implement Comprehensive Metrics Generation",
+            "description": "Generate code metrics such as code complexity, lines of code, and code coverage.",
+            "dependencies": ["31.2"],
+            "details": "Implement algorithms or integrate tools to calculate various code metrics. Define thresholds and reporting mechanisms.",
+            "status": "done",
+            "testStrategy": "Unit tests for individual metric calculations. Integration tests with sample codebases to validate metric accuracy."
+          },
+          {
+            "id": 5,
+            "title": "Build Detailed Knowledge Graph",
+            "description": "Construct a knowledge graph representing the codebase, including architectural patterns and code complexity analysis results.",
+            "dependencies": ["31.2", "31.3", "31.4"],
+            "details": "Define the knowledge graph schema. Integrate analysis results into the graph structure. Implement queries and visualizations.",
+            "status": "done",
+            "testStrategy": "Unit tests for graph construction and data integration. Integration tests with sample codebases to validate graph accuracy and completeness."
+          }
+        ]
+      },
+      {
+        "id": 32,
+        "title": "Implement CodeGen Brownfield Flow: Impact Assessment Agent",
+        "description": "Develop the Impact Assessment Agent to evaluate code quality, identify technical debt, and assess improvement opportunities with data-driven insights.",
+        "details": "Create a new agent that analyzes the Knowledge Graph from Step 1 to identify code quality issues, technical debt, security vulnerabilities, performance bottlenecks, and dependency health. Generate prioritized improvement opportunities with impact scores and risk assessments.",
+        "testStrategy": "Unit tests for each assessment algorithm. Integration tests with known problematic codebases to validate issue detection. Performance tests to ensure assessment completes efficiently.",
+        "priority": "high",
+        "dependencies": [31],
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Develop Code Quality Assessment Module",
+            "description": "Implement algorithms to analyze code for quality issues like code smells, style violations, and potential bugs.",
+            "dependencies": [],
+            "details": "Leverage static analysis tools and libraries to identify code quality issues. Integrate with the Knowledge Graph from Step 1 to access code structure and metadata.",
+            "status": "done",
+            "testStrategy": "Unit tests for individual analysis rules. Integration tests with codebases containing known quality issues."
+          },
+          {
+            "id": 2,
+            "title": "Develop Technical Debt Assessment Module",
+            "description": "Implement algorithms to identify and quantify technical debt based on code complexity, outdated dependencies, and lack of documentation.",
+            "dependencies": [],
+            "details": "Analyze the Knowledge Graph for indicators of technical debt. Calculate debt scores and categorize debt types.",
+            "status": "done",
+            "testStrategy": "Unit tests for debt calculation logic. Integration tests with codebases representing different levels of technical debt."
+          },
+          {
+            "id": 3,
+            "title": "Develop Security Vulnerability and Performance Bottleneck Assessment Modules",
+            "description": "Implement algorithms to detect potential security vulnerabilities and performance bottlenecks.",
+            "dependencies": [],
+            "details": "Integrate with security analysis tools and performance profiling libraries. Correlate findings with the Knowledge Graph to pinpoint vulnerable code sections and performance hotspots.",
+            "status": "done",
+            "testStrategy": "Unit tests for vulnerability and bottleneck detection rules. Integration tests with codebases containing known security flaws and performance issues."
+          },
+          {
+            "id": 4,
+            "title": "Develop Dependency Health Assessment Module",
+            "description": "Implement algorithms to assess the health of project dependencies, including outdated or vulnerable libraries.",
+            "dependencies": [],
+            "details": "Analyze dependency information from the Knowledge Graph. Check for known vulnerabilities and outdated versions.  Provide recommendations for updates.",
+            "status": "done",
+            "testStrategy": "Unit tests for dependency analysis logic. Integration tests with projects using various dependency management tools."
+          },
+          {
+            "id": 5,
+            "title": "Develop Improvement Opportunity Prioritization and Reporting",
+            "description": "Implement logic to prioritize identified issues and generate reports with impact scores and risk assessments.",
+            "dependencies": ["32.1", "32.2", "32.3", "32.4"],
+            "details": "Develop algorithms to assign impact scores and risk levels to identified issues. Generate comprehensive reports summarizing findings and suggesting prioritized improvement opportunities.",
+            "status": "done",
+            "testStrategy": "Unit tests for prioritization and scoring algorithms. Integration tests with a full dataset of identified issues to validate report generation."
+          }
+        ]
+      },
+      {
+        "id": 33,
+        "title": "Implement CodeGen Brownfield Flow: Remediation Plan Agent",
+        "description": "Develop the Remediation Plan Agent to create actionable improvement plans and integrate with Taskmaster for comprehensive task breakdown.",
+        "details": "Create a new agent that transforms impact assessment results into structured improvement roadmaps. Integrate with Taskmaster to generate detailed task breakdowns with dependencies, priorities, and implementation guidance. Provide phase-based planning with milestones and effort estimates.",
+        "testStrategy": "Unit tests for plan generation logic. Integration tests with Taskmaster to ensure proper task creation and dependency management. Validation tests to ensure generated plans are actionable and well-structured.",
+        "priority": "high",
+        "dependencies": [32, 4],
+        "status": "done",
+        "subtasks": []
+      },
+      {
+        "id": 34,
+        "title": "Implement CodeGen Brownfield Flow: Repository Checkout Agent",
+        "description": "Develop the Repository Checkout Agent to prepare development environments and provide implementation guidance for the improvement plan.",
+        "details": "Create a new agent that sets up local development environments with proper tooling, configures IDE settings, provides access to improvement plans, and offers contextual guidance for implementation. Enable seamless transition from analysis to implementation.",
+        "testStrategy": "Unit tests for environment setup logic. Integration tests to verify proper tooling configuration. User acceptance tests to ensure smooth developer experience.",
+        "priority": "high",
+        "dependencies": [33],
+        "status": "done",
+        "subtasks": []
+      },
+      {
+        "id": 35,
+        "title": "Implement CodeGen Brownfield Flow: Enhanced UI Components",
+        "description": "Develop the enhanced frontend components for the 4-step Brownfield workflow, providing intuitive interfaces for each step of the analysis process.",
+        "details": "Create specialized UI components for each step: 1) Code Ingestion Interface with progress indicators and codebase summary, 2) Impact Assessment Dashboard with quality metrics and technical debt analysis, 3) Remediation Planning Interface with roadmap visualization and task breakdown, 4) Development Environment Setup with one-click configuration and contextual help.",
+        "testStrategy": "Component tests for each UI element. End-to-end tests for the complete 4-step workflow. User experience tests to ensure intuitive navigation and clear progress indication.",
+        "priority": "medium",
+        "dependencies": [6, 31, 32, 33, 34],
+        "status": "done",
+        "subtasks": []
+      },
+      {
+        "id": 36,
+        "title": "Implement CodeGen Brownfield Flow: Workflow Orchestration",
+        "description": "Develop the workflow orchestration system to coordinate the 4-step Brownfield analysis process and manage state transitions between steps.",
+        "details": "Create a workflow engine that manages the progression through the 4 steps, handles data flow between agents, maintains analysis state, and provides progress tracking. Implement error handling and recovery mechanisms for failed steps.",
+        "testStrategy": "Unit tests for workflow state management. Integration tests for complete workflow execution. Error handling tests to ensure robust recovery from failures.",
+        "priority": "medium",
+        "dependencies": [31, 32, 33, 34],
+        "status": "done",
+        "subtasks": []
+      }
+    ],
+    "metadata": {
+      "created": "2025-08-14T09:30:27.840Z",
+      "updated": "2025-08-18T23:30:33.196Z",
+      "description": "Tasks for CodeGen Brownfield workflow implementation"
+    }
+  }
+}
