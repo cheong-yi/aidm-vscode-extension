@@ -929,20 +929,103 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
 
   /**
    * Generates JavaScript for interactive functionality
-   * Returns JavaScript for task expansion and failures toggle
+   * Returns JavaScript for accordion behavior and message sending
+   * Task WV-006: Implement JavaScript accordion logic and webview communication
    *
    * @returns JavaScript string for webview functionality
    */
   private getJavaScript(): string {
     return `<script>
-        function toggleTask(taskElement) {
-            taskElement.classList.toggle('expanded');
-        }
-
-        function toggleFailures(failuresSection) {
-            failuresSection.classList.toggle('expanded');
-        }
+      ${this.getAccordionScript()}
+      ${this.getMessageSendingScript()}
     </script>`;
+  }
+
+  /**
+   * Generates accordion behavior JavaScript
+   * Implements single-task expansion logic following TreeViewProvider pattern
+   * Task WV-006: Accordion behavior with only one task expanded at a time
+   *
+   * @returns JavaScript string for accordion functionality
+   */
+  private getAccordionScript(): string {
+    return `
+      let expandedTaskId = null;
+      
+      function toggleTask(taskElement) {
+        const taskId = taskElement.dataset.taskId;
+        if (!taskId) return;
+        
+        const isCurrentlyExpanded = expandedTaskId === taskId;
+        
+        // Collapse all tasks first (accordion behavior)
+        document.querySelectorAll('.task-item.expanded').forEach(item => {
+          item.classList.remove('expanded');
+        });
+        
+        if (!isCurrentlyExpanded) {
+          // Expand clicked task
+          taskElement.classList.add('expanded');
+          expandedTaskId = taskId;
+        } else {
+          // Collapse clicked task
+          expandedTaskId = null;
+        }
+        
+        // Send message to extension
+        sendMessage('toggleAccordion', { taskId: taskId, expanded: !isCurrentlyExpanded });
+      }
+
+      function toggleFailures(failuresSection) {
+        failuresSection.classList.toggle('expanded');
+      }`;
+  }
+
+  /**
+   * Generates message sending JavaScript for webview communication
+   * Implements VSCode webview API integration for extension communication
+   * Task WV-006: Webview message sending to extension
+   *
+   * @returns JavaScript string for message handling functionality
+   */
+  private getMessageSendingScript(): string {
+    return `
+      const vscode = acquireVsCodeApi();
+      
+      function sendMessage(type, payload) {
+        vscode.postMessage({
+          type: type,
+          taskId: payload.taskId,
+          ...payload
+        });
+      }
+      
+      function updateTaskStatus(taskId, newStatus) {
+        sendMessage('updateTaskStatus', { taskId: taskId, newStatus: newStatus });
+      }
+      
+      function executeWithCursor(taskId) {
+        sendMessage('executeWithCursor', { taskId: taskId });
+      }
+      
+      // Handle action button clicks
+      document.addEventListener('click', function(event) {
+        if (event.target.classList.contains('action-btn')) {
+          const taskId = event.target.closest('.task-item').dataset.taskId;
+          const action = event.target.textContent.trim();
+          
+          if (action.includes('Execute with Cursor')) {
+            executeWithCursor(taskId);
+          } else if (action.includes('Mark Complete')) {
+            updateTaskStatus(taskId, 'completed');
+          } else if (action.includes('Continue Work')) {
+            updateTaskStatus(taskId, 'in_progress');
+          } else if (action.includes('Approve & Complete')) {
+            updateTaskStatus(taskId, 'completed');
+          }
+          // Add more action handlers as needed
+        }
+      });`;
   }
 
   /**

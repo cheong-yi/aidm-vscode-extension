@@ -708,4 +708,126 @@ describe("TaskWebviewProvider", () => {
       }).not.toThrow();
     });
   });
+
+  describe("JavaScript Generation (WV-006)", () => {
+    it("should include accordion behavior JavaScript", () => {
+      provider.resolveWebviewView(mockWebviewView, mockContext, mockToken);
+
+      const html = mockWebview.html;
+
+      // Verify accordion behavior JavaScript is included
+      expect(html).toContain("let expandedTaskId = null");
+      expect(html).toContain("function toggleTask(taskElement)");
+      expect(html).toContain(
+        "// Collapse all tasks first (accordion behavior)"
+      );
+      expect(html).toContain(
+        "document.querySelectorAll('.task-item.expanded')"
+      );
+      expect(html).toContain("expandedTaskId = taskId");
+      expect(html).toContain("expandedTaskId = null");
+    });
+
+    it("should include message sending JavaScript", () => {
+      provider.resolveWebviewView(mockWebviewView, mockContext, mockToken);
+
+      const html = mockWebview.html;
+
+      // Verify VSCode API integration
+      expect(html).toContain("const vscode = acquireVsCodeApi()");
+      expect(html).toContain("function sendMessage(type, payload)");
+      expect(html).toContain("vscode.postMessage");
+
+      // Verify specific message functions
+      expect(html).toContain("function updateTaskStatus(taskId, newStatus)");
+      expect(html).toContain("function executeWithCursor(taskId)");
+    });
+
+    it("should include action button event handlers", () => {
+      provider.resolveWebviewView(mockWebviewView, mockContext, mockToken);
+
+      const html = mockWebview.html;
+
+      // Verify event listener for action buttons
+      expect(html).toContain("document.addEventListener('click'");
+      expect(html).toContain("event.target.classList.contains('action-btn')");
+      expect(html).toContain("closest('.task-item').dataset.taskId");
+
+      // Verify specific action handlers
+      expect(html).toContain("action.includes('Execute with Cursor')");
+      expect(html).toContain("action.includes('Mark Complete')");
+      expect(html).toContain("action.includes('Continue Work')");
+      expect(html).toContain("action.includes('Approve & Complete')");
+    });
+
+    it("should include failures toggle functionality", () => {
+      provider.resolveWebviewView(mockWebviewView, mockContext, mockToken);
+
+      const html = mockWebview.html;
+
+      // Verify failures toggle function
+      expect(html).toContain("function toggleFailures(failuresSection)");
+      expect(html).toContain("failuresSection.classList.toggle('expanded')");
+    });
+
+    it("should generate valid JavaScript syntax", () => {
+      provider.resolveWebviewView(mockWebviewView, mockContext, mockToken);
+
+      const html = mockWebview.html;
+
+      // Verify script tags are properly formatted
+      expect(html).toContain("<script>");
+      expect(html).toContain("</script>");
+
+      // Verify JavaScript functions are properly defined
+      expect(html).toContain("function toggleTask(taskElement) {");
+      expect(html).toContain("function sendMessage(type, payload) {");
+      expect(html).toContain("function updateTaskStatus(taskId, newStatus) {");
+      expect(html).toContain("function executeWithCursor(taskId) {");
+      expect(html).toContain("function toggleFailures(failuresSection) {");
+    });
+
+    it("should implement accordion behavior correctly", () => {
+      provider.resolveWebviewView(mockWebviewView, mockContext, mockToken);
+
+      const html = mockWebview.html;
+
+      // Verify accordion logic prevents multiple expanded tasks
+      expect(html).toContain(
+        "// Collapse all tasks first (accordion behavior)"
+      );
+      expect(html).toContain(
+        "document.querySelectorAll('.task-item.expanded').forEach(item => {"
+      );
+      expect(html).toContain("item.classList.remove('expanded')");
+
+      // Verify single task expansion logic
+      expect(html).toContain("if (!isCurrentlyExpanded) {");
+      expect(html).toContain("taskElement.classList.add('expanded')");
+      expect(html).toContain("expandedTaskId = taskId");
+      expect(html).toContain("} else {");
+      expect(html).toContain("expandedTaskId = null");
+    });
+
+    it("should send messages to extension on user actions", () => {
+      provider.resolveWebviewView(mockWebviewView, mockContext, mockToken);
+
+      const html = mockWebview.html;
+
+      // Verify message sending on accordion toggle
+      expect(html).toContain(
+        "sendMessage('toggleAccordion', { taskId: taskId, expanded: !isCurrentlyExpanded })"
+      );
+
+      // Verify message sending on status updates
+      expect(html).toContain(
+        "sendMessage('updateTaskStatus', { taskId: taskId, newStatus: newStatus })"
+      );
+
+      // Verify message sending on cursor execution
+      expect(html).toContain(
+        "sendMessage('executeWithCursor', { taskId: taskId })"
+      );
+    });
+  });
 });
