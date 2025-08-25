@@ -37,27 +37,6 @@ interface TaskClickEvent {
   isExecutable: boolean; // For Cursor integration detection
 }
 
-/**
- * PATH-001: Robust path resolution and validation helpers for tasks.json
- * Fixes workspace path resolution logic with comprehensive error handling
- */
-function resolveTasksFilePath(
-  workspaceRoot: string | undefined,
-  configuredPath: string
-): string | null {
-  if (!workspaceRoot) {
-    console.error("[Extension] No workspace folder found");
-    return null;
-  }
-
-  // Handle both absolute and relative paths
-  if (path.isAbsolute(configuredPath)) {
-    return configuredPath;
-  }
-
-  return path.join(workspaceRoot, configuredPath);
-}
-
 function validateTasksFile(filePath: string | null): {
   isValid: boolean;
   error?: string;
