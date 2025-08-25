@@ -38,6 +38,47 @@ interface TaskClickEvent {
   isExecutable: boolean; // For Cursor integration detection
 }
 
+/**
+ * PATH-001: Robust path resolution and validation helpers for tasks.json
+ * Fixes workspace path resolution logic with comprehensive error handling
+ */
+function resolveTasksFilePath(
+  workspaceRoot: string | undefined,
+  configuredPath: string
+): string | null {
+  if (!workspaceRoot) {
+    console.error("[Extension] No workspace folder found");
+    return null;
+  }
+
+  // Handle both absolute and relative paths
+  if (path.isAbsolute(configuredPath)) {
+    return configuredPath;
+  }
+
+  return path.join(workspaceRoot, configuredPath);
+}
+
+function validateTasksFile(filePath: string | null): {
+  isValid: boolean;
+  error?: string;
+} {
+  if (!filePath) {
+    return { isValid: false, error: "No valid file path provided" };
+  }
+
+  if (!fs.existsSync(filePath)) {
+    return {
+      isValid: false,
+      error: `Tasks file not found: ${path.basename(
+        filePath
+      )}. Create this file in your workspace root or update the 'aidmVscodeExtension.tasks.filePath' setting.`,
+    };
+  }
+
+  return { isValid: true };
+}
+
 let mcpClient: MCPClient;
 let statusBarManager: StatusBarManagerImpl;
 let processManager: ProcessManager;
@@ -431,34 +472,54 @@ export async function activate(
 
     console.log("=== ACTIVATION STEP 8.7.5: Initializing TaskFileWatcher ===");
     try {
-      // Get workspace root for configurable tasks.json path resolution
+      // PATH-001: Use robust path resolution helpers for tasks.json
       const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
-
-      if (!workspaceRoot) {
-        console.warn(
-          "[Extension] No workspace folder found, using fallback path"
-        );
-        vscode.window.showWarningMessage(
-          "No workspace folder found. Tasks functionality may be limited."
-        );
-        // Continue without file watching - extension will still function
-        return;
-      }
-
-      // Get configured path or use default
       const config = vscode.workspace.getConfiguration("aidmVscodeExtension");
       const configuredTasksPath = config.get<string>(
         "tasks.filePath",
         "tasks.json"
       );
 
-      // Create absolute path
-      const tasksFilePath = path.join(workspaceRoot, configuredTasksPath);
-      console.log(`[Extension] Using tasks file: ${tasksFilePath}`);
-      console.log(`[Extension] File exists: ${fs.existsSync(tasksFilePath)}`);
+      // Use new helper functions for robust path resolution
+      const tasksFilePath = resolveTasksFilePath(
+        workspaceRoot,
+        configuredTasksPath
+      );
+      const validation = validateTasksFile(tasksFilePath);
 
-      // Initialize with absolute path
-      taskFileWatcher = new TaskFileWatcher(tasksFilePath);
+      if (!validation.isValid) {
+        console.warn(`[Extension] ${validation.error}`);
+
+        // Show user-friendly error message with action buttons
+        vscode.window
+          .showWarningMessage(
+            validation.error || "Tasks file configuration issue",
+            "Open Settings",
+            "Create File"
+          )
+          .then((action) => {
+            if (action === "Open Settings") {
+              vscode.commands.executeCommand(
+                "workbench.action.openSettings",
+                "aidmVscodeExtension.tasks.filePath"
+              );
+            } else if (action === "Create File") {
+              // Show file creation guidance
+              vscode.window.showInformationMessage(
+                "Create a tasks.json file in your workspace root with the structure shown in the extension documentation."
+              );
+            }
+          });
+
+        // Continue without file watching but don't fail activation
+        console.log("[Extension] Continuing without tasks.json file watching");
+        return;
+      }
+
+      // Initialize file watcher only if file exists and is valid
+      taskFileWatcher = new TaskFileWatcher(tasksFilePath!);
+      console.log(`[Extension] Using tasks file: ${tasksFilePath}`);
+      console.log(`[Extension] File exists: ${fs.existsSync(tasksFilePath!)}`);
 
       // Start watching for file changes and wire to UI refresh
       taskFileWatcher.startWatching(async () => {
@@ -491,6 +552,11 @@ export async function activate(
       );
     } catch (error) {
       console.error("❌ TaskFileWatcher initialization failed:", error);
+      vscode.window.showErrorMessage(
+        `Failed to setup task file monitoring: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`
+      );
       // Continue without file watching - extension will still function
     }
 
