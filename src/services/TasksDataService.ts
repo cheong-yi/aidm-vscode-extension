@@ -933,33 +933,7 @@ export class TasksDataService implements ITasksDataService {
         return null;
       }
 
-      const trimmedPath = filePath.trim();
-
-      // Handle absolute paths directly
-      if (path.isAbsolute(trimmedPath)) {
-        const uri = vscode.Uri.file(trimmedPath);
-        console.log(
-          `[TasksDataService] Using absolute configured path: ${uri.fsPath}`
-        );
-        return uri;
-      }
-
-      // Handle relative paths with workspace resolution
-      const workspaceFolders = vscode.workspace.workspaceFolders;
-      if (!workspaceFolders || workspaceFolders.length === 0) {
-        console.warn(
-          "[TasksDataService] No workspace folders available for relative path resolution"
-        );
-        return null;
-      }
-
-      // Use VS Code recommended Uri.joinPath for workspace-relative paths
-      const workspaceFolder = workspaceFolders[0];
-      const uri = vscode.Uri.joinPath(workspaceFolder.uri, trimmedPath);
-      console.log(
-        `[TasksDataService] Using workspace-relative path: ${uri.fsPath}`
-      );
-      return uri;
+      return this.resolveWorkspaceFileUri(filePath);
     } catch (error) {
       // PATH-FIX-004: Enhanced error logging with path context for debugging
       console.error("TasksDataService.getConfiguredFileUri Error Details:");
@@ -983,51 +957,87 @@ export class TasksDataService implements ITasksDataService {
     }
   }
 
+  /**
+   * Resolve a file path to workspace-relative or absolute URI
+   * Handles both relative and absolute paths using manual path construction for compatibility
+   */
+  private resolveWorkspaceFileUri(configuredPath: string): vscode.Uri | null {
+    if (
+      !configuredPath ||
+      typeof configuredPath !== "string" ||
+      configuredPath.trim().length === 0
+    ) {
+      return null;
+    }
+
+    const trimmedPath = configuredPath.trim();
+
+    // Handle absolute paths directly
+    if (path.isAbsolute(trimmedPath)) {
+      const uri = vscode.Uri.file(trimmedPath);
+      console.log(`[TasksDataService] Resolved absolute path: ${uri.fsPath}`);
+      return uri;
+    }
+
+    // Handle relative paths with workspace resolution
+    const workspaceFolders = vscode.workspace.workspaceFolders;
+    if (!workspaceFolders || workspaceFolders.length === 0) {
+      console.warn(
+        `[TasksDataService] No workspace folders available for path: ${trimmedPath}`
+      );
+      return null;
+    }
+
+    // Manual path construction to bypass VS Code joinPath issues on Windows
+    const workspaceFolder = workspaceFolders[0];
+    const workspacePath = workspaceFolder.uri.fsPath;
+    const fullPath = path.resolve(workspacePath, trimmedPath);
+    const uri = vscode.Uri.file(fullPath);
+
+    // Enhanced debug logging for path construction verification
+    console.log("=== MANUAL PATH CONSTRUCTION DEBUG ===");
+    console.log("- Workspace path:", workspacePath);
+    console.log("- Configured path:", trimmedPath);
+    console.log("- Resolved path:", fullPath);
+    console.log("- Final URI:", uri.toString());
+    console.log("- Final fsPath:", uri.fsPath);
+    console.log("- Path separator check:", path.sep);
+    console.log("- Platform:", process.platform);
+    console.log("=== END PATH DEBUG ===");
+
+    return uri;
+  }
+
   // PATH-FIX-001: Manual path construction to bypass VS Code joinPath issues on Windows
   private async getTasksFileUri(
     configuredPath: string
   ): Promise<vscode.Uri | null> {
-    const workspaceFolders = vscode.workspace.workspaceFolders;
-
-    if (!workspaceFolders || workspaceFolders.length === 0) {
-      return null; // No workspace available
-    }
-
-    const workspaceFolder = workspaceFolders[0];
-    let fileUri: vscode.Uri;
-
-    if (path.isAbsolute(configuredPath)) {
-      fileUri = vscode.Uri.file(configuredPath);
-    } else {
-      // Manual path construction to bypass VS Code joinPath issues
-      const workspacePath = workspaceFolder.uri.fsPath;
-      const fullPath = path.resolve(workspacePath, configuredPath);
-      fileUri = vscode.Uri.file(fullPath);
-
-      // Enhanced debug logging for path construction verification
-      console.log("=== MANUAL PATH CONSTRUCTION DEBUG ===");
-      console.log("- Workspace path:", workspacePath);
-      console.log("- Configured path:", configuredPath);
-      console.log("- Resolved path:", fullPath);
-      console.log("- Final URI:", fileUri.toString());
-      console.log("- Final fsPath:", fileUri.fsPath);
-      console.log("- Path separator check:", path.sep);
-      console.log("- Platform:", process.platform);
-      console.log("=== END PATH DEBUG ===");
-    }
-
-    // Log virtual workspace detection
-    if (fileUri.scheme !== "file") {
-      console.warn(
-        "Virtual workspace detected - using VSCode filesystem API only"
-      );
-    }
-
-    // Use VSCode filesystem API properly with error handling
     try {
-      await vscode.workspace.fs.stat(fileUri);
-      return fileUri;
-    } catch (error: any) {
+      const fileUri = this.resolveWorkspaceFileUri(configuredPath);
+
+      if (!fileUri) {
+        return null; // No workspace available or invalid path
+      }
+
+      // Log virtual workspace detection
+      if (fileUri.scheme !== "file") {
+        console.warn(
+          "Virtual workspace detected - using VSCode filesystem API only"
+        );
+      }
+
+      // Use VSCode filesystem API to check if file exists
+      try {
+        await vscode.workspace.fs.stat(fileUri);
+        return fileUri;
+      } catch (error: any) {
+        if (error.code === "FileNotFound") {
+          return null; // File doesn't exist - acceptable condition
+        }
+        // Re-throw other errors (permissions, network issues, etc.)
+        throw error;
+      }
+    } catch (error) {
       // PATH-FIX-004: Enhanced error logging with path context for debugging
       console.error("TasksDataService.getTasksFileUri Error Details:");
       console.error(
@@ -1041,15 +1051,8 @@ export class TasksDataService implements ITasksDataService {
           .get("tasks.filePath")
       );
       console.error("- Input configuredPath:", configuredPath);
-      console.error("- Workspace folder URI:", workspaceFolder.uri.toString());
-      console.error("- Final file URI:", fileUri.toString());
-      console.error("- Final fsPath:", fileUri.fsPath);
       console.error("- Error:", error);
 
-      if (error.code === "FileNotFound") {
-        return null; // File doesn't exist - acceptable condition
-      }
-      // Re-throw other errors (permissions, network issues, etc.)
       throw error;
     }
   }
