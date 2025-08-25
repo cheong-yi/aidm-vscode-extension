@@ -216,48 +216,55 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
    * @returns HTML string for task details
    */
   private generateTaskDetails(task: Task): string {
-    return `
-      <div class="task-details">
-        <div class="task-description">
-          ${this.escapeHtml(task.description)}
-        </div>
-        <div class="task-meta">
-          <div class="meta-item">
-            <div class="meta-label">Complexity</div>
-            <div class="meta-value complexity-${task.complexity}">${
-      task.complexity.charAt(0).toUpperCase() + task.complexity.slice(1)
-    }</div>
-          </div>
-          <div class="meta-item">
-            <div class="meta-label">Estimated</div>
-            <div class="meta-value">${
-              task.estimatedDuration || "Not specified"
-            }</div>
-          </div>
-        </div>
-        <div class="dependencies">
-          <div class="dependencies-title">Dependencies</div>
-          <div class="dependency-list">
-            ${
-              task.dependencies.length > 0
-                ? task.dependencies
-                    .map(
-                      (dep) =>
-                        `<span class="dependency-tag">${this.escapeHtml(
-                          dep
-                        )}</span>`
-                    )
-                    .join("")
-                : '<span class="dependency-tag">None</span>'
-            }
-          </div>
-        </div>
-        ${this.generateTestResults(task)}
-        <div class="actions">
-          ${this.generateActionButtons(task)}
-        </div>
+    return `<div class="task-details">
+      <div class="task-description">${this.escapeHtml(task.description)}</div>
+      ${this.generateTaskMeta(task)}
+      ${this.generateDependencies(task)}
+      ${this.generateTestResults(task)}
+      ${this.generateActions(task)}
+    </div>`;
+  }
+
+  /**
+   * Generates task metadata section HTML
+   * Renders complexity and estimated duration information
+   *
+   * @param task - Task object to generate metadata for
+   * @returns HTML string for task metadata
+   */
+  private generateTaskMeta(task: Task): string {
+    const complexityClass = `complexity-${task.complexity}`;
+    return `<div class="task-meta">
+      <div class="meta-item">
+        <div class="meta-label">Complexity</div>
+        <div class="meta-value ${complexityClass}">${task.complexity.charAt(0).toUpperCase() + task.complexity.slice(1)}</div>
       </div>
-    `;
+      <div class="meta-item">
+        <div class="meta-label">Estimated</div>
+        <div class="meta-value">${task.estimatedDuration || 'Not specified'}</div>
+      </div>
+    </div>`;
+  }
+
+  /**
+   * Generates dependencies section HTML
+   * Renders dependency tags or "None" if no dependencies
+   *
+   * @param task - Task object to generate dependencies for
+   * @returns HTML string for dependencies section
+   */
+  private generateDependencies(task: Task): string {
+    return `<div class="dependencies">
+      <div class="dependencies-title">Dependencies</div>
+      <div class="dependency-list">
+        ${task.dependencies.length > 0
+          ? task.dependencies
+              .map(dep => `<span class="dependency-tag">${this.escapeHtml(dep)}</span>`)
+              .join("")
+          : '<span class="dependency-tag">None</span>'
+        }
+      </div>
+    </div>`;
   }
 
   /**
@@ -268,41 +275,44 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
    * @returns HTML string for test results section
    */
   private generateTestResults(task: Task): string {
-    if (!task.testStatus) {
+    if (!task.testStatus || task.testStatus.totalTests === 0) {
       return '<div class="no-tests">No tests available yet</div>';
     }
 
-    const { testStatus } = task;
-    const lastRunText = testStatus.lastRunDate
-      ? `Last run: ${this.formatRelativeTime(testStatus.lastRunDate)}`
-      : "Not run yet";
-
+    const testStatus = task.testStatus;
+    const hasFailures = testStatus.failedTests > 0;
+    
     return `<div class="test-results">
-        <div class="test-header">
-            <div class="test-title">Test Results</div>
-            <div class="test-date">${lastRunText}</div>
-        </div>
-        <div class="test-stats">
-            <div class="test-stat">
-                <div class="test-stat-value test-total">${
-                  testStatus.totalTests
-                }</div>
-                <div class="test-stat-label">Total</div>
-            </div>
-            <div class="test-stat">
-                <div class="test-stat-value test-passed">${
-                  testStatus.passedTests
-                }</div>
-                <div class="test-stat-label">Passed</div>
-            </div>
-            <div class="test-stat">
-                <div class="test-stat-value test-failed">${
-                  testStatus.failedTests
-                }</div>
-                <div class="test-stat-label">Failed</div>
-            </div>
-        </div>
-        ${this.generateFailuresSection(testStatus)}
+      <div class="test-header">
+        <div class="test-title">Test Results</div>
+        <div class="test-date">Last run: ${testStatus.lastRunDate ? this.formatRelativeTime(testStatus.lastRunDate) : 'Not run yet'}</div>
+      </div>
+      ${this.generateTestStats(testStatus)}
+      ${hasFailures ? this.generateFailuresSection(testStatus.failingTestsList || []) : ''}
+    </div>`;
+  }
+
+  /**
+   * Generates test statistics HTML
+   * Renders total, passed, and failed test counts
+   *
+   * @param testStatus - Test status object with statistics
+   * @returns HTML string for test statistics
+   */
+  private generateTestStats(testStatus: any): string {
+    return `<div class="test-stats">
+      <div class="test-stat">
+        <div class="test-stat-value test-total">${testStatus.totalTests}</div>
+        <div class="test-stat-label">Total</div>
+      </div>
+      <div class="test-stat">
+        <div class="test-stat-value test-passed">${testStatus.passedTests}</div>
+        <div class="test-stat-label">Passed</div>
+      </div>
+      <div class="test-stat">
+        <div class="test-stat-value test-failed">${testStatus.failedTests}</div>
+        <div class="test-stat-label">Failed</div>
+      </div>
     </div>`;
   }
 
@@ -310,40 +320,33 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
    * Generates failures section HTML for test results
    * Renders failing tests list following mockup structure
    *
-   * @param testStatus - Test status object with failure information
+   * @param failingTestsList - Array of failing test objects
    * @returns HTML string for failures section
    */
-  private generateFailuresSection(testStatus: any): string {
-    if (
-      !testStatus.failingTestsList ||
-      testStatus.failingTestsList.length === 0
-    ) {
+  private generateFailuresSection(failingTestsList: any[]): string {
+    if (!failingTestsList || failingTestsList.length === 0) {
       return "";
     }
 
-    const failuresHTML = testStatus.failingTestsList
-      .map(
-        (failure: any) => `
+    const failuresHTML = failingTestsList
+      .map(failure => `
         <div class="failure-item">
-            <div class="failure-name">${this.escapeHtml(failure.name)}</div>
-            <div class="failure-message">${this.escapeHtml(
-              failure.message
-            )}</div>
+          <div class="failure-name">${this.escapeHtml(failure.name)}</div>
+          <div class="failure-message">${this.escapeHtml(failure.message)}</div>
         </div>
-    `
-      )
+      `)
       .join("");
 
     return `<div class="failures-section">
-        <div class="failures-header" onclick="toggleFailures(this.parentElement)">
-            <span>${testStatus.failedTests} Failed Tests</span>
-            <svg class="failure-toggle-icon" viewBox="0 0 16 16" fill="currentColor" width="12" height="12">
-                <path d="m12.14 8.753-5.482 4.796c-.646.566-1.658.106-1.658-.753V3.204a1 1 0 0 1 1.659-.753l5.48 4.796a1 1 0 0 1 0 1.506z"/>
-            </svg>
-        </div>
-        <div class="failures-list">
-            ${failuresHTML}
-        </div>
+      <div class="failures-header" onclick="toggleFailures(this.parentElement)">
+        <span>${failingTestsList.length} Failed Tests</span>
+        <svg class="failure-toggle-icon" viewBox="0 0 16 16" fill="currentColor" width="12" height="12">
+          <path d="m12.14 8.753-5.482 4.796c-.646.566-1.658.106-1.658-.753V3.204a1 1 0 0 1 1.659-.753l5.48 4.796a1 1 0 0 1 0 1.506z"/>
+        </svg>
+      </div>
+      <div class="failures-list">
+        ${failuresHTML}
+      </div>
     </div>`;
   }
 
@@ -354,20 +357,22 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
    * @param task - Task object to generate actions for
    * @returns HTML string for action buttons
    */
-  private generateActionButtons(task: Task): string {
+  private generateActions(task: Task): string {
     // Use STATUS_ACTIONS from types/tasks.ts for proper action mapping
     const actions = STATUS_ACTIONS[task.status] || [];
 
-    return actions
-      .map((action: string, index: number) => {
-        const isPrimary =
-          index === 0 &&
-          (task.status === TaskStatus.NOT_STARTED ||
-            task.status === TaskStatus.IN_PROGRESS);
-        const buttonClass = isPrimary ? "action-btn primary" : "action-btn";
-        return `<button class="${buttonClass}">${action}</button>`;
-      })
-      .join("");
+    return `<div class="actions">
+      ${actions
+        .map((action: string, index: number) => {
+          const isPrimary =
+            index === 0 &&
+            (task.status === TaskStatus.NOT_STARTED ||
+              task.status === TaskStatus.IN_PROGRESS);
+          const buttonClass = isPrimary ? "action-btn primary" : "action-btn";
+          return `<button class="${buttonClass}">${action}</button>`;
+        })
+        .join("")}
+    </div>`;
   }
 
   /**

@@ -341,4 +341,231 @@ describe("TaskWebviewProvider", () => {
       (provider as any).generateTaskmasterHTML = originalMethod;
     });
   });
+
+  describe("Task Details Section (WV-004)", () => {
+    const mockTaskWithTestStatus: Task = {
+      id: "test-2",
+      title: "Test Task with Tests",
+      description: "Test task with test results",
+      status: TaskStatus.COMPLETED,
+      complexity: TaskComplexity.MEDIUM,
+      dependencies: ["dep-1", "dep-2"],
+      requirements: ["req-1"],
+      createdDate: "2024-01-01T00:00:00.000Z",
+      lastModified: "2024-01-02T00:00:00.000Z",
+      estimatedDuration: "20-30 min",
+      isExecutable: false,
+      testStatus: {
+        lastRunDate: "2024-01-02T10:00:00.000Z",
+        totalTests: 15,
+        passedTests: 12,
+        failedTests: 3,
+        failingTestsList: [
+          {
+            name: "should validate task status transitions",
+            message: "AssertionError: Expected 400 but got 200",
+            category: "assertion"
+          },
+          {
+            name: "should handle invalid task IDs",
+            message: "TypeError: Cannot read property 'id' of undefined",
+            category: "type"
+          }
+        ]
+      }
+    };
+
+    it("should generate complete task details HTML with all sections", () => {
+      const mockWebviewWithTasks = {
+        ...mockWebviewView,
+        webview: {
+          ...mockWebview,
+          html: "",
+        },
+      };
+
+      // Mock the generateTaskmasterHTML method to return task details
+      const originalMethod = (provider as any).generateTaskmasterHTML;
+      (provider as any).generateTaskmasterHTML = jest.fn().mockReturnValue(`
+        <!DOCTYPE html>
+        <html>
+          <body>
+            <div class="task-item" data-task-id="test-2" onclick="toggleTask(this)">
+              <div class="task-header">
+                <svg class="task-expand-icon" viewBox="0 0 16 16" fill="currentColor">
+                  <path d="m12.14 8.753-5.482 4.796c-.646.566-1.658.106-1.658-.753V3.204a1 1 0 0 1 1.659-.753l5.48 4.796a1 1 0 0 1 0 1.506z"/>
+                </svg>
+                <span class="task-id">test-2</span>
+                <span class="task-title">Test Task with Tests</span>
+                <span class="task-status completed">completed</span>
+              </div>
+              <div class="task-details">
+                <div class="task-description">Test task with test results</div>
+                <div class="task-meta">
+                  <div class="meta-item">
+                    <div class="meta-label">Complexity</div>
+                    <div class="meta-value complexity-medium">Medium</div>
+                  </div>
+                  <div class="meta-item">
+                    <div class="meta-label">Estimated</div>
+                    <div class="meta-value">20-30 min</div>
+                  </div>
+                </div>
+                <div class="dependencies">
+                  <div class="dependencies-title">Dependencies</div>
+                  <div class="dependency-list">
+                    <span class="dependency-tag">dep-1</span>
+                    <span class="dependency-tag">dep-2</span>
+                  </div>
+                </div>
+                <div class="test-results">
+                  <div class="test-header">
+                    <div class="test-title">Test Results</div>
+                    <div class="test-date">Last run: Less than 1 hour ago</div>
+                  </div>
+                  <div class="test-stats">
+                    <div class="test-stat">
+                      <div class="test-stat-value test-total">15</div>
+                      <div class="test-stat-label">Total</div>
+                    </div>
+                    <div class="test-stat">
+                      <div class="test-stat-value test-passed">12</div>
+                      <div class="test-stat-label">Passed</div>
+                    </div>
+                    <div class="test-stat">
+                      <div class="test-stat-value test-failed">3</div>
+                      <div class="test-stat-label">Failed</div>
+                    </div>
+                  </div>
+                  <div class="failures-section">
+                    <div class="failures-header" onclick="toggleFailures(this.parentElement)">
+                      <span>2 Failed Tests</span>
+                      <svg class="failure-toggle-icon" viewBox="0 0 16 16" fill="currentColor" width="12" height="12">
+                        <path d="m12.14 8.753-5.482 4.796c-.646.566-1.658.106-1.658-.753V3.204a1 1 0 0 1 1.659-.753l5.48 4.796a1 1 0 0 1 0 1.506z"/>
+                      </svg>
+                    </div>
+                    <div class="failures-list">
+                      <div class="failure-item">
+                        <div class="failure-name">should validate task status transitions</div>
+                        <div class="failure-message">AssertionError: Expected 400 but got 200</div>
+                      </div>
+                      <div class="failure-item">
+                        <div class="failure-name">should handle invalid task IDs</div>
+                        <div class="failure-message">TypeError: Cannot read property 'id' of undefined</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="actions">
+                  <button class="action-btn">View Code</button>
+                  <button class="action-btn">View Tests</button>
+                  <button class="action-btn">History</button>
+                </div>
+              </div>
+            </div>
+          </body>
+        </html>
+      `);
+
+      provider.resolveWebviewView(mockWebviewWithTasks, mockContext, mockToken);
+
+      const html = mockWebviewWithTasks.webview.html;
+
+      // Verify task details structure
+      expect(html).toContain('class="task-details"');
+      expect(html).toContain('class="task-description"');
+      expect(html).toContain('class="task-meta"');
+      expect(html).toContain('class="dependencies"');
+      expect(html).toContain('class="test-results"');
+      expect(html).toContain('class="actions"');
+
+      // Verify task metadata
+      expect(html).toContain('class="meta-value complexity-medium"');
+      expect(html).toContain("Medium");
+      expect(html).toContain("20-30 min");
+
+      // Verify dependencies
+      expect(html).toContain('class="dependency-tag"');
+      expect(html).toContain("dep-1");
+      expect(html).toContain("dep-2");
+
+      // Verify test results
+      expect(html).toContain('class="test-stats"');
+      expect(html).toContain('class="test-stat-value test-total"');
+      expect(html).toContain('class="test-stat-value test-passed"');
+      expect(html).toContain('class="test-stat-value test-failed"');
+      expect(html).toContain("15");
+      expect(html).toContain("12");
+      expect(html).toContain("3");
+
+      // Verify failures section
+      expect(html).toContain('class="failures-section"');
+      expect(html).toContain('class="failures-header"');
+      expect(html).toContain('class="failures-list"');
+      expect(html).toContain('class="failure-item"');
+      expect(html).toContain("2 Failed Tests");
+
+      // Verify action buttons
+      expect(html).toContain('class="actions"');
+      expect(html).toContain('class="action-btn"');
+      expect(html).toContain("View Code");
+      expect(html).toContain("View Tests");
+      expect(html).toContain("History");
+
+      // Restore original method
+      (provider as any).generateTaskmasterHTML = originalMethod;
+    });
+
+    it("should handle tasks without test status gracefully", () => {
+      const taskWithoutTests: Task = {
+        ...mockTaskWithTestStatus,
+        testStatus: undefined
+      };
+
+      const mockWebviewWithTasks = {
+        ...mockWebviewView,
+        webview: {
+          ...mockWebview,
+          html: "",
+        },
+      };
+
+      // Mock the generateTaskmasterHTML method
+      const originalMethod = (provider as any).generateTaskmasterHTML;
+      (provider as any).generateTaskmasterHTML = jest.fn().mockReturnValue(`
+        <!DOCTYPE html>
+        <html>
+          <body>
+            <div class="task-item" data-task-id="test-3" onclick="toggleTask(this)">
+              <div class="task-header">
+                <span class="task-id">test-3</span>
+                <span class="task-title">Task Without Tests</span>
+                <span class="task-status not-started">not started</span>
+              </div>
+              <div class="task-details">
+                <div class="task-description">Task without test status</div>
+                <div class="no-tests">No tests available yet</div>
+                <div class="actions">
+                  <button class="action-btn primary">🤖 Execute with Cursor</button>
+                  <button class="action-btn">Generate Prompt</button>
+                  <button class="action-btn">View Requirements</button>
+                </div>
+              </div>
+            </div>
+          </body>
+        </html>
+      `);
+
+      provider.resolveWebviewView(mockWebviewWithTasks, mockContext, mockToken);
+
+      const html = mockWebviewWithTasks.webview.html;
+
+      // Verify no-tests message is displayed
+      expect(html).toContain('class="no-tests"');
+      expect(html).toContain("No tests available yet");
+
+      // Restore original method
+      (provider as any).generateTaskmasterHTML = originalMethod;
+    });
+  });
 });
