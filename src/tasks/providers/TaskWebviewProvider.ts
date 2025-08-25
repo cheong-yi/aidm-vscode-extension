@@ -5,6 +5,7 @@
  * Task WV-001: Create WebviewViewProvider Base Class
  * Task WV-002: Implement HTML Template System
  * Task WV-005: Implement Webview Message Handling
+ * Task WV-007: Connect to TasksDataService with Workspace Initialization
  *
  * This provider handles webview-based task management display with basic
  * HTML template generation infrastructure for future taskmaster dashboard.
@@ -16,7 +17,9 @@ import {
   TaskStatus,
   STATUS_DISPLAY_NAMES,
   STATUS_ACTIONS,
+  TaskErrorResponse,
 } from "../../types/tasks";
+import { TasksDataService } from "../../services";
 
 /**
  * Webview message interface for task interactions
@@ -41,6 +44,7 @@ interface WebviewMessage {
  * - Basic HTML template generation infrastructure
  * - Webview options setup for future content rendering
  * - Foundation for webview message handling system
+ * - TasksDataService integration with workspace initialization
  */
 export class TaskWebviewProvider implements vscode.WebviewViewProvider {
   /**
@@ -56,6 +60,18 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
   private readonly _disposables: vscode.Disposable[] = [];
 
   /**
+   * TasksDataService reference for data retrieval and event handling
+   * Task WV-007: Store service reference for data integration
+   */
+  private readonly tasksDataService: TasksDataService;
+
+  /**
+   * Event listener disposables for proper cleanup
+   * Task WV-007: Store disposables for event listener cleanup
+   */
+  private readonly eventDisposables: vscode.Disposable[] = [];
+
+  /**
    * Flag to track if data has been initialized
    * Mirrors TaskTreeViewProvider workspace initialization pattern
    * Task WV-001: Workspace-aware initialization state
@@ -64,14 +80,47 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
 
   /**
    * Constructor for TaskWebviewProvider
-   * Initializes the provider without external dependencies
+   * Task WV-007: Accept TasksDataService for data integration
+   * 
+   * @param tasksDataService - TasksDataService instance for data retrieval and events
    */
-  constructor() {}
+  constructor(tasksDataService: TasksDataService) {
+    this.tasksDataService = tasksDataService;
+    
+    // Task WV-007: Setup event listeners but defer data loading until initializeData() called
+    this.setupEventListeners();
+  }
+
+  /**
+   * Setup event listeners for TasksDataService events
+   * Task WV-007: Connect to service events for automatic refresh but respect initialization state
+   */
+  private setupEventListeners(): void {
+    try {
+      // Listen for task data updates
+      const tasksUpdatedDisposable = this.tasksDataService.onTasksUpdated.event(
+        (tasks: Task[]) => this.handleTasksUpdated(tasks)
+      );
+      this.eventDisposables.push(tasksUpdatedDisposable);
+
+      // Listen for service errors
+      const errorDisposable = this.tasksDataService.onError.event(
+        (error: TaskErrorResponse) => this.handleServiceError(error)
+      );
+      this.eventDisposables.push(errorDisposable);
+
+      console.debug("TaskWebviewProvider: Event listeners connected successfully");
+    } catch (error) {
+      console.error("TaskWebviewProvider: Failed to setup event listeners:", error);
+      // Continue without automatic refresh - manual refresh still works
+    }
+  }
 
   /**
    * Initialize data loading after service initialization completes
    * Mirrors TaskTreeViewProvider deferred initialization pattern
    * Task WV-001: Workspace-aware data initialization
+   * Task WV-007: Load real data from TasksDataService after initialization
    *
    * @returns Promise that resolves when data initialization is complete
    */
@@ -90,7 +139,7 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
       this._isDataInitialized = true;
 
       // Now it's safe to load initial data
-      await this.refreshContent();
+      await this.loadAndDisplayTasks();
 
       console.debug(
         "TaskWebviewProvider: Data initialization completed successfully"
@@ -101,7 +150,106 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
         error
       );
       // Don't throw - allow the provider to continue with error state
+      await this.showErrorState('Failed to initialize task data');
     }
+  }
+
+  /**
+   * Load tasks from service and display in webview
+   * Task WV-007: Only called after _isDataInitialized is true
+   */
+  private async loadAndDisplayTasks(): Promise<void> {
+    try {
+      if (!this._isDataInitialized) {
+        console.debug("TaskWebviewProvider: Data not initialized, skipping load");
+        return;
+      }
+
+      const tasks = await this.tasksDataService.getTasks();
+      await this.updateWebviewContent(tasks);
+      
+      console.debug(`TaskWebviewProvider: Loaded and displayed ${tasks.length} tasks`);
+    } catch (error) {
+      console.error('TaskWebviewProvider: Failed to load tasks:', error);
+      await this.showErrorState('Failed to load tasks');
+    }
+  }
+
+  /**
+   * Update webview HTML content with task data
+   * Task WV-007: Update webview with real task data
+   */
+  private async updateWebviewContent(tasks: Task[]): Promise<void> {
+    if (!this._view) return;
+    
+    this._view.webview.html = this.getHtmlContent(tasks);
+  }
+
+  /**
+   * Handle tasks updated event from TasksDataService
+   * Task WV-007: Automatic refresh when data changes, but only if initialized
+   */
+  private handleTasksUpdated(tasks: Task[]): void {
+    try {
+      if (!this._isDataInitialized) {
+        console.debug("TaskWebviewProvider: Ignoring tasks update - not initialized");
+        return;
+      }
+
+      console.debug("TaskWebviewProvider: Tasks updated, refreshing webview");
+      this.updateWebviewContent(tasks).catch(error => {
+        console.error('TaskWebviewProvider: Error updating webview content:', error);
+      });
+    } catch (error) {
+      console.error('TaskWebviewProvider: Error handling tasks update:', error);
+    }
+  }
+
+  /**
+   * Handle service error events from TasksDataService
+   * Task WV-007: Graceful error handling without breaking webview
+   */
+  private handleServiceError(error: TaskErrorResponse): void {
+    try {
+      console.warn('TaskWebviewProvider: Service error received:', {
+        operation: error.operation,
+        taskId: error.taskId,
+        userInstructions: error.userInstructions
+      });
+
+      // Show error state in webview if data was initialized
+      if (this._isDataInitialized) {
+        this.showErrorState(error.userInstructions || 'Service error occurred').catch(err => {
+          console.error('Error displaying service error:', err);
+        });
+      }
+    } catch (error) {
+      console.error('TaskWebviewProvider: Error handling service error:', error);
+    }
+  }
+
+  /**
+   * Display error state in webview
+   * Task WV-007: Show helpful error messages with retry options
+   */
+  private async showErrorState(message: string): Promise<void> {
+    if (!this._view) return;
+    
+    this._view.webview.html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Taskmaster - Error</title>
+</head>
+<body>
+    <div id="taskmaster-root">
+        <h3>Unable to Load Tasks</h3>
+        <p>${message}</p>
+        <button onclick="location.reload()">Retry</button>
+    </div>
+</body>
+</html>`;
   }
 
   /**
@@ -116,12 +264,13 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
   /**
    * Refresh webview content after data initialization
    * Task WV-001: Content refresh for workspace-aware updates
+   * Task WV-007: Use loadAndDisplayTasks for real data loading
    */
   private async refreshContent(): Promise<void> {
     if (!this._view) return;
 
-    // Will be implemented in later tasks to load actual data
-    this._view.webview.html = this.getHtmlContent();
+    // Task WV-007: Use real data loading instead of empty array
+    await this.loadAndDisplayTasks();
   }
 
   /**
@@ -151,8 +300,8 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
       // Set initial HTML content with empty tasks array
       webviewView.webview.html = this.getHtmlContent();
 
-      // Task WV-005: Setup message handling for webview communication (deferred to future task)
-      // this.setupMessageHandling();
+      // Task WV-005: Setup message handling for webview communication
+      this.setupMessageHandling();
     } catch (error) {
       // Basic error handling for webview resolution
       console.error("Error resolving webview view:", error);
@@ -1165,6 +1314,10 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
       // Dispose all registered disposables
       this._disposables.forEach((disposable) => disposable.dispose());
       this._disposables.length = 0;
+
+      // Dispose event listener disposables
+      this.eventDisposables.forEach((disposable) => disposable.dispose());
+      this.eventDisposables.length = 0;
 
       console.debug("TaskWebviewProvider: Disposed successfully");
     } catch (error) {
