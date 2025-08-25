@@ -927,16 +927,16 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: #1e1e1e;
-            color: #cccccc;
+            background: var(--vscode-editor-background);
+            color: var(--vscode-sideBar-foreground);
             height: 100vh;
             display: flex;
         }
 
         .sidebar {
             width: 350px;
-            background: #252526;
-            border-right: 1px solid #3e3e42;
+            background: var(--vscode-sideBar-background);
+            border-right: 1px solid var(--vscode-sideBar-border);
             display: flex;
             flex-direction: column;
             height: 100vh;
@@ -944,8 +944,8 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
 
         .sidebar-header {
             padding: 8px 16px;
-            background: #2d2d30;
-            border-bottom: 1px solid #3e3e42;
+            background: var(--vscode-sideBarSectionHeader-background);
+            border-bottom: 1px solid var(--vscode-sideBar-border);
             font-size: 11px;
             font-weight: 600;
             text-transform: uppercase;
@@ -982,13 +982,13 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
         }
 
         .task-item {
-            border-bottom: 1px solid #3e3e42;
-            background: #252526;
+            border-bottom: 1px solid var(--vscode-sideBar-border);
+            background: var(--vscode-sideBar-background);
             transition: background 0.2s;
         }
 
         .task-item:hover {
-            background: #2a2d2e;
+            background: var(--vscode-list-hoverBackground);
         }
 
         .task-header {
@@ -1015,10 +1015,10 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
         .task-id {
             font-family: 'Courier New', monospace;
             font-size: 11px;
-            background: #3e3e42;
+            background: var(--vscode-badge-background);
             padding: 2px 6px;
             border-radius: 3px;
-            color: #dcdcaa;
+            color: var(--vscode-badge-foreground);
             flex-shrink: 0;
             min-width: 35px;
             text-align: center;
@@ -1039,34 +1039,34 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
         }
 
         .task-status.not-started {
-            background: #4a4a4a;
-            color: #cccccc;
+            background: var(--vscode-badge-background);
+            color: var(--vscode-badge-foreground);
         }
 
         .task-status.in-progress {
-            background: #569cd6;
-            color: #ffffff;
+            background: var(--vscode-progressBar-background);
+            color: var(--vscode-progressBar-foreground);
         }
 
         .task-status.review {
-            background: #dcdcaa;
-            color: #1e1e1e;
+            background: var(--vscode-textPreformat-background);
+            color: var(--vscode-textPreformat-foreground);
         }
 
         .task-status.completed {
-            background: #4ec9b0;
-            color: #1e1e1e;
+            background: var(--vscode-textBlockQuote-background);
+            color: var(--vscode-textBlockQuote-foreground);
         }
 
         .task-status.blocked {
-            background: #f48771;
-            color: #1e1e1e;
+            background: var(--vscode-errorForeground);
+            color: var(--vscode-editor-background);
         }
 
         .task-details {
             display: none;
-            background: #2d2d30;
-            border-top: 1px solid #3e3e42;
+            background: var(--vscode-sideBarSectionHeader-background);
+            border-top: 1px solid var(--vscode-sideBar-border);
             padding: 16px;
         }
 
@@ -1078,7 +1078,7 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
             margin-bottom: 16px;
             font-size: 12px;
             line-height: 1.4;
-            color: #d4d4d4;
+            color: var(--vscode-descriptionForeground);
         }
 
         .task-meta {
@@ -1093,25 +1093,25 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
         }
 
         .meta-label {
-            color: #969696;
+            color: var(--vscode-descriptionForeground);
             margin-bottom: 2px;
         }
 
         .meta-value {
-            color: #ffffff;
+            color: var(--vscode-sideBar-foreground);
             font-weight: 500;
         }
 
         .complexity-low {
-            color: #4ec9b0;
+            color: var(--vscode-textPreformat-foreground);
         }
 
         .complexity-medium {
-            color: #dcdcaa;
+            color: var(--vscode-textPreformat-background);
         }
 
         .complexity-high {
-            color: #f48771;
+            color: var(--vscode-errorForeground);
         }
 
         .dependencies {
@@ -1120,7 +1120,7 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
 
         .dependencies-title {
             font-size: 11px;
-            color: #969696;
+            color: var(--vscode-descriptionForeground);
             margin-bottom: 6px;
         }
 
@@ -1131,8 +1131,8 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
         }
 
         .dependency-tag {
-            background: #3e3e42;
-            color: #dcdcaa;
+            background: var(--vscode-badge-background);
+            color: var(--vscode-badge-foreground);
             font-size: 10px;
             padding: 2px 6px;
             border-radius: 3px;
@@ -1140,8 +1140,8 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
         }
 
         .test-results {
-            background: #1e1e1e;
-            border: 1px solid #3e3e42;
+            background: var(--vscode-editor-background);
+            border: 1px solid var(--vscode-sideBar-border);
             border-radius: 4px;
             padding: 12px;
             margin-bottom: 12px;
@@ -1157,12 +1157,12 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
         .test-title {
             font-size: 11px;
             font-weight: 600;
-            color: #ffffff;
+            color: var(--vscode-sideBar-foreground);
         }
 
         .test-date {
             font-size: 10px;
-            color: #969696;
+            color: var(--vscode-descriptionForeground);
         }
 
         .test-stats {
@@ -1183,20 +1183,20 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
 
         .test-stat-label {
             font-size: 9px;
-            color: #969696;
+            color: var(--vscode-descriptionForeground);
             text-transform: uppercase;
         }
 
         .test-passed {
-            color: #4ec9b0;
+            color: var(--vscode-textPreformat-foreground);
         }
 
         .test-failed {
-            color: #f48771;
+            color: var(--vscode-errorForeground);
         }
 
         .test-total {
-            color: #dcdcaa;
+            color: var(--vscode-textPreformat-background);
         }
 
         .failures-section {
@@ -1205,7 +1205,7 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
 
         .failures-header {
             font-size: 10px;
-            color: #f48771;
+            color: var(--vscode-errorForeground);
             font-weight: 600;
             margin-bottom: 6px;
             cursor: pointer;
@@ -1217,7 +1217,7 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
         .failures-list {
             display: none;
             font-size: 10px;
-            color: #cccccc;
+            color: var(--vscode-sideBar-foreground);
         }
 
         .failures-section.expanded .failures-list {
@@ -1225,8 +1225,8 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
         }
 
         .failure-item {
-            background: #2d2d30;
-            border-left: 3px solid #f48771;
+            background: var(--vscode-sideBarSectionHeader-background);
+            border-left: 3px solid var(--vscode-errorForeground);
             padding: 6px 8px;
             margin-bottom: 4px;
             border-radius: 2px;
@@ -1238,7 +1238,7 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
         }
 
         .failure-message {
-            color: #969696;
+            color: var(--vscode-descriptionForeground);
             font-family: 'Courier New', monospace;
             font-size: 9px;
         }
@@ -1250,9 +1250,9 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
         }
 
         .action-btn {
-            background: #3e3e42;
+            background: var(--vscode-button-secondaryBackground);
             border: none;
-            color: #cccccc;
+            color: var(--vscode-button-secondaryForeground);
             padding: 6px 12px;
             border-radius: 3px;
             font-size: 10px;
@@ -1261,21 +1261,21 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
         }
 
         .action-btn:hover {
-            background: #4a4a4a;
+            background: var(--vscode-button-secondaryHoverBackground);
         }
 
         .action-btn.primary {
-            background: #569cd6;
-            color: #ffffff;
+            background: var(--vscode-button-background);
+            color: var(--vscode-button-foreground);
         }
 
         .action-btn.primary:hover {
-            background: #4a86c7;
+            background: var(--vscode-button-hoverBackground);
         }
 
         .no-tests {
             font-size: 11px;
-            color: #969696;
+            color: var(--vscode-descriptionForeground);
             font-style: italic;
             text-align: center;
             padding: 8px;
@@ -1283,14 +1283,14 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
 
         .no-tasks {
             font-size: 12px;
-            color: #969696;
+            color: var(--vscode-descriptionForeground);
             font-style: italic;
             text-align: center;
             padding: 20px;
         }
 
         .task-item.executable .task-header {
-            border-left: 3px solid #569cd6;
+            border-left: 3px solid var(--vscode-progressBar-background);
         }
 
         .cursor-icon {
@@ -1300,7 +1300,7 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
 
         .section-divider {
             height: 1px;
-            background: #3e3e42;
+            background: var(--vscode-sideBar-border);
             margin: 12px 0;
         }
 
