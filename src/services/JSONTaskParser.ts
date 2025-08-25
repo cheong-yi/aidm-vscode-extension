@@ -141,29 +141,32 @@ export class JSONTaskParser {
 
   /**
    * Parse tasks from a JSON file and return parsed Task objects using VS Code filesystem API
+   * PATH-FIX-002: Removed string path support to prevent URI corruption
    *
-   * @param filePathOrUri - VS Code URI or string path to the JSON file
+   * @param fileUri - VS Code URI to the JSON file (string paths no longer supported)
    * @returns Promise<Task[]> - Array of parsed Task objects from file content
    */
-  async parseTasksFromFile(
-    filePathOrUri: string | vscode.Uri
-  ): Promise<Task[]> {
-    // Convert string path to Uri if needed for backward compatibility
-    const fileUri =
-      typeof filePathOrUri === "string"
-        ? vscode.Uri.file(filePathOrUri)
-        : filePathOrUri;
-
-    // PATH-FIX-003: Enhanced debug logging to trace path handling
-    console.log(
-      `[JSONTaskParser] Validating tasks file: ${fileUri.toString()}`
-    );
-    console.log(`[JSONTaskParser] File system path: ${fileUri.fsPath}`);
+  async parseTasksFromFile(fileUri: vscode.Uri): Promise<Task[]> {
+    // PATH-FIX-002: Enhanced debug logging to trace URI handling
+    console.log(`[JSONTaskParser] Processing URI: ${fileUri.toString()}`);
+    console.log(`[JSONTaskParser] FSPath: ${fileUri.fsPath}`);
+    console.log(`[JSONTaskParser] Path segments:`, fileUri.path.split("/"));
     console.log(`[JSONTaskParser] Scheme: ${fileUri.scheme}`);
     console.log(`[JSONTaskParser] Authority: ${fileUri.authority}`);
 
-    // Add file existence check with logging
-    console.log(`[JSONTaskParser] Attempting to stat file: ${fileUri.fsPath}`);
+    // PATH-FIX-002: Validate URI is not corrupted
+    if (
+      !fileUri.fsPath ||
+      fileUri.fsPath.includes("\\\\") ||
+      fileUri.fsPath === "\\" ||
+      fileUri.fsPath === ""
+    ) {
+      throw new Error(
+        `Malformed URI detected. URI: ${fileUri.toString()}, FSPath: "${
+          fileUri.fsPath
+        }"`
+      );
+    }
 
     // Validate file before attempting to parse
     const validation = await this.validateTasksFile(fileUri);
@@ -206,7 +209,7 @@ export class JSONTaskParser {
         error
       );
 
-      // PATH-FIX-003: Enhanced error logging for debugging
+      // Enhanced error logging for debugging
       console.log(
         `[JSONTaskParser] Error type: ${
           error instanceof Error ? error.constructor.name : typeof error

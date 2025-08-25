@@ -19,6 +19,7 @@ jest.mock("vscode", () => ({
       toString: () => `file://${path}`,
       scheme: "file",
       authority: "",
+      path: path,
     })),
   },
   workspace: {
@@ -74,27 +75,20 @@ describe("JSONTaskParser", () => {
       expect(result[0].id).toBe("1");
     });
 
-    it("should handle string file paths by converting to Uri", async () => {
+    it("should reject malformed URIs with corrupted paths", async () => {
       // Arrange
-      const filePath = "/workspace/tasks.json";
-      const mockFileContent = Buffer.from(
-        '{"master":{"tasks":[{"id":"1","title":"Test"}]}}',
-        "utf8"
-      );
-      mockVscode.workspace.fs.readFile = jest
-        .fn()
-        .mockResolvedValue(mockFileContent);
-      mockVscode.workspace.fs.stat = jest.fn().mockResolvedValue({
-        type: mockVscode.FileType.File,
-        size: 100,
-      });
+      const malformedUri = {
+        fsPath: "\\\\tasks.json",
+        toString: () => "file:///\\\\tasks.json",
+        scheme: "file",
+        authority: "",
+        path: "/\\\\tasks.json",
+      };
 
-      // Act
-      const result = await parser.parseTasksFromFile(filePath);
-
-      // Assert
-      expect(mockVscode.Uri.file).toHaveBeenCalledWith(filePath);
-      expect(result).toHaveLength(1);
+      // Act & Assert
+      await expect(
+        parser.parseTasksFromFile(malformedUri as any)
+      ).rejects.toThrow("Malformed URI detected");
     });
 
     it("should handle FileNotFound errors from VS Code API", async () => {
@@ -131,7 +125,7 @@ describe("JSONTaskParser", () => {
       );
     });
 
-    it("should log comprehensive path validation details", async () => {
+    it("should log comprehensive URI validation details", async () => {
       // Arrange
       const consoleSpy = jest.spyOn(console, "log");
       const fileUri = mockVscode.Uri.file("\\tasks.json");
@@ -148,21 +142,22 @@ describe("JSONTaskParser", () => {
         // Expected to fail, we're testing logging
       }
 
-      // Assert - Verify our enhanced path validation logging statements
+      // Assert - Verify our enhanced URI validation logging statements
       expect(consoleSpy).toHaveBeenCalledWith(
-        "[JSONTaskParser] Validating tasks file: file://\\tasks.json"
+        "[JSONTaskParser] Processing URI: file://\\tasks.json"
       );
       expect(consoleSpy).toHaveBeenCalledWith(
-        "[JSONTaskParser] File system path: \\tasks.json"
+        "[JSONTaskParser] FSPath: \\tasks.json"
+      );
+      expect(consoleSpy).toHaveBeenCalledWith(
+        "[JSONTaskParser] Path segments:",
+        ["\\tasks.json"]
       );
       expect(consoleSpy).toHaveBeenCalledWith("[JSONTaskParser] Scheme: file");
       expect(consoleSpy).toHaveBeenCalledWith("[JSONTaskParser] Authority: ");
-      expect(consoleSpy).toHaveBeenCalledWith(
-        "[JSONTaskParser] Attempting to stat file: \\tasks.json"
-      );
 
-      // Verify that we're getting comprehensive logging (13 total calls)
-      expect(consoleSpy).toHaveBeenCalledTimes(13);
+      // Verify that we're getting comprehensive logging (5 total calls for URI validation)
+      expect(consoleSpy).toHaveBeenCalledTimes(5);
 
       consoleSpy.mockRestore();
     });
