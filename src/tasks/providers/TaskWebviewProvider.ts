@@ -934,7 +934,9 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
         }
 
         .sidebar {
-            width: 350px;
+            width: 100%;
+            min-width: 250px;
+            max-width: 100%;
             background: var(--vscode-sideBar-background);
             border-right: 1px solid var(--vscode-sideBar-border);
             display: flex;
@@ -943,10 +945,10 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
         }
 
         .sidebar-header {
-            padding: 8px 16px;
+            padding: clamp(6px, 1.5vw, 8px) clamp(12px, 2.5vw, 16px);
             background: var(--vscode-sideBarSectionHeader-background);
             border-bottom: 1px solid var(--vscode-sideBar-border);
-            font-size: 11px;
+            font-size: clamp(10px, 2.2vw, 11px);
             font-weight: 600;
             text-transform: uppercase;
             letter-spacing: 0.5px;
@@ -992,12 +994,12 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
         }
 
         .task-header {
-            padding: 12px 16px;
+            padding: clamp(8px, 2vw, 12px) clamp(12px, 2.5vw, 16px);
             cursor: pointer;
             display: flex;
             align-items: center;
-            gap: 12px;
-            font-size: 13px;
+            gap: clamp(8px, 2vw, 12px);
+            font-size: clamp(11px, 2.5vw, 13px);
             user-select: none;
         }
 
@@ -1067,7 +1069,7 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
             display: none;
             background: var(--vscode-sideBarSectionHeader-background);
             border-top: 1px solid var(--vscode-sideBar-border);
-            padding: 16px;
+            padding: clamp(12px, 2.5vw, 16px);
         }
 
         .task-item.expanded .task-details {
@@ -1075,17 +1077,17 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
         }
 
         .task-description {
-            margin-bottom: 16px;
-            font-size: 12px;
+            margin-bottom: clamp(12px, 2.5vw, 16px);
+            font-size: clamp(10px, 2.2vw, 12px);
             line-height: 1.4;
             color: var(--vscode-descriptionForeground);
         }
 
         .task-meta {
             display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
-            margin-bottom: 16px;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: clamp(8px, 2vw, 12px);
+            margin-bottom: clamp(12px, 2.5vw, 16px);
         }
 
         .meta-item {
@@ -1115,7 +1117,7 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
         }
 
         .dependencies {
-            margin-bottom: 16px;
+            margin-bottom: clamp(12px, 2.5vw, 16px);
         }
 
         .dependencies-title {
@@ -1143,8 +1145,8 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
             background: var(--vscode-editor-background);
             border: 1px solid var(--vscode-sideBar-border);
             border-radius: 4px;
-            padding: 12px;
-            margin-bottom: 12px;
+            padding: clamp(8px, 2vw, 12px);
+            margin-bottom: clamp(8px, 2vw, 12px);
         }
 
         .test-header {
@@ -1167,8 +1169,8 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
 
         .test-stats {
             display: flex;
-            gap: 16px;
-            margin-bottom: 8px;
+            gap: clamp(8px, 2vw, 16px);
+            margin-bottom: clamp(6px, 1.5vw, 8px);
         }
 
         .test-stat {
@@ -1245,7 +1247,7 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
 
         .actions {
             display: flex;
-            gap: 8px;
+            gap: clamp(6px, 1.5vw, 8px);
             flex-wrap: wrap;
         }
 
@@ -1282,11 +1284,11 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
         }
 
         .no-tasks {
-            font-size: 12px;
+            font-size: clamp(10px, 2.2vw, 12px);
             color: var(--vscode-descriptionForeground);
             font-style: italic;
             text-align: center;
-            padding: 20px;
+            padding: clamp(16px, 3vw, 20px);
         }
 
         .task-item.executable .task-header {
@@ -1310,6 +1312,44 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
 
         .failures-section.expanded .failure-toggle-icon {
             transform: rotate(90deg);
+        }
+
+        /* Responsive breakpoints for very narrow panels */
+        @media (max-width: 300px) {
+            .task-header {
+                padding: 6px 8px;
+                gap: 6px;
+            }
+            
+            .task-details {
+                padding: 8px;
+            }
+            
+            .task-meta {
+                grid-template-columns: 1fr;
+                gap: 6px;
+            }
+            
+            .test-stats {
+                flex-direction: column;
+                gap: 4px;
+            }
+            
+            .actions {
+                flex-direction: column;
+                gap: 4px;
+            }
+        }
+
+        /* Responsive breakpoints for wide panels */
+        @media (min-width: 500px) {
+            .task-meta {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .test-stats {
+                gap: 20px;
+            }
         }`;
   }
 

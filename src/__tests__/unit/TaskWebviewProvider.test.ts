@@ -656,5 +656,41 @@ describe("TaskWebviewProvider", () => {
       expect(html).toContain("executeWithCursor(taskId)");
       expect(html).toContain("updateTaskStatus(taskId, 'completed')");
     });
+
+    it("should include responsive layout CSS for variable panel widths", async () => {
+      // Setup webview and initialize data to show full HTML
+      await setupWebviewAndWaitForData();
+
+      const html = (provider as any).getHtmlContent();
+
+      // Verify responsive sidebar width
+      expect(html).toContain("width: 100%");
+      expect(html).toContain("min-width: 250px");
+      expect(html).toContain("max-width: 100%");
+
+      // Verify responsive padding using clamp()
+      expect(html).toContain("padding: clamp(");
+      expect(html).toContain("clamp(8px, 2vw, 12px)");
+      expect(html).toContain("clamp(12px, 2.5vw, 16px)");
+
+      // Verify responsive font sizes using clamp()
+      expect(html).toContain("font-size: clamp(");
+      expect(html).toContain("clamp(11px, 2.5vw, 13px)");
+      expect(html).toContain("clamp(10px, 2.2vw, 12px)");
+
+      // Verify responsive grid layout
+      expect(html).toContain(
+        "grid-template-columns: repeat(auto-fit, minmax(120px, 1fr))"
+      );
+      expect(html).toContain("gap: clamp(8px, 2vw, 12px)");
+
+      // Verify responsive breakpoints
+      expect(html).toContain("@media (max-width: 300px)");
+      expect(html).toContain("@media (min-width: 500px)");
+
+      // Verify narrow panel adaptations
+      expect(html).toContain("grid-template-columns: 1fr");
+      expect(html).toContain("flex-direction: column");
+    });
   });
 });
