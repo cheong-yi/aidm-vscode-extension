@@ -243,7 +243,9 @@ describe("TaskWebviewProvider", () => {
       // Verify task item structure
       expect(html).toContain('class="task-item"');
       expect(html).toContain('data-task-id="test-1"');
-      expect(html).toContain('onclick="toggleTask(this)"');
+      expect(html).toContain(
+        "onclick=\"toggleTask(this.closest('.task-item'))\""
+      );
       expect(html).toContain("Test Task");
       expect(html).toContain("not started");
       expect(html).toContain("Low");
