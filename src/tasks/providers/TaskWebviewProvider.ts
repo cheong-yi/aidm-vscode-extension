@@ -28,7 +28,12 @@ import { TasksDataService } from "../../services";
  * Task WV-005: Message structure for webview-to-extension communication
  */
 interface WebviewMessage {
-  type: "updateTaskStatus" | "executeWithCursor" | "toggleAccordion" | "viewCode";
+  type:
+    | "updateTaskStatus"
+    | "executeWithCursor"
+    | "toggleAccordion"
+    | "viewCode"
+    | "viewTests";
   taskId: string;
   newStatus?: TaskStatus;
   payload?: any;
@@ -1795,6 +1800,9 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
         case "viewCode":
           this.handleViewCode(message.taskId);
           break;
+        case "viewTests":
+          this.handleViewTests(message.taskId);
+          break;
         case "restoreState":
           // This message is sent TO the webview, so no handler needed here
           break;
@@ -1885,23 +1893,33 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
   private async handleViewCode(taskId: string): Promise<void> {
     try {
       const tasks = await this.tasksDataService.getTasks();
-      const task = tasks.find(t => t.id === taskId);
-      
+      const task = tasks.find((t) => t.id === taskId);
+
       if (!task?.implementation?.filesChanged) {
-        vscode.window.showWarningMessage(`No implementation files found for task ${taskId}`);
+        vscode.window.showWarningMessage(
+          `No implementation files found for task ${taskId}`
+        );
         return;
       }
 
       // Check if workspace folders are available
-      if (!vscode.workspace.workspaceFolders || vscode.workspace.workspaceFolders.length === 0) {
-        vscode.window.showErrorMessage("No workspace folder available to open files");
+      if (
+        !vscode.workspace.workspaceFolders ||
+        vscode.workspace.workspaceFolders.length === 0
+      ) {
+        vscode.window.showErrorMessage(
+          "No workspace folder available to open files"
+        );
         return;
       }
 
       // Open each file in the filesChanged array
       for (const filePath of task.implementation.filesChanged) {
-        const uri = vscode.Uri.joinPath(vscode.workspace.workspaceFolders[0].uri, filePath);
-        
+        const uri = vscode.Uri.joinPath(
+          vscode.workspace.workspaceFolders[0].uri,
+          filePath
+        );
+
         try {
           const document = await vscode.workspace.openTextDocument(uri);
           await vscode.window.showTextDocument(document);
@@ -1910,11 +1928,71 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
           vscode.window.showErrorMessage(`Could not open file: ${filePath}`);
         }
       }
-      
-      console.log(`Opened ${task.implementation.filesChanged.length} files for task ${taskId}`);
+
+      console.log(
+        `Opened ${task.implementation.filesChanged.length} files for task ${taskId}`
+      );
     } catch (error) {
       console.error("Error handling View Code:", error);
       vscode.window.showErrorMessage("Failed to open implementation files");
+    }
+  }
+
+  /**
+   * Handle View Tests button clicks from webview
+   * Opens test results JSON file from task.testResults.resultsFile
+   * Task IMPL-003: Implement View Tests button handler
+   *
+   * @param taskId - The ID of the task to view tests for
+   */
+  private async handleViewTests(taskId: string): Promise<void> {
+    try {
+      const tasks = await this.tasksDataService.getTasks();
+      const task = tasks.find((t) => t.id === taskId);
+
+      if (!task?.testResults?.resultsFile) {
+        vscode.window.showWarningMessage(
+          `No test results found for task ${taskId}`
+        );
+        return;
+      }
+
+      // Check if workspace folders are available
+      if (
+        !vscode.workspace.workspaceFolders ||
+        vscode.workspace.workspaceFolders.length === 0
+      ) {
+        vscode.window.showErrorMessage(
+          "No workspace folder available to open files"
+        );
+        return;
+      }
+
+      // Open the test results JSON file
+      const uri = vscode.Uri.joinPath(
+        vscode.workspace.workspaceFolders[0].uri,
+        task.testResults.resultsFile
+      );
+
+      try {
+        const document = await vscode.workspace.openTextDocument(uri);
+        await vscode.window.showTextDocument(document);
+
+        console.log(
+          `Opened test results file: ${task.testResults.resultsFile} for task ${taskId}`
+        );
+      } catch (error) {
+        console.error(
+          `Failed to open test results file: ${task.testResults.resultsFile}`,
+          error
+        );
+        vscode.window.showErrorMessage(
+          `Could not open test results: ${task.testResults.resultsFile}`
+        );
+      }
+    } catch (error) {
+      console.error("Error handling View Tests:", error);
+      vscode.window.showErrorMessage("Failed to open test results file");
     }
   }
 
