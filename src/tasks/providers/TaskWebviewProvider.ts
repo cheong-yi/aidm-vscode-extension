@@ -778,7 +778,7 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
    * @returns CSS class string for status styling
    */
   private getStatusClass(status: TaskStatus): string {
-    return status.replace("_", "-");
+    return status.replace(/_/g, "-");
   }
 
   /**

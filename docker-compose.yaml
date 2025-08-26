@@ -1,0 +1,88 @@
+# Use version 3.8 for Docker Compose, which supports
+# all the required features for this setup.
+version: '3.8'
+
+services:
+  # The FastAPI orchestrator, which will be the main entry point.
+  orchestrator:
+    build:
+      context: .
+      dockerfile: ./docker/orchestrator/Dockerfile # Assumes a dedicated Dockerfile path
+    ports:
+      - "8000:8000" # Exposes the FastAPI application
+    volumes:
+      - ./src/orchestrator:/app/src # Mounts the source code for hot-reloading
+    environment:
+      # Pass the hostnames of the other services to the orchestrator.
+      - CONSUL_HOST=consul
+      - REDIS_HOST=redis
+      - LITETLLM_HOST=litellm
+    depends_on:
+      - consul
+      - redis
+      - litellm
+
+  # The AI agents that will perform specific tasks.
+  # Using a scale-out approach for multiple agents.
+  agents:
+    build:
+      context: .
+      dockerfile: ./docker/agents/Dockerfile # Assumes a dedicated Dockerfile for agents
+    volumes:
+      - ./src/agents:/app/src # Mounts the source code for hot-reloading
+    environment:
+      - CONSUL_HOST=consul
+      - REDIS_HOST=redis
+      - LITETLLM_HOST=litellm
+    depends_on:
+      - consul
+      - redis
+      - litellm
+
+  # Consul for service discovery and configuration management.
+  consul:
+    image: consul:1.15.1
+    command: "agent -dev -client=0.0.0.0"
+    ports:
+      - "8500:8500" # Exposes the Consul HTTP API
+      - "8600:8600/udp" # Exposes the Consul DNS API
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8500/v1/status/leader"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis for state management and caching.
+  redis:
+    image: redis:7.0.11-alpine
+    ports:
+      - "6379:6379" # Exposes the Redis port
+    volumes:
+      - redis_data:/data # Persists Redis data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  # LiteLLM for a unified API to multiple LLM providers.
+  litellm:
+    image: ghcr.io/berriai/litellm:main
+    ports:
+      - "4000:4000" # Exposes the LiteLLM API
+    environment:
+      # Example environment variable for an API key.
+      # You should replace this with a valid key.
+      - GEMINI_API_KEY=your_gemini_api_key_here
+
+  # Mock server to simulate the Taskmaster/ADO backend.
+  taskmaster-mock:
+    build:
+      context: .
+      dockerfile: ./docker/taskmaster/Dockerfile # Assumes a dedicated Dockerfile
+    ports:
+      - "9000:9000" # Exposes the mock server
+
+# Define named volumes for data persistence.
+volumes:
+  redis_data:

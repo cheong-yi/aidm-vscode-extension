@@ -2,42 +2,14 @@
   "master": {
     "tasks": [
       {
-        "id": 1,
+        "id": "1",
         "title": "Foundational Setup: Base Agent & Docker Compose",
         "description": "Create the foundational `BaseAgent` class providing common services and set up the `docker-compose.yml` for a complete local development environment.",
         "details": "Implement the Base Agent to initialize clients for Consul (config), Redis (state), and LiteLLM. Create a `docker-compose` file that includes all services: FastAPI orchestrator, agents, Redis, Consul, LiteLLM, and a mock Taskmaster/ADO server for testing.",
         "testStrategy": "Unit test client initializations in the Base Agent. Validate that `docker-compose up` successfully starts all required services without errors.",
         "priority": "high",
         "dependencies": [],
-        "status": "not_started",
-        "subtasks": []
-      },
-      {
-        "id": "1b",
-        "title": "Foundational Setup: Base Agent & Docker Compose",
-        "description": "Create the foundational `BaseAgent` class providing common services and set up the `docker-compose.yml` for a complete local development environment.",
-        "details": "Implement the Base Agent to initialize clients for Consul (config), Redis (state), and LiteLLM. Create a `docker-compose` file that includes all services: FastAPI orchestrator, agents, Redis, Consul, LiteLLM, and a mock Taskmaster/ADO server for testing.",
-        "testStrategy": "Unit test client initializations in the Base Agent. Validate that `docker-compose up` successfully starts all required services without errors.",
-        "priority": "high",
-        "dependencies": [],
-        "status": "in_progress",
-        "subtasks": [],
-        "implementation": {
-          "summary": "Work in progress: Implementing BaseAgent class with client initialization logic. Docker compose configuration started.",
-          "filesChanged": ["src/agents/base_agent.py", "docker-compose.yml"],
-          "completedDate": "",
-          "diffAvailable": false
-        }
-      },
-      {
-        "id": "1c",
-        "title": "Foundational Setup: Base Agent & Docker Compose",
-        "description": "Create the foundational `BaseAgent` class providing common services and set up the `docker-compose.yml` for a complete local development environment.",
-        "details": "Implement the Base Agent to initialize clients for Consul (config), Redis (state), and LiteLLM. Create a `docker-compose` file that includes all services: FastAPI orchestrator, agents, Redis, Consul, LiteLLM, and a mock Taskmaster/ADO server for testing.",
-        "testStrategy": "Unit test client initializations in the Base Agent. Validate that `docker-compose up` successfully starts all required services without errors.",
-        "priority": "high",
-        "dependencies": [],
-        "status": "ready_for_review",
+        "status": "completed",
         "subtasks": [],
         "testStatus": {
           "lastRunDate": "2025-01-25T14:35:00Z",
@@ -77,7 +49,7 @@
         "testStrategy": "Unit test each endpoint for correct responses and status codes. Verify that the `/docs` endpoint renders a complete and interactive API specification.",
         "priority": "high",
         "dependencies": [1],
-        "status": "done",
+        "status": "not_started",
         "subtasks": [],
         "implementation": {
           "summary": "Implemented complete FastAPI orchestration service with modular router architecture. Added health endpoint, configuration endpoints, and OpenAPI documentation generation. Integrated with BaseAgent for consistent service initialization across all endpoints.",
@@ -116,7 +88,7 @@
         "testStrategy": "Unit test the clone functionality with a public repo. Integration test the KG ingestion on a sample Python project, verifying the generated summary and metrics are accurate. Test error handling for non-existent repos or unparseable files.",
         "priority": "high",
         "dependencies": [1, 2],
-        "status": "done",
+        "status": "not_started",
         "subtasks": [],
         "implementation": {
           "summary": "Implemented repository cloning with git subprocess integration and comprehensive error handling. Built Knowledge Graph ingestion system using Python AST parsing to extract classes, functions, and dependencies. Added graph metrics calculation and persistence with JSON output for downstream consumption.",
@@ -156,7 +128,7 @@
         "testStrategy": "Unit test the prompt construction and LiteLLM client call. Integration test the full flow from PRD generation to Taskmaster plan creation, ensuring all artifacts are saved to the correct locations.",
         "priority": "high",
         "dependencies": [1, 2, 3],
-        "status": "done",
+        "status": "not_started",
         "subtasks": [],
         "implementation": {
           "summary": "Implemented PRD generation with LiteLLM integration and KG context injection. Built Taskmaster orchestration system with MCP tool chaining (parse_prd → analyze_project_complexity → expand_all). Added file persistence for PRD documents and task plans with proper directory structure creation.",
@@ -195,7 +167,7 @@
         "testStrategy": "Unit test the transformation logic from Taskmaster format to ADO work item payloads. Integration test against a mock ADO API to verify correct creation and linking of User Stories and Tasks.",
         "priority": "high",
         "dependencies": [1, 2, 4],
-        "status": "done",
+        "status": "not_started",
         "subtasks": [],
         "implementation": {
           "summary": "Implemented Azure DevOps integration with REST API client and PAT authentication. Built work item creation system with proper User Story/Task hierarchy linking. Added comprehensive error handling for API failures and partial success scenarios with detailed response reporting.",
@@ -234,7 +206,7 @@
         "testStrategy": "Component tests for each UI element. End-to-end UI tests using a framework like Cypress or Playwright to simulate a user completing the full workflow, from entering a repo URL to seeing the created ADO item IDs.",
         "priority": "medium",
         "dependencies": [2, 3, 4, 5],
-        "status": "done",
+        "status": "not_started",
         "subtasks": [],
         "implementation": {
           "summary": "Implemented complete React-based frontend with component architecture for workflow management. Built repository input component, ADO settings form with validation, multi-section PRD builder, and progress tracking panel. Added real-time status updates and error handling with user-friendly messaging.",
@@ -264,84 +236,6 @@
             "failed": 0,
             "total": 22,
             "executionTime": 5600
-          }
-        }
-      },
-      {
-        "id": 9,
-        "title": "Implement Standardized Logging and Error Handling",
-        "description": "Establish and enforce consistent structured logging (JSON) and a standardized API error response format across the entire system.",
-        "details": "Configure Python's logging to output structured JSON logs. Create a FastAPI exception handler to catch common errors and return a consistent JSON shape: `{code, message, details}` with appropriate HTTP status codes (400, 404, 500, etc.).",
-        "testStrategy": "Unit test the exception handler to ensure it catches various exception types and returns the correct JSON structure and status code. Inspect logs from a test run to confirm they are in a valid, structured JSON format.",
-        "priority": "medium",
-        "dependencies": [2],
-        "status": "To Do",
-        "subtasks": []
-      },
-      {
-        "id": 24,
-        "title": "Implement Security: API Input Validation",
-        "description": "Implement robust validation and sanitization for all user-provided inputs to prevent security vulnerabilities.",
-        "details": "Validate the format of the Git URL to prevent command injection. Sanitize all fields sent to external services like ADO and LiteLLM.",
-        "testStrategy": "Unit tests with invalid inputs (e.g., malicious repo URLs, script tags in text fields) to ensure the application handles them gracefully and returns a 400 Bad Request error.",
-        "priority": "high",
-        "dependencies": [3],
-        "status": "in-progress",
-        "subtasks": [
-          {
-            "id": 1,
-            "title": "Implement Git URL validation and sanitization",
-            "description": "Create robust validation for Git URLs to prevent command injection attacks",
-            "details": "Validate Git URL format, sanitize input, and implement allowlist for trusted Git providers",
-            "status": "done",
-            "dependencies": [],
-            "parentTaskId": 24
-          },
-          {
-            "id": 2,
-            "title": "Implement ADO input validation and sanitization",
-            "description": "Create validation for Azure DevOps inputs to prevent injection attacks",
-            "details": "Validate organization URLs, project names, team names, area paths, and iteration paths. Implement input length limits and character allowlists.",
-            "status": "done",
-            "dependencies": [],
-            "parentTaskId": 24
-          },
-          {
-            "id": 5,
-            "title": "Implement security testing and validation",
-            "description": "Create comprehensive tests for all security validations",
-            "details": "Implement unit tests, integration tests, and security tests to ensure all validation logic works correctly and prevents common attack vectors.",
-            "status": "in-progress",
-            "dependencies": [],
-            "parentTaskId": 24
-          }
-        ],
-        "implementation": {
-          "summary": "Implemented comprehensive input validation system with URL sanitization, ADO parameter validation, and centralized validation utilities. Added security testing framework with injection attack prevention and proper error response formatting.",
-          "filesChanged": [
-            "src/validators/input_validator.py",
-            "src/validators/security.py",
-            "tests/security/test_input_validation.py"
-          ],
-          "completedDate": "2025-01-28T10:30:00Z",
-          "diffAvailable": true
-        },
-        "testStatus": {
-          "lastRunDate": "2025-01-28T10:35:00Z",
-          "totalTests": 20,
-          "passedTests": 18,
-          "failedTests": 2,
-          "executionTime": 2100,
-          "failingTestsList": []
-        },
-        "testResults": {
-          "resultsFile": "test-results/task-24.json",
-          "lastRun": "2025-01-28T10:35:00Z",
-          "summary": {
-            "passed": 18,
-            "failed": 2,
-            "total": 20,
-            "executionTime": 2100
           }
         }
       }
