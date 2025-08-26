@@ -616,10 +616,6 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
 </head>
 <body>
     <div class="sidebar">
-        <div class="sidebar-header">
-            TASKMASTER DASHBOARD
-            <div class="header-icons">${this.getHeaderIcons()}</div>
-        </div>
         <div class="sidebar-content">
             <div class="task-list">
                 ${taskListHTML}
@@ -949,22 +945,7 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
     </div>`;
   }
 
-  /**
-   * Generates header icons HTML following mockup structure
-   * Returns SVG icons for the dashboard header
-   *
-   * @returns HTML string for header icons
-   */
-  private getHeaderIcons(): string {
-    return `<svg class="icon" viewBox="0 0 16 16" fill="currentColor">
-        <path d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2v1z"/>
-        <path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466z"/>
-    </svg>
-    <svg class="icon" viewBox="0 0 16 16" fill="currentColor">
-        <path d="M8 9.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3z"/>
-        <path d="M1.5 8a6.5 6.5 0 1 1 13 0 6.5 6.5 0 0 1-13 0z"/>
-    </svg>`;
-  }
+
 
   /**
    * Generates CSS styles following mockup design
@@ -998,35 +979,7 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
             height: 100vh;
         }
 
-        .sidebar-header {
-            padding: clamp(6px, 1.5vw, 8px) clamp(12px, 2.5vw, 16px);
-            background: var(--vscode-sideBarSectionHeader-background);
-            border-bottom: 1px solid var(--vscode-sideBar-border);
-            font-size: clamp(10px, 2.2vw, 11px);
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
 
-        .header-icons {
-            display: flex;
-            gap: 4px;
-        }
-
-        .icon {
-            width: 16px;
-            height: 16px;
-            cursor: pointer;
-            opacity: 0.7;
-            transition: opacity 0.2s;
-        }
-
-        .icon:hover {
-            opacity: 1;
-        }
 
         .sidebar-content {
             flex: 1;

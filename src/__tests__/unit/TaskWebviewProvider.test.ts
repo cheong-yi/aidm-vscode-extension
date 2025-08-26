@@ -207,7 +207,7 @@ describe("TaskWebviewProvider", () => {
       expect(html).toMatch(/<body>/);
       expect(html).toMatch(/<title>Taskmaster Dashboard<\/title>/);
       expect(html).toMatch(/<div class="sidebar">/);
-      expect(html).toMatch(/TASKMASTER DASHBOARD/);
+      expect(html).toMatch(/<div class="sidebar-content">/);
     });
 
     it("should include proper meta tags", () => {
