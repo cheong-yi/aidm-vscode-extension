@@ -18,6 +18,25 @@ export interface Subtask {
   title?: string; // Added: matches JSON "title" field
 }
 
+export interface TaskImplementation {
+  summary: string;
+  filesChanged: string[]; // Workspace-relative paths
+  completedDate: string; // ISO date string
+  commitHash?: string; // For future git integration
+  diffAvailable: boolean; // Whether diff viewing is possible
+}
+
+export interface TaskTestResults {
+  resultsFile: string; // Path to test-results/task-{id}.json
+  lastRun: string; // ISO date string
+  summary: {
+    passed: number;
+    failed: number;
+    total: number;
+    executionTime: number; // milliseconds
+  };
+}
+
 export interface Task {
   id: string;
   title: string;
@@ -44,6 +63,8 @@ export interface Task {
   notes?: string;
   dueDate?: string; // ISO date string
   statusDisplayName?: string; // From STATUS_DISPLAY_NAMES mapping
+  implementation?: TaskImplementation;
+  testResults?: TaskTestResults;
 }
 
 export interface TestStatus {
