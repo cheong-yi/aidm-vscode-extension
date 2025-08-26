@@ -12,6 +12,10 @@ export interface Subtask {
   id: string;
   description: string;
   status: string;
+  details?: string; // Added: matches JSON "details" field
+  testStrategy?: string; // Added: matches JSON "testStrategy" field
+  dependencies?: string[]; // Added: matches JSON "dependencies" field
+  title?: string; // Added: matches JSON "title" field
 }
 
 export interface Task {

@@ -652,7 +652,8 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
 
   /**
    * Generates subtasks section HTML for tasks with subtasks
-   * Renders hierarchical task relationships with proper indentation
+   * Renders hierarchical task relationships with proper indentation and expandable behavior
+   * Task UI-004: Implement expandable subtasks with nested accordion behavior
    *
    * @param task - Task object to generate subtasks for
    * @returns HTML string for subtasks section or empty string if no subtasks
@@ -663,23 +664,72 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
     }
 
     const subtaskItems = task.subtasks
-      .map(
-        (subtask) =>
-          `<div class="subtask-item" data-subtask-id="${subtask.id}">
-            <span class="subtask-id">${task.id}.${subtask.id}</span>
-            <span class="subtask-title">${this.escapeHtml(
-              subtask.description
-            )}</span>
-            <span class="subtask-status ${this.getSubtaskStatusClass(
-              subtask.status
-            )}">${subtask.status}</span>
-          </div>`
-      )
+      .map((subtask) => this.generateExpandableSubtaskItem(subtask, task.id))
       .join("");
 
     return `<div class="subtasks-section">
       <div class="subtasks-header">Subtasks (${task.subtasks.length})</div>
       <div class="subtasks-list">${subtaskItems}</div>
+    </div>`;
+  }
+
+  /**
+   * Generates expandable subtask item HTML with nested accordion structure
+   * Task UI-004: Create nested accordion behavior for subtasks
+   *
+   * @param subtask - Subtask object to render
+   * @param parentTaskId - ID of the parent task for data attributes
+   * @returns HTML string for expandable subtask item
+   */
+  private generateExpandableSubtaskItem(
+    subtask: any,
+    parentTaskId: string
+  ): string {
+    const subtaskId = `${parentTaskId}.${subtask.id}`;
+    const statusClass = this.getSubtaskStatusClass(subtask.status);
+
+    // Handle missing properties gracefully
+    const details = subtask.details || "No details available";
+    const testStrategy = subtask.testStrategy || "No test strategy defined";
+    const dependencies =
+      subtask.dependencies && subtask.dependencies.length > 0
+        ? subtask.dependencies
+            .map(
+              (dep: string) =>
+                `<span class="dependency-tag">${this.escapeHtml(dep)}</span>`
+            )
+            .join("")
+        : '<span class="dependency-tag">None</span>';
+
+    return `<div class="subtask-item" data-subtask-id="${
+      subtask.id
+    }" data-parent-id="${parentTaskId}" data-full-id="${subtaskId}">
+      <div class="subtask-header" onclick="toggleSubtask(this.parentElement)">
+        <svg class="subtask-expand-icon" viewBox="0 0 16 16" fill="currentColor" width="12" height="12">
+          <path d="m12.14 8.753-5.482 4.796c-.646.566-1.658.106-1.658-.753V3.204a1 1 0 0 1 1.659-.753l5.48 4.796a1 1 0 0 1 0 1.506z"/>
+        </svg>
+        <span class="subtask-id">${parentTaskId}.${subtask.id}</span>
+        <span class="subtask-title">${this.escapeHtml(
+          subtask.description
+        )}</span>
+        <span class="subtask-status ${statusClass}">${subtask.status}</span>
+      </div>
+      <div class="subtask-details">
+        <div class="subtask-full-details">
+          <div class="subtask-details-title">Details</div>
+          <div class="subtask-details-content">${this.escapeHtml(details)}</div>
+        </div>
+        <div class="subtask-test-strategy">
+          <div class="subtask-details-title">Test Strategy</div>
+          <div class="subtask-details-content">${this.escapeHtml(
+            testStrategy
+          )}</div>
+        </div>
+        <div class="subtask-dependencies">
+          <div class="subtask-details-title">Dependencies</div>
+          <div class="dependency-list">${dependencies}</div>
+        </div>
+      </div>
     </div>`;
   }
 
@@ -1349,14 +1399,44 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
         }
 
         .subtask-item {
-            padding: 6px 10px 6px 16px;
             border-left: 2px solid var(--vscode-sideBar-border);
             margin-left: 8px;
             margin-bottom: 4px;
+            background: var(--vscode-sideBarSectionHeader-background);
+            border-radius: 3px;
+            overflow: hidden;
+            transition: background 0.2s;
+        }
+
+        .subtask-item:hover {
+            background: var(--vscode-list-hoverBackground);
+        }
+
+        .subtask-header {
+            padding: 6px 10px 6px 16px;
+            cursor: pointer;
             display: flex;
             align-items: center;
             gap: 8px;
             font-size: 11px;
+            user-select: none;
+            transition: background 0.2s;
+        }
+
+        .subtask-header:hover {
+            background: var(--vscode-list-hoverBackground);
+        }
+
+        .subtask-expand-icon {
+            width: 12px;
+            height: 12px;
+            transition: transform 0.2s;
+            flex-shrink: 0;
+            color: var(--vscode-descriptionForeground);
+        }
+
+        .subtask-item.expanded .subtask-expand-icon {
+            transform: rotate(90deg);
         }
 
         .subtask-id {
@@ -1383,6 +1463,91 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
             text-transform: lowercase;
         }
 
+        .subtask-status.pending {
+            background: var(--vscode-button-secondaryBackground);
+            color: var(--vscode-button-secondaryForeground);
+        }
+
+        .subtask-status.done {
+            background: var(--vscode-testing-iconPassed);
+            color: var(--vscode-editor-background);
+        }
+
+        .subtask-status.completed {
+            background: var(--vscode-testing-iconPassed);
+            color: var(--vscode-editor-background);
+        }
+
+        .subtask-status.in-progress {
+            background: var(--vscode-progressBar-background);
+            color: var(--vscode-editor-background);
+        }
+
+        .subtask-status.not-started {
+            background: var(--vscode-button-secondaryBackground);
+            color: var(--vscode-button-secondaryForeground);
+        }
+
+        .subtask-status.review {
+            background: var(--vscode-button-secondaryBackground);
+            color: var(--vscode-button-secondaryForeground);
+        }
+
+        .subtask-status.blocked {
+            background: var(--vscode-errorForeground);
+            color: var(--vscode-editor-background);
+        }
+
+        .subtask-details {
+            display: none;
+            background: var(--vscode-editor-background);
+            border-top: 1px solid var(--vscode-sideBar-border);
+            padding: 8px 12px 8px 24px;
+            font-size: 10px;
+        }
+
+        .subtask-item.expanded .subtask-details {
+            display: block;
+        }
+
+        .subtask-details-title {
+            font-size: 9px;
+            font-weight: 600;
+            color: var(--vscode-descriptionForeground);
+            margin-bottom: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .subtask-details-content {
+            color: var(--vscode-sideBar-foreground);
+            line-height: 1.4;
+            margin-bottom: 8px;
+            font-size: 10px;
+        }
+
+        .subtask-full-details,
+        .subtask-test-strategy,
+        .subtask-dependencies {
+            margin-bottom: 8px;
+        }
+
+        .subtask-dependencies .dependency-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 3px;
+        }
+
+        .subtask-dependencies .dependency-tag {
+            background: var(--vscode-badge-background);
+            color: var(--vscode-badge-foreground);
+            font-size: 8px;
+            padding: 1px 4px;
+            border-radius: 2px;
+            font-family: 'Courier New', monospace;
+        }
+
+        /* Subtask status styling - matches main task status patterns */
         .subtask-status.pending {
             background: var(--vscode-button-secondaryBackground);
             color: var(--vscode-button-secondaryForeground);
@@ -1542,6 +1707,34 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
 
       function toggleFailures(failuresSection) {
         failuresSection.classList.toggle('expanded');
+      }
+
+      // Task UI-004: Subtask accordion behavior with independent expansion state
+      let expandedSubtaskIds = new Set();
+      
+      function toggleSubtask(subtaskElement) {
+        // Prevent event propagation to avoid triggering parent task toggle
+        event.stopPropagation();
+        
+        const subtaskId = subtaskElement.dataset.subtaskId;
+        const parentId = subtaskElement.dataset.parentId;
+        const fullId = \`\${parentId}.\${subtaskId}\`;
+        
+        if (!subtaskId || !parentId) return;
+        
+        const isCurrentlyExpanded = expandedSubtaskIds.has(fullId);
+        
+        if (isCurrentlyExpanded) {
+          // Collapse subtask
+          subtaskElement.classList.remove('expanded');
+          expandedSubtaskIds.delete(fullId);
+          console.debug('Webview: Subtask collapsed:', fullId);
+        } else {
+          // Expand subtask
+          subtaskElement.classList.add('expanded');
+          expandedSubtaskIds.add(fullId);
+          console.debug('Webview: Subtask expanded:', fullId);
+        }
       }
       
       // State restoration function called by extension via message

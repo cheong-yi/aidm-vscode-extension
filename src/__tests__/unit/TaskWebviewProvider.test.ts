@@ -695,4 +695,145 @@ describe("TaskWebviewProvider", () => {
       expect(html).toContain("flex-direction: column");
     });
   });
+
+  describe("Expandable Subtasks (UI-004)", () => {
+    it("should generate expandable subtask HTML structure", async () => {
+      // Create a task with subtasks for testing
+      const taskWithSubtasks: Task = {
+        id: "test-1",
+        title: "Test Task with Subtasks",
+        description: "A test task that has subtasks",
+        status: TaskStatus.NOT_STARTED,
+        complexity: TaskComplexity.MEDIUM,
+        dependencies: [],
+        requirements: [],
+        createdDate: "2024-01-01T00:00:00.000Z",
+        lastModified: "2024-01-01T00:00:00.000Z",
+        subtasks: [
+          {
+            id: "1",
+            title: "Subtask 1",
+            description: "First subtask description",
+            details: "Detailed information about subtask 1",
+            testStrategy: "Unit test the subtask functionality",
+            status: "pending",
+            dependencies: ["dep1", "dep2"],
+          },
+          {
+            id: "2",
+            title: "Subtask 2",
+            description: "Second subtask description",
+            details: "Detailed information about subtask 2",
+            testStrategy: "Integration test the subtask workflow",
+            status: "completed",
+            dependencies: [],
+          },
+        ],
+      };
+
+      // Mock the service to return our test task
+      mockTasksDataService.getTasks.mockResolvedValue([taskWithSubtasks]);
+
+      // Setup webview and initialize data
+      await setupWebviewAndWaitForData();
+
+      const html = (provider as any).getHtmlContent([taskWithSubtasks]);
+
+      // Verify subtask section is generated
+      expect(html).toContain("Subtasks (2)");
+      expect(html).toContain("test-1.1");
+      expect(html).toContain("test-1.2");
+
+      // Verify expandable structure
+      expect(html).toContain('class="subtask-header"');
+      expect(html).toContain('class="subtask-details"');
+      expect(html).toContain('onclick="toggleSubtask(this.parentElement)"');
+
+      // Verify expand icon
+      expect(html).toContain('class="subtask-expand-icon"');
+      expect(html).toContain('viewBox="0 0 16 16"');
+
+      // Verify details content
+      expect(html).toContain("Details");
+      expect(html).toContain("Test Strategy");
+      expect(html).toContain("Dependencies");
+      expect(html).toContain("Detailed information about subtask 1");
+      expect(html).toContain("Unit test the subtask functionality");
+      expect(html).toContain("dep1");
+      expect(html).toContain("dep2");
+
+      // Verify CSS classes for expansion
+      expect(html).toContain(".subtask-item.expanded .subtask-expand-icon");
+      expect(html).toContain(".subtask-item.expanded .subtask-details");
+    });
+
+    it("should include toggleSubtask JavaScript function", async () => {
+      // Create a simple task for testing JavaScript generation
+      const simpleTask: Task = {
+        id: "test-js",
+        title: "Test Task for JavaScript",
+        description: "A test task for JavaScript verification",
+        status: TaskStatus.NOT_STARTED,
+        complexity: TaskComplexity.LOW,
+        dependencies: [],
+        requirements: [],
+        createdDate: "2024-01-01T00:00:00.000Z",
+        lastModified: "2024-01-01T00:00:00.000Z",
+      };
+
+      // Setup webview and initialize data
+      await setupWebviewAndWaitForData();
+
+      const html = (provider as any).getHtmlContent([simpleTask]);
+
+      // Verify toggleSubtask function is included
+      expect(html).toContain("function toggleSubtask(subtaskElement)");
+      expect(html).toContain("event.stopPropagation()");
+      expect(html).toContain("expandedSubtaskIds");
+      expect(html).toContain("subtaskElement.classList.add('expanded')");
+      expect(html).toContain("subtaskElement.classList.remove('expanded')");
+    });
+
+    it("should handle missing subtask properties gracefully", async () => {
+      // Create a task with subtasks missing some properties
+      const taskWithIncompleteSubtasks: Task = {
+        id: "test-2",
+        title: "Test Task with Incomplete Subtasks",
+        description: "A test task with incomplete subtask data",
+        status: TaskStatus.NOT_STARTED,
+        complexity: TaskComplexity.LOW,
+        dependencies: [],
+        requirements: [],
+        createdDate: "2024-01-01T00:00:00.000Z",
+        lastModified: "2024-01-01T00:00:00.000Z",
+        subtasks: [
+          {
+            id: "1",
+            title: "Incomplete Subtask",
+            description: "Subtask with missing details",
+            status: "pending",
+            dependencies: [],
+            // Missing details and testStrategy
+          },
+        ],
+      };
+
+      // Mock the service to return our test task
+      mockTasksDataService.getTasks.mockResolvedValue([
+        taskWithIncompleteSubtasks,
+      ]);
+
+      // Setup webview and initialize data
+      await setupWebviewAndWaitForData();
+
+      const html = (provider as any).getHtmlContent([
+        taskWithIncompleteSubtasks,
+      ]);
+
+      // Verify fallback text is displayed
+      expect(html).toContain("No details available");
+      expect(html).toContain("No test strategy defined");
+      expect(html).toContain("None");
+    });
+  });
 });
