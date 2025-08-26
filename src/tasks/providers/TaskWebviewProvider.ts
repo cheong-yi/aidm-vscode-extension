@@ -980,6 +980,8 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
             color: var(--vscode-sideBar-foreground);
             height: 100vh;
             display: flex;
+            margin: 0 !important;
+            padding: 0 !important;  /* Override VSCode's padding: 0 20px */
         }
 
         .sidebar {
