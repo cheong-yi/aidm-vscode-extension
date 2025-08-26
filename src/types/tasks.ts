@@ -143,9 +143,7 @@ export const STATUS_DISPLAY_NAMES: Record<TaskStatus, string> = {
 // Status-specific action configurations
 export const STATUS_ACTIONS: Record<TaskStatus, string[]> = {
   [TaskStatus.NOT_STARTED]: [
-    "Robot Execute with Cursor",
-    "Generate Prompt",
-    "View Requirements",
+    "Execute with Cursor", // Simplified for demo mode - single action only
   ],
   [TaskStatus.IN_PROGRESS]: [
     "Continue Work",
