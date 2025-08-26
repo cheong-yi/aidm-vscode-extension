@@ -414,6 +414,88 @@ describe("TaskWebviewProvider", () => {
       expect(html).toContain('class="no-tests"');
       expect(html).toContain("No tests available yet");
     });
+
+    it("should generate conditional View Code and View Tests buttons when data is available", async () => {
+      const mockTask: Task = {
+        id: "complete-task-1",
+        title: "Complete Task with Implementation",
+        description: "Task with implementation and test results",
+        status: TaskStatus.COMPLETED,
+        complexity: TaskComplexity.MEDIUM,
+        dependencies: [],
+        requirements: [],
+        createdDate: "2024-01-01T00:00:00.000Z",
+        lastModified: "2024-01-01T00:00:00.000Z",
+        implementation: {
+          summary: "Task completed successfully",
+          filesChanged: ["src/file1.ts", "src/file2.ts"],
+          completedDate: "2024-01-02T10:00:00.000Z",
+          diffAvailable: true,
+        },
+        testResults: {
+          resultsFile: "test-results/task-1.json",
+          lastRun: "2024-01-02T11:00:00.000Z",
+          summary: {
+            passed: 3,
+            failed: 0,
+            total: 3,
+            executionTime: 250,
+          },
+        },
+      };
+
+      // Setup webview and initialize data with the mock task
+      await setupWebviewAndWaitForData([mockTask]);
+
+      const html = (provider as any).getHtmlContent([mockTask]);
+
+      // Verify conditional buttons are generated
+      expect(html).toContain(
+        "onclick=\"sendMessage('viewCode', {taskId: 'complete-task-1'})\""
+      );
+      expect(html).toContain(
+        "onclick=\"sendMessage('viewTests', {taskId: 'complete-task-1'})\""
+      );
+      expect(html).toContain("View Code");
+      expect(html).toContain("View Tests");
+
+      // Verify buttons have correct CSS classes and onclick handlers
+      expect(html).toContain(
+        'class="action-btn" onclick="sendMessage(\'viewCode\''
+      );
+      expect(html).toContain(
+        'class="action-btn" onclick="sendMessage(\'viewTests\''
+      );
+    });
+
+    it("should not generate conditional buttons when implementation or test data is missing", async () => {
+      const mockTask: Task = {
+        id: "basic-task-1",
+        title: "Basic Task",
+        description: "Task without implementation or test data",
+        status: TaskStatus.COMPLETED,
+        complexity: TaskComplexity.LOW,
+        dependencies: [],
+        requirements: [],
+        createdDate: "2024-01-01T00:00:00.000Z",
+        lastModified: "2024-01-01T00:00:00.000Z",
+        // No implementation or testResults
+      };
+
+      // Setup webview and initialize data with the mock task
+      await setupWebviewAndWaitForData([mockTask]);
+
+      const html = (provider as any).getHtmlContent([mockTask]);
+
+      // Verify conditional buttons are NOT generated
+      expect(html).not.toContain("View Code");
+      expect(html).not.toContain("View Tests");
+      expect(html).not.toContain("onclick=\"sendMessage('viewCode'");
+      expect(html).not.toContain("onclick=\"sendMessage('viewTests'");
+
+      // Verify standard action buttons are still present
+      expect(html).toContain('class="actions"');
+    });
   });
 
   describe("Workspace Initialization (WV-001)", () => {

@@ -975,6 +975,7 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
 
   /**
    * Generates action buttons HTML for a task
+   * Now includes conditional View Code and View Tests buttons
    * Renders status-specific action buttons following mockup structure
    *
    * @param task - Task object to generate actions for
@@ -984,17 +985,32 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
     // Use STATUS_ACTIONS from types/tasks.ts for proper action mapping
     const actions = STATUS_ACTIONS[task.status] || [];
 
+    // Generate standard action buttons
+    const standardButtons = actions
+      .map((action: string, index: number) => {
+        const isPrimary =
+          index === 0 &&
+          (task.status === TaskStatus.NOT_STARTED ||
+            task.status === TaskStatus.IN_PROGRESS);
+        const buttonClass = isPrimary ? "action-btn primary" : "action-btn";
+        return `<button class="${buttonClass}">${action}</button>`;
+      })
+      .join("");
+
+    // Add conditional View Code button
+    const viewCodeButton = task.implementation?.filesChanged?.length
+      ? `<button class="action-btn" onclick="sendMessage('viewCode', {taskId: '${task.id}'})">View Code</button>`
+      : "";
+
+    // Add conditional View Tests button
+    const viewTestsButton = task.testResults?.resultsFile
+      ? `<button class="action-btn" onclick="sendMessage('viewTests', {taskId: '${task.id}'})">View Tests</button>`
+      : "";
+
     return `<div class="actions">
-      ${actions
-        .map((action: string, index: number) => {
-          const isPrimary =
-            index === 0 &&
-            (task.status === TaskStatus.NOT_STARTED ||
-              task.status === TaskStatus.IN_PROGRESS);
-          const buttonClass = isPrimary ? "action-btn primary" : "action-btn";
-          return `<button class="${buttonClass}">${action}</button>`;
-        })
-        .join("")}
+      ${standardButtons}
+      ${viewCodeButton}
+      ${viewTestsButton}
     </div>`;
   }
 

@@ -157,7 +157,7 @@ export const STATUS_ACTIONS: Record<TaskStatus, string[]> = {
     "Request Changes",
     "View Implementation",
   ],
-  [TaskStatus.COMPLETED]: ["View Code", "View Tests", "History"],
+  [TaskStatus.COMPLETED]: ["History"],
   [TaskStatus.BLOCKED]: [
     "View Blockers",
     "Update Dependencies",
