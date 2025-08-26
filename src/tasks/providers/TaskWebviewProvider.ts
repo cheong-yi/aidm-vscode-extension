@@ -690,7 +690,9 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
     subtask: any,
     parentTaskId: string
   ): string {
-    const subtaskId = `${parentTaskId}.${subtask.id}`;
+    // Convert numeric subtask ID to string for proper HTML attribute generation
+    const subtaskIdStr = String(subtask.id);
+    const subtaskId = `${parentTaskId}.${subtaskIdStr}`;
     const statusClass = this.getSubtaskStatusClass(subtask.status);
 
     // Handle missing properties gracefully
@@ -706,14 +708,12 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
             .join("")
         : '<span class="dependency-tag">None</span>';
 
-    return `<div class="subtask-item" data-subtask-id="${
-      subtask.id
-    }" data-parent-id="${parentTaskId}" data-full-id="${subtaskId}">
+    return `<div class="subtask-item" data-subtask-id="${subtaskIdStr}" data-parent-id="${parentTaskId}" data-full-id="${subtaskId}">
       <div class="subtask-header" onclick="toggleSubtask(this.parentElement)">
         <svg class="subtask-expand-icon" viewBox="0 0 16 16" fill="currentColor" width="12" height="12">
           <path d="m12.14 8.753-5.482 4.796c-.646.566-1.658.106-1.658-.753V3.204a1 1 0 0 1 1.659-.753l5.48 4.796a1 1 0 0 1 0 1.506z"/>
         </svg>
-        <span class="subtask-id">${parentTaskId}.${subtask.id}</span>
+        <span class="subtask-id">${parentTaskId}.${subtaskIdStr}</span>
         <span class="subtask-title">${this.escapeHtml(
           subtask.title || subtask.description || "Untitled"
         )}</span>
