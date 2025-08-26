@@ -1438,6 +1438,37 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
             .test-stats {
                 gap: 20px;
             }
+        }
+
+        /* Custom Scrollbar Styling */
+        .sidebar-content::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .sidebar-content::-webkit-scrollbar-track {
+            background: var(--vscode-scrollbarSlider-background);
+            border-radius: 0px;
+        }
+
+        .sidebar-content::-webkit-scrollbar-thumb {
+            background: var(--vscode-scrollbarSlider-activeBackground);
+            border-radius: 4px;
+            border: 1px solid var(--vscode-scrollbarSlider-background);
+        }
+
+        .sidebar-content::-webkit-scrollbar-thumb:hover {
+            background: var(--vscode-scrollbarSlider-hoverBackground);
+        }
+
+        .sidebar-content::-webkit-scrollbar-corner {
+            background: var(--vscode-scrollbarSlider-background);
+        }
+
+        /* Ensure scrollbar only appears when needed */
+        .sidebar-content {
+            flex: 1;
+            overflow-y: auto;
+            overflow-x: hidden;
         }`;
   }
 
