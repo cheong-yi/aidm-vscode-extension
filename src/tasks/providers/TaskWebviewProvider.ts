@@ -952,7 +952,23 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
    * @returns CSS string for dashboard styling
    */
   private getTaskmasterCSS(): string {
-    return `* {
+    return `/* WEBVIEW CONTAINER RESET - CSS-001 */
+        html, body {
+            margin: 0 !important;
+            padding: 0 !important;
+            width: 100% !important;
+            height: 100% !important;
+            box-sizing: border-box !important;
+            overflow-x: hidden !important;
+        }
+
+        /* VSCode webview container reset */
+        body > * {
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+
+        * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
