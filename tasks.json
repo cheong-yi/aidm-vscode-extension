@@ -51,6 +51,14 @@
           "completedDate": "2025-01-26T09:15:00Z",
           "diffAvailable": true
         },
+        "testStatus": {
+          "lastRunDate": "2025-01-26T09:20:00Z",
+          "totalTests": 8,
+          "passedTests": 8,
+          "failedTests": 0,
+          "executionTime": 1200,
+          "failingTestsList": []
+        },
         "testResults": {
           "resultsFile": "test-results/task-2.json",
           "lastRun": "2025-01-26T09:20:00Z",
@@ -83,6 +91,14 @@
           "completedDate": "2025-01-26T16:45:00Z",
           "diffAvailable": true
         },
+        "testStatus": {
+          "lastRunDate": "2025-01-26T16:50:00Z",
+          "totalTests": 16,
+          "passedTests": 15,
+          "failedTests": 1,
+          "executionTime": 2800,
+          "failingTestsList": []
+        },
         "testResults": {
           "resultsFile": "test-results/task-3.json",
           "lastRun": "2025-01-26T16:50:00Z",
@@ -114,6 +130,14 @@
           "completedDate": "2025-01-27T11:20:00Z",
           "diffAvailable": true
         },
+        "testStatus": {
+          "lastRunDate": "2025-01-27T11:25:00Z",
+          "totalTests": 10,
+          "passedTests": 10,
+          "failedTests": 0,
+          "executionTime": 4200,
+          "failingTestsList": []
+        },
         "testResults": {
           "resultsFile": "test-results/task-4.json",
           "lastRun": "2025-01-27T11:25:00Z",
@@ -144,6 +168,14 @@
           ],
           "completedDate": "2025-01-27T15:10:00Z",
           "diffAvailable": true
+        },
+        "testStatus": {
+          "lastRunDate": "2025-01-27T15:15:00Z",
+          "totalTests": 7,
+          "passedTests": 7,
+          "failedTests": 0,
+          "executionTime": 1800,
+          "failingTestsList": []
         },
         "testResults": {
           "resultsFile": "test-results/task-5.json",
@@ -177,6 +209,14 @@
           ],
           "completedDate": "2025-01-28T13:45:00Z",
           "diffAvailable": true
+        },
+        "testStatus": {
+          "lastRunDate": "2025-01-28T13:50:00Z",
+          "totalTests": 22,
+          "passedTests": 22,
+          "failedTests": 0,
+          "executionTime": 5600,
+          "failingTestsList": []
         },
         "testResults": {
           "resultsFile": "test-results/task-6.json",
@@ -247,6 +287,14 @@
           ],
           "completedDate": "2025-01-28T10:30:00Z",
           "diffAvailable": true
+        },
+        "testStatus": {
+          "lastRunDate": "2025-01-28T10:35:00Z",
+          "totalTests": 20,
+          "passedTests": 18,
+          "failedTests": 2,
+          "executionTime": 2100,
+          "failingTestsList": []
         },
         "testResults": {
           "resultsFile": "test-results/task-24.json",
