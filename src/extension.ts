@@ -741,25 +741,11 @@ export async function activate(
     }
 
     console.log(
-      "=== ACTIVATION STEP 8.8: Registering TaskDetailCardProvider as webview view provider ==="
+      "=== ACTIVATION STEP 8.8: TaskDetailCardProvider webview registration removed ==="
     );
-    try {
-      const webviewProviderDisposable =
-        vscode.window.registerWebviewViewProvider(
-          "aidm-vscode-extension.task-details",
-          taskDetailProvider
-        );
-      context.subscriptions.push(webviewProviderDisposable);
-      console.log(
-        "✅ TaskDetailCardProvider registered as webview view provider"
-      );
-    } catch (error) {
-      console.error(
-        "❌ TaskDetailCardProvider webview registration failed:",
-        error
-      );
-      // Continue without webview provider
-    }
+    console.log(
+      "ℹ️ TaskDetailCardProvider instance preserved for potential future use"
+    );
 
     console.log(
       "=== ACTIVATION STEP 8.8: Connecting TaskDetailCardProvider events ==="
