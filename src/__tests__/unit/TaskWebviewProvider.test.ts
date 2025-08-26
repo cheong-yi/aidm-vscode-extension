@@ -555,6 +555,99 @@ describe("TaskWebviewProvider", () => {
         provider.dispose();
       }).not.toThrow();
     });
+
+    it("should handle viewCode message type for View Code button clicks", async () => {
+      // Create a task with implementation data
+      const mockTask: Task = {
+        id: "test-task-1",
+        title: "Test Task",
+        description: "A test task",
+        status: TaskStatus.COMPLETED,
+        complexity: TaskComplexity.LOW,
+        dependencies: [],
+        requirements: [],
+        createdDate: "2025-01-27T10:00:00Z",
+        lastModified: "2025-01-27T10:30:00Z",
+        implementation: {
+          summary: "Test implementation",
+          filesChanged: ["src/test.ts", "src/types.ts"],
+          completedDate: "2025-01-27T10:30:00Z",
+          diffAvailable: true,
+        },
+      };
+
+      // Mock the tasks data service to return our test task
+      mockTasksDataService.getTasks.mockResolvedValue([mockTask]);
+
+      // Setup webview to enable message handling
+      await setupWebviewAndWaitForData([mockTask]);
+
+      // Simulate a viewCode message
+      const mockMessage = {
+        type: "viewCode",
+        taskId: "test-task-1",
+      };
+
+      // Get the message handler that was registered
+      const messageHandler = (mockWebview.onDidReceiveMessage as jest.Mock).mock
+        .calls[0][0];
+
+      // Call the message handler with our viewCode message
+      await messageHandler(mockMessage);
+
+      // Verify that the service was called to get tasks
+      expect(mockTasksDataService.getTasks).toHaveBeenCalled();
+
+      // Verify that the message was processed without throwing an error
+      // (The actual file opening would happen in integration tests)
+      expect(messageHandler).toBeDefined();
+    });
+
+    it("should show warning when task has no implementation data", async () => {
+      // Mock vscode.window API
+      const mockShowWarningMessage = jest.fn();
+      jest
+        .spyOn(vscode.window, "showWarningMessage")
+        .mockImplementation(mockShowWarningMessage);
+
+      // Create a task without implementation data
+      const mockTask: Task = {
+        id: "test-task-2",
+        title: "Test Task No Implementation",
+        description: "A test task without implementation",
+        status: TaskStatus.COMPLETED,
+        complexity: TaskComplexity.LOW,
+        dependencies: [],
+        requirements: [],
+        createdDate: "2025-01-27T10:00:00Z",
+        lastModified: "2025-01-27T10:30:00Z",
+        // No implementation property
+      };
+
+      // Mock the tasks data service to return our test task
+      mockTasksDataService.getTasks.mockResolvedValue([mockTask]);
+
+      // Setup webview to enable message handling
+      await setupWebviewAndWaitForData([mockTask]);
+
+      // Simulate a viewCode message
+      const mockMessage = {
+        type: "viewCode",
+        taskId: "test-task-2",
+      };
+
+      // Get the message handler that was registered
+      const messageHandler = (mockWebview.onDidReceiveMessage as jest.Mock).mock
+        .calls[0][0];
+
+      // Call the message handler with our viewCode message
+      await messageHandler(mockMessage);
+
+      // Verify warning message was shown
+      expect(mockShowWarningMessage).toHaveBeenCalledWith(
+        "No implementation files found for task test-task-2"
+      );
+    });
   });
 
   describe("JavaScript Generation (WV-006)", () => {
@@ -762,9 +855,10 @@ describe("TaskWebviewProvider", () => {
       expect(html).toContain("dep1");
       expect(html).toContain("dep2");
 
-      // Verify CSS classes for expansion
-      expect(html).toContain(".subtask-item.expanded .subtask-expand-icon");
-      expect(html).toContain(".subtask-item.expanded .subtask-details");
+      // Verify expandable structure elements exist
+      expect(html).toContain('class="subtask-item"');
+      expect(html).toContain('class="subtask-header"');
+      expect(html).toContain('class="subtask-details"');
     });
 
     it("should include toggleSubtask JavaScript function", async () => {

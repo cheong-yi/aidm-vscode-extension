@@ -28,7 +28,7 @@ import { TasksDataService } from "../../services";
  * Task WV-005: Message structure for webview-to-extension communication
  */
 interface WebviewMessage {
-  type: "updateTaskStatus" | "executeWithCursor" | "toggleAccordion";
+  type: "updateTaskStatus" | "executeWithCursor" | "toggleAccordion" | "viewCode";
   taskId: string;
   newStatus?: TaskStatus;
   payload?: any;
@@ -1498,91 +1498,6 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
             color: var(--vscode-editor-background);
         }
 
-        .subtask-details {
-            display: none;
-            background: var(--vscode-editor-background);
-            border-top: 1px solid var(--vscode-sideBar-border);
-            padding: 8px 12px 8px 24px;
-            font-size: 10px;
-        }
-
-        .subtask-item.expanded .subtask-details {
-            display: block;
-        }
-
-        .subtask-details-title {
-            font-size: 9px;
-            font-weight: 600;
-            color: var(--vscode-descriptionForeground);
-            margin-bottom: 4px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .subtask-details-content {
-            color: var(--vscode-sideBar-foreground);
-            line-height: 1.4;
-            margin-bottom: 8px;
-            font-size: 10px;
-        }
-
-        .subtask-full-details,
-        .subtask-test-strategy,
-        .subtask-dependencies {
-            margin-bottom: 8px;
-        }
-
-        .subtask-dependencies .dependency-list {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 3px;
-        }
-
-        .subtask-dependencies .dependency-tag {
-            background: var(--vscode-badge-background);
-            color: var(--vscode-badge-foreground);
-            font-size: 8px;
-            padding: 1px 4px;
-            border-radius: 2px;
-            font-family: 'Courier New', monospace;
-        }
-
-        /* Subtask status styling - matches main task status patterns */
-        .subtask-status.pending {
-            background: var(--vscode-button-secondaryBackground);
-            color: var(--vscode-button-secondaryForeground);
-        }
-
-        .subtask-status.done {
-            background: var(--vscode-testing-iconPassed);
-            color: var(--vscode-editor-background);
-        }
-
-        .subtask-status.completed {
-            background: var(--vscode-testing-iconPassed);
-            color: var(--vscode-editor-background);
-        }
-
-        .subtask-status.in-progress {
-            background: var(--vscode-progressBar-background);
-            color: var(--vscode-editor-background);
-        }
-
-        .subtask-status.not-started {
-            background: var(--vscode-button-secondaryBackground);
-            color: var(--vscode-button-secondaryForeground);
-        }
-
-        .subtask-status.review {
-            background: var(--vscode-button-secondaryBackground);
-            color: var(--vscode-button-secondaryForeground);
-        }
-
-        .subtask-status.blocked {
-            background: var(--vscode-errorForeground);
-            color: var(--vscode-editor-background);
-        }
-
         /* Responsive breakpoints for very narrow panels */
         @media (max-width: 300px) {
             .task-header {
@@ -1877,6 +1792,9 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
         case "toggleAccordion":
           this.handleToggleAccordion(message.taskId);
           break;
+        case "viewCode":
+          this.handleViewCode(message.taskId);
+          break;
         case "restoreState":
           // This message is sent TO the webview, so no handler needed here
           break;
@@ -1954,6 +1872,49 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
       await this.handleAccordionToggle(taskId);
     } catch (error) {
       console.error("Error toggling task accordion:", error);
+    }
+  }
+
+  /**
+   * Handle View Code button clicks from webview
+   * Opens files from task.implementation.filesChanged array
+   * Task IMPL-002: Implement View Code button handler
+   *
+   * @param taskId - The ID of the task to view code for
+   */
+  private async handleViewCode(taskId: string): Promise<void> {
+    try {
+      const tasks = await this.tasksDataService.getTasks();
+      const task = tasks.find(t => t.id === taskId);
+      
+      if (!task?.implementation?.filesChanged) {
+        vscode.window.showWarningMessage(`No implementation files found for task ${taskId}`);
+        return;
+      }
+
+      // Check if workspace folders are available
+      if (!vscode.workspace.workspaceFolders || vscode.workspace.workspaceFolders.length === 0) {
+        vscode.window.showErrorMessage("No workspace folder available to open files");
+        return;
+      }
+
+      // Open each file in the filesChanged array
+      for (const filePath of task.implementation.filesChanged) {
+        const uri = vscode.Uri.joinPath(vscode.workspace.workspaceFolders[0].uri, filePath);
+        
+        try {
+          const document = await vscode.workspace.openTextDocument(uri);
+          await vscode.window.showTextDocument(document);
+        } catch (error) {
+          console.error(`Failed to open file: ${filePath}`, error);
+          vscode.window.showErrorMessage(`Could not open file: ${filePath}`);
+        }
+      }
+      
+      console.log(`Opened ${task.implementation.filesChanged.length} files for task ${taskId}`);
+    } catch (error) {
+      console.error("Error handling View Code:", error);
+      vscode.window.showErrorMessage("Failed to open implementation files");
     }
   }
 
