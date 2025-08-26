@@ -98,7 +98,7 @@ export interface FailingTest {
 export enum TaskStatus {
   NOT_STARTED = "not_started",
   IN_PROGRESS = "in_progress",
-  REVIEW = "review",
+  REVIEW = "ready_for_review",
   COMPLETED = "completed",
   BLOCKED = "blocked",
   DEPRECATED = "deprecated",
@@ -134,7 +134,7 @@ export enum TestStatusEnum {
 export const STATUS_DISPLAY_NAMES: Record<TaskStatus, string> = {
   [TaskStatus.NOT_STARTED]: "not started",
   [TaskStatus.IN_PROGRESS]: "in progress",
-  [TaskStatus.REVIEW]: "review",
+  [TaskStatus.REVIEW]: "ready for review",
   [TaskStatus.COMPLETED]: "completed",
   [TaskStatus.BLOCKED]: "blocked",
   [TaskStatus.DEPRECATED]: "deprecated",

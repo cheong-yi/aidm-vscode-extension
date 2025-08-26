@@ -988,6 +988,9 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
     // Use STATUS_ACTIONS from types/tasks.ts for proper action mapping
     const actions = STATUS_ACTIONS[task.status] || [];
 
+    // Ensure task ID is converted to string for consistent handling
+    const taskIdStr = String(task.id || "");
+
     // Generate standard action buttons
     const standardButtons = actions
       .map((action: string, index: number) => {
@@ -1002,12 +1005,12 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
 
     // Add conditional View Code button
     const viewCodeButton = task.implementation?.filesChanged?.length
-      ? `<button class="action-btn" onclick="sendMessage('viewCode', {taskId: '${task.id}'})">View Code</button>`
+      ? `<button class="action-btn" onclick="sendMessage('viewCode', {taskId: '${taskIdStr}'})">View Code</button>`
       : "";
 
     // Add conditional View Tests button
     const viewTestsButton = task.testResults?.resultsFile
-      ? `<button class="action-btn" onclick="sendMessage('viewTests', {taskId: '${task.id}'})">View Tests</button>`
+      ? `<button class="action-btn" onclick="sendMessage('viewTests', {taskId: '${taskIdStr}'})">View Tests</button>`
       : "";
 
     return `<div class="actions">

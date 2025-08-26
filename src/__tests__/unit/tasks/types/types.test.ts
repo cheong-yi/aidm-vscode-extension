@@ -22,7 +22,7 @@ describe("Task Enums", () => {
     it("should have all required status values", () => {
       expect(TaskStatus.NOT_STARTED).toBe("not_started");
       expect(TaskStatus.IN_PROGRESS).toBe("in_progress");
-      expect(TaskStatus.REVIEW).toBe("review");
+      expect(TaskStatus.REVIEW).toBe("ready_for_review");
       expect(TaskStatus.COMPLETED).toBe("completed");
       expect(TaskStatus.BLOCKED).toBe("blocked");
       expect(TaskStatus.DEPRECATED).toBe("deprecated");
