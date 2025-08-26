@@ -945,8 +945,6 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
     </div>`;
   }
 
-
-
   /**
    * Generates CSS styles following mockup design
    * Returns complete CSS for Taskmaster dashboard
@@ -973,13 +971,10 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
             min-width: 250px;
             max-width: 100%;
             background: var(--vscode-sideBar-background);
-            border-right: 1px solid var(--vscode-sideBar-border);
             display: flex;
             flex-direction: column;
             height: 100vh;
         }
-
-
 
         .sidebar-content {
             flex: 1;
@@ -988,12 +983,14 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
 
         .task-list {
             padding: 0;
+            margin: 0;
         }
 
         .task-item {
             border-bottom: 1px solid var(--vscode-sideBar-border);
             background: var(--vscode-sideBar-background);
             transition: background 0.2s;
+            margin: 0;
         }
 
         .task-item:hover {
@@ -1001,7 +998,7 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
         }
 
         .task-header {
-            padding: clamp(8px, 2vw, 12px) clamp(12px, 2.5vw, 16px);
+            padding: clamp(8px, 2vw, 12px);
             cursor: pointer;
             display: flex;
             align-items: center;
@@ -1076,7 +1073,7 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
             display: none;
             background: var(--vscode-sideBarSectionHeader-background);
             border-top: 1px solid var(--vscode-sideBar-border);
-            padding: clamp(12px, 2.5vw, 16px);
+            padding: clamp(12px, 2.5vw, 12px);
         }
 
         .task-item.expanded .task-details {
