@@ -218,6 +218,20 @@ describe("TaskWebviewProvider", () => {
         /<meta name="viewport" content="width=device-width, initial-scale=1.0">/
       );
     });
+
+    it("should handle null/undefined input in escapeHtml method", () => {
+      const result1 = (provider as any).escapeHtml("normal string");
+      const result2 = (provider as any).escapeHtml("");
+      const result3 = (provider as any).escapeHtml(null);
+      const result4 = (provider as any).escapeHtml(undefined);
+      const result5 = (provider as any).escapeHtml("<script>alert()</script>");
+
+      expect(result1).toBe("normal string");
+      expect(result2).toBe("");
+      expect(result3).toBe("");
+      expect(result4).toBe("");
+      expect(result5).toBe("&lt;script&gt;alert()&lt;/script&gt;");
+    });
   });
 
   describe("Task Item Generation (WV-003)", () => {

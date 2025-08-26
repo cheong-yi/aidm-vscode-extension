@@ -795,11 +795,14 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
   /**
    * Escapes HTML content to prevent injection vulnerabilities
    * Converts special characters to HTML entities
+   * Handles null/undefined inputs gracefully by returning empty string
    *
-   * @param text - Raw text to escape
-   * @returns Escaped HTML-safe string
+   * @param text - Raw text to escape (can be undefined or null)
+   * @returns Escaped HTML-safe string or empty string for invalid inputs
    */
-  private escapeHtml(text: string): string {
+  private escapeHtml(text: string | undefined | null): string {
+    if (!text) return "";
+
     const htmlEntities: Record<string, string> = {
       "&": "&amp;",
       "<": "&lt;",
