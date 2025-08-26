@@ -8,6 +8,12 @@
 // CORE TASK INTERFACES
 // ============================================================================
 
+export interface Subtask {
+  id: string;
+  description: string;
+  status: string;
+}
+
 export interface Task {
   id: string;
   title: string;
@@ -30,7 +36,7 @@ export interface Task {
   tags?: string[];
   parentTaskId?: string;
   subTasks?: string[]; // Keep existing casing for backward compatibility
-  subtasks?: string[]; // Added: matches JSON "subtasks" field casing
+  subtasks?: Subtask[]; // Updated: matches JSON "subtasks" field structure
   notes?: string;
   dueDate?: string; // ISO date string
   statusDisplayName?: string; // From STATUS_DISPLAY_NAMES mapping

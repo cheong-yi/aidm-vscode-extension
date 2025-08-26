@@ -670,12 +670,16 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
 
     const subtaskItems = task.subtasks
       .map(
-        (subtaskId) =>
-          `<div class="subtask-item" data-subtask-id="${subtaskId}">
-        <span class="subtask-id">${subtaskId}</span>
-        <span class="subtask-title">Subtask: ${subtaskId}</span>
-        <span class="subtask-status">pending</span>
-       </div>`
+        (subtask) =>
+          `<div class="subtask-item" data-subtask-id="${subtask.id}">
+            <span class="subtask-id">${subtask.id}</span>
+            <span class="subtask-title">${this.escapeHtml(
+              subtask.description
+            )}</span>
+            <span class="subtask-status ${this.getSubtaskStatusClass(
+              subtask.status
+            )}">${subtask.status}</span>
+          </div>`
       )
       .join("");
 
@@ -726,6 +730,17 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
    */
   private getStatusClass(status: TaskStatus): string {
     return status.replace("_", "-");
+  }
+
+  /**
+   * Generates CSS class for subtask status styling
+   * Maps string status values to CSS class names for subtasks
+   *
+   * @param status - String status value from subtask
+   * @returns CSS class string for subtask status styling
+   */
+  private getSubtaskStatusClass(status: string): string {
+    return status.toLowerCase().replace(/[^a-z0-9]/g, "-");
   }
 
   /**
@@ -1391,14 +1406,50 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
             flex: 1;
             color: var(--vscode-sideBar-foreground);
             opacity: 0.9;
+            font-size: 11px;
+            line-height: 1.3;
         }
 
         .subtask-status {
             font-size: 9px;
             padding: 2px 6px;
             border-radius: 8px;
+            text-transform: lowercase;
+        }
+
+        .subtask-status.pending {
             background: var(--vscode-button-secondaryBackground);
             color: var(--vscode-button-secondaryForeground);
+        }
+
+        .subtask-status.done {
+            background: var(--vscode-testing-iconPassed);
+            color: var(--vscode-editor-background);
+        }
+
+        .subtask-status.completed {
+            background: var(--vscode-testing-iconPassed);
+            color: var(--vscode-editor-background);
+        }
+
+        .subtask-status.in-progress {
+            background: var(--vscode-progressBar-background);
+            color: var(--vscode-editor-background);
+        }
+
+        .subtask-status.not-started {
+            background: var(--vscode-button-secondaryBackground);
+            color: var(--vscode-button-secondaryForeground);
+        }
+
+        .subtask-status.review {
+            background: var(--vscode-button-secondaryBackground);
+            color: var(--vscode-button-secondaryForeground);
+        }
+
+        .subtask-status.blocked {
+            background: var(--vscode-errorForeground);
+            color: var(--vscode-editor-background);
         }
 
         /* Responsive breakpoints for very narrow panels */

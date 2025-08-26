@@ -391,7 +391,7 @@ export class JSONTaskParser {
         testStatus: this.parseTestStatus(taskObj.testStatus),
         parentTaskId: this.convertToString(taskObj.parentTaskId),
         subTasks: this.convertToStringArray(taskObj.subTasks), // Keep existing field
-        subtasks: this.convertToStringArray(taskObj.subtasks), // Added: map JSON subtasks field
+        subtasks: this.convertToSubtaskArray(taskObj.subtasks), // Added: map JSON subtasks field
         notes: this.convertToString(taskObj.notes),
         dueDate: this.convertToISOString(taskObj.dueDate),
       };
@@ -470,6 +470,22 @@ export class JSONTaskParser {
     return value
       .map((item) => this.convertToString(item))
       .filter(Boolean) as string[];
+  }
+
+  private convertToSubtaskArray(value: any): any[] {
+    if (!Array.isArray(value)) return [];
+    return value
+      .map((item) => {
+        if (typeof item === "object" && item !== null) {
+          return {
+            id: this.convertToString(item.id) || "unknown",
+            description: this.convertToString(item.description) || "No description",
+            status: this.convertToString(item.status) || "pending"
+          };
+        }
+        return null;
+      })
+      .filter(Boolean);
   }
 
   private convertToNumber(value: any): number | undefined {
