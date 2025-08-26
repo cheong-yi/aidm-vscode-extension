@@ -715,7 +715,7 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
         </svg>
         <span class="subtask-id">${parentTaskId}.${subtask.id}</span>
         <span class="subtask-title">${this.escapeHtml(
-          subtask.description
+          subtask.title || subtask.description || "Untitled"
         )}</span>
         <span class="subtask-status ${statusClass}">${subtask.status}</span>
       </div>

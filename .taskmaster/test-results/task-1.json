@@ -1,0 +1,48 @@
+{
+  "taskId": "1",
+  "testSuite": "BaseAgent and Docker Compose Tests",
+  "executionTime": 3500,
+  "runDate": "2025-01-25T14:35:00Z",
+  "results": {
+    "passed": 12,
+    "failed": 0,
+    "total": 12
+  },
+  "testCases": [
+    {
+      "name": "test_base_agent_consul_initialization",
+      "status": "passed",
+      "duration": 285,
+      "category": "unit"
+    },
+    {
+      "name": "test_base_agent_redis_connection",
+      "status": "passed", 
+      "duration": 192,
+      "category": "unit"
+    },
+    {
+      "name": "test_base_agent_litellm_setup",
+      "status": "passed",
+      "duration": 156,
+      "category": "unit"
+    },
+    {
+      "name": "test_docker_compose_services_startup",
+      "status": "passed",
+      "duration": 2650,
+      "category": "integration"
+    },
+    {
+      "name": "test_docker_compose_networking",
+      "status": "passed",
+      "duration": 217,
+      "category": "integration"
+    }
+  ],
+  "coverage": {
+    "percentage": 94.5,
+    "linesTotal": 147,
+    "linesCovered": 139
+  }
+}

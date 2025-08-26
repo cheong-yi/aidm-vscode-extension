@@ -1,0 +1,50 @@
+{
+  "taskId": "3",
+  "testSuite": "Repository and Knowledge Graph Tests",
+  "executionTime": 2800,
+  "runDate": "2025-01-26T16:50:00Z",
+  "results": {
+    "passed": 15,
+    "failed": 1,
+    "total": 16
+  },
+  "testCases": [
+    {
+      "name": "test_git_clone_public_repo",
+      "status": "passed",
+      "duration": 1850,
+      "category": "integration"
+    },
+    {
+      "name": "test_ast_parser_python_files",
+      "status": "passed",
+      "duration": 234,
+      "category": "unit"
+    },
+    {
+      "name": "test_knowledge_graph_construction",
+      "status": "passed",
+      "duration": 189,
+      "category": "unit"
+    },
+    {
+      "name": "test_graph_metrics_calculation",
+      "status": "passed",
+      "duration": 167,
+      "category": "unit"
+    },
+    {
+      "name": "test_invalid_repository_url_handling",
+      "status": "failed",
+      "duration": 89,
+      "category": "unit",
+      "errorMessage": "Expected ValidationError but got RuntimeError",
+      "stackTrace": "AssertionError: Expected exception ValidationError\n  at test_invalid_repository_url_handling:45"
+    }
+  ],
+  "coverage": {
+    "percentage": 87.2,
+    "linesTotal": 203,
+    "linesCovered": 177
+  }
+}
