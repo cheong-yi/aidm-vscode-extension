@@ -1074,28 +1074,28 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
         }
 
         .task-status.not-started {
-            background: var(--vscode-badge-background);
-            color: var(--vscode-badge-foreground);
+            background: #4a4a4a;
+            color: #ffffff;
         }
 
         .task-status.in-progress {
-            background: var(--vscode-progressBar-background);
-            color: var(--vscode-progressBar-foreground);
+            background: #569cd6;
+            color: #ffffff;
         }
 
         .task-status.review {
-            background: var(--vscode-textPreformat-background);
-            color: var(--vscode-textPreformat-foreground);
+            background: #dcdcaa;
+            color: #1e1e1e;
         }
 
         .task-status.completed {
-            background: var(--vscode-textBlockQuote-background);
-            color: var(--vscode-textBlockQuote-foreground);
+            background: #4ec9b0;
+            color: #1e1e1e;
         }
 
         .task-status.blocked {
-            background: var(--vscode-errorForeground);
-            color: var(--vscode-editor-background);
+            background: #f48771;
+            color: #1e1e1e;
         }
 
         .task-details {
@@ -1138,15 +1138,15 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
         }
 
         .complexity-low {
-            color: var(--vscode-textPreformat-foreground);
+            color: #4ec9b0;
         }
 
         .complexity-medium {
-            color: var(--vscode-textPreformat-background);
+            color: #dcdcaa;
         }
 
         .complexity-high {
-            color: var(--vscode-errorForeground);
+            color: #f48771;
         }
 
         .dependencies {
@@ -1223,15 +1223,15 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
         }
 
         .test-passed {
-            color: var(--vscode-textPreformat-foreground);
+            color: #4ec9b0;
         }
 
         .test-failed {
-            color: var(--vscode-errorForeground);
+            color: #f48771;
         }
 
         .test-total {
-            color: var(--vscode-textPreformat-background);
+            color: #dcdcaa;
         }
 
         .failures-section {
