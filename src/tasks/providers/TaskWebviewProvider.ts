@@ -1349,7 +1349,7 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
         }
 
         .subtask-item {
-            padding: 6px 0 6px 16px;
+            padding: 6px 10px 6px 16px;
             border-left: 2px solid var(--vscode-sideBar-border);
             margin-left: 8px;
             margin-bottom: 4px;
