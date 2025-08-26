@@ -666,7 +666,7 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
       .map(
         (subtask) =>
           `<div class="subtask-item" data-subtask-id="${subtask.id}">
-            <span class="subtask-id">${subtask.id}</span>
+            <span class="subtask-id">${task.id}.${subtask.id}</span>
             <span class="subtask-title">${this.escapeHtml(
               subtask.description
             )}</span>
