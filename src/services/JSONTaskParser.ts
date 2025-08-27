@@ -561,29 +561,48 @@ export class JSONTaskParser {
   }
 
   private mapStatus(status: any): TaskStatus {
-    if (!status) return TaskStatus.NOT_STARTED;
+    if (!status) {
+      console.debug(`[JSONTaskParser] Empty status, defaulting to NOT_STARTED`);
+      return TaskStatus.NOT_STARTED;
+    }
 
     const statusStr = String(status).toLowerCase();
+    console.debug(
+      `[JSONTaskParser] Mapping status: "${status}" -> "${statusStr}"`
+    );
 
     switch (statusStr) {
       case "done":
       case "completed":
+        console.debug(`[JSONTaskParser] Status mapped to COMPLETED`);
         return TaskStatus.COMPLETED;
       case "in_progress":
       case "in progress":
+      case "in-progress":
+        console.debug(`[JSONTaskParser] Status mapped to IN_PROGRESS`);
         return TaskStatus.IN_PROGRESS;
       case "review":
       case "ready_for_review":
+      case "ready for review":
+      case "ready-for-review":
+        console.debug(`[JSONTaskParser] Status mapped to REVIEW`);
         return TaskStatus.REVIEW;
       case "blocked":
+        console.debug(`[JSONTaskParser] Status mapped to BLOCKED`);
         return TaskStatus.BLOCKED;
       case "deprecated":
+        console.debug(`[JSONTaskParser] Status mapped to DEPRECATED`);
         return TaskStatus.DEPRECATED;
       case "not_started":
       case "not started":
+      case "not-started":
       case "pending":
       case "to do":
+      case "todo":
       default:
+        console.debug(
+          `[JSONTaskParser] Status "${statusStr}" mapped to NOT_STARTED (default)`
+        );
         return TaskStatus.NOT_STARTED;
     }
   }
