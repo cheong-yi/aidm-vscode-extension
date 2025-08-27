@@ -622,6 +622,7 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
 <body>
     <div class="sidebar">
         <div class="sidebar-content">
+            ${this.generateWebviewHeader()}
             <div class="task-list">
                 ${taskListHTML}
             </div>
@@ -630,6 +631,24 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
     ${this.getJavaScript()}
 </body>
 </html>`;
+  }
+
+  /**
+   * Generates webview header with filter controls
+   * Creates header section with "My Tasks Only" filter toggle
+   * Task 4.3: Add filter toggle button to webview header
+   *
+   * @returns HTML string for webview header
+   */
+  private generateWebviewHeader(): string {
+    return `<div class="webview-header">
+      <div class="filter-controls">
+        <label class="filter-toggle">
+          <input type="checkbox" id="my-tasks-filter" />
+          <span class="filter-label">My Tasks Only</span>
+        </label>
+      </div>
+    </div>`;
   }
 
   /**
@@ -648,7 +667,12 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
     // ADD: Generate subtasks HTML if subtasks exist
     const subtasksHtml = this.generateSubtasksSection(task);
 
-    return `<div class="task-item" data-task-id="${task.id}">
+    // ADD: Include assignee data for filtering functionality
+    const assignee = task.assignee || "dev-team"; // Default fallback for unassigned tasks
+
+    return `<div class="task-item" data-task-id="${
+      task.id
+    }" data-assignee="${this.escapeHtml(assignee)}">
       ${this.generateTaskHeader(task, statusClass, statusDisplay, isExecutable)}
       ${this.generateTaskDetails(task)}
       ${subtasksHtml}
@@ -1072,6 +1096,40 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
         .sidebar-content {
             flex: 1;
             overflow-y: auto;
+        }
+
+        .webview-header {
+            padding: clamp(8px, 2vw, 12px);
+            border-bottom: 1px solid var(--vscode-sideBar-border);
+            background: var(--vscode-sideBarSectionHeader-background);
+        }
+
+        .filter-controls {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .filter-toggle {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            user-select: none;
+            font-size: 11px;
+            color: var(--vscode-sideBar-foreground);
+        }
+
+        .filter-toggle input[type="checkbox"] {
+            width: 14px;
+            height: 14px;
+            margin: 0;
+            cursor: pointer;
+        }
+
+        .filter-label {
+            font-weight: 500;
+            line-height: 1.2;
         }
 
         .task-list {
@@ -1605,6 +1663,7 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
   private getJavaScript(): string {
     return `<script>
       ${this.getAccordionScript()}
+      ${this.getFilterToggleScript()}
       ${this.getMessageSendingScript()}
     </script>`;
   }
@@ -1704,6 +1763,61 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
   }
 
   /**
+   * Generates filter toggle JavaScript for task filtering by assignee
+   * Implements "My Tasks Only" filter functionality
+   * Task 4.4: Add JavaScript functionality for My Tasks Only toggle
+   *
+   * @returns JavaScript string for filter toggle functionality
+   */
+  private getFilterToggleScript(): string {
+    // Get current user email from workspace configuration for injection into JavaScript
+    const currentUserEmail = this.getCurrentUserEmail();
+
+    return `
+      function handleFilterToggle() {
+        const filterCheckbox = document.getElementById('my-tasks-filter');
+        if (!filterCheckbox) {
+          console.warn('Filter toggle checkbox not found');
+          return;
+        }
+        
+        const currentUserEmail = '${currentUserEmail}'; // Inject from workspace config
+        
+        filterCheckbox.addEventListener('change', function() {
+          const showOnlyMyTasks = this.checked;
+          const taskItems = document.querySelectorAll('.task-item');
+          
+          console.debug('Filter toggle changed:', { showOnlyMyTasks, currentUserEmail });
+          
+          taskItems.forEach(item => {
+            const assignee = item.dataset.assignee || 'dev-team';
+            if (showOnlyMyTasks && assignee !== currentUserEmail) {
+              item.style.display = 'none';
+            } else {
+              item.style.display = 'block';
+            }
+          });
+          
+          // Log filtering results for debugging
+          const visibleTasks = document.querySelectorAll('.task-item[style*="block"], .task-item:not([style*="none"])');
+          console.debug('Filter applied:', { 
+            totalTasks: taskItems.length, 
+            visibleTasks: visibleTasks.length,
+            filterActive: showOnlyMyTasks 
+          });
+        });
+      }
+
+      // Initialize filter toggle when DOM is ready
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', handleFilterToggle);
+      } else {
+        handleFilterToggle();
+      }
+    `;
+  }
+
+  /**
    * Generates message sending JavaScript for webview communication
    * Implements VSCode webview API integration for extension communication
    * Task WV-006: Webview message sending to extension
@@ -1763,6 +1877,15 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
           } else if (action.includes('Approve & Complete')) {
             updateTaskStatus(taskId, 'completed');
           }
+        }
+      });
+
+      // Task 4.4: Initialize filter toggle functionality
+      // This ensures the filter is properly initialized when the webview loads
+      document.addEventListener('DOMContentLoaded', function() {
+        const filterCheckbox = document.getElementById('my-tasks-filter');
+        if (filterCheckbox) {
+          console.debug('Filter toggle initialized successfully');
         }
       });
     `;
@@ -2024,6 +2147,27 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
    *
    * @param state - The current webview state to save
    */
+
+  /**
+   * Get current user email from workspace configuration
+   * Task 4.2: Read current user email for task filtering
+   *
+   * @returns Current user email or empty string if not configured
+   */
+  public getCurrentUserEmail(): string {
+    try {
+      const config = vscode.workspace.getConfiguration(
+        "aidmVscodeExtension.taskmaster"
+      );
+      return config.get<string>("currentUserEmail") || "";
+    } catch (error) {
+      console.warn(
+        "TaskWebviewProvider: Failed to read current user email config:",
+        error
+      );
+      return "";
+    }
+  }
 
   /**
    * Dispose method for cleanup
