@@ -1122,4 +1122,37 @@ describe("TaskWebviewProvider", () => {
       expect(html).toContain("My Tasks Only");
     });
   });
+
+  describe("Status Class Generation", () => {
+    it("should map TaskStatus enum values to correct CSS classes", () => {
+      // Arrange
+      const provider = new TaskWebviewProvider(
+        mockTasksDataService,
+        mockExtensionContext
+      );
+
+      // Act & Assert
+      expect((provider as any).getStatusClass(TaskStatus.NOT_STARTED)).toBe("not-started");
+      expect((provider as any).getStatusClass(TaskStatus.IN_PROGRESS)).toBe("in-progress");
+      expect((provider as any).getStatusClass(TaskStatus.REVIEW)).toBe("ready-for-review");
+      expect((provider as any).getStatusClass(TaskStatus.COMPLETED)).toBe("completed");
+      expect((provider as any).getStatusClass(TaskStatus.BLOCKED)).toBe("blocked");
+      expect((provider as any).getStatusClass(TaskStatus.DEPRECATED)).toBe("deprecated");
+    });
+
+    it("should handle underscore replacement correctly for review status", () => {
+      // Arrange
+      const provider = new TaskWebviewProvider(
+        mockTasksDataService,
+        mockExtensionContext
+      );
+
+      // Act
+      const reviewStatusClass = (provider as any).getStatusClass(TaskStatus.REVIEW);
+
+      // Assert
+      expect(reviewStatusClass).toBe("ready-for-review");
+      expect(reviewStatusClass).not.toBe("ready_for_review");
+    });
+  });
 });

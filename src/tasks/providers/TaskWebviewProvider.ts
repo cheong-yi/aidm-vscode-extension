@@ -807,7 +807,9 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
    * @returns CSS class string for status styling
    */
   private getStatusClass(status: TaskStatus): string {
-    return status.replace(/_/g, "-");
+    const statusClass = status.replace(/_/g, "-");
+    console.debug(`[TaskWebviewProvider] Status mapping: ${status} -> CSS class: ${statusClass}`);
+    return statusClass;
   }
 
   /**
@@ -1233,9 +1235,17 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
             color: #ffffff;
         }
 
+        .task-status.ready-for-review {
+            background: #dcdcaa !important;
+            color: #1e1e1e !important;
+            font-weight: 600;
+        }
+
+        /* Fallback for review status - ensure styling works regardless of class format */
         .task-status.review {
-            background: #dcdcaa;
-            color: #1e1e1e;
+            background: #dcdcaa !important;
+            color: #1e1e1e !important;
+            font-weight: 600;
         }
 
         .task-status.completed {
