@@ -479,8 +479,9 @@ export class JSONTaskParser {
         if (typeof item === "object" && item !== null) {
           return {
             id: this.convertToString(item.id) || "unknown",
-            description: this.convertToString(item.description) || "No description",
-            status: this.convertToString(item.status) || "pending"
+            description:
+              this.convertToString(item.description) || "No description",
+            status: this.convertToString(item.status) || "pending",
           };
         }
         return null;
@@ -528,6 +529,7 @@ export class JSONTaskParser {
       case "in progress":
         return TaskStatus.IN_PROGRESS;
       case "review":
+      case "ready_for_review":
         return TaskStatus.REVIEW;
       case "blocked":
         return TaskStatus.BLOCKED;

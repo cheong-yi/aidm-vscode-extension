@@ -228,25 +228,29 @@ describe("JSONTaskParser", () => {
     });
 
     it("should map status values correctly", () => {
-      const mockJSONData = {
+      // Arrange
+      const jsonData = {
         test: {
           tasks: [
-            { id: 1, title: "Task 1", status: "done" },
-            { id: 2, title: "Task 2", status: "in_progress" },
-            { id: 3, title: "Task 3", status: "pending" },
-            { id: 4, title: "Task 4", status: "blocked" },
-            { id: 5, title: "Task 5", status: "review" },
+            { id: "1", title: "Task 1", status: "not_started" },
+            { id: "2", title: "Task 2", status: "in_progress" },
+            { id: "3", title: "Task 3", status: "review" }, // Old value
+            { id: "4", title: "Task 4", status: "ready_for_review" }, // New value
+            { id: "5", title: "Task 5", status: "completed" },
           ],
         },
       };
 
-      const result = parser.parseTasksFromJSONContent(mockJSONData);
+      // Act
+      const result = parser.parseTasksFromJSONContent(jsonData);
 
-      expect(result[0].status).toBe(TaskStatus.COMPLETED);
+      // Assert
+      expect(result).toHaveLength(5);
+      expect(result[0].status).toBe(TaskStatus.NOT_STARTED);
       expect(result[1].status).toBe(TaskStatus.IN_PROGRESS);
-      expect(result[2].status).toBe(TaskStatus.NOT_STARTED);
-      expect(result[3].status).toBe(TaskStatus.BLOCKED);
-      expect(result[4].status).toBe(TaskStatus.REVIEW);
+      expect(result[2].status).toBe(TaskStatus.REVIEW); // Should map old "review" to REVIEW
+      expect(result[3].status).toBe(TaskStatus.REVIEW); // Should map new "ready_for_review" to REVIEW
+      expect(result[4].status).toBe(TaskStatus.COMPLETED);
     });
 
     it("should provide default values for missing fields", () => {
