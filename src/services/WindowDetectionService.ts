@@ -32,11 +32,27 @@ export class WindowDetectionService {
       const windows = await getWindows();
       console.log(`Detected ${windows.length} windows`);
 
-      return windows.map((window) => ({
-        title: window.title || "Unknown",
-        processName: this.extractProcessName(window.title),
-        windowHandle: window,
-      }));
+      const windowInfos: WindowInfo[] = [];
+      
+      for (const window of windows) {
+        try {
+          const title = await window.title || "Unknown";
+          windowInfos.push({
+            title: title,
+            processName: this.extractProcessName(title),
+            windowHandle: window,
+          });
+        } catch (error) {
+          console.warn("Failed to get title for window:", error);
+          windowInfos.push({
+            title: "Unknown",
+            processName: "Unknown",
+            windowHandle: window,
+          });
+        }
+      }
+
+      return windowInfos;
     } catch (error) {
       console.error("Failed to get running windows:", error);
       return [];
@@ -49,8 +65,18 @@ export class WindowDetectionService {
    * @returns Promise resolving to window info or null if not found
    */
   async findWindowByTitle(titlePattern: string): Promise<WindowInfo | null> {
-    // Stub implementation - will be implemented in GUI-TRIAL-002b
-    return null;
+    try {
+      const windows = await this.getRunningWindows();
+      
+      const cursorWindow = windows.find(window => 
+        this.matchesCursorPattern(window.title, titlePattern)
+      );
+      
+      return cursorWindow || null;
+    } catch (error) {
+      console.error("Failed to find window by title:", error);
+      return null;
+    }
   }
 
   /**
@@ -94,5 +120,22 @@ export class WindowDetectionService {
 
     // Fallback: return the full title if no pattern matches
     return title.trim();
+  }
+
+  /**
+   * Check if a window title matches Cursor-specific patterns
+   * @param windowTitle - Window title to check
+   * @param pattern - Pattern to match against
+   * @returns Boolean indicating if the window matches Cursor patterns
+   */
+  private matchesCursorPattern(windowTitle: string, pattern: string): boolean {
+    const title = windowTitle.toLowerCase();
+    const searchPattern = pattern.toLowerCase();
+    
+    // Match exact "cursor" or "cursor - filename"
+    return title === 'cursor' || 
+           title.startsWith('cursor -') ||
+           title.startsWith('cursor ') ||
+           title.includes('cursor');
   }
 }
