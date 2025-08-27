@@ -1468,6 +1468,57 @@ export async function activate(
       console.error("❌ viewTestResults command failed:", error);
     }
 
+    // Register debug cursor automation command - GUI-TRIAL-004b
+    try {
+      const debugCursorAutomationCommand = vscode.commands.registerCommand(
+        getCommandId("debugCursorAutomation"),
+        async () => {
+          try {
+            vscode.window.showInformationMessage("Testing Cursor automation with debug message...");
+            
+            const { CursorAutomationOrchestrator } = await import('./services');
+            const orchestrator = new CursorAutomationOrchestrator();
+            
+            // Simple debug message - no task context complexity
+            const debugMessage = "how are you today";
+            
+            const automationResult = await orchestrator.executeCursorChatAutomation(debugMessage);
+            
+            if (automationResult.success) {
+              vscode.window.showInformationMessage(
+                "Debug automation successful! Message sent to Cursor Agent."
+              );
+            } else {
+              vscode.window.showWarningMessage(
+                `Debug automation failed at step: ${automationResult.step} - ${automationResult.error || 'Unknown error'}`
+              );
+              
+              // Still copy debug message to clipboard as fallback
+              await vscode.env.clipboard.writeText(debugMessage);
+              vscode.window.showInformationMessage("Debug message copied to clipboard as fallback.");
+            }
+            
+          } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
+            vscode.window.showErrorMessage(`Debug automation error: ${errorMessage}`);
+            console.error("Debug automation error:", error);
+            
+            // Copy to clipboard even on exception
+            try {
+              await vscode.env.clipboard.writeText("how are you today");
+              vscode.window.showInformationMessage("Debug message copied to clipboard due to automation failure.");
+            } catch (clipboardError) {
+              console.error("Clipboard fallback also failed:", clipboardError);
+            }
+          }
+        }
+      );
+      context.subscriptions.push(debugCursorAutomationCommand);
+      console.log("✅ debugCursorAutomation command registered - GUI-TRIAL-004b");
+    } catch (error) {
+      console.error("❌ debugCursorAutomation command failed:", error);
+    }
+
     // Expansion diagnostics command removed - replaced by webview-based diagnostics
     console.log(
       "ℹ️ expansionDiagnostics command removed - webview handles expansion state"

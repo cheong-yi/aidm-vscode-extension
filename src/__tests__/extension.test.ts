@@ -96,6 +96,32 @@ describe("Extension UI Event Synchronization", () => {
     } as any;
   });
 
+  describe("Debug Command Registration", () => {
+    it("should register debugCursorAutomation command", () => {
+      // Import the extension module
+      const extension = require("../extension");
+
+      // Mock the CursorAutomationOrchestrator
+      const mockOrchestrator = {
+        executeCursorChatAutomation: jest.fn().mockResolvedValue({
+          success: true,
+          step: "completed",
+        }),
+      };
+
+      // Mock the services import
+      jest.doMock("../services", () => ({
+        CursorAutomationOrchestrator: jest.fn(() => mockOrchestrator),
+      }));
+
+      // Verify command registration was called
+      expect(vscode.commands.registerCommand).toHaveBeenCalledWith(
+        "aidm-vscode-extension.debugCursorAutomation",
+        expect.any(Function)
+      );
+    });
+  });
+
   describe("UI Event Synchronization Setup", () => {
     it("should have setupUIEventSynchronization function defined", () => {
       // This test verifies that the function exists in the extension

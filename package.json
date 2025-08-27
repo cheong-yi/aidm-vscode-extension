@@ -2,8 +2,8 @@
   "name": "aidm-vscode-extension",
   "displayName": "AiDM VSCode Extension",
   "description": "Bridge business requirements and code implementation with AI-powered context for enterprise development",
-  "version": "0.60.1",
-  "_versionNotes": "Auto-packaged version 0.60.1 - 2025-08-27",
+  "version": "0.61.1",
+  "_versionNotes": "Auto-packaged version 0.61.1 - 2025-08-27",
   "publisher": "aidm-team",
   "author": {
     "name": "AiDM Team"
@@ -58,6 +58,7 @@
     "onCommand:aidm-vscode-extension.startup",
     "onCommand:aidm-vscode-extension.debug",
     "onCommand:aidm-vscode-extension.version",
+    "onCommand:aidm-vscode-extension.debugCursorAutomation",
     "onStartupFinished"
   ],
   "icon": "resources/icon.png",
@@ -143,6 +144,11 @@
         "title": "View Test Results",
         "category": "Taskmaster",
         "icon": "$(beaker)"
+      },
+      {
+        "command": "aidm-vscode-extension.debugCursorAutomation",
+        "title": "Debug Cursor Automation",
+        "category": "AiDM"
       }
     ],
     "configuration": {
