@@ -8,6 +8,7 @@
  */
 
 import { WindowInfo } from "./WindowDetectionService";
+import { getActiveWindow } from "@nut-tree-fork/nut-js";
 
 /**
  * Interface for defining automation sequences
@@ -35,8 +36,45 @@ export class KeyboardAutomationService {
    * @returns Promise resolving to boolean indicating success
    */
   async focusWindow(windowInfo: WindowInfo): Promise<boolean> {
-    // Stub - focus specific window
-    return false;
+    try {
+      if (!windowInfo.windowHandle) {
+        console.error("No window handle provided for focus operation");
+        return false;
+      }
+
+      // Focus the window using nut-tree Window.focus() method
+      await windowInfo.windowHandle.focus();
+
+      // Brief wait for focus to take effect
+      await this.delay(200);
+
+      // Verify focus was successful by checking active window
+      const activeWindow = await getActiveWindow();
+      if (!activeWindow) {
+        console.log("No active window found after focus attempt");
+        return false;
+      }
+
+      const activeWindowTitle = await activeWindow.title;
+      if (typeof activeWindowTitle !== "string") {
+        console.log("Active window title is not a string, cannot verify focus");
+        return false;
+      }
+
+      const focusSuccessful = activeWindowTitle
+        .toLowerCase()
+        .includes(windowInfo.title.toLowerCase());
+
+      console.log(
+        `Window focus ${focusSuccessful ? "successful" : "failed"} for: ${
+          windowInfo.title
+        }`
+      );
+      return focusSuccessful;
+    } catch (error) {
+      console.error("Failed to focus window:", error);
+      return false;
+    }
   }
 
   /**
@@ -74,5 +112,14 @@ export class KeyboardAutomationService {
   getChatShortcut(): string {
     // Return platform-specific chat shortcut
     return this.platform === "darwin" ? "cmd+l" : "ctrl+l";
+  }
+
+  /**
+   * Helper method to create a delay for timing control
+   * @param ms - Milliseconds to delay
+   * @returns Promise that resolves after the specified delay
+   */
+  private delay(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 }
