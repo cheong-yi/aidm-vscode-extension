@@ -31,6 +31,11 @@ export const EXTENSION_CONFIG = {
   // Demo/Presentation specific
   demoTitle: "AiDM VSCode Extension Demo",
   demoOutputChannel: "AiDM Demo",
+
+  // Command IDs
+  commands: {
+    demoPrecheck: "demoPrecheck",
+  },
 } as const;
 
 // Helper function to get command ID
