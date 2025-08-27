@@ -1822,20 +1822,23 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
     const currentUserEmail = this.getCurrentUserEmail();
 
     return `
-      function handleFilterToggle() {
+      function initializeFilterToggle() {
         const filterCheckbox = document.getElementById('my-tasks-filter');
         if (!filterCheckbox) {
-          console.warn('Filter toggle checkbox not found');
+          console.warn('[TaskWebview] Filter toggle checkbox not found, retrying...');
+          // Retry after short delay if DOM not ready
+          setTimeout(initializeFilterToggle, 100);
           return;
         }
         
-        const currentUserEmail = '${currentUserEmail}'; // Inject from workspace config
+        const currentUserEmail = '${currentUserEmail}';
+        console.debug('[TaskWebview] Initializing filter toggle with user:', currentUserEmail);
         
         filterCheckbox.addEventListener('change', function() {
           const showOnlyMyTasks = this.checked;
           const taskItems = document.querySelectorAll('.task-item');
           
-          console.debug('Filter toggle changed:', { showOnlyMyTasks, currentUserEmail });
+          console.debug('[TaskWebview] Filter toggle changed:', { showOnlyMyTasks, currentUserEmail });
           
           taskItems.forEach(item => {
             const assignee = item.dataset.assignee || 'dev-team';
@@ -1846,22 +1849,30 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
             }
           });
           
-          // Log filtering results for debugging
           const visibleTasks = document.querySelectorAll('.task-item[style*="block"], .task-item:not([style*="none"])');
-          console.debug('Filter applied:', { 
+          console.debug('[TaskWebview] Filter applied:', { 
             totalTasks: taskItems.length, 
             visibleTasks: visibleTasks.length,
             filterActive: showOnlyMyTasks 
           });
         });
+        
+        console.debug('[TaskWebview] Filter toggle initialized successfully');
       }
 
-      // Initialize filter toggle when DOM is ready
+      // Multiple initialization strategies for reliability
       if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', handleFilterToggle);
+        document.addEventListener('DOMContentLoaded', initializeFilterToggle);
+      } else if (document.readyState === 'interactive') {
+        // DOM parsing finished, but resources may still be loading
+        setTimeout(initializeFilterToggle, 50);
       } else {
-        handleFilterToggle();
+        // Document is fully loaded
+        initializeFilterToggle();
       }
+
+      // Backup initialization attempt
+      setTimeout(initializeFilterToggle, 200);
     `;
   }
 
