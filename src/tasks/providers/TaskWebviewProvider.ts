@@ -645,6 +645,11 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
       <div class="filter-controls">
         <label class="filter-toggle">
           <input type="checkbox" id="my-tasks-filter" />
+          <span class="filter-checkbox">
+            <svg class="filter-icon" viewBox="0 0 16 16" width="12" height="12" fill="currentColor">
+              <path d="M6 12a1 1 0 01-.707-.293l-3-3a1 1 0 111.414-1.414L6 9.586l6.293-6.293a1 1 0 111.414 1.414l-7 7A1 1 0 016 12z"/>
+            </svg>
+          </span>
           <span class="filter-label">My Tasks Only</span>
         </label>
       </div>
@@ -1121,10 +1126,33 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
         }
 
         .filter-toggle input[type="checkbox"] {
-            width: 14px;
-            height: 14px;
-            margin: 0;
-            cursor: pointer;
+            display: none;
+        }
+
+        .filter-checkbox {
+            width: 16px;
+            height: 16px;
+            border: 1px solid var(--vscode-checkbox-border);
+            border-radius: 3px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--vscode-checkbox-background);
+            transition: all 0.2s;
+        }
+
+        .filter-toggle input:checked + .filter-checkbox {
+            background: var(--vscode-checkbox-selectBackground);
+            border-color: var(--vscode-checkbox-selectBorder);
+        }
+
+        .filter-icon {
+            display: none;
+            fill: var(--vscode-checkbox-foreground);
+        }
+
+        .filter-toggle input:checked + .filter-checkbox .filter-icon {
+            display: block;
         }
 
         .filter-label {
