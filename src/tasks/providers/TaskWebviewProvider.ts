@@ -2080,6 +2080,7 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
    * Handle View Code button clicks from webview
    * Opens files from task.implementation.filesChanged array
    * Task IMPL-002: Implement View Code button handler
+   * Task DI-003: Add workspace validation for View Implementation file operations
    *
    * @param taskId - The ID of the task to view code for
    */
@@ -2095,38 +2096,47 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
         return;
       }
 
-      // Check if workspace folders are available
+      // Add workspace validation
       if (
         !vscode.workspace.workspaceFolders ||
         vscode.workspace.workspaceFolders.length === 0
       ) {
         vscode.window.showErrorMessage(
-          "No workspace folder available to open files"
+          "No workspace folder available to open files. Please open a folder or workspace."
+        );
+        console.error(
+          `[TaskWebviewProvider] No workspace folders available for task ${taskId}`
         );
         return;
       }
 
+      const workspaceRoot = vscode.workspace.workspaceFolders[0];
+      console.debug(
+        `[TaskWebviewProvider] Using workspace root: ${workspaceRoot.uri.fsPath}`
+      );
+
       // Open each file in the filesChanged array
       for (const filePath of task.implementation.filesChanged) {
-        const uri = vscode.Uri.joinPath(
-          vscode.workspace.workspaceFolders[0].uri,
-          filePath
-        );
+        const uri = vscode.Uri.joinPath(workspaceRoot.uri, filePath);
 
         try {
           const document = await vscode.workspace.openTextDocument(uri);
           await vscode.window.showTextDocument(document);
+          console.debug(`[TaskWebviewProvider] Opened file: ${filePath}`);
         } catch (error) {
-          console.error(`Failed to open file: ${filePath}`, error);
+          console.error(
+            `[TaskWebviewProvider] Failed to open file: ${filePath}`,
+            error
+          );
           vscode.window.showErrorMessage(`Could not open file: ${filePath}`);
         }
       }
 
       console.log(
-        `Opened ${task.implementation.filesChanged.length} files for task ${taskId}`
+        `[TaskWebviewProvider] Opened ${task.implementation.filesChanged.length} files for task ${taskId}`
       );
     } catch (error) {
-      console.error("Error handling View Code:", error);
+      console.error("[TaskWebviewProvider] Error handling View Code:", error);
       vscode.window.showErrorMessage("Failed to open implementation files");
     }
   }
