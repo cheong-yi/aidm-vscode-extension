@@ -392,6 +392,7 @@ export class JSONTaskParser {
         parentTaskId: this.convertToString(taskObj.parentTaskId),
         subTasks: this.convertToStringArray(taskObj.subTasks), // Keep existing field
         subtasks: this.convertToSubtaskArray(taskObj.subtasks), // Added: map JSON subtasks field
+        implementation: this.parseImplementation(taskObj.implementation),
         notes: this.convertToString(taskObj.notes),
         dueDate: this.convertToISOString(taskObj.dueDate),
       };
@@ -454,6 +455,24 @@ export class JSONTaskParser {
       expectedValue: this.convertToString(test.expectedValue),
       actualValue: this.convertToString(test.actualValue),
     }));
+  }
+
+  /**
+   * Parse implementation from JSON object
+   *
+   * @param impl - Implementation object from JSON
+   * @returns TaskImplementation | undefined - Parsed implementation or undefined
+   */
+  private parseImplementation(impl: any): any {
+    if (!impl || typeof impl !== "object") return undefined;
+
+    return {
+      summary: this.convertToString(impl.summary),
+      filesChanged: this.convertToStringArray(impl.filesChanged),
+      completedDate: this.convertToISOString(impl.completedDate),
+      commitHash: this.convertToString(impl.commitHash),
+      diffAvailable: this.convertToBoolean(impl.diffAvailable, false),
+    };
   }
 
   // ============================================================================
