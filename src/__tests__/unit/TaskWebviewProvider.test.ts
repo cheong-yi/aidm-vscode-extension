@@ -1132,12 +1132,24 @@ describe("TaskWebviewProvider", () => {
       );
 
       // Act & Assert
-      expect((provider as any).getStatusClass(TaskStatus.NOT_STARTED)).toBe("not-started");
-      expect((provider as any).getStatusClass(TaskStatus.IN_PROGRESS)).toBe("in-progress");
-      expect((provider as any).getStatusClass(TaskStatus.REVIEW)).toBe("ready-for-review");
-      expect((provider as any).getStatusClass(TaskStatus.COMPLETED)).toBe("completed");
-      expect((provider as any).getStatusClass(TaskStatus.BLOCKED)).toBe("blocked");
-      expect((provider as any).getStatusClass(TaskStatus.DEPRECATED)).toBe("deprecated");
+      expect((provider as any).getStatusClass(TaskStatus.NOT_STARTED)).toBe(
+        "not-started"
+      );
+      expect((provider as any).getStatusClass(TaskStatus.IN_PROGRESS)).toBe(
+        "in-progress"
+      );
+      expect((provider as any).getStatusClass(TaskStatus.REVIEW)).toBe(
+        "ready-for-review"
+      );
+      expect((provider as any).getStatusClass(TaskStatus.COMPLETED)).toBe(
+        "completed"
+      );
+      expect((provider as any).getStatusClass(TaskStatus.BLOCKED)).toBe(
+        "blocked"
+      );
+      expect((provider as any).getStatusClass(TaskStatus.DEPRECATED)).toBe(
+        "deprecated"
+      );
     });
 
     it("should handle underscore replacement correctly for review status", () => {
@@ -1148,11 +1160,81 @@ describe("TaskWebviewProvider", () => {
       );
 
       // Act
-      const reviewStatusClass = (provider as any).getStatusClass(TaskStatus.REVIEW);
+      const reviewStatusClass = (provider as any).getStatusClass(
+        TaskStatus.REVIEW
+      );
 
       // Assert
       expect(reviewStatusClass).toBe("ready-for-review");
       expect(reviewStatusClass).not.toBe("ready_for_review");
+    });
+  });
+
+  describe("Action Generation and Filtering", () => {
+    it("should filter out non-functional Cursor actions from STATUS_ACTIONS", () => {
+      // Arrange
+      const provider = new TaskWebviewProvider(
+        mockTasksDataService,
+        mockExtensionContext
+      );
+
+      const mockTask: Task = {
+        id: "test-1",
+        title: "Test Task",
+        description: "Test Description",
+        status: TaskStatus.NOT_STARTED,
+        complexity: TaskComplexity.LOW,
+        dependencies: [],
+        requirements: [],
+        createdDate: "2024-01-01T00:00:00.000Z",
+        lastModified: "2024-01-01T00:00:00.000Z",
+      };
+
+      // Act
+      const actionsHtml = (provider as any).generateActions(mockTask);
+
+      // Assert
+      // Should not contain Cursor-related actions
+      expect(actionsHtml).not.toContain("🤖");
+      expect(actionsHtml).not.toContain("Execute with Cursor");
+      expect(actionsHtml).not.toContain("Generate Prompt");
+
+      // Should contain other functional actions
+      expect(actionsHtml).toContain("Start Task");
+    });
+
+    it("should handle tasks with different statuses and filter actions appropriately", () => {
+      // Arrange
+      const provider = new TaskWebviewProvider(
+        mockTasksDataService,
+        mockExtensionContext
+      );
+
+      const inProgressTask: Task = {
+        id: "test-2",
+        title: "In Progress Task",
+        description: "Test Description",
+        status: TaskStatus.IN_PROGRESS,
+        complexity: TaskComplexity.MEDIUM,
+        dependencies: [],
+        requirements: [],
+        createdDate: "2024-01-01T00:00:00.000Z",
+        lastModified: "2024-01-01T00:00:00.000Z",
+      };
+
+      // Act
+      const actionsHtml = (provider as any).generateActions(inProgressTask);
+
+      // Assert
+      // Should contain functional actions for in-progress status
+      expect(actionsHtml).toContain("Continue Work");
+      expect(actionsHtml).toContain("Mark Complete");
+      expect(actionsHtml).toContain("View Dependencies");
+
+      // Should not contain any Cursor-related actions
+      expect(actionsHtml).not.toContain("🤖");
+      expect(actionsHtml).not.toContain("Execute with Cursor");
+      expect(actionsHtml).not.toContain("Generate Prompt");
     });
   });
 });
