@@ -31,7 +31,7 @@ export class TaskFileWatcher {
     this.refreshCallback = onFileChanged;
 
     try {
-      // Create file system watcher for tasks.md using workspace relative pattern
+      // Create file system watcher for tasks.json using workspace relative pattern
       if (
         vscode.workspace.workspaceFolders &&
         vscode.workspace.workspaceFolders.length > 0
@@ -39,7 +39,7 @@ export class TaskFileWatcher {
         const workspaceRoot = vscode.workspace.workspaceFolders[0];
         const pattern = new vscode.RelativePattern(
           workspaceRoot,
-          "**/tasks.md"
+          "**/tasks.json"
         );
 
         this.watcher = vscode.workspace.createFileSystemWatcher(pattern);
@@ -50,7 +50,7 @@ export class TaskFileWatcher {
         this.watcher.onDidDelete(() => this.handleFileChange());
 
         console.log(
-          `✅ Started watching tasks.md files for changes in workspace: ${workspaceRoot.uri.fsPath}`
+          `✅ Started watching tasks.json files for changes in workspace: ${workspaceRoot.uri.fsPath}`
         );
       } else {
         console.warn(
@@ -73,7 +73,7 @@ export class TaskFileWatcher {
     }
 
     this.debounceTimer = setTimeout(() => {
-      console.log("🔄 tasks.md file changed, refreshing UI");
+      console.log("🔄 tasks.json file changed, refreshing UI");
 
       // Fire event for external listeners
       this._onFileChanged.fire(this.filePath);
@@ -103,7 +103,7 @@ export class TaskFileWatcher {
       this.debounceTimer = null;
     }
 
-    console.log("🛑 Stopped watching tasks.md files");
+    console.log("🛑 Stopped watching tasks.json files");
   }
 
   /**

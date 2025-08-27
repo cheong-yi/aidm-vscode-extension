@@ -1,0 +1,559 @@
+# AI Development Workflow Automation Rules
+
+## Core Workflow Principles
+- Work through tasks in sets of 3, then stop for review
+- **Commit only after successful prompt completion** (not on every prompt)
+- Use atomic task template for every task execution
+- **Auto-generate focused prompts based on atomic template**
+- Maintain task status synchronization in tasks.json
+- Run tests automatically and capture results
+- Enforce TDD and documentation standards
+
+## Atomic Task Template Integration
+
+### Mandatory Template Usage
+Every task execution MUST follow this exact template structure:
+
+```typescript
+# Atomic Task Implementation: [Task ID] - [Task Title]
+
+## Single-Concern Focus
+This task implements ONE specific function/method/test with clear inputs and outputs.
+
+## Context Files (Maximum 2)
+Choose only the minimal files needed for this atomic operation:
+
+For Implementation Tasks:
+- Target file being modified (show only relevant class/method)
+- Interface definition (if implementing against interface)
+
+For Test Tasks:
+- File being tested (specific method only)
+- Existing test file for pattern reference
+
+Rule: Never include design.md, mockup.html, and implementation files simultaneously
+
+## Task Scope
+- ID: [Task ID]
+- Single Responsibility: [One sentence describing the single thing being implemented]
+- Input: [Specific data structure or parameters]
+- Output: [Specific return value or side effect]
+- Duration: 15-20 minutes maximum
+
+## TDD Cycle Position
+Current Cycle: [Red/Green/Refactor]
+- Red: Writing failing test for [specific behavior]
+- Green: Implementing minimal code to pass [specific test]
+- Refactor: Cleaning up [specific method/class] without changing behavior
+
+## Prerequisites Verified
+List exactly what exists and works before starting:
+- [ ] [Specific method/class] exists and compiles
+- [ ] [Specific test] passes
+- [ ] [Specific dependency] is available
+
+## Implementation Specification
+
+### Exact Method Signature
+```typescript
+[methodName](param: Type): ReturnType {
+  // Implementation goes here
+}
+```
+
+### Single Test Case
+```typescript
+test('should [specific behavior]', () => {
+  // Arrange
+  const input = [specific test data];
+  
+  // Act
+  const result = [method call];
+  
+  // Assert
+  expect(result).toBe([expected value]);
+});
+```
+
+## Success Criteria (Binary Pass/Fail)
+- [ ] Method compiles without TypeScript errors
+- [ ] Single test passes
+- [ ] No existing tests broken
+- [ ] Method handles [specific edge case] correctly
+
+## Data Requirements (If Applicable)
+```typescript
+// Exact input format
+const requiredInput = {
+  field1: "specific value",
+  field2: 123,
+  // Only fields needed for this specific task
+};
+
+// Expected output format  
+const expectedOutput = {
+  // Exact expected structure
+};
+```
+
+## Implementation Constraints
+- Error Handling: Handle only [specific error case]
+- Dependencies: Use only [specific existing service/utility]
+- Side Effects: [Specific and minimal side effects only]
+- Performance: [Specific constraint if applicable]
+
+## Validation
+After implementation, verify exactly:
+1. npm test -- --testNamePattern="[exact test name]" passes
+2. TypeScript compilation succeeds
+3. [specific method call] returns [expected value]
+
+## Integration Point (If Applicable)
+This task connects to the broader system via:
+- Caller: [Specific method/component that will use this]
+- Called: [Specific method/service this will call]  
+- Event: [Specific event emitted/listened to]
+
+## File Changes (Maximum 3 Files)
+
+### Primary File: [exact path]
+- Add/modify: [exact method name and signature]
+- Purpose: [main implementation logic]
+
+### Secondary File: [exact path] (if applicable)
+- Add/modify: [specific change]
+- Purpose: [supporting change - registration, interface, config]
+
+### Test File: [exact test file path] (if applicable)
+- Add test: [exact test name]
+- Purpose: [verify specific behavior]
+
+## Next Task Preview
+After completing this task, the next atomic task will be:
+[Next Task ID]: [One sentence describing next single responsibility]
+
+## Commit Message
+```bash
+[type](scope): [exact functionality added] - [Task ID]
+Example: feat(tasks): add getTasks method to TasksDataService - 4.2.1a
+```
+
+---
+
+## Issue Discovery Protocol
+While implementing this task, if you encounter related issues outside the task scope:
+
+### DISCOVERED ISSUES LOG
+- Issue: [Brief description]
+- Location: [File:method/line]  
+- Impact: [BLOCKING/HIGH/MEDIUM/LOW]
+- Root Cause: [Quick analysis]
+- Suggested Fix: [One-line description]
+
+DO NOT FIX - Log only for follow-up tasks.
+```
+
+## Auto-Generated Prompt System
+
+### Prompt Generation Function
+```typescript
+// Generate focused prompt based on atomic task template
+function generateAtomicTaskPrompt(taskId: string, taskTemplate: string): string {
+  const task = getTaskById(taskId);
+  const codebaseContext = analyzeCodebaseContext(task);
+  
+  return `# Atomic Task Execution: ${task.id} - ${task.title}
+
+## Task Context
+${taskTemplate}
+
+## Codebase Context
+${codebaseContext}
+
+## Execution Instructions
+1. **Follow the atomic task template EXACTLY**
+2. **Implement only the single responsibility specified**
+3. **Use TDD cycle: ${getCurrentTDDCycle()}**
+4. **Modify maximum 3 files as specified**
+5. **Ensure all tests pass before completion**
+
+## Focus Areas
+- Primary: ${task.primaryFile}
+- Test: ${task.testFile}
+- Interface: ${task.interfaceFile || 'N/A'}
+
+## Success Validation
+Run: npm test -- --testNamePattern="${task.testName}"
+Expected: All tests pass, TypeScript compiles, no existing tests broken
+
+## Begin Implementation
+Start with the TDD cycle position specified in the template.`;
+}
+```
+
+### Codebase Context Analysis
+```typescript
+// Analyze relevant codebase context for the task
+function analyzeCodebaseContext(task: Task): string {
+  const context = {
+    existingPatterns: getExistingPatterns(task.targetFile),
+    dependencies: getDependencies(task.targetFile),
+    testPatterns: getTestPatterns(task.testFile),
+    interfaceContracts: getInterfaceContracts(task.interfaceFile),
+    errorHandling: getErrorHandlingPatterns(task.targetFile),
+    performanceConstraints: getPerformanceConstraints(task.targetFile)
+  };
+  
+  return formatCodebaseContext(context);
+}
+
+function getExistingPatterns(filePath: string): string[] {
+  // Extract patterns from existing code in the file
+  const fileContent = readFileSync(filePath, 'utf8');
+  const patterns = [];
+  
+  // Look for established patterns
+  if (fileContent.includes('ErrorHandler.handle')) {
+    patterns.push('Uses ErrorHandler.handle pattern');
+  }
+  if (fileContent.includes('DegradedModeManager')) {
+    patterns.push('Uses DegradedModeManager fallback pattern');
+  }
+  if (fileContent.includes('async/await')) {
+    patterns.push('Uses async/await pattern');
+  }
+  
+  return patterns;
+}
+
+function getDependencies(filePath: string): string[] {
+  // Extract import statements and dependencies
+  const fileContent = readFileSync(filePath, 'utf8');
+  const imports = fileContent.match(/import.*from.*['"]/g) || [];
+  
+  return imports.map(imp => imp.trim());
+}
+
+function getTestPatterns(testFilePath: string): string[] {
+  // Extract test patterns from existing test file
+  const testContent = readFileSync(testFilePath, 'utf8');
+  const patterns = [];
+  
+  if (testContent.includes('describe(')) {
+    patterns.push('Uses describe block structure');
+  }
+  if (testContent.includes('it(')) {
+    patterns.push('Uses it() test cases');
+  }
+  if (testContent.includes('expect(')) {
+    patterns.push('Uses expect assertions');
+  }
+  
+  return patterns;
+}
+```
+
+### Task-Specific Prompt Generation
+```typescript
+// Generate prompts based on task type and TDD cycle
+function generateTaskSpecificPrompt(task: Task, tddCycle: string): string {
+  switch (task.type) {
+    case 'implementation':
+      return generateImplementationPrompt(task, tddCycle);
+    case 'test':
+      return generateTestPrompt(task, tddCycle);
+    case 'refactor':
+      return generateRefactorPrompt(task, tddCycle);
+    default:
+      return generateGenericPrompt(task, tddCycle);
+  }
+}
+
+function generateImplementationPrompt(task: Task, tddCycle: string): string {
+  if (tddCycle === 'Red') {
+    return `# TDD Red Phase: Write Failing Test
+
+## Task: ${task.title}
+## Focus: Write test that will fail for the missing functionality
+
+## Current State
+- Target method: ${task.targetMethod}
+- Expected behavior: ${task.expectedBehavior}
+- Test file: ${task.testFile}
+
+## Instructions
+1. Write a test that describes the expected behavior
+2. The test should FAIL (red) because the functionality doesn't exist yet
+3. Use existing test patterns from the codebase
+4. Follow the exact test structure specified in the template
+
+## Test Template
+```typescript
+test('should ${task.expectedBehavior}', () => {
+  // Arrange: Set up test data
+  const input = ${task.testInput};
+  
+  // Act: Call the method that doesn't exist yet
+  const result = ${task.targetMethod}(${task.testInput});
+  
+  // Assert: This will fail - that's expected in Red phase
+  expect(result).toBe(${task.expectedOutput});
+});
+```
+
+## Success Criteria
+- Test compiles but fails (Red phase)
+- Test clearly describes the expected behavior
+- Test follows existing codebase patterns`;
+  }
+  
+  if (tddCycle === 'Green') {
+    return `# TDD Green Phase: Implement Minimal Code
+
+## Task: ${task.title}
+## Focus: Write minimal code to make the test pass
+
+## Current State
+- Test is written and failing (Red phase complete)
+- Need to implement: ${task.targetMethod}
+- Target file: ${task.targetFile}
+
+## Instructions
+1. Implement ONLY the minimal code needed to pass the test
+2. Don't add extra features or optimizations yet
+3. Follow existing codebase patterns and error handling
+4. Use the exact method signature from the template
+
+## Implementation Template
+```typescript
+${task.methodSignature} {
+  // Minimal implementation to pass the test
+  // Don't add extra logic yet - just make it work
+}
+```
+
+## Success Criteria
+- Test passes (Green phase)
+- Method compiles without TypeScript errors
+- No existing tests are broken
+- Implementation is minimal but functional`;
+  }
+  
+  if (tddCycle === 'Refactor') {
+    return `# TDD Refactor Phase: Clean Up Code
+
+## Task: ${task.title}
+## Focus: Clean up the implementation without changing behavior
+
+## Current State
+- Test is passing (Green phase complete)
+- Implementation works but may need cleanup
+- Target file: ${task.targetFile}
+
+## Instructions
+1. Clean up the code without changing functionality
+2. Apply codebase patterns and conventions
+3. Improve readability and maintainability
+4. Ensure all tests still pass
+
+## Refactoring Areas
+- Code organization and structure
+- Variable naming and clarity
+- Error handling consistency
+- Performance optimizations (if applicable)
+- Documentation and comments
+
+## Success Criteria
+- All tests still pass
+- Code follows codebase conventions
+- No functionality changes
+- Improved readability and maintainability`;
+  }
+}
+```
+
+### Context-Aware Prompt Enhancement
+```typescript
+// Enhance prompts with specific codebase knowledge
+function enhancePromptWithCodebaseKnowledge(prompt: string, task: Task): string {
+  const enhancements = [];
+  
+  // Add specific codebase patterns
+  if (task.targetFile.includes('services/')) {
+    enhancements.push(`
+## Service Layer Patterns (Your Codebase)
+- Use dependency injection pattern
+- Implement stateless service methods
+- Use ErrorHandler.handle() for error management
+- Return Promise<T> for async operations
+- Follow naming convention: [ServiceName]Service`);
+  }
+  
+  if (task.targetFile.includes('providers/')) {
+    enhancements.push(`
+## Provider Patterns (Your Codebase)
+- Extend appropriate VS Code provider class
+- Use contextManager for business logic
+- Implement proper error handling with DegradedModeManager
+- Follow async/await patterns
+- Register with extension context`);
+  }
+  
+  if (task.targetFile.includes('utils/')) {
+    enhancements.push(`
+## Utility Patterns (Your Codebase)
+- Pure functions with no side effects
+- Comprehensive error handling
+- Use logger.ts for structured logging
+- Follow functional programming principles
+- Include JSDoc documentation`);
+  }
+  
+  if (task.testFile) {
+    enhancements.push(`
+## Testing Patterns (Your Codebase)
+- Use Jest testing framework
+- Follow Arrange-Act-Assert pattern
+- Mock external dependencies
+- Test error conditions and edge cases
+- Use descriptive test names`);
+  }
+  
+  return prompt + enhancements.join('\n');
+}
+```
+
+### Execution Flow with Generated Prompts
+```typescript
+// Main execution flow using generated prompts
+async function executeAtomicTask(taskId: string): Promise<void> {
+  // 1. Load task and template
+  const task = getTaskById(taskId);
+  const template = loadAtomicTaskTemplate(taskId);
+  
+  // 2. Generate focused prompt
+  const basePrompt = generateAtomicTaskPrompt(taskId, template);
+  const enhancedPrompt = enhancePromptWithCodebaseKnowledge(basePrompt, task);
+  const taskSpecificPrompt = generateTaskSpecificPrompt(task, task.currentTDDCycle);
+  
+  // 3. Combine prompts for execution
+  const executionPrompt = `${basePrompt}\n\n${enhancedPrompt}\n\n${taskSpecificPrompt}`;
+  
+  // 4. Execute with focused prompt
+  const result = await executeWithPrompt(executionPrompt, task);
+  
+  // 5. Validate against template requirements
+  validateTemplateCompliance(result, template);
+  
+  // 6. Update task status
+  updateTaskStatus(taskId, 'ready_for_review');
+}
+```
+
+## Example Generated Prompt
+
+Here's what an actual generated prompt would look like for a specific task:
+
+```markdown
+# Atomic Task Execution: 4.2.1a - Add getTasks method to TasksDataService
+
+## Task Context
+[Atomic task template content here]
+
+## Codebase Context
+- Existing Patterns: Uses ErrorHandler.handle pattern, Uses async/await pattern
+- Dependencies: import { TasksDataService } from './services', import { Task } from './types'
+- Test Patterns: Uses describe block structure, Uses it() test cases, Uses expect assertions
+- Interface Contracts: Implements ITasksDataService interface
+- Error Handling: Uses ErrorHandler.handle for errors, Uses DegradedModeManager fallback
+- Performance Constraints: Target <300ms for task retrieval
+
+## Execution Instructions
+1. **Follow the atomic task template EXACTLY**
+2. **Implement only the single responsibility specified**
+3. **Use TDD cycle: Red**
+4. **Modify maximum 3 files as specified**
+5. **Ensure all tests pass before completion**
+
+## Focus Areas
+- Primary: src/services/TasksDataService.ts
+- Test: src/__tests__/services/TasksDataService.test.ts
+- Interface: src/types/index.ts
+
+## Success Validation
+Run: npm test -- --testNamePattern="should retrieve all tasks"
+Expected: All tests pass, TypeScript compiles, no existing tests broken
+
+## Begin Implementation
+Start with the TDD cycle position specified in the template.
+
+## Service Layer Patterns (Your Codebase)
+- Use dependency injection pattern
+- Implement stateless service methods
+- Use ErrorHandler.handle() for error management
+- Return Promise<T> for async operations
+- Follow naming convention: [ServiceName]Service
+
+## Testing Patterns (Your Codebase)
+- Use Jest testing framework
+- Follow Arrange-Act-Assert pattern
+- Mock external dependencies
+- Test error conditions and edge cases
+- Use descriptive test names
+
+## TDD Red Phase: Write Failing Test
+
+## Task: Add getTasks method to TasksDataService
+## Focus: Write test that will fail for the missing functionality
+
+## Current State
+- Target method: getTasks()
+- Expected behavior: Retrieve all tasks from the data source
+- Test file: src/__tests__/services/TasksDataService.test.ts
+
+## Instructions
+1. Write a test that describes the expected behavior
+2. The test should FAIL (red) because the functionality doesn't exist yet
+3. Use existing test patterns from the codebase
+4. Follow the exact test structure specified in the template
+
+## Test Template
+```typescript
+test('should retrieve all tasks', async () => {
+  // Arrange: Set up test data
+  const expectedTasks = [
+    { id: '1', title: 'Test Task', status: 'not_started' }
+  ];
+  
+  // Act: Call the method that doesn't exist yet
+  const result = await tasksDataService.getTasks();
+  
+  // Assert: This will fail - that's expected in Red phase
+  expect(result).toEqual(expectedTasks);
+});
+```
+
+## Success Criteria
+- Test compiles but fails (Red phase)
+- Test clearly describes the expected behavior
+- Test follows existing codebase patterns
+```
+
+## Benefits of This Approach
+
+1. **Consistency**: Every task follows the exact same template structure
+2. **Context Awareness**: Prompts include relevant codebase patterns and constraints
+3. **TDD Enforcement**: Built-in TDD cycle guidance for each phase
+4. **Quality Control**: Automatic validation against template requirements
+5. **Efficiency**: No need to manually craft prompts for each task
+6. **Learning**: Developers see consistent patterns and approaches
+
+## Implementation Steps
+
+1. **Add prompt generation functions** to your `.cursorrules`
+2. **Create template validation logic** to ensure compliance
+3. **Integrate with your existing workflow** automation
+4. **Test with a simple task** to validate the generated prompts
+5. **Iterate and refine** based on actual usage
+
+This system will ensure every task execution is focused, consistent, and follows your established patterns while maintaining the atomic task principles.

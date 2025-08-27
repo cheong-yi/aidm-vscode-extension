@@ -120,7 +120,7 @@ aidm-vscode-extension/
 │   │   │   │   └── index.ts          # Task type exports
 │   │   │   └── index.ts              # Task system exports
 │   │   │
-│   │   └── __tests__/                 # Comprehensive Test Suite
+│   │   └── __tests__/                 # Comprehensive Test Suites.
 │   │       ├── jest.setup.ts          # Jest global configuration
 │   │       ├── __mocks__/             # Jest mock implementations
 │   │       │   └── vscode.ts         # VS Code API mocks
