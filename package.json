@@ -2,8 +2,8 @@
   "name": "aidm-vscode-extension",
   "displayName": "AiDM VSCode Extension",
   "description": "Bridge business requirements and code implementation with AI-powered context for enterprise development",
-  "version": "0.59.1",
-  "_versionNotes": "Auto-packaged version 0.59.1 - 2025-08-26",
+  "version": "0.60.1",
+  "_versionNotes": "Auto-packaged version 0.60.1 - 2025-08-27",
   "publisher": "aidm-team",
   "author": {
     "name": "AiDM Team"
@@ -347,6 +347,7 @@
     "webpack-cli": "^6.0.1"
   },
   "dependencies": {
+    "@nut-tree-fork/nut-js": "^4.2.6",
     "axios": "^1.11.0"
   }
 }
