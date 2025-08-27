@@ -1105,4 +1105,21 @@ describe("TaskWebviewProvider", () => {
       expect(userEmail).toBe("");
     });
   });
+
+  describe("Filter Toggle UI", () => {
+    it("should include filter toggle in generated HTML", () => {
+      // Arrange
+      const provider = new TaskWebviewProvider(
+        mockTasksDataService,
+        mockExtensionContext
+      );
+
+      // Act
+      const html = (provider as any).generateTaskmasterHTML([]);
+
+      // Assert
+      expect(html).toContain('id="my-tasks-filter"');
+      expect(html).toContain("My Tasks Only");
+    });
+  });
 });

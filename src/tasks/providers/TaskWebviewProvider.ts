@@ -622,6 +622,7 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
 <body>
     <div class="sidebar">
         <div class="sidebar-content">
+            ${this.generateWebviewHeader()}
             <div class="task-list">
                 ${taskListHTML}
             </div>
@@ -630,6 +631,24 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
     ${this.getJavaScript()}
 </body>
 </html>`;
+  }
+
+  /**
+   * Generates webview header with filter controls
+   * Creates header section with "My Tasks Only" filter toggle
+   * Task 4.3: Add filter toggle button to webview header
+   *
+   * @returns HTML string for webview header
+   */
+  private generateWebviewHeader(): string {
+    return `<div class="webview-header">
+      <div class="filter-controls">
+        <label class="filter-toggle">
+          <input type="checkbox" id="my-tasks-filter" />
+          <span class="filter-label">My Tasks Only</span>
+        </label>
+      </div>
+    </div>`;
   }
 
   /**
@@ -1072,6 +1091,40 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
         .sidebar-content {
             flex: 1;
             overflow-y: auto;
+        }
+
+        .webview-header {
+            padding: clamp(8px, 2vw, 12px);
+            border-bottom: 1px solid var(--vscode-sideBar-border);
+            background: var(--vscode-sideBarSectionHeader-background);
+        }
+
+        .filter-controls {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .filter-toggle {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            user-select: none;
+            font-size: 11px;
+            color: var(--vscode-sideBar-foreground);
+        }
+
+        .filter-toggle input[type="checkbox"] {
+            width: 14px;
+            height: 14px;
+            margin: 0;
+            cursor: pointer;
+        }
+
+        .filter-label {
+            font-weight: 500;
+            line-height: 1.2;
         }
 
         .task-list {
