@@ -8,7 +8,7 @@
  */
 
 import { WindowInfo } from "./WindowDetectionService";
-import { getActiveWindow } from "@nut-tree-fork/nut-js";
+import { getActiveWindow, keyboard, Key } from "@nut-tree-fork/nut-js";
 
 /**
  * Interface for defining automation sequences
@@ -83,8 +83,25 @@ export class KeyboardAutomationService {
    * @returns Promise resolving to boolean indicating success
    */
   async sendKeyboardShortcut(shortcut: string): Promise<boolean> {
-    // Stub - send platform-specific shortcut
-    return false;
+    try {
+      const keys = this.parseShortcut(shortcut);
+
+      if (keys.length === 0) {
+        console.error(`Invalid shortcut format: ${shortcut}`);
+        return false;
+      }
+
+      // Send the key combination
+      await keyboard.pressKey(...keys);
+      await this.delay(100); // Brief delay after key press
+      await keyboard.releaseKey(...keys);
+
+      console.log(`Keyboard shortcut sent: ${shortcut}`);
+      return true;
+    } catch (error) {
+      console.error(`Failed to send keyboard shortcut ${shortcut}:`, error);
+      return false;
+    }
   }
 
   /**
@@ -121,5 +138,35 @@ export class KeyboardAutomationService {
    */
   private delay(ms: number): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  /**
+   * Parse shortcut string into nut-tree Key array
+   * @param shortcut - Shortcut string (e.g., "ctrl+l", "cmd+l")
+   * @returns Array of nut-tree Key objects
+   */
+  private parseShortcut(shortcut: string): Key[] {
+    const parts = shortcut.toLowerCase().split("+");
+    const keys: Key[] = [];
+
+    for (const part of parts) {
+      switch (part.trim()) {
+        case "ctrl":
+        case "control":
+          keys.push(Key.LeftControl);
+          break;
+        case "cmd":
+        case "meta":
+          keys.push(Key.LeftCmd);
+          break;
+        case "l":
+          keys.push(Key.L);
+          break;
+        default:
+          console.warn(`Unknown key part: ${part}`);
+      }
+    }
+
+    return keys;
   }
 }
