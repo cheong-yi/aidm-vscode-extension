@@ -35,6 +35,7 @@ export const EXTENSION_CONFIG = {
   // Command IDs
   commands: {
     demoPrecheck: "demoPrecheck",
+    testCursorAutomation: "testCursorAutomation",
   },
 } as const;
 

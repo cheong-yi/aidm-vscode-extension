@@ -1532,6 +1532,40 @@ export async function activate(
       console.error("❌ debugCursorAutomation command failed:", error);
     }
 
+    // Register test cursor automation command - GUI-TRIAL-006b
+    try {
+      const testAutomationCommand = vscode.commands.registerCommand(
+        getCommandId("testCursorAutomation"),
+        async () => {
+          try {
+            vscode.window.showInformationMessage(
+              "Testing Cursor automation..."
+            );
+
+            const { AutomationTestUtils } = await import(
+              "./demo/AutomationTestUtils"
+            );
+            const testUtils = new AutomationTestUtils();
+
+            await testUtils.runDemoPrecheck();
+          } catch (error) {
+            const errorMessage =
+              error instanceof Error ? error.message : "Unknown error occurred";
+            vscode.window.showErrorMessage(
+              `Automation test failed: ${errorMessage}`
+            );
+            console.error("Automation test error:", error);
+          }
+        }
+      );
+      context.subscriptions.push(testAutomationCommand);
+      console.log(
+        "✅ testCursorAutomation command registered - GUI-TRIAL-006b"
+      );
+    } catch (error) {
+      console.error("❌ testCursorAutomation command failed:", error);
+    }
+
     // Register demo precheck command - GUI-TRIAL-006a
     try {
       const demoPrecheckCommand = vscode.commands.registerCommand(

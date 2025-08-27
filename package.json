@@ -59,6 +59,7 @@
     "onCommand:aidm-vscode-extension.debug",
     "onCommand:aidm-vscode-extension.version",
     "onCommand:aidm-vscode-extension.debugCursorAutomation",
+    "onCommand:aidm-vscode-extension.testCursorAutomation",
     "onStartupFinished"
   ],
   "icon": "resources/icon.png",
@@ -148,6 +149,11 @@
       {
         "command": "aidm-vscode-extension.debugCursorAutomation",
         "title": "Debug Cursor Automation",
+        "category": "AiDM"
+      },
+      {
+        "command": "aidm-vscode-extension.testCursorAutomation",
+        "title": "Test Cursor Automation",
         "category": "AiDM"
       }
     ],

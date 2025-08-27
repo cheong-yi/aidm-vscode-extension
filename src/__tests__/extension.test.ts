@@ -120,6 +120,24 @@ describe("Extension UI Event Synchronization", () => {
         expect.any(Function)
       );
     });
+
+    it("should register testCursorAutomation command", () => {
+      // Mock the AutomationTestUtils import
+      const mockTestUtils = {
+        runDemoPrecheck: jest.fn().mockResolvedValue(undefined),
+      };
+
+      // Mock the demo import
+      jest.doMock("../demo/AutomationTestUtils", () => ({
+        AutomationTestUtils: jest.fn(() => mockTestUtils),
+      }));
+
+      // Verify command registration was called
+      expect(vscode.commands.registerCommand).toHaveBeenCalledWith(
+        "aidm-vscode-extension.testCursorAutomation",
+        expect.any(Function)
+      );
+    });
   });
 
   describe("UI Event Synchronization Setup", () => {
