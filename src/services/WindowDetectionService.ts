@@ -33,10 +33,10 @@ export class WindowDetectionService {
       console.log(`Detected ${windows.length} windows`);
 
       const windowInfos: WindowInfo[] = [];
-      
+
       for (const window of windows) {
         try {
-          const title = await window.title || "Unknown";
+          const title = (await window.title) || "Unknown";
           windowInfos.push({
             title: title,
             processName: this.extractProcessName(title),
@@ -67,11 +67,11 @@ export class WindowDetectionService {
   async findWindowByTitle(titlePattern: string): Promise<WindowInfo | null> {
     try {
       const windows = await this.getRunningWindows();
-      
-      const cursorWindow = windows.find(window => 
+
+      const cursorWindow = windows.find((window) =>
         this.matchesCursorPattern(window.title, titlePattern)
       );
-      
+
       return cursorWindow || null;
     } catch (error) {
       console.error("Failed to find window by title:", error);
@@ -131,11 +131,13 @@ export class WindowDetectionService {
   private matchesCursorPattern(windowTitle: string, pattern: string): boolean {
     const title = windowTitle.toLowerCase();
     const searchPattern = pattern.toLowerCase();
-    
+
     // Match exact "cursor" or "cursor - filename"
-    return title === 'cursor' || 
-           title.startsWith('cursor -') ||
-           title.startsWith('cursor ') ||
-           title.includes('cursor');
+    return (
+      title === "cursor" ||
+      title.startsWith("cursor -") ||
+      title.startsWith("cursor ") ||
+      title.includes("cursor")
+    );
   }
 }
