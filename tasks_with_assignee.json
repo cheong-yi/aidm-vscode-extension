@@ -1,0 +1,255 @@
+{
+  "master": {
+    "tasks": [
+      {
+        "id": "1",
+        "title": "Foundational Setup: Base Agent & Docker Compose",
+        "description": "Create the foundational `BaseAgent` class providing common services and set up the `docker-compose.yml` for a complete local development environment.",
+        "details": "Implement the Base Agent to initialize clients for Consul (config), Redis (state), and LiteLLM. Create a `docker-compose` file that includes all services: FastAPI orchestrator, agents, Redis, Consul, LiteLLM, and a mock Taskmaster/ADO server for testing.",
+        "testStrategy": "Unit test client initializations in the Base Agent. Validate that `docker-compose up` successfully starts all required services without errors.",
+        "priority": "high",
+        "assignee": "developer@company.com",
+        "dependencies": [],
+        "status": "completed",
+        "subtasks": [],
+        "testStatus": {
+          "lastRunDate": "2025-01-25T14:35:00Z",
+          "totalTests": 12,
+          "passedTests": 12,
+          "failedTests": 0,
+          "executionTime": 3500,
+          "failingTestsList": []
+        },
+        "implementation": {
+          "summary": "Successfully implemented BaseAgent class with Consul, Redis, and LiteLLM client initialization. Created comprehensive docker-compose.yml with all required services including health checks and proper networking.",
+          "filesChanged": [
+            "src/agents/base_agent.py",
+            "docker-compose.yml",
+            ".env.template",
+            "README.md"
+          ],
+          "completedDate": "2025-01-25T14:30:00Z",
+          "diffAvailable": true
+        },
+        "testResults": {
+          "resultsFile": "test-results/task-1.json",
+          "lastRun": "2025-01-25T14:35:00Z",
+          "summary": {
+            "passed": 12,
+            "failed": 0,
+            "total": 12,
+            "executionTime": 3500
+          }
+        }
+      },
+      {
+        "id": 2,
+        "title": "API Orchestration Engine (FastAPI)",
+        "description": "Implement the main FastAPI service to act as the central orchestrator, defining all API endpoints and generating interactive OpenAPI/Swagger documentation.",
+        "details": "Set up the FastAPI application. Implement core endpoints like `/health` and `/api/config/keys`. Structure the project with routers for different agents (repo, prd, ado). Auto-generate OpenAPI spec from code.",
+        "testStrategy": "Unit test each endpoint for correct responses and status codes. Verify that the `/docs` endpoint renders a complete and interactive API specification.",
+        "priority": "high",
+        "assignee": "teamlead@company.com",
+        "dependencies": [1],
+        "status": "not_started",
+        "subtasks": [],
+        "implementation": {
+          "summary": "Implemented complete FastAPI orchestration service with modular router architecture. Added health endpoint, configuration endpoints, and OpenAPI documentation generation. Integrated with BaseAgent for consistent service initialization across all endpoints.",
+          "filesChanged": [
+            "src/orchestration/main.py",
+            "src/orchestration/api/routes.py",
+            "src/orchestration/api/health.py"
+          ],
+          "completedDate": "2025-01-26T09:15:00Z",
+          "diffAvailable": true
+        },
+        "testStatus": {
+          "lastRunDate": "2025-01-26T09:20:00Z",
+          "totalTests": 8,
+          "passedTests": 8,
+          "failedTests": 0,
+          "executionTime": 1200,
+          "failingTestsList": []
+        },
+        "testResults": {
+          "resultsFile": "test-results/task-2.json",
+          "lastRun": "2025-01-26T09:20:00Z",
+          "summary": {
+            "passed": 8,
+            "failed": 0,
+            "total": 8,
+            "executionTime": 1200
+          }
+        }
+      },
+      {
+        "id": 3,
+        "title": "Repo & KG Agent Implementation (MVP)",
+        "description": "Develop the agent to clone a remote Git repository and perform basic Knowledge Graph ingestion to generate a code summary and metrics.",
+        "details": "Implement the `POST /api/repo/clone` endpoint using Git. Implement `POST /api/kg/ingest` to walk the codebase, parse Python files using AST, and persist graph metrics (node/edge counts). The agent should inherit from BaseAgent.",
+        "testStrategy": "Unit test the clone functionality with a public repo. Integration test the KG ingestion on a sample Python project, verifying the generated summary and metrics are accurate. Test error handling for non-existent repos or unparseable files.",
+        "priority": "high",
+        "assignee": "developer@company.com",
+        "dependencies": [1, 2],
+        "status": "not_started",
+        "subtasks": [],
+        "implementation": {
+          "summary": "Implemented repository cloning with git subprocess integration and comprehensive error handling. Built Knowledge Graph ingestion system using Python AST parsing to extract classes, functions, and dependencies. Added graph metrics calculation and persistence with JSON output for downstream consumption.",
+          "filesChanged": [
+            "src/agents/repo_kg_agent.py",
+            "src/services/git_service.py",
+            "src/services/kg_service.py",
+            "src/models/knowledge_graph.py"
+          ],
+          "completedDate": "2025-01-26T16:45:00Z",
+          "diffAvailable": true
+        },
+        "testStatus": {
+          "lastRunDate": "2025-01-26T16:50:00Z",
+          "totalTests": 16,
+          "passedTests": 15,
+          "failedTests": 1,
+          "executionTime": 2800,
+          "failingTestsList": []
+        },
+        "testResults": {
+          "resultsFile": "test-results/task-3.json",
+          "lastRun": "2025-01-26T16:50:00Z",
+          "summary": {
+            "passed": 15,
+            "failed": 1,
+            "total": 16,
+            "executionTime": 2800
+          }
+        }
+      },
+      {
+        "id": 4,
+        "title": "PRD Authoring & Planning Agent (MVP)",
+        "description": "Build the agent to generate a structured PRD using LiteLLM and orchestrate Taskmaster to convert the PRD into an actionable plan.",
+        "details": "Implement `POST /api/prd/generate` which takes form inputs, merges with the KG summary, and calls LiteLLM. Implement `POST /api/taskmaster/sync` to invoke the MCP toolchain: `parse_prd`, `analyze_project_complexity`, and `expand_all`. Store outputs in the `.taskmaster/` directory.",
+        "testStrategy": "Unit test the prompt construction and LiteLLM client call. Integration test the full flow from PRD generation to Taskmaster plan creation, ensuring all artifacts are saved to the correct locations.",
+        "priority": "high",
+        "assignee": "architect@company.com",
+        "dependencies": [1, 2, 3],
+        "status": "not_started",
+        "subtasks": [],
+        "implementation": {
+          "summary": "Implemented PRD generation with LiteLLM integration and KG context injection. Built Taskmaster orchestration system with MCP tool chaining (parse_prd → analyze_project_complexity → expand_all). Added file persistence for PRD documents and task plans with proper directory structure creation.",
+          "filesChanged": [
+            "src/agents/prd_agent.py",
+            "src/services/llm_service.py",
+            "src/services/taskmaster_service.py"
+          ],
+          "completedDate": "2025-01-27T11:20:00Z",
+          "diffAvailable": true
+        },
+        "testStatus": {
+          "lastRunDate": "2025-01-27T11:25:00Z",
+          "totalTests": 10,
+          "passedTests": 10,
+          "failedTests": 0,
+          "executionTime": 4200,
+          "failingTestsList": []
+        },
+        "testResults": {
+          "resultsFile": "test-results/task-4.json",
+          "lastRun": "2025-01-27T11:25:00Z",
+          "summary": {
+            "passed": 10,
+            "failed": 0,
+            "total": 10,
+            "executionTime": 4200
+          }
+        }
+      },
+      {
+        "id": 5,
+        "title": "Azure DevOps Sync Agent (MVP)",
+        "description": "Create the agent to connect to Azure DevOps and push the generated Taskmaster plan as linked User Stories and Tasks.",
+        "details": "Implement `POST /api/azure-devops/push`. Use the ADO REST API with a PAT from Consul. For each top-level task, create a User Story. For each subtask, create a Task and link it to the parent User Story using the `Hierarchy-Reverse` relation.",
+        "testStrategy": "Unit test the transformation logic from Taskmaster format to ADO work item payloads. Integration test against a mock ADO API to verify correct creation and linking of User Stories and Tasks.",
+        "priority": "high",
+        "assignee": "developer@company.com",
+        "dependencies": [1, 2, 4],
+        "status": "not_started",
+        "subtasks": [],
+        "implementation": {
+          "summary": "Implemented Azure DevOps integration with REST API client and PAT authentication. Built work item creation system with proper User Story/Task hierarchy linking. Added comprehensive error handling for API failures and partial success scenarios with detailed response reporting.",
+          "filesChanged": [
+            "src/agents/ado_sync_agent.py",
+            "src/services/ado_client.py",
+            "src/models/work_item.py"
+          ],
+          "completedDate": "2025-01-27T15:10:00Z",
+          "diffAvailable": true
+        },
+        "testStatus": {
+          "lastRunDate": "2025-01-27T15:15:00Z",
+          "totalTests": 7,
+          "passedTests": 7,
+          "failedTests": 0,
+          "executionTime": 1800,
+          "failingTestsList": []
+        },
+        "testResults": {
+          "resultsFile": "test-results/task-5.json",
+          "lastRun": "2025-01-27T15:15:00Z",
+          "summary": {
+            "passed": 7,
+            "failed": 0,
+            "total": 7,
+            "executionTime": 1800
+          }
+        }
+      },
+      {
+        "id": 6,
+        "title": "Initial Frontend UI for Core Workflow",
+        "description": "Develop the basic frontend components to allow a user to execute the end-to-end Repo-to-Plan workflow.",
+        "details": "Create UI components for: 1) Repository URL input and clone button. 2) Azure DevOps settings form. 3) PRD builder form with sectioned inputs. 4) Taskmaster action buttons. 5) A button to trigger the ADO sync and a panel to show progress/logs.",
+        "testStrategy": "Component tests for each UI element. End-to-end UI tests using a framework like Cypress or Playwright to simulate a user completing the full workflow, from entering a repo URL to seeing the created ADO item IDs.",
+        "priority": "medium",
+        "assignee": "frontend@company.com",
+        "dependencies": [2, 3, 4, 5],
+        "status": "not_started",
+        "subtasks": [],
+        "implementation": {
+          "summary": "Implemented complete React-based frontend with component architecture for workflow management. Built repository input component, ADO settings form with validation, multi-section PRD builder, and progress tracking panel. Added real-time status updates and error handling with user-friendly messaging.",
+          "filesChanged": [
+            "src/frontend/components/RepositorySelector.tsx",
+            "src/frontend/components/ADOSettings.tsx",
+            "src/frontend/components/PRDBuilder.tsx",
+            "src/frontend/components/ProgressPanel.tsx",
+            "src/frontend/services/api.ts"
+          ],
+          "completedDate": "2025-01-28T13:45:00Z",
+          "diffAvailable": true
+        },
+        "testStatus": {
+          "lastRunDate": "2025-01-28T13:50:00Z",
+          "totalTests": 22,
+          "passedTests": 22,
+          "failedTests": 0,
+          "executionTime": 5600,
+          "failingTestsList": []
+        },
+        "testResults": {
+          "resultsFile": "test-results/task-6.json",
+          "lastRun": "2025-01-28T13:50:00Z",
+          "summary": {
+            "passed": 22,
+            "failed": 0,
+            "total": 22,
+            "executionTime": 5600
+          }
+        }
+      }
+    ],
+    "metadata": {
+      "created": "2025-08-02T09:23:21.146Z",
+      "updated": "2025-01-28T16:00:00.000Z",
+      "description": "Tasks for master context"
+    }
+  }
+}
