@@ -2026,6 +2026,27 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
    */
 
   /**
+   * Get current user email from workspace configuration
+   * Task 4.2: Read current user email for task filtering
+   *
+   * @returns Current user email or empty string if not configured
+   */
+  public getCurrentUserEmail(): string {
+    try {
+      const config = vscode.workspace.getConfiguration(
+        "aidmVscodeExtension.taskmaster"
+      );
+      return config.get<string>("currentUserEmail") || "";
+    } catch (error) {
+      console.warn(
+        "TaskWebviewProvider: Failed to read current user email config:",
+        error
+      );
+      return "";
+    }
+  }
+
+  /**
    * Dispose method for cleanup
    * Task WV-005: Clean up disposables and event listeners
    */

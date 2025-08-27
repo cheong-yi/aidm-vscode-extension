@@ -1026,4 +1026,83 @@ describe("TaskWebviewProvider", () => {
       expect(html).toContain("None");
     });
   });
+
+  describe("Configuration Reading", () => {
+    it("should read current user email from workspace config", () => {
+      // Arrange
+      const mockConfig = {
+        get: jest.fn().mockReturnValue("user@company.com"),
+        has: jest.fn(),
+        inspect: jest.fn(),
+        update: jest.fn(),
+      } as unknown as vscode.WorkspaceConfiguration;
+      jest
+        .spyOn(vscode.workspace, "getConfiguration")
+        .mockReturnValue(mockConfig);
+
+      // Act
+      const userEmail = vscode.workspace
+        .getConfiguration("aidmVscodeExtension.taskmaster")
+        .get<string>("currentUserEmail");
+
+      // Assert
+      expect(userEmail).toBe("user@company.com");
+    });
+
+    it("should return empty string when current user email is not configured", () => {
+      // Arrange
+      const mockConfig = {
+        get: jest.fn().mockReturnValue(undefined),
+        has: jest.fn(),
+        inspect: jest.fn(),
+        update: jest.fn(),
+      } as unknown as vscode.WorkspaceConfiguration;
+      jest
+        .spyOn(vscode.workspace, "getConfiguration")
+        .mockReturnValue(mockConfig);
+
+      // Act
+      const userEmail =
+        vscode.workspace
+          .getConfiguration("aidmVscodeExtension.taskmaster")
+          .get<string>("currentUserEmail") || "";
+
+      // Assert
+      expect(userEmail).toBe("");
+    });
+
+    it("should get current user email via getCurrentUserEmail method", () => {
+      // Arrange
+      const mockConfig = {
+        get: jest.fn().mockReturnValue("developer@company.com"),
+        has: jest.fn(),
+        inspect: jest.fn(),
+        update: jest.fn(),
+      } as unknown as vscode.WorkspaceConfiguration;
+      jest
+        .spyOn(vscode.workspace, "getConfiguration")
+        .mockReturnValue(mockConfig);
+
+      // Act
+      const userEmail = provider.getCurrentUserEmail();
+
+      // Assert
+      expect(userEmail).toBe("developer@company.com");
+    });
+
+    it("should handle configuration errors gracefully in getCurrentUserEmail", () => {
+      // Arrange
+      jest
+        .spyOn(vscode.workspace, "getConfiguration")
+        .mockImplementation(() => {
+          throw new Error("Configuration error");
+        });
+
+      // Act
+      const userEmail = provider.getCurrentUserEmail();
+
+      // Assert
+      expect(userEmail).toBe("");
+    });
+  });
 });

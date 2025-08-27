@@ -265,6 +265,13 @@
             ".taskmaster/tasks.json",
             "project-tasks.json"
           ]
+        },
+        "aidmVscodeExtension.taskmaster.currentUserEmail": {
+          "type": "string",
+          "default": "",
+          "description": "Email address of the current user for task filtering",
+          "pattern": "^[\\w.-]+@[\\w.-]+\\.[a-zA-Z]{2,}$",
+          "patternErrorMessage": "Please enter a valid email address"
         }
       }
     },

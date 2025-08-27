@@ -158,6 +158,23 @@ Configure the extension through VSCode settings (`Ctrl+,` → search "AiDM VSCod
 - `enterpriseAiContext.ui.showProgressBars`: Show progress bars in popups (default: true)
 - `enterpriseAiContext.ui.maxRequirementsShown`: Max requirements in hover popup (default: 3)
 
+### Taskmaster Settings
+
+- `aidmVscodeExtension.taskmaster.currentUserEmail`: Email address of the current user for task filtering (default: empty string)
+
+**Usage Example:**
+
+```typescript
+// In your extension code
+const currentUserEmail =
+  vscode.workspace
+    .getConfiguration("aidmVscodeExtension.taskmaster")
+    .get<string>("currentUserEmail") || "";
+
+// Use for task filtering
+const myTasks = allTasks.filter((task) => task.assignee === currentUserEmail);
+```
+
 ## Development
 
 ### Project Structure
@@ -391,23 +408,26 @@ MIT License - see [LICENSE](LICENSE) file for details.
 ## 🗺️ Roadmap
 
 ### Phase 1: MVP (Current)
+
 - ✅ Hover provider with business context
 - ✅ Local MCP server with mock data
 - ✅ Multi-layer caching (memory + file)
 - ✅ Error handling and audit logging
 
 ### Phase 2: Database Integration (Planned)
+
 - 🔄 **Relational Database Provider**: Replace mock data with PostgreSQL/MySQL backend
 - 🔄 **Relationship Caching**: Intelligent caching of requirement dependencies and code mappings
 - 🔄 **Multi-level Cache Architecture**: Memory → Redis → Database with relationship awareness
-- 🔄 **Schema Design**: 
+- 🔄 **Schema Design**:
   - `requirements` table with full business context
-  - `code_mappings` table for many-to-many file/requirement relationships  
+  - `code_mappings` table for many-to-many file/requirement relationships
   - `requirement_relationships` table for requirement dependencies
 - 🔄 **Smart Prefetching**: Load related requirements when hovering over connected code
 - 🔄 **Configuration-Driven**: Toggle between mock, database, or hybrid data sources
 
 ### Phase 3: Enterprise Scale (Future)
+
 - 📋 Remote MCP integration with enterprise systems
 - 📋 Real-time collaboration features
 - 📋 Advanced analytics and reporting
