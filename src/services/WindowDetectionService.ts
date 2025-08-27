@@ -2,9 +2,9 @@
  * Window Detection Service
  * Provides functionality for detecting and managing running application windows
  *
- * Task: GUI-TRIAL-001b - Create WindowDetectionService class structure
- * Requirements: Basic service structure with method stubs
- * Dependencies: @nut-tree-fork/nut-js (imported but not used yet)
+ * Task: GUI-TRIAL-002a - Implement getRunningWindows with nut-tree
+ * Requirements: Actual window detection using nut-tree API
+ * Dependencies: @nut-tree-fork/nut-js getWindows function
  */
 
 import { Window, getWindows } from "@nut-tree-fork/nut-js";
@@ -27,8 +27,20 @@ export class WindowDetectionService {
    * @returns Promise resolving to array of window information
    */
   async getRunningWindows(): Promise<WindowInfo[]> {
-    // Stub implementation - will be implemented in GUI-TRIAL-002a
-    return [];
+    try {
+      console.log("Attempting to detect running windows...");
+      const windows = await getWindows();
+      console.log(`Detected ${windows.length} windows`);
+
+      return windows.map((window) => ({
+        title: window.title || "Unknown",
+        processName: this.extractProcessName(window.title),
+        windowHandle: window,
+      }));
+    } catch (error) {
+      console.error("Failed to get running windows:", error);
+      return [];
+    }
   }
 
   /**
@@ -37,7 +49,7 @@ export class WindowDetectionService {
    * @returns Promise resolving to window info or null if not found
    */
   async findWindowByTitle(titlePattern: string): Promise<WindowInfo | null> {
-    // Stub implementation - will be implemented in GUI-TRIAL-002a
+    // Stub implementation - will be implemented in GUI-TRIAL-002b
     return null;
   }
 
@@ -49,5 +61,38 @@ export class WindowDetectionService {
   async isApplicationRunning(appName: string): Promise<boolean> {
     // Stub implementation - will be implemented in GUI-TRIAL-002a
     return false;
+  }
+
+  /**
+   * Extract process name from window title
+   * @param title - Window title to extract process name from
+   * @returns Extracted process name or 'Unknown' if unable to extract
+   */
+  private extractProcessName(title: string): string {
+    if (!title || title === "Unknown") {
+      return "Unknown";
+    }
+
+    // Common patterns for extracting app names from window titles
+    // Pattern 1: "App Name - Document Name" -> "App Name"
+    const dashPattern = title.split(" - ");
+    if (dashPattern.length > 1) {
+      return dashPattern[0].trim();
+    }
+
+    // Pattern 2: "App Name: Document Name" -> "App Name"
+    const colonPattern = title.split(": ");
+    if (colonPattern.length > 1) {
+      return colonPattern[0].trim();
+    }
+
+    // Pattern 3: "App Name (Document Name)" -> "App Name"
+    const parenPattern = title.split(" (");
+    if (parenPattern.length > 1) {
+      return parenPattern[0].trim();
+    }
+
+    // Fallback: return the full title if no pattern matches
+    return title.trim();
   }
 }
