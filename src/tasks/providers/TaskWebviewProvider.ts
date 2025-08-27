@@ -808,7 +808,9 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
    */
   private getStatusClass(status: TaskStatus): string {
     const statusClass = status.replace(/_/g, "-");
-    console.debug(`[TaskWebviewProvider] Status mapping: ${status} -> CSS class: ${statusClass}`);
+    console.debug(
+      `[TaskWebviewProvider] Status mapping: ${status} -> CSS class: ${statusClass}`
+    );
     return statusClass;
   }
 
