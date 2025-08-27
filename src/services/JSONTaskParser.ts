@@ -393,6 +393,7 @@ export class JSONTaskParser {
         subTasks: this.convertToStringArray(taskObj.subTasks), // Keep existing field
         subtasks: this.convertToSubtaskArray(taskObj.subtasks), // Added: map JSON subtasks field
         implementation: this.parseImplementation(taskObj.implementation),
+        testResults: this.parseTestResults(taskObj.testResults),
         notes: this.convertToString(taskObj.notes),
         dueDate: this.convertToISOString(taskObj.dueDate),
       };
@@ -472,6 +473,30 @@ export class JSONTaskParser {
       completedDate: this.convertToISOString(impl.completedDate),
       commitHash: this.convertToString(impl.commitHash),
       diffAvailable: this.convertToBoolean(impl.diffAvailable, false),
+    };
+  }
+
+  /**
+   * Parse test results from JSON object
+   *
+   * @param testResultsObj - Test results object from JSON
+   * @returns TaskTestResults | undefined - Parsed test results or undefined
+   */
+  private parseTestResults(testResultsObj: any): any {
+    if (!testResultsObj || typeof testResultsObj !== "object") return undefined;
+
+    return {
+      resultsFile: this.convertToString(testResultsObj.resultsFile),
+      lastRun: this.convertToISOString(testResultsObj.lastRun),
+      summary: testResultsObj.summary
+        ? {
+            passed: this.convertToNumber(testResultsObj.summary.passed) || 0,
+            failed: this.convertToNumber(testResultsObj.summary.failed) || 0,
+            total: this.convertToNumber(testResultsObj.summary.total) || 0,
+            executionTime:
+              this.convertToNumber(testResultsObj.summary.executionTime) || 0,
+          }
+        : undefined,
     };
   }
 
