@@ -9,3 +9,4 @@ export { JSONTaskParser } from "./JSONTaskParser";
 export { TaskStatusManager } from "./TaskStatusManager";
 export { CacheManager } from "./CacheManager";
 export { WindowDetectionService } from "./WindowDetectionService";
+export { KeyboardAutomationService } from "./KeyboardAutomationService";
