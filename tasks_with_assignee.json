@@ -3,14 +3,14 @@
     "tasks": [
       {
         "id": "1",
-        "title": "Foundational Setup: Base Agent & Docker Compose",
+        "title": "Foundational Setup: Base Agent & Docker Compose II",
         "description": "Create the foundational `BaseAgent` class providing common services and set up the `docker-compose.yml` for a complete local development environment.",
         "details": "Implement the Base Agent to initialize clients for Consul (config), Redis (state), and LiteLLM. Create a `docker-compose` file that includes all services: FastAPI orchestrator, agents, Redis, Consul, LiteLLM, and a mock Taskmaster/ADO server for testing.",
         "testStrategy": "Unit test client initializations in the Base Agent. Validate that `docker-compose up` successfully starts all required services without errors.",
         "priority": "high",
-        "assignee": "developer@company.com",
+        "assignee": "testemail@company.com",
         "dependencies": [],
-        "status": "completed",
+        "status": "ready_for_review",
         "subtasks": [],
         "testStatus": {
           "lastRunDate": "2025-01-25T14:35:00Z",
@@ -51,7 +51,7 @@
         "priority": "high",
         "assignee": "teamlead@company.com",
         "dependencies": [1],
-        "status": "not_started",
+        "status": "completed",
         "subtasks": [],
         "implementation": {
           "summary": "Implemented complete FastAPI orchestration service with modular router architecture. Added health endpoint, configuration endpoints, and OpenAPI documentation generation. Integrated with BaseAgent for consistent service initialization across all endpoints.",
@@ -132,7 +132,7 @@
         "priority": "high",
         "assignee": "architect@company.com",
         "dependencies": [1, 2, 3],
-        "status": "not_started",
+        "status": "in_progress",
         "subtasks": [],
         "implementation": {
           "summary": "Implemented PRD generation with LiteLLM integration and KG context injection. Built Taskmaster orchestration system with MCP tool chaining (parse_prd → analyze_project_complexity → expand_all). Added file persistence for PRD documents and task plans with proper directory structure creation.",
@@ -172,7 +172,7 @@
         "priority": "high",
         "assignee": "developer@company.com",
         "dependencies": [1, 2, 4],
-        "status": "not_started",
+        "status": "ready_for_review",
         "subtasks": [],
         "implementation": {
           "summary": "Implemented Azure DevOps integration with REST API client and PAT authentication. Built work item creation system with proper User Story/Task hierarchy linking. Added comprehensive error handling for API failures and partial success scenarios with detailed response reporting.",

@@ -6,6 +6,7 @@
 
 import * as vscode from "vscode";
 import { Task } from "../types/tasks";
+import * as path from "path";
 
 export class TaskFileWatcher {
   private watcher: vscode.FileSystemWatcher | null = null;
@@ -20,7 +21,7 @@ export class TaskFileWatcher {
   constructor(private filePath: string) {}
 
   /**
-   * Start watching the tasks.md file for changes and trigger UI refresh
+   * Start watching the configured file for changes and trigger UI refresh
    * @param onFileChanged Callback function to execute when file changes
    */
   startWatching(onFileChanged: () => void): void {
@@ -31,15 +32,17 @@ export class TaskFileWatcher {
     this.refreshCallback = onFileChanged;
 
     try {
-      // Create file system watcher for tasks.json using workspace relative pattern
+      // Create file system watcher for configured file using workspace relative pattern
       if (
         vscode.workspace.workspaceFolders &&
         vscode.workspace.workspaceFolders.length > 0
       ) {
         const workspaceRoot = vscode.workspace.workspaceFolders[0];
+        // Extract filename from configured path, fallback to "tasks.json" if invalid
+        const fileName = path.basename(this.filePath) || "tasks.json";
         const pattern = new vscode.RelativePattern(
           workspaceRoot,
-          "**/tasks.json"
+          `**/${fileName}`
         );
 
         this.watcher = vscode.workspace.createFileSystemWatcher(pattern);
@@ -50,7 +53,7 @@ export class TaskFileWatcher {
         this.watcher.onDidDelete(() => this.handleFileChange());
 
         console.log(
-          `✅ Started watching tasks.json files for changes in workspace: ${workspaceRoot.uri.fsPath}`
+          `✅ Started watching ${fileName} files for changes in workspace: ${workspaceRoot.uri.fsPath}`
         );
       } else {
         console.warn(
@@ -73,7 +76,8 @@ export class TaskFileWatcher {
     }
 
     this.debounceTimer = setTimeout(() => {
-      console.log("🔄 tasks.json file changed, refreshing UI");
+      const fileName = path.basename(this.filePath) || "tasks.json";
+      console.log(`🔄 ${fileName} file changed, refreshing UI`);
 
       // Fire event for external listeners
       this._onFileChanged.fire(this.filePath);
@@ -103,7 +107,8 @@ export class TaskFileWatcher {
       this.debounceTimer = null;
     }
 
-    console.log("🛑 Stopped watching tasks.json files");
+    const fileName = path.basename(this.filePath) || "tasks.json";
+    console.log(`🛑 Stopped watching ${fileName} files`);
   }
 
   /**
