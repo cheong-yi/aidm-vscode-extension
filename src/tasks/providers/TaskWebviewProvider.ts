@@ -1754,7 +1754,7 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
           const taskId = event.target.closest('.task-item').dataset.taskId;
           const action = event.target.textContent.trim();
           
-          if (action.includes('Execute with Cursor')) {
+          if (action.includes('Start Task')) {
             executeWithCursor(taskId);
           } else if (action.includes('Mark Complete')) {
             updateTaskStatus(taskId, 'completed');
