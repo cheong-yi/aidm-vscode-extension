@@ -276,6 +276,75 @@ describe("JSONTaskParser", () => {
       expect(result[0].estimatedDuration).toBe("15-20 min");
       expect(result[0].isExecutable).toBe(true);
     });
+
+    it("should read assignee field from JSON task object", () => {
+      // Arrange
+      const mockJSONData = {
+        test: {
+          tasks: [
+            {
+              id: "test-1",
+              title: "Test Task",
+              assignee: "developer@company.com",
+            },
+          ],
+        },
+      };
+
+      // Act
+      const result = parser.parseTasksFromJSONContent(mockJSONData);
+
+      // Assert
+      expect(result[0].assignee).toBe("developer@company.com");
+    });
+
+    it("should default assignee to dev-team when field is missing", () => {
+      // Arrange
+      const mockJSONData = {
+        test: {
+          tasks: [
+            {
+              id: "test-1",
+              title: "Test Task",
+              // assignee field intentionally omitted
+            },
+          ],
+        },
+      };
+
+      // Act
+      const result = parser.parseTasksFromJSONContent(mockJSONData);
+
+      // Assert
+      expect(result[0].assignee).toBe("dev-team");
+    });
+
+    it("should handle null and undefined assignee values correctly", () => {
+      // Arrange
+      const mockJSONData = {
+        test: {
+          tasks: [
+            {
+              id: "test-1",
+              title: "Test Task",
+              assignee: null,
+            },
+            {
+              id: "test-2",
+              title: "Test Task 2",
+              assignee: undefined,
+            },
+          ],
+        },
+      };
+
+      // Act
+      const result = parser.parseTasksFromJSONContent(mockJSONData);
+
+      // Assert
+      expect(result[0].assignee).toBe("dev-team"); // null should default
+      expect(result[1].assignee).toBe("dev-team"); // undefined should default
+    });
   });
 
   describe("flattenContexts", () => {
