@@ -2089,9 +2089,10 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
 
   /**
    * Handle View Code button clicks from webview
-   * Opens files from task.implementation.filesChanged array
+   * Opens git diff views for files changed in task.implementation.commitHash
    * Task IMPL-002: Implement View Code button handler
    * Task DI-003: Add workspace validation for View Implementation file operations
+   * Task DIFF-003: Update to use async git-based diff opening
    *
    * @param taskId - The ID of the task to view code for
    */
@@ -2100,9 +2101,9 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
       const tasks = await this.tasksDataService.getTasks();
       const task = tasks.find((t) => t.id === taskId);
 
-      if (!task?.implementation?.filesChanged) {
+      if (!task?.implementation?.commitHash) {
         vscode.window.showWarningMessage(
-          `No implementation files found for task ${taskId}`
+          `No commit hash found for task ${taskId}`
         );
         return;
       }
@@ -2126,29 +2127,78 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
         `[TaskWebviewProvider] Using workspace root: ${workspaceRoot.uri.fsPath}`
       );
 
-      // Open each file in the filesChanged array
-      for (const filePath of task.implementation.filesChanged) {
-        const uri = vscode.Uri.joinPath(workspaceRoot.uri, filePath);
+      // Validate git repository
+      if (!(await GitUtilities.isGitRepository(workspaceRoot.uri.fsPath))) {
+        vscode.window.showErrorMessage(
+          "Git repository not available in workspace"
+        );
+        console.error(
+          `[TaskWebviewProvider] No git repository found in workspace for task ${taskId}`
+        );
+        return;
+      }
 
+      // Validate commit exists
+      if (
+        !(await GitUtilities.commitExists(
+          task.implementation.commitHash,
+          workspaceRoot.uri.fsPath
+        ))
+      ) {
+        vscode.window.showErrorMessage(
+          `Commit hash not found in repository: ${task.implementation.commitHash.substring(
+            0,
+            7
+          )}`
+        );
+        console.error(
+          `[TaskWebviewProvider] Commit hash not found for task ${taskId}: ${task.implementation.commitHash}`
+        );
+        return;
+      }
+
+      // Get changed files from git commit
+      const changedFiles = await GitUtilities.getChangedFilesFromCommit(
+        task.implementation.commitHash,
+        workspaceRoot.uri.fsPath
+      );
+
+      if (changedFiles.length === 0) {
+        vscode.window.showWarningMessage("No file changes found in commit");
+        console.debug(
+          `[TaskWebviewProvider] No file changes found in commit for task ${taskId}`
+        );
+        return;
+      }
+
+      // Open diff views for each changed file
+      for (const filePath of changedFiles) {
         try {
-          const document = await vscode.workspace.openTextDocument(uri);
-          await vscode.window.showTextDocument(document);
-          console.debug(`[TaskWebviewProvider] Opened file: ${filePath}`);
+          await this.openDiffForFile(
+            filePath,
+            task.implementation.commitHash,
+            workspaceRoot.uri
+          );
+          console.debug(
+            `[TaskWebviewProvider] Opened diff for file: ${filePath}`
+          );
         } catch (error) {
           console.error(
-            `[TaskWebviewProvider] Failed to open file: ${filePath}`,
+            `[TaskWebviewProvider] Failed to open diff for file: ${filePath}`,
             error
           );
-          vscode.window.showErrorMessage(`Could not open file: ${filePath}`);
+          vscode.window.showErrorMessage(
+            `Could not open diff for file: ${filePath}`
+          );
         }
       }
 
       console.log(
-        `[TaskWebviewProvider] Opened ${task.implementation.filesChanged.length} files for task ${taskId}`
+        `[TaskWebviewProvider] Opened diff views for ${changedFiles.length} files for task ${taskId}`
       );
     } catch (error) {
       console.error("[TaskWebviewProvider] Error handling View Code:", error);
-      vscode.window.showErrorMessage("Failed to open implementation files");
+      vscode.window.showErrorMessage("Failed to open diff views");
     }
   }
 
