@@ -1024,51 +1024,15 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
 
   /**
    * Generates action buttons HTML for a task
-   * Now includes conditional View Code and View Tests buttons
-   * Renders status-specific action buttons following mockup structure
+   * DEMO MODE: Returns empty actions section (no buttons) for clean presentation
    *
    * @param task - Task object to generate actions for
-   * @returns HTML string for action buttons
+   * @returns HTML string for empty actions section
    */
   private generateActions(task: Task): string {
-    // Use STATUS_ACTIONS from types/tasks.ts for proper action mapping
-    const actions = STATUS_ACTIONS[task.status] || [];
-
-    // Filter out unwanted actions for demo
-    const unwantedActions = ["History", "Continue Work", "View Dependencies"];
-    const functionalActions = actions.filter(
-      (action) => !unwantedActions.some((unwanted) => action.includes(unwanted))
-    );
-
-    // Ensure task ID is converted to string for consistent handling
-    const taskIdStr = String(task.id || "");
-
-    // Generate standard action buttons using filtered actions
-    const standardButtons = functionalActions
-      .map((action: string, index: number) => {
-        const isPrimary =
-          index === 0 &&
-          (task.status === TaskStatus.NOT_STARTED ||
-            task.status === TaskStatus.IN_PROGRESS);
-        const buttonClass = isPrimary ? "action-btn primary" : "action-btn";
-        return `<button class="${buttonClass}">${action}</button>`;
-      })
-      .join("");
-
-    // Add conditional View Code button
-    const viewCodeButton = task.implementation?.filesChanged?.length
-      ? `<button class="action-btn" onclick="sendMessage('viewCode', {taskId: '${taskIdStr}'})">View Code</button>`
-      : "";
-
-    // Add conditional View Tests button
-    const viewTestsButton = task.testResults?.resultsFile
-      ? `<button class="action-btn" onclick="sendMessage('viewTests', {taskId: '${taskIdStr}'})">View Tests</button>`
-      : "";
-
+    // DEMO MODE: Return empty actions section for clean demo presentation
     return `<div class="actions">
-      ${standardButtons}
-      ${viewCodeButton}
-      ${viewTestsButton}
+      <!-- Actions removed for demo presentation -->
     </div>`;
   }
 
@@ -1459,6 +1423,7 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
             font-size: 9px;
         }
 
+        /* DEMO MODE: Action buttons removed - commenting out related CSS
         .actions {
             display: flex;
             gap: clamp(6px, 1.5vw, 8px);
@@ -1488,6 +1453,7 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
         .action-btn.primary:hover {
             background: var(--vscode-button-hoverBackground);
         }
+        */
 
         .no-tests {
             font-size: 11px;
@@ -1505,6 +1471,7 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
             padding: clamp(16px, 3vw, 20px);
         }
 
+        /* DEMO MODE: Executable task indicators removed - commenting out related CSS
         .task-item.executable .task-header {
             border-left: 3px solid var(--vscode-progressBar-background);
         }
@@ -1513,6 +1480,7 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
             font-size: 12px;
             margin-left: 4px;
         }
+        */
 
         .section-divider {
             height: 1px;
@@ -1663,10 +1631,12 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
                 gap: 4px;
             }
             
+            /* DEMO MODE: Action buttons removed - commenting out responsive CSS
             .actions {
                 flex-direction: column;
                 gap: 4px;
             }
+            */
         }
 
         /* Responsive breakpoints for wide panels */
