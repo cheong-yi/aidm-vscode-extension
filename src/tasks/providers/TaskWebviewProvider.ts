@@ -2547,6 +2547,7 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
    * Open VS Code's native diff editor for a single file using git URIs
    * DIFF-002: Implement single file diff opening using VS Code's native diff command
    * WV-011-FIX: Updated to use correct git:<commit>:<filepath> URI format
+   * WV-014-VALIDATE: Now includes file path validation before processing
    *
    * @param filePath - Relative file path from workspace root
    * @param commitHash - Git commit hash to compare against
@@ -2558,13 +2559,8 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
     workspaceRoot: vscode.Uri
   ): Promise<void> {
     try {
-      // Security: Basic validation of file path (no path traversal)
-      if (!filePath || filePath.includes("..") || path.isAbsolute(filePath)) {
-        console.warn(
-          `[TaskWebviewProvider] Invalid file path for diff: ${filePath}`
-        );
-        return;
-      }
+      // WV-014-VALIDATE: Use centralized file path validation
+      const validatedFilePath = this.validateFilePath(filePath);
 
       // Security: Validate commit hash format using GitUtilities patterns
       const gitHashPattern = /^[a-fA-F0-9]{40}$|^[a-fA-F0-9]{7,40}$/;
@@ -2578,7 +2574,7 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
       // WV-013-REFACTOR: Use extracted utility method for git URI construction
       const { beforeUri, afterUri, diffTitle } = await this.createGitDiffURIs(
         commitHash,
-        filePath,
+        validatedFilePath,
         workspaceRoot.fsPath
       );
 
@@ -2591,7 +2587,7 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
       );
 
       console.debug(
-        `[TaskWebviewProvider] Opened diff for file: ${filePath} at commit ${commitHash.substring(
+        `[TaskWebviewProvider] Opened diff for file: ${validatedFilePath} at commit ${commitHash.substring(
           0,
           7
         )}`
@@ -2637,14 +2633,58 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
   }
 
   /**
+   * Validate file path input for git operations
+   * WV-014-VALIDATE: Add file path validation to prevent malformed URIs and security issues
+   *
+   * @param filePath - File path to validate
+   * @returns Sanitized file path string
+   * @throws Error for invalid file paths
+   */
+  private validateFilePath(filePath: string): string {
+    // Validate file path input
+    if (!filePath || typeof filePath !== "string") {
+      throw new Error("File path is required and must be a string");
+    }
+
+    const trimmedPath = filePath.trim();
+
+    // Check for empty/whitespace-only paths after trimming
+    if (trimmedPath === "") {
+      throw new Error("File path is required and must be a string");
+    }
+
+    if (trimmedPath !== filePath) {
+      throw new Error("File path contains leading or trailing whitespace");
+    }
+
+    // Security: Prevent path traversal
+    if (trimmedPath.includes("..")) {
+      throw new Error("File path cannot contain path traversal sequences (..)");
+    }
+
+    // Validate path format - check relative path separators (./, .\)
+    if (trimmedPath.startsWith("./") || trimmedPath.startsWith(".\\")) {
+      throw new Error("File path should not start with separator");
+    }
+
+    // Security: Prevent absolute paths (should be relative to workspace)
+    if (path.isAbsolute(trimmedPath)) {
+      throw new Error("File path must be relative to workspace root");
+    }
+
+    return trimmedPath;
+  }
+
+  /**
    * Create git diff URIs for file comparison
    * WV-013-REFACTOR: Extract common git URI construction logic into reusable utility
+   * WV-014-VALIDATE: Now includes file path validation before URI construction
    *
    * @param commitHash - Git commit hash to compare against
    * @param filePath - Relative file path from workspace root
    * @param workspacePath - Workspace root path for git operations
    * @returns Promise<{beforeUri: vscode.Uri, afterUri: vscode.Uri, diffTitle: string}>
-   * @throws Error if previous commit cannot be found
+   * @throws Error if previous commit cannot be found or file path is invalid
    */
   private async createGitDiffURIs(
     commitHash: string,
@@ -2655,6 +2695,9 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
     afterUri: vscode.Uri;
     diffTitle: string;
   }> {
+    // WV-014-VALIDATE: Validate file path before processing
+    const validatedFilePath = this.validateFilePath(filePath);
+
     const previousCommit = await GitUtilities.getPreviousCommit(
       commitHash,
       workspacePath
@@ -2666,10 +2709,12 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
       );
     }
 
-    const beforeUri = vscode.Uri.parse(`git:${previousCommit}:${filePath}`);
-    const afterUri = vscode.Uri.parse(`git:${commitHash}:${filePath}`);
+    const beforeUri = vscode.Uri.parse(
+      `git:${previousCommit}:${validatedFilePath}`
+    );
+    const afterUri = vscode.Uri.parse(`git:${commitHash}:${validatedFilePath}`);
 
-    const filename = path.basename(filePath);
+    const filename = path.basename(validatedFilePath);
     const shortHash = commitHash.substring(0, 7);
     const shortPrevHash = previousCommit.substring(0, 7);
     const diffTitle = `${filename} (${shortPrevHash} ↔ ${shortHash})`;
