@@ -544,181 +544,58 @@ export class TasksDataService implements ITasksDataService {
   // Task 4.4.1: Add refreshTasks method for manual task refresh
   // PATH-002: Enhanced with comprehensive file loading error handling
   // Task 6.1.6: Fixed event timing to ensure complete data before UI notification
+  // RFS-001: Bypass MCP server call to fix file watching refresh mechanism
   async refreshTasks(): Promise<void> {
     console.log("[TasksDataService] refreshTasks() called");
 
     try {
-      console.log("[TasksDataService] Attempting MCP server refresh");
-      // Try to refresh via MCP server first
-      const response = await this.makeJSONRPCCall("tasks/refresh");
+      // Skip MCP server refresh call - use direct task loading instead
+      console.log(
+        "[TasksDataService] Using direct task loading (bypassing MCP refresh)"
+      );
 
-      if (response.error) {
-        throw new Error(`MCP server error: ${response.error.message}`);
-      }
-
-      console.log("[TasksDataService] MCP server refresh successful");
-      // If MCP server refresh successful, get updated tasks and fire event
+      // Use existing getTasks method which has robust fallback logic
       const updatedTasks = await this.getTasks();
 
       // Task 6.1.6: Only fire event after successful completion with complete data
       if (updatedTasks && Array.isArray(updatedTasks)) {
         console.log(
-          `[TasksDataService] Firing onTasksUpdated event with ${updatedTasks.length} tasks from MCP server`
+          `[TasksDataService] Firing onTasksUpdated event with ${updatedTasks.length} tasks from direct loading`
         );
         this.onTasksUpdated.fire(updatedTasks);
       } else {
         console.log(
-          "[TasksDataService] MCP server returned invalid data, not firing event"
+          "[TasksDataService] Direct loading returned invalid data, not firing event"
         );
       }
     } catch (error) {
-      // PATH-FIX-004: Enhanced error logging with path context for debugging
-      console.error("TasksDataService.refreshTasks Error Details:");
       console.error(
-        "- Workspace folders:",
-        vscode.workspace.workspaceFolders?.map((f) => f.uri.toString())
-      );
-      console.error(
-        "- Configured path:",
-        vscode.workspace
-          .getConfiguration("aidmVscodeExtension")
-          .get("tasks.filePath")
-      );
-      console.error("- Error:", error);
-
-      // Check if this is an MCP server error - if so, re-throw it
-      if (
-        error instanceof Error &&
-        error.message.startsWith("MCP server error:")
-      ) {
-        throw error;
-      }
-
-      // PATH-002: Enhanced fallback with file loading and error handling
-      console.warn(
-        "HTTP call failed, falling back to file loading:",
-        error instanceof Error ? error.message : String(error)
+        "TasksDataService.refreshTasks Direct Loading Error:",
+        error
       );
 
       try {
-        const configuredUri = this.getConfiguredFileUri();
-        const fallbackUri = await this.getTasksFileUri("tasks.json");
-        const fileUri = configuredUri || fallbackUri;
-
-        if (!fileUri) {
-          console.warn(
-            "[TasksDataService] No file path available, falling back to mock data"
-          );
-          await this.loadMockData();
-          return;
-        }
-
-        // PATH-002: Use existing JSONTaskParser with enhanced error handling
-        try {
-          const parsedTasks = await this.jsonTaskParser.parseTasksFromFile(
-            fileUri
-          );
-          console.log(
-            `[TasksDataService] Retrieved ${parsedTasks.length} tasks from file parser`
-          );
-
-          // Task 6.1.6: Only fire event after successful parsing with complete data validation
-          if (parsedTasks && Array.isArray(parsedTasks)) {
-            console.log(
-              `[TasksDataService] Firing onTasksUpdated event with ${parsedTasks.length} parsed tasks`
-            );
-            this.onTasksUpdated.fire(parsedTasks);
-          } else {
-            console.log(
-              "[TasksDataService] Parsed data is invalid, not firing event"
-            );
-            // Fall through to mock data since parsed data is invalid
-            throw new Error("Parsed data validation failed");
-          }
-        } catch (parseError) {
-          // PATH-FIX-004: Enhanced error logging with path context for debugging
-          console.error("TasksDataService.refreshTasks Parse Error Details:");
-          console.error(
-            "- Workspace folders:",
-            vscode.workspace.workspaceFolders?.map((f) => f.uri.toString())
-          );
-          console.error(
-            "- Configured path:",
-            vscode.workspace
-              .getConfiguration("aidmVscodeExtension")
-              .get("tasks.filePath")
-          );
-          console.error("- File URI:", fileUri?.toString());
-          console.error("- Parse Error:", parseError);
-
-          // PATH-002: Enhanced error handling for file parsing failures
-          const taskError = this.handleFileLoadingError(
-            parseError as Error,
-            fileUri.fsPath,
-            "file_validation"
-          );
-          this.onError.fire(taskError);
-
-          // Re-throw to trigger mock data fallback
-          throw parseError;
-        }
-      } catch (fileError) {
-        // PATH-FIX-004: Enhanced error logging with path context for debugging
-        console.error(
-          "TasksDataService.refreshTasks File Loading Error Details:"
-        );
-        console.error(
-          "- Workspace folders:",
-          vscode.workspace.workspaceFolders?.map((f) => f.uri.toString())
-        );
-        console.error(
-          "- Configured path:",
-          vscode.workspace
-            .getConfiguration("aidmVscodeExtension")
-            .get("tasks.filePath")
-        );
-        console.error("- File Error:", fileError);
-
-        console.warn(
-          "[TasksDataService] Falling back to mock data due to file loading error"
+        // Final fallback to mock data
+        const mockTasks = await this.mockDataProvider.getTasks();
+        console.log(
+          `[TasksDataService] Using mock data fallback with ${mockTasks.length} tasks`
         );
 
-        // Task 6.1.6: Ensure mock data fallback also follows proper event timing
-        try {
-          const mockTasks = await this.mockDataProvider.getTasks();
-          console.log(
-            `[TasksDataService] Retrieved ${mockTasks.length} tasks from mock data provider`
-          );
-
-          // Task 6.1.6: Only fire event after successful mock data retrieval with complete data
-          if (mockTasks && Array.isArray(mockTasks)) {
-            console.log(
-              `[TasksDataService] Firing onTasksUpdated event with ${mockTasks.length} mock tasks`
-            );
-            this.onTasksUpdated.fire(mockTasks);
-          } else {
-            console.log(
-              "[TasksDataService] Mock data is invalid, firing event with empty array"
-            );
-            this.onTasksUpdated.fire([]);
-          }
-        } catch (mockError) {
-          console.error(
-            "[TasksDataService] All data sources failed:",
-            mockError
-          );
-
-          // Task 6.1.6: Fire event with empty array when all fallbacks fail
-          console.log(
-            "[TasksDataService] Firing onTasksUpdated event with empty array due to complete failure"
-          );
+        if (mockTasks && Array.isArray(mockTasks)) {
+          this.onTasksUpdated.fire(mockTasks);
+        } else {
           this.onTasksUpdated.fire([]);
         }
+      } catch (mockError) {
+        console.error(
+          "[TasksDataService] All refresh methods failed:",
+          mockError
+        );
+        this.onTasksUpdated.fire([]);
       }
     }
 
     console.log("[TasksDataService] refreshTasks completed");
-    console.log("✅ TasksDataService method calls updated successfully");
   }
 
   // PATH-002: Enhanced error handling for file loading operations
