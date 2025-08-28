@@ -2461,15 +2461,22 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
           return;
         }
 
-        // Correctly construct the VS Code Git URI with ref as a query parameter
-        const gitUri = vscode.Uri.parse(
-          `git:/${filePath}?${previousCommitHash}`
-        );
+        // FIXED: Use correct git:<commit>:<filepath> format for VS Code filesystem provider
+        const beforeUri = vscode.Uri.parse(`git:${previousCommitHash}:${filePath}`);
+        const afterUri = vscode.Uri.parse(`git:${commitHash}:${filePath}`);
 
-        await vscode.commands.executeCommand("vscode.open", gitUri, {
-          preview: true,
-          preserveFocus: true,
-        });
+        // Generate descriptive title with filename and short hash
+        const filename = path.basename(filePath);
+        const shortHash = commitHash.substring(0, 7);
+        const diffTitle = `${filename} (${shortHash}~1 ↔ ${shortHash})`;
+
+        // Use vscode.diff command for side-by-side comparison
+        await vscode.commands.executeCommand(
+          "vscode.diff",
+          beforeUri,
+          afterUri,
+          diffTitle
+        );
 
         console.log(
           `TaskWebviewProvider: Opened git diff view for ${path.basename(

@@ -1298,18 +1298,18 @@ describe("TaskWebviewProvider", () => {
       );
 
       const filePath = "src/tasks/providers/TaskWebviewProvider.ts";
-      const expectedUriString =
-        "git:/src/tasks/providers/TaskWebviewProvider.ts?e37ff121bac6710085f1d282131cca82f287283e~1";
-
       // Act
       await provider.viewCode("task-123", filePath);
 
       // Assert
-      expect(vscode.Uri.parse).toHaveBeenCalledWith(expectedUriString);
+      // FIXED: Test correct git:<commit>:<filepath> format and vscode.diff command
+      expect(vscode.Uri.parse).toHaveBeenCalledWith(`git:e37ff121bac6710085f1d282131cca82f287283e~1:${filePath}`);
+      expect(vscode.Uri.parse).toHaveBeenCalledWith(`git:e37ff121bac6710085f1d282131cca82f287283e:${filePath}`);
       expect(vscode.commands.executeCommand).toHaveBeenCalledWith(
-        "vscode.open",
-        expectedUriString,
-        expect.any(Object)
+        "vscode.diff",
+        `git:e37ff121bac6710085f1d282131cca82f287283e~1:${filePath}`, // beforeUri
+        `git:e37ff121bac6710085f1d282131cca82f287283e:${filePath}`, // afterUri
+        expect.stringContaining("TaskWebviewProvider.ts (e37ff12~1 ↔ e37ff12)")
       );
     });
 

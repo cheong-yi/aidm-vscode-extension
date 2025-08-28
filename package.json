@@ -5,8 +5,8 @@
   ],
   "displayName": "AiDM VSCode Extension",
   "description": "Bridge business requirements and code implementation with AI-powered context for enterprise development",
-  "version": "0.65.1",
-  "_versionNotes": "Auto-packaged version 0.65.1 - 2025-08-28",
+  "version": "0.66.1",
+  "_versionNotes": "Auto-packaged version 0.66.1 - 2025-08-28",
   "publisher": "aidm-team",
   "author": {
     "name": "AiDM Team"

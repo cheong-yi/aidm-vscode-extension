@@ -1,5 +1,16 @@
 # AiDM VSCode Extension - Version History
 
+## Version 0.66.1 (Packaged)
+**Date**: 2025-08-28
+**Status**: Auto-packaged for testing
+
+### 📦 Packaging Notes
+- **Auto-versioned**: Incremented from 0.65.1
+- **Build Date**: 2025-08-28T21:25:02.628Z
+- **Purpose**: Testing and demo packaging
+
+---
+
 ## Version 0.65.1 (Packaged)
 **Date**: 2025-08-28
 **Status**: Auto-packaged for testing
