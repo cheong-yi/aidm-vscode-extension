@@ -145,7 +145,8 @@ describe("TaskWebviewProvider", () => {
         id: "1",
         complexity: "high",
         estimatedDuration: "15-30 min",
-        testStrategy: "Unit test client initializations in the Base Agent. Validate that `docker-compose up` successfully starts all required services without errors."
+        testStrategy:
+          "Unit test client initializations in the Base Agent. Validate that `docker-compose up` successfully starts all required services without errors.",
       };
 
       // Act
@@ -153,7 +154,9 @@ describe("TaskWebviewProvider", () => {
 
       // Assert
       expect(result).toContain("Test Strategy");
-      expect(result).toContain("Unit test client initializations in the Base Agent");
+      expect(result).toContain(
+        "Unit test client initializations in the Base Agent"
+      );
       expect(result).toContain("Complexity");
       expect(result).toContain("Estimated");
       expect(result).toContain("High");
@@ -165,7 +168,7 @@ describe("TaskWebviewProvider", () => {
       const task = {
         id: "2",
         complexity: "medium",
-        estimatedDuration: "20-25 min"
+        estimatedDuration: "20-25 min",
         // testStrategy is intentionally omitted
       };
 
@@ -187,7 +190,7 @@ describe("TaskWebviewProvider", () => {
         id: "3",
         complexity: "low",
         estimatedDuration: "10-15 min",
-        testStrategy: ""
+        testStrategy: "",
       };
 
       // Act
@@ -208,7 +211,7 @@ describe("TaskWebviewProvider", () => {
         id: "4",
         complexity: "high",
         estimatedDuration: "30-45 min",
-        testStrategy: "   "
+        testStrategy: "   ",
       };
 
       // Act
@@ -229,7 +232,8 @@ describe("TaskWebviewProvider", () => {
         id: "5",
         complexity: "medium",
         estimatedDuration: "15-20 min",
-        testStrategy: "Test with <script>alert('xss')</script> and > < characters"
+        testStrategy:
+          "Test with <script>alert('xss')</script> and > < characters",
       };
 
       // Act
@@ -237,9 +241,140 @@ describe("TaskWebviewProvider", () => {
 
       // Assert
       expect(result).toContain("Test Strategy");
-      expect(result).toContain("&lt;script&gt;alert(&#39;xss&#39;)&lt;/script&gt;");
+      expect(result).toContain(
+        "&lt;script&gt;alert(&#39;xss&#39;)&lt;/script&gt;"
+      );
       expect(result).not.toContain("<script>");
       expect(result).not.toContain("alert('xss')");
+    });
+  });
+
+  describe("generateTestStrategy", () => {
+    test("should generate test strategy HTML when test strategy is present", () => {
+      // Arrange
+      const task = {
+        id: "1",
+        testStrategy:
+          "Unit test client initializations in the Base Agent. Validate that `docker-compose up` successfully starts all required services without errors.",
+      };
+
+      // Act
+      const result = (provider as any).generateTestStrategy(task);
+
+      // Assert
+      expect(result).toContain("task-test-strategy");
+      expect(result).toContain("test-strategy-title");
+      expect(result).toContain("test-strategy-content");
+      expect(result).toContain("Test Strategy");
+      expect(result).toContain(
+        "Unit test client initializations in the Base Agent"
+      );
+    });
+
+    test("should generate test strategy HTML with fallback when test strategy is missing", () => {
+      // Arrange
+      const task = {
+        id: "2",
+        // testStrategy is intentionally omitted
+      };
+
+      // Act
+      const result = (provider as any).generateTestStrategy(task);
+
+      // Assert
+      expect(result).toContain("task-test-strategy");
+      expect(result).toContain("Test Strategy");
+      expect(result).toContain("No test strategy specified");
+    });
+
+    test("should generate test strategy HTML with fallback when test strategy is empty", () => {
+      // Arrange
+      const task = {
+        id: "3",
+        testStrategy: "",
+      };
+
+      // Act
+      const result = (provider as any).generateTestStrategy(task);
+
+      // Assert
+      expect(result).toContain("task-test-strategy");
+      expect(result).toContain("Test Strategy");
+      expect(result).toContain("No test strategy specified");
+    });
+
+    test("should escape HTML in test strategy content", () => {
+      // Arrange
+      const task = {
+        id: "4",
+        testStrategy:
+          "Test with <script>alert('xss')</script> and > < characters",
+      };
+
+      // Act
+      const result = (provider as any).generateTestStrategy(task);
+
+      // Assert
+      expect(result).toContain(
+        "&lt;script&gt;alert(&#39;xss&#39;)&lt;/script&gt;"
+      );
+      expect(result).not.toContain("<script>");
+      expect(result).not.toContain("alert('xss')");
+    });
+  });
+
+  describe("generateTaskDetails", () => {
+    test("should include test strategy section between description and metadata", () => {
+      // Arrange
+      const task = {
+        id: "1",
+        description: "Test task description",
+        testStrategy: "Unit test strategy for this task",
+        complexity: "medium",
+        estimatedDuration: "15-20 min",
+        dependencies: [],
+        testStatus: { totalTests: 0 },
+        implementation: {},
+      };
+
+      // Act
+      const result = (provider as any).generateTaskDetails(task);
+
+      // Assert
+      expect(result).toContain("task-description");
+      expect(result).toContain("task-test-strategy");
+      expect(result).toContain("task-meta");
+
+      // Verify order: description -> test strategy -> metadata
+      const descriptionIndex = result.indexOf("task-description");
+      const testStrategyIndex = result.indexOf("task-test-strategy");
+      const metadataIndex = result.indexOf("task-meta");
+
+      expect(descriptionIndex).toBeLessThan(testStrategyIndex);
+      expect(testStrategyIndex).toBeLessThan(metadataIndex);
+    });
+
+    test("should handle task without test strategy gracefully", () => {
+      // Arrange
+      const task = {
+        id: "2",
+        description: "Another test task",
+        complexity: "low",
+        estimatedDuration: "10-15 min",
+        dependencies: [],
+        testStatus: { totalTests: 0 },
+        implementation: {},
+        // testStrategy is intentionally omitted
+      };
+
+      // Act
+      const result = (provider as any).generateTaskDetails(task);
+
+      // Assert
+      expect(result).toContain("task-description");
+      expect(result).toContain("task-test-strategy");
+      expect(result).toContain("No test strategy specified");
+      expect(result).toContain("task-meta");
     });
   });
 });

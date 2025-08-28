@@ -11,6 +11,9 @@
  *
  * This provider handles webview-based task management display with basic
  * HTML template generation infrastructure for future taskmaster dashboard.
+ *
+ * NOTE: Cursor icon (🤖) functionality has been temporarily disabled.
+ * The isExecutable field is still processed but no visual indicators are shown.
  */
 
 import * as vscode from "vscode";
@@ -668,8 +671,10 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
   private generateTaskItem(task: Task): string {
     const statusClass = this.getStatusClass(task.status);
     const statusDisplay = STATUS_DISPLAY_NAMES[task.status] || task.status;
-    const isExecutable =
-      Boolean(task.isExecutable) && task.status === TaskStatus.NOT_STARTED;
+    // TEMPORARILY DISABLED: Executable task detection
+    // const isExecutable =
+    //   Boolean(task.isExecutable) && task.status === TaskStatus.NOT_STARTED;
+    const isExecutable = false; // Disabled for now
 
     // ADD: Generate subtasks HTML if subtasks exist
     const subtasksHtml = this.generateSubtasksSection(task);
@@ -776,7 +781,7 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
    * @param task - Task object to generate header for
    * @param statusClass - CSS class for status styling
    * @param statusDisplay - Human-readable status display name
-   * @param isExecutable - Whether task is executable with Cursor
+   * @param isExecutable - Whether task is executable with Cursor (TEMPORARILY DISABLED)
    * @returns HTML string for task header
    */
   private generateTaskHeader(
@@ -785,10 +790,13 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
     statusDisplay: string,
     isExecutable: boolean
   ): string {
-    const executableIcon = isExecutable
-      ? '<span class="cursor-icon">🤖</span>'
-      : "";
-    const executableClass = isExecutable ? " executable" : "";
+    // TEMPORARILY DISABLED: Cursor icon functionality
+    // const executableIcon = isExecutable
+    //   ? '<span class="cursor-icon">🤖</span>'
+    //   : "";
+    // const executableClass = isExecutable ? " executable" : "";
+    const executableIcon = ""; // Disabled for now
+    const executableClass = ""; // Disabled for now
 
     return `<div class="task-header${executableClass}">
       <svg class="task-expand-icon" viewBox="0 0 16 16" fill="currentColor" onclick="toggleTask(this.closest('.task-item'))">
@@ -859,6 +867,7 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
   private generateTaskDetails(task: Task): string {
     return `<div class="task-details">
       <div class="task-description">${this.escapeHtml(task.description)}</div>
+      ${this.generateTestStrategy(task)}
       ${this.generateTaskMeta(task)}
       ${this.generateDependencies(task)}
       ${this.generateTestResults(task)}
@@ -867,20 +876,34 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
   }
 
   /**
+   * Generates test strategy section HTML
+   * Displays test strategy with fallback text, styled similar to description
+   *
+   * @param task - Task object to generate test strategy for
+   * @returns HTML string for test strategy section
+   */
+  private generateTestStrategy(task: Task): string {
+    // Handle testStrategy field with fallback
+    const testStrategy =
+      task.testStrategy && task.testStrategy.trim()
+        ? task.testStrategy
+        : "No test strategy specified";
+
+    return `<div class="task-test-strategy">
+      <div class="test-strategy-title">Test Strategy</div>
+      <div class="test-strategy-content">${this.escapeHtml(testStrategy)}</div>
+    </div>`;
+  }
+
+  /**
    * Generates task metadata section HTML
-   * Now includes Test Strategy alongside Complexity and Estimated duration
+   * Shows Complexity and Estimated duration in grid layout
    *
    * @param task - Task object to generate metadata for
    * @returns HTML string for task metadata
    */
   private generateTaskMeta(task: Task): string {
     const complexityClass = `complexity-${task.complexity}`;
-
-    // Handle testStrategy field with fallback
-    const testStrategy =
-      task.testStrategy && task.testStrategy.trim()
-        ? task.testStrategy
-        : "No test strategy specified";
 
     return `<div class="task-meta">
       <div class="meta-item">
@@ -894,10 +917,6 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
         <div class="meta-value">${
           task.estimatedDuration || "Not specified"
         }</div>
-      </div>
-      <div class="meta-item">
-        <div class="meta-label">Test Strategy</div>
-        <div class="meta-value">${this.escapeHtml(testStrategy)}</div>
       </div>
     </div>`;
   }
@@ -1261,6 +1280,24 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
             color: var(--vscode-descriptionForeground);
         }
 
+        .task-test-strategy {
+            margin-bottom: clamp(12px, 2.5vw, 16px);
+        }
+
+        .test-strategy-title {
+            font-size: 11px;
+            color: var(--vscode-descriptionForeground);
+            margin-bottom: 6px;
+            font-weight: 600;
+        }
+
+        .test-strategy-content {
+            font-size: clamp(10px, 2.2vw, 12px);
+            line-height: 1.4;
+            color: var(--vscode-descriptionForeground);
+            font-style: italic;
+        }
+
         .task-meta {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
@@ -1471,7 +1508,7 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
             padding: clamp(16px, 3vw, 20px);
         }
 
-        /* DEMO MODE: Executable task indicators removed - commenting out related CSS
+        /* TEMPORARILY DISABLED: Executable task indicators and cursor icons
         .task-item.executable .task-header {
             border-left: 3px solid var(--vscode-progressBar-background);
         }
@@ -1631,7 +1668,7 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
                 gap: 4px;
             }
             
-            /* DEMO MODE: Action buttons removed - commenting out responsive CSS
+            /* TEMPORARILY DISABLED: Action buttons and cursor functionality
             .actions {
                 flex-direction: column;
                 gap: 4px;
