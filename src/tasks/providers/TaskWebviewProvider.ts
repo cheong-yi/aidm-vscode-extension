@@ -1021,18 +1021,16 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
     // Use STATUS_ACTIONS from types/tasks.ts for proper action mapping
     const actions = STATUS_ACTIONS[task.status] || [];
 
-    // Filter out non-functional Cursor actions for demo
+    // Filter out unwanted actions for demo
+    const unwantedActions = ["History", "Continue Work", "View Dependencies"];
     const functionalActions = actions.filter(
-      (action) =>
-        !action.includes("🤖") &&
-        !action.includes("Execute with Cursor") &&
-        !action.includes("Generate Prompt")
+      (action) => !unwantedActions.some((unwanted) => action.includes(unwanted))
     );
 
     // Ensure task ID is converted to string for consistent handling
     const taskIdStr = String(task.id || "");
 
-    // Generate standard action buttons
+    // Generate standard action buttons using filtered actions
     const standardButtons = functionalActions
       .map((action: string, index: number) => {
         const isPrimary =
