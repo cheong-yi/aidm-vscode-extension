@@ -48,13 +48,10 @@
         "status": "in_progress",
         "subtasks": [],
         "implementation": {
-          "summary": "Implemented complete FastAPI orchestration service with modular router architecture. Added health endpoint, configuration endpoints, and OpenAPI documentation generation. Integrated with BaseAgent for consistent service initialization across all endpoints.",
-          "filesChanged": [
-            "src/orchestration/main.py",
-            "src/orchestration/api/routes.py",
-            "src/orchestration/api/health.py"
-          ],
-          "completedDate": "2025-01-26T09:15:00Z",
+          "commitHash": "e37ff121bac6710085f1d282131cca82f287283e", // Add this
+          "summary": "fix(webview): improve filter initialization with robust DOM ready detection - DI-004",
+          "filesChanged": ["src/tasks/providers/TaskWebviewProvider.ts"],
+          "completedDate": "2025-01-25T14:30:00Z",
           "diffAvailable": true
         },
         "testStatus": {
@@ -87,14 +84,10 @@
         "status": "ready_for_review",
         "subtasks": [],
         "implementation": {
-          "summary": "Implemented repository cloning with git subprocess integration and comprehensive error handling. Built Knowledge Graph ingestion system using Python AST parsing to extract classes, functions, and dependencies. Added graph metrics calculation and persistence with JSON output for downstream consumption.",
-          "filesChanged": [
-            "src/agents/repo_kg_agent.py",
-            "src/services/git_service.py",
-            "src/services/kg_service.py",
-            "src/models/knowledge_graph.py"
-          ],
-          "completedDate": "2025-01-26T16:45:00Z",
+          "commitHash": "e37ff121bac6710085f1d282131cca82f287283e", // Add this
+          "summary": "fix(webview): improve filter initialization with robust DOM ready detection - DI-004",
+          "filesChanged": ["src/tasks/providers/TaskWebviewProvider.ts"],
+          "completedDate": "2025-01-25T14:30:00Z",
           "diffAvailable": true
         },
         "testStatus": {
@@ -127,13 +120,10 @@
         "status": "not_started",
         "subtasks": [],
         "implementation": {
-          "summary": "Implemented PRD generation with LiteLLM integration and KG context injection. Built Taskmaster orchestration system with MCP tool chaining (parse_prd → analyze_project_complexity → expand_all). Added file persistence for PRD documents and task plans with proper directory structure creation.",
-          "filesChanged": [
-            "src/agents/prd_agent.py",
-            "src/services/llm_service.py",
-            "src/services/taskmaster_service.py"
-          ],
-          "completedDate": "2025-01-27T11:20:00Z",
+          "commitHash": "e37ff121bac6710085f1d282131cca82f287283e", // Add this
+          "summary": "fix(webview): improve filter initialization with robust DOM ready detection - DI-004",
+          "filesChanged": ["src/tasks/providers/TaskWebviewProvider.ts"],
+          "completedDate": "2025-01-25T14:30:00Z",
           "diffAvailable": true
         },
         "testStatus": {
@@ -166,15 +156,13 @@
         "status": "not_started",
         "subtasks": [],
         "implementation": {
-          "summary": "Implemented Azure DevOps integration with REST API client and PAT authentication. Built work item creation system with proper User Story/Task hierarchy linking. Added comprehensive error handling for API failures and partial success scenarios with detailed response reporting.",
-          "filesChanged": [
-            "src/agents/ado_sync_agent.py",
-            "src/services/ado_client.py",
-            "src/models/work_item.py"
-          ],
-          "completedDate": "2025-01-27T15:10:00Z",
+          "commitHash": "e37ff121bac6710085f1d282131cca82f287283e", // Add this
+          "summary": "fix(webview): improve filter initialization with robust DOM ready detection - DI-004",
+          "filesChanged": ["src/tasks/providers/TaskWebviewProvider.ts"],
+          "completedDate": "2025-01-25T14:30:00Z",
           "diffAvailable": true
         },
+
         "testStatus": {
           "lastRunDate": "2025-01-27T15:15:00Z",
           "totalTests": 7,
@@ -205,15 +193,10 @@
         "status": "not_started",
         "subtasks": [],
         "implementation": {
-          "summary": "Implemented complete React-based frontend with component architecture for workflow management. Built repository input component, ADO settings form with validation, multi-section PRD builder, and progress tracking panel. Added real-time status updates and error handling with user-friendly messaging.",
-          "filesChanged": [
-            "src/frontend/components/RepositorySelector.tsx",
-            "src/frontend/components/ADOSettings.tsx",
-            "src/frontend/components/PRDBuilder.tsx",
-            "src/frontend/components/ProgressPanel.tsx",
-            "src/frontend/services/api.ts"
-          ],
-          "completedDate": "2025-01-28T13:45:00Z",
+          "commitHash": "e37ff121bac6710085f1d282131cca82f287283e", // Add this
+          "summary": "fix(webview): improve filter initialization with robust DOM ready detection - DI-004",
+          "filesChanged": ["src/tasks/providers/TaskWebviewProvider.ts"],
+          "completedDate": "2025-01-25T14:30:00Z",
           "diffAvailable": true
         },
         "testStatus": {
