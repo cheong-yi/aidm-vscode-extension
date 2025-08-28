@@ -1402,4 +1402,274 @@ describe("TaskWebviewProvider", () => {
       );
     });
   });
+
+  describe("viewCode error handling", () => {
+    test("should handle missing previous commit gracefully", async () => {
+      // Arrange
+      const mockTask = {
+        id: "task-123",
+        title: "Test Task",
+        description: "Test Description",
+        status: "not_started" as any,
+        complexity: "low" as any,
+        dependencies: [],
+        requirements: [],
+        createdDate: "2024-01-01T00:00:00.000Z",
+        lastModified: "2024-01-01T00:00:00.000Z",
+        implementation: {
+          summary: "Test implementation",
+          filesChanged: ["src/test.ts"],
+          completedDate: "2024-01-01T00:00:00.000Z",
+          commitHash: "e37ff121bac6710085f1d282131cca82f287283e",
+          diffAvailable: true,
+        },
+      };
+
+      mockTasksDataService.getTasks.mockResolvedValue([mockTask]);
+      (GitUtilities.getPreviousCommit as jest.Mock).mockResolvedValue("");
+
+      // Act
+      await provider.viewCode("task-123", "src/test.ts");
+
+      // Assert
+      // The method logs to console but doesn't show error message for missing previous commit
+      expect(vscode.window.showErrorMessage).not.toHaveBeenCalled();
+      expect(vscode.commands.executeCommand).not.toHaveBeenCalledWith(
+        "vscode.diff"
+      );
+    });
+
+    test("should handle git command failure gracefully", async () => {
+      // Arrange
+      const mockTask = {
+        id: "task-123",
+        title: "Test Task",
+        description: "Test Description",
+        status: "not_started" as any,
+        complexity: "low" as any,
+        dependencies: [],
+        requirements: [],
+        createdDate: "2024-01-01T00:00:00.000Z",
+        lastModified: "2024-01-01T00:00:00.000Z",
+        implementation: {
+          summary: "Test implementation",
+          filesChanged: ["src/test.ts"],
+          completedDate: "2024-01-01T00:00:00.000Z",
+          commitHash: "e37ff121bac6710085f1d282131cca82f287283e",
+          diffAvailable: true,
+        },
+      };
+
+      mockTasksDataService.getTasks.mockResolvedValue([mockTask]);
+      (GitUtilities.getPreviousCommit as jest.Mock).mockRejectedValue(
+        new Error("Git error")
+      );
+
+      // Act
+      await provider.viewCode("task-123", "src/test.ts");
+
+      // Assert
+      expect(vscode.window.showErrorMessage).toHaveBeenCalledWith(
+        "Failed to view code: Git error"
+      );
+      expect(vscode.commands.executeCommand).not.toHaveBeenCalledWith(
+        "vscode.diff"
+      );
+    });
+
+    test("should handle task without commit hash gracefully", async () => {
+      // Arrange
+      const mockTask = {
+        id: "task-123",
+        title: "Test Task",
+        description: "Test Description",
+        status: "not_started" as any,
+        complexity: "low" as any,
+        dependencies: [],
+        requirements: [],
+        createdDate: "2024-01-01T00:00:00.000Z",
+        lastModified: "2024-01-01T00:00:00.000Z",
+        implementation: {
+          summary: "Test implementation",
+          filesChanged: ["src/test.ts"],
+          completedDate: "2024-01-01T00:00:00.000Z",
+          diffAvailable: true,
+          // Missing commitHash - this is what we're testing
+        },
+      };
+
+      mockTasksDataService.getTasks.mockResolvedValue([mockTask]);
+
+      // Act
+      await provider.viewCode("task-123", "src/test.ts");
+
+      // Assert
+      // The method logs to console but doesn't show error message for missing commit hash
+      expect(vscode.window.showErrorMessage).not.toHaveBeenCalled();
+      expect(vscode.commands.executeCommand).not.toHaveBeenCalledWith(
+        "vscode.diff"
+      );
+    });
+
+    test("should handle missing workspace gracefully", async () => {
+      // Arrange
+      const mockTask = {
+        id: "task-123",
+        title: "Test Task",
+        description: "Test Description",
+        status: "not_started" as any,
+        complexity: "low" as any,
+        dependencies: [],
+        requirements: [],
+        createdDate: "2024-01-01T00:00:00.000Z",
+        lastModified: "2024-01-01T00:00:00.000Z",
+        implementation: {
+          summary: "Test implementation",
+          filesChanged: ["src/test.ts"],
+          completedDate: "2024-01-01T00:00:00.000Z",
+          commitHash: "e37ff121bac6710085f1d282131cca82f287283e",
+          diffAvailable: true,
+        },
+      };
+
+      mockTasksDataService.getTasks.mockResolvedValue([mockTask]);
+
+      // Mock workspace to be undefined
+      const originalWorkspaceFolders = vscode.workspace.workspaceFolders;
+      (vscode.workspace as any).workspaceFolders = undefined;
+
+      // Act
+      await provider.viewCode("task-123", "src/test.ts");
+
+      // Assert
+      // The method logs to console but doesn't show error message for missing workspace
+      expect(vscode.window.showErrorMessage).not.toHaveBeenCalled();
+      expect(vscode.commands.executeCommand).not.toHaveBeenCalledWith(
+        "vscode.diff"
+      );
+
+      // Restore original workspace
+      (vscode.workspace as any).workspaceFolders = originalWorkspaceFolders;
+    });
+
+    test("should handle invalid commit hash format gracefully", async () => {
+      // Arrange
+      const mockTask = {
+        id: "task-123",
+        title: "Test Task",
+        description: "Test Description",
+        status: "not_started" as any,
+        complexity: "low" as any,
+        dependencies: [],
+        requirements: [],
+        createdDate: "2024-01-01T00:00:00.000Z",
+        lastModified: "2024-01-01T00:00:00.000Z",
+        implementation: {
+          summary: "Test implementation",
+          filesChanged: ["src/test.ts"],
+          completedDate: "2024-01-01T00:00:00.000Z",
+          commitHash: "invalid-hash", // Invalid hash format
+          diffAvailable: true,
+        },
+      };
+
+      mockTasksDataService.getTasks.mockResolvedValue([mockTask]);
+
+      // Mock GitUtilities.getPreviousCommit to fail with invalid hash
+      (GitUtilities.getPreviousCommit as jest.Mock).mockRejectedValue(
+        new Error("Invalid commit hash format")
+      );
+
+      // Act
+      await provider.viewCode("task-123", "src/test.ts");
+
+      // Assert
+      // Should show error message when git command fails
+      expect(vscode.window.showErrorMessage).toHaveBeenCalledWith(
+        "Failed to view code: Invalid commit hash format"
+      );
+      expect(vscode.commands.executeCommand).not.toHaveBeenCalledWith(
+        "vscode.diff"
+      );
+    });
+
+    test("should handle file path validation gracefully", async () => {
+      // Arrange
+      const mockTask = {
+        id: "task-123",
+        title: "Test Task",
+        description: "Test Description",
+        status: "not_started" as any,
+        complexity: "low" as any,
+        dependencies: [],
+        requirements: [],
+        createdDate: "2024-01-01T00:00:00.000Z",
+        lastModified: "2024-01-01T00:00:00.000Z",
+        implementation: {
+          summary: "Test implementation",
+          filesChanged: ["src/test.ts"],
+          completedDate: "2024-01-01T00:00:00.000Z",
+          commitHash: "e37ff121bac6710085f1d282131cca82f287283e",
+          diffAvailable: true,
+        },
+      };
+
+      mockTasksDataService.getTasks.mockResolvedValue([mockTask]);
+      (GitUtilities.getPreviousCommit as jest.Mock).mockResolvedValue(
+        "abc123789abcdef123789abcdef123789abcdef1"
+      );
+
+      // Act - Test with valid file path (the method doesn't validate file paths)
+      await provider.viewCode("task-123", "src/test.ts");
+
+      // Assert
+      // Should successfully open diff view
+      expect(vscode.commands.executeCommand).toHaveBeenCalledWith(
+        "vscode.diff",
+        expect.any(String),
+        expect.any(String),
+        expect.any(String)
+      );
+    });
+
+    test("should handle vscode.diff command failure gracefully", async () => {
+      // Arrange
+      const mockTask = {
+        id: "task-123",
+        title: "Test Task",
+        description: "Test Description",
+        status: "not_started" as any,
+        complexity: "low" as any,
+        dependencies: [],
+        requirements: [],
+        createdDate: "2024-01-01T00:00:00.000Z",
+        lastModified: "2024-01-01T00:00:00.000Z",
+        implementation: {
+          summary: "Test implementation",
+          filesChanged: ["src/test.ts"],
+          completedDate: "2024-01-01T00:00:00.000Z",
+          commitHash: "e37ff121bac6710085f1d282131cca82f287283e",
+          diffAvailable: true,
+        },
+      };
+
+      mockTasksDataService.getTasks.mockResolvedValue([mockTask]);
+      (GitUtilities.getPreviousCommit as jest.Mock).mockResolvedValue(
+        "abc123789abcdef123789abcdef123789abcdef1"
+      );
+
+      // Mock vscode.diff command to fail
+      (vscode.commands.executeCommand as jest.Mock).mockRejectedValue(
+        new Error("Diff command failed")
+      );
+
+      // Act
+      await provider.viewCode("task-123", "src/test.ts");
+
+      // Assert
+      expect(vscode.window.showErrorMessage).toHaveBeenCalledWith(
+        "Failed to view code: Diff command failed"
+      );
+    });
+  });
 });
