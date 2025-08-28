@@ -152,4 +152,51 @@ export class GitUtilities {
       return [];
     }
   }
+
+  /**
+   * Get the previous commit hash for a given commit
+   * @param commitHash - Git commit hash to find the previous commit for
+   * @param workspacePath - Path to the workspace directory
+   * @returns Promise<string> - Previous commit hash or empty string if not found
+   */
+  static async getPreviousCommit(
+    commitHash: string,
+    workspacePath: string
+  ): Promise<string> {
+    // Security: Validate inputs
+    if (
+      !this.validateCommitHash(commitHash) ||
+      !this.validateWorkspacePath(workspacePath)
+    ) {
+      return "";
+    }
+
+    try {
+      // Security: Use verified commit hash in quoted parameter
+      const { stdout } = await execAsync(`git rev-parse "${commitHash}~1"`, {
+        cwd: workspacePath,
+        timeout: 5000,
+        maxBuffer: 1024 * 100,
+        encoding: "utf8",
+      });
+
+      const previousCommit = stdout.trim();
+
+      // Validate the returned commit hash
+      if (this.validateCommitHash(previousCommit)) {
+        return previousCommit;
+      }
+
+      return "";
+    } catch (error) {
+      // Log error for debugging but don't expose sensitive info
+      console.error("GitUtilities: Failed to get previous commit:", {
+        error: error instanceof Error ? error.message : "Unknown error",
+        commitHash: commitHash.substring(0, 7), // Only log first 7 chars
+        workspacePath: path.basename(workspacePath), // Only log folder name
+      });
+
+      return "";
+    }
+  }
 }

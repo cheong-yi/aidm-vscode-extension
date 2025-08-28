@@ -2421,6 +2421,78 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
   }
 
   /**
+   * Handle View Code button clicks from webview
+   * Opens git diff view for files changed in task implementation
+   * Task WV-010: Implement View Code button handler with correct Git URI format
+   *
+   * @param taskId - The ID of the task to view code for
+   * @param filePath - The file path to view
+   */
+  public async viewCode(taskId: string, filePath: string): Promise<void> {
+    try {
+      const tasks = await this.tasksDataService.getTasks();
+      const task = tasks.find((t) => t.id === taskId);
+
+      if (!task || !task.implementation?.commitHash) {
+        console.error(
+          `TaskWebviewProvider: Task with ID ${taskId} not found or missing commit hash.`
+        );
+        return;
+      }
+
+      const commitHash = task.implementation.commitHash;
+      const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+
+      if (!workspaceRoot) {
+        console.error("TaskWebviewProvider: No workspace folder available");
+        return;
+      }
+
+      try {
+        const previousCommitHash = await GitUtilities.getPreviousCommit(
+          commitHash,
+          workspaceRoot
+        );
+
+        if (!previousCommitHash) {
+          console.error(
+            `TaskWebviewProvider: Could not find previous commit for ${commitHash}`
+          );
+          return;
+        }
+
+        // Correctly construct the VS Code Git URI with ref as a query parameter
+        const gitUri = vscode.Uri.parse(
+          `git:/${filePath}?${previousCommitHash}`
+        );
+
+        await vscode.commands.executeCommand("vscode.open", gitUri, {
+          preview: true,
+          preserveFocus: true,
+        });
+
+        console.log(
+          `TaskWebviewProvider: Opened git diff view for ${path.basename(
+            filePath
+          )}`
+        );
+      } catch (error) {
+        console.error(
+          "TaskWebviewProvider: Failed to open git diff view:",
+          error
+        );
+        vscode.window.showErrorMessage(
+          `Failed to view code: ${
+            error instanceof Error ? error.message : "Unknown error"
+          }`
+        );
+      }
+    } catch (error) {
+      console.error("TaskWebviewProvider: Error in viewCode method:", error);
+    }
+  }
+
+  /**
    * Handle View Tests button clicks from webview
    * Opens test results JSON file from task.testResults.resultsFile
    * Task IMPL-003: Implement View Tests button handler

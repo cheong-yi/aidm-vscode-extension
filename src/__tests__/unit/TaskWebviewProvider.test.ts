@@ -10,6 +10,31 @@ import * as vscode from "vscode";
 import { TaskWebviewProvider } from "../../tasks/providers/TaskWebviewProvider";
 import { Task, TaskStatus, TaskComplexity } from "../../types/tasks";
 import { TasksDataService } from "../../services/TasksDataService";
+import { GitUtilities } from "../../services/GitUtilities";
+
+// Mock VS Code API and dependencies
+jest.mock("vscode", () => ({
+  Uri: {
+    parse: jest.fn((uri: string) => uri),
+  },
+  commands: {
+    executeCommand: jest.fn(),
+  },
+  window: {
+    showErrorMessage: jest.fn(),
+  },
+  workspace: {
+    workspaceFolders: [
+      {
+        uri: {
+          fsPath: "/mock/workspace/path",
+        },
+      },
+    ],
+  },
+}));
+
+jest.mock("../../services/GitUtilities");
 
 // Mock TasksDataService
 jest.mock("../../services/TasksDataService");
@@ -27,6 +52,9 @@ describe("TaskWebviewProvider", () => {
   let mockExtensionContext: vscode.ExtensionContext;
 
   beforeEach(() => {
+    // Clear all mocks before each test
+    jest.clearAllMocks();
+
     // Create mock TasksDataService with minimal implementation
     mockTasksDataService = {
       getTasks: jest.fn().mockResolvedValue([]), // Mock empty tasks array by default
@@ -1239,6 +1267,92 @@ describe("TaskWebviewProvider", () => {
       expect(actionsHtml).not.toContain("🤖");
       expect(actionsHtml).not.toContain("Execute with Cursor");
       expect(actionsHtml).not.toContain("Generate Prompt");
+    });
+  });
+
+  describe("viewCode", () => {
+    test("should construct a correct git URI for viewCode", async () => {
+      // Arrange
+      const mockTask = {
+        id: "task-123",
+        title: "Test Task",
+        description: "Test Description",
+        status: "not_started" as any,
+        complexity: "low" as any,
+        dependencies: [],
+        requirements: [],
+        createdDate: "2024-01-01T00:00:00.000Z",
+        lastModified: "2024-01-01T00:00:00.000Z",
+        implementation: {
+          summary: "Test implementation",
+          filesChanged: ["src/test.ts"],
+          completedDate: "2024-01-01T00:00:00.000Z",
+          commitHash: "e37ff121bac6710085f1d282131cca82f287283e",
+          diffAvailable: true,
+        },
+      };
+
+      mockTasksDataService.getTasks.mockResolvedValue([mockTask]);
+      (GitUtilities.getPreviousCommit as jest.Mock).mockResolvedValue(
+        "e37ff121bac6710085f1d282131cca82f287283e~1"
+      );
+
+      const filePath = "src/tasks/providers/TaskWebviewProvider.ts";
+      const expectedUriString =
+        "git:/src/tasks/providers/TaskWebviewProvider.ts?e37ff121bac6710085f1d282131cca82f287283e~1";
+
+      // Act
+      await provider.viewCode("task-123", filePath);
+
+      // Assert
+      expect(vscode.Uri.parse).toHaveBeenCalledWith(expectedUriString);
+      expect(vscode.commands.executeCommand).toHaveBeenCalledWith(
+        "vscode.open",
+        expectedUriString,
+        expect.any(Object)
+      );
+    });
+
+    test("should handle missing task gracefully", async () => {
+      // Arrange
+      mockTasksDataService.getTasks.mockResolvedValue([]);
+
+      // Act
+      await provider.viewCode("missing-task-456", "src/test.ts");
+
+      // Assert
+      expect(vscode.commands.executeCommand).not.toHaveBeenCalled();
+      expect(vscode.window.showErrorMessage).not.toHaveBeenCalled();
+    });
+
+    test("should handle missing commit hash gracefully", async () => {
+      // Arrange
+      const mockTask = {
+        id: "task-no-commit-789",
+        title: "Test Task",
+        description: "Test Description",
+        status: "not_started" as any,
+        complexity: "low" as any,
+        dependencies: [],
+        requirements: [],
+        createdDate: "2024-01-01T00:00:00.000Z",
+        lastModified: "2024-01-01T00:00:00.000Z",
+        implementation: {
+          summary: "Test implementation",
+          filesChanged: ["src/test.ts"],
+          completedDate: "2024-01-01T00:00:00.000Z",
+          commitHash: undefined,
+          diffAvailable: true,
+        },
+      };
+      mockTasksDataService.getTasks.mockResolvedValue([mockTask]);
+
+      // Act
+      await provider.viewCode("task-no-commit-789", "src/test.ts");
+
+      // Assert
+      expect(vscode.commands.executeCommand).not.toHaveBeenCalled();
+      expect(vscode.window.showErrorMessage).not.toHaveBeenCalled();
     });
   });
 });
