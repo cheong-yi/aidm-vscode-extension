@@ -2462,7 +2462,9 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
         }
 
         // FIXED: Use correct git:<commit>:<filepath> format for VS Code filesystem provider
-        const beforeUri = vscode.Uri.parse(`git:${previousCommitHash}:${filePath}`);
+        const beforeUri = vscode.Uri.parse(
+          `git:${previousCommitHash}:${filePath}`
+        );
         const afterUri = vscode.Uri.parse(`git:${commitHash}:${filePath}`);
 
         // Generate descriptive title with filename and short hash
@@ -2560,6 +2562,7 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
   /**
    * Open VS Code's native diff editor for a single file using git URIs
    * DIFF-002: Implement single file diff opening using VS Code's native diff command
+   * WV-011-FIX: Updated to use correct git:<commit>:<filepath> URI format
    *
    * @param filePath - Relative file path from workspace root
    * @param commitHash - Git commit hash to compare against
@@ -2588,8 +2591,18 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
         return;
       }
 
-      // Create git URIs: git:hash~1:path and git:hash:path
-      const beforeUri = vscode.Uri.parse(`git:${commitHash}~1:${filePath}`);
+      // WV-011-FIX: Get previous commit hash using GitUtilities instead of hardcoded ~1
+      const previousCommit = await GitUtilities.getPreviousCommit(
+        commitHash,
+        workspaceRoot.fsPath
+      );
+
+      if (!previousCommit) {
+        throw new Error(`Could not find previous commit for ${commitHash}`);
+      }
+
+      // WV-011-FIX: Use correct git:<commit>:<filepath> format for VS Code filesystem provider
+      const beforeUri = vscode.Uri.parse(`git:${previousCommit}:${filePath}`);
       const afterUri = vscode.Uri.parse(`git:${commitHash}:${filePath}`);
 
       // Generate descriptive title with filename and short hash

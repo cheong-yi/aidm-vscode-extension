@@ -16,6 +16,7 @@ import { GitUtilities } from "../../services/GitUtilities";
 jest.mock("vscode", () => ({
   Uri: {
     parse: jest.fn((uri: string) => uri),
+    file: jest.fn((path: string) => path),
   },
   commands: {
     executeCommand: jest.fn(),
@@ -31,6 +32,9 @@ jest.mock("vscode", () => ({
         },
       },
     ],
+    getConfiguration: jest.fn(() => ({
+      get: jest.fn(() => ""),
+    })),
   },
 }));
 
@@ -1303,8 +1307,12 @@ describe("TaskWebviewProvider", () => {
 
       // Assert
       // FIXED: Test correct git:<commit>:<filepath> format and vscode.diff command
-      expect(vscode.Uri.parse).toHaveBeenCalledWith(`git:e37ff121bac6710085f1d282131cca82f287283e~1:${filePath}`);
-      expect(vscode.Uri.parse).toHaveBeenCalledWith(`git:e37ff121bac6710085f1d282131cca82f287283e:${filePath}`);
+      expect(vscode.Uri.parse).toHaveBeenCalledWith(
+        `git:e37ff121bac6710085f1d282131cca82f287283e~1:${filePath}`
+      );
+      expect(vscode.Uri.parse).toHaveBeenCalledWith(
+        `git:e37ff121bac6710085f1d282131cca82f287283e:${filePath}`
+      );
       expect(vscode.commands.executeCommand).toHaveBeenCalledWith(
         "vscode.diff",
         `git:e37ff121bac6710085f1d282131cca82f287283e~1:${filePath}`, // beforeUri
@@ -1353,6 +1361,45 @@ describe("TaskWebviewProvider", () => {
       // Assert
       expect(vscode.commands.executeCommand).not.toHaveBeenCalled();
       expect(vscode.window.showErrorMessage).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("openDiffForFile", () => {
+    test("should open diff with correct git URI format", async () => {
+      // Arrange
+      const filePath = "src/example.ts";
+      const commitHash = "def456789abcdef456789abcdef456789abcdef4"; // Valid 40-char hash
+      const workspaceUri = vscode.Uri.file("/workspace");
+      (GitUtilities.getPreviousCommit as jest.Mock).mockResolvedValue(
+        "abc123789abcdef123789abcdef123789abcdef1"
+      );
+
+      // Act
+      await provider["openDiffForFile"](filePath, commitHash, workspaceUri);
+
+      // Assert
+      expect(vscode.commands.executeCommand).toHaveBeenCalledWith(
+        "vscode.diff",
+        "git:abc123789abcdef123789abcdef123789abcdef1:src/example.ts",
+        "git:def456789abcdef456789abcdef456789abcdef4:src/example.ts",
+        expect.any(String)
+      );
+    });
+
+    test("should show error message if previous commit not found", async () => {
+      // Arrange
+      const filePath = "src/example.ts";
+      const commitHash = "def456789abcdef456789abcdef456789abcdef4"; // Valid 40-char hash
+      const workspaceUri = vscode.Uri.file("/workspace");
+      (GitUtilities.getPreviousCommit as jest.Mock).mockResolvedValue("");
+
+      // Act
+      await provider["openDiffForFile"](filePath, commitHash, workspaceUri);
+
+      // Assert
+      expect(vscode.window.showErrorMessage).toHaveBeenCalledWith(
+        "Could not open diff view for example.ts"
+      );
     });
   });
 });
