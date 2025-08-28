@@ -1671,5 +1671,51 @@ describe("TaskWebviewProvider", () => {
         "Failed to view code: Diff command failed"
       );
     });
+
+    // WV-013-REFACTOR: Test for extracted git URI construction utility
+    describe("createGitDiffURIs utility method", () => {
+      test("should create valid git diff URIs with descriptive title", async () => {
+        // Arrange
+        const commitHash = "abc123def456ghi789";
+        const filePath = "src/example.ts";
+        const workspacePath = "/workspace";
+        (GitUtilities.getPreviousCommit as jest.Mock).mockResolvedValue(
+          "def456ghi789abc123"
+        );
+
+        // Act
+        const result = await (provider as any).createGitDiffURIs(
+          commitHash,
+          filePath,
+          workspacePath
+        );
+
+        // Assert
+        expect(result.beforeUri.toString()).toBe(
+          "git:def456ghi789abc123:src/example.ts"
+        );
+        expect(result.afterUri.toString()).toBe(
+          "git:abc123def456ghi789:src/example.ts"
+        );
+        expect(result.diffTitle).toBe("example.ts (def456g ↔ abc123d)");
+      });
+
+      test("should throw error when previous commit cannot be found", async () => {
+        // Arrange
+        const commitHash = "abc123def456ghi789";
+        const filePath = "src/example.ts";
+        const workspacePath = "/workspace";
+        (GitUtilities.getPreviousCommit as jest.Mock).mockResolvedValue("");
+
+        // Act & Assert
+        await expect(
+          (provider as any).createGitDiffURIs(
+            commitHash,
+            filePath,
+            workspacePath
+          )
+        ).rejects.toThrow("Could not find previous commit for abc123d");
+      });
+    });
   });
 });

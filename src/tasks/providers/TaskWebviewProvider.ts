@@ -2449,28 +2449,12 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
       }
 
       try {
-        const previousCommitHash = await GitUtilities.getPreviousCommit(
+        // WV-013-REFACTOR: Use extracted utility method for git URI construction
+        const { beforeUri, afterUri, diffTitle } = await this.createGitDiffURIs(
           commitHash,
+          filePath,
           workspaceRoot
         );
-
-        if (!previousCommitHash) {
-          console.error(
-            `TaskWebviewProvider: Could not find previous commit for ${commitHash}`
-          );
-          return;
-        }
-
-        // FIXED: Use correct git:<commit>:<filepath> format for VS Code filesystem provider
-        const beforeUri = vscode.Uri.parse(
-          `git:${previousCommitHash}:${filePath}`
-        );
-        const afterUri = vscode.Uri.parse(`git:${commitHash}:${filePath}`);
-
-        // Generate descriptive title with filename and short hash
-        const filename = path.basename(filePath);
-        const shortHash = commitHash.substring(0, 7);
-        const diffTitle = `${filename} (${shortHash}~1 ↔ ${shortHash})`;
 
         // Use vscode.diff command for side-by-side comparison
         await vscode.commands.executeCommand(
@@ -2591,24 +2575,12 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
         return;
       }
 
-      // WV-011-FIX: Get previous commit hash using GitUtilities instead of hardcoded ~1
-      const previousCommit = await GitUtilities.getPreviousCommit(
+      // WV-013-REFACTOR: Use extracted utility method for git URI construction
+      const { beforeUri, afterUri, diffTitle } = await this.createGitDiffURIs(
         commitHash,
+        filePath,
         workspaceRoot.fsPath
       );
-
-      if (!previousCommit) {
-        throw new Error(`Could not find previous commit for ${commitHash}`);
-      }
-
-      // WV-011-FIX: Use correct git:<commit>:<filepath> format for VS Code filesystem provider
-      const beforeUri = vscode.Uri.parse(`git:${previousCommit}:${filePath}`);
-      const afterUri = vscode.Uri.parse(`git:${commitHash}:${filePath}`);
-
-      // Generate descriptive title with filename and short hash
-      const filename = path.basename(filePath);
-      const shortHash = commitHash.substring(0, 7);
-      const diffTitle = `${filename} (${shortHash}~1 ↔ ${shortHash})`;
 
       // Call vscode.commands.executeCommand to open diff view
       await vscode.commands.executeCommand(
@@ -2619,7 +2591,10 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
       );
 
       console.debug(
-        `[TaskWebviewProvider] Opened diff for file: ${filePath} at commit ${shortHash}`
+        `[TaskWebviewProvider] Opened diff for file: ${filePath} at commit ${commitHash.substring(
+          0,
+          7
+        )}`
       );
     } catch (error) {
       console.error(
@@ -2659,6 +2634,47 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
       );
       return "";
     }
+  }
+
+  /**
+   * Create git diff URIs for file comparison
+   * WV-013-REFACTOR: Extract common git URI construction logic into reusable utility
+   *
+   * @param commitHash - Git commit hash to compare against
+   * @param filePath - Relative file path from workspace root
+   * @param workspacePath - Workspace root path for git operations
+   * @returns Promise<{beforeUri: vscode.Uri, afterUri: vscode.Uri, diffTitle: string}>
+   * @throws Error if previous commit cannot be found
+   */
+  private async createGitDiffURIs(
+    commitHash: string,
+    filePath: string,
+    workspacePath: string
+  ): Promise<{
+    beforeUri: vscode.Uri;
+    afterUri: vscode.Uri;
+    diffTitle: string;
+  }> {
+    const previousCommit = await GitUtilities.getPreviousCommit(
+      commitHash,
+      workspacePath
+    );
+
+    if (!previousCommit) {
+      throw new Error(
+        `Could not find previous commit for ${commitHash.substring(0, 7)}`
+      );
+    }
+
+    const beforeUri = vscode.Uri.parse(`git:${previousCommit}:${filePath}`);
+    const afterUri = vscode.Uri.parse(`git:${commitHash}:${filePath}`);
+
+    const filename = path.basename(filePath);
+    const shortHash = commitHash.substring(0, 7);
+    const shortPrevHash = previousCommit.substring(0, 7);
+    const diffTitle = `${filename} (${shortPrevHash} ↔ ${shortHash})`;
+
+    return { beforeUri, afterUri, diffTitle };
   }
 
   /**
