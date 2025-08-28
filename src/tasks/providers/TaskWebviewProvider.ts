@@ -635,7 +635,7 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
 
   /**
    * Generates webview header with filter controls
-   * Creates header section with "My Tasks Only" filter toggle
+   * Creates header section with "My Tasks" filter toggle
    * Task 4.3: Add filter toggle button to webview header
    *
    * @returns HTML string for webview header
@@ -650,7 +650,7 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
               <path d="M6 12a1 1 0 01-.707-.293l-3-3a1 1 0 111.414-1.414L6 9.586l6.293-6.293a1 1 0 111.414 1.414l-7 7A1 1 0 016 12z"/>
             </svg>
           </span>
-          <span class="filter-label">My Tasks Only</span>
+          <span class="filter-label">View My Tasks</span>
         </label>
       </div>
     </div>`;

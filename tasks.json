@@ -21,12 +21,7 @@
         },
         "implementation": {
           "summary": "Successfully implemented BaseAgent class with Consul, Redis, and LiteLLM client initialization. Created comprehensive docker-compose.yml with all required services including health checks and proper networking.",
-          "filesChanged": [
-            "src/agents/base_agent.py",
-            "docker-compose.yml",
-            ".env.template",
-            "README.md"
-          ],
+          "filesChanged": ["src/tasks/providers/index.ts", "README.md"],
           "completedDate": "2025-01-25T14:30:00Z",
           "diffAvailable": true
         },
@@ -49,7 +44,7 @@
         "testStrategy": "Unit test each endpoint for correct responses and status codes. Verify that the `/docs` endpoint renders a complete and interactive API specification.",
         "priority": "high",
         "dependencies": [1],
-        "status": "not_started",
+        "status": "in_progress",
         "subtasks": [],
         "implementation": {
           "summary": "Implemented complete FastAPI orchestration service with modular router architecture. Added health endpoint, configuration endpoints, and OpenAPI documentation generation. Integrated with BaseAgent for consistent service initialization across all endpoints.",
@@ -88,7 +83,7 @@
         "testStrategy": "Unit test the clone functionality with a public repo. Integration test the KG ingestion on a sample Python project, verifying the generated summary and metrics are accurate. Test error handling for non-existent repos or unparseable files.",
         "priority": "high",
         "dependencies": [1, 2],
-        "status": "not_started",
+        "status": "ready_for_review",
         "subtasks": [],
         "implementation": {
           "summary": "Implemented repository cloning with git subprocess integration and comprehensive error handling. Built Knowledge Graph ingestion system using Python AST parsing to extract classes, functions, and dependencies. Added graph metrics calculation and persistence with JSON output for downstream consumption.",

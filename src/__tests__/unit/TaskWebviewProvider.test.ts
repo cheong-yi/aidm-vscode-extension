@@ -1119,7 +1119,7 @@ describe("TaskWebviewProvider", () => {
 
       // Assert
       expect(html).toContain('id="my-tasks-filter"');
-      expect(html).toContain("My Tasks Only");
+      expect(html).toContain("View My Tasks");
     });
   });
 
