@@ -21,7 +21,7 @@
           "failingTestsList": []
         },
         "implementation": {
-          "commitHash": "e37ff121bac6710085f1d282131cca82f287283e", // Add this
+          "commitHash": "e37ff121bac6710085f1d282131cca82f287283e",
           "summary": "fix(webview): improve filter initialization with robust DOM ready detection - DI-004",
           "filesChanged": ["src/tasks/providers/TaskWebviewProvider.ts"],
           "completedDate": "2025-01-25T14:30:00Z",
@@ -50,7 +50,7 @@
         "status": "in_progress",
         "subtasks": [],
         "implementation": {
-          "commitHash": "e37ff121bac6710085f1d282131cca82f287283e", // Add this
+          "commitHash": "e37ff121bac6710085f1d282131cca82f287283e",
           "summary": "fix(webview): improve filter initialization with robust DOM ready detection - DI-004",
           "filesChanged": ["src/tasks/providers/TaskWebviewProvider.ts"],
           "completedDate": "2025-01-25T14:30:00Z",
@@ -87,7 +87,7 @@
         "status": "ready_for_review",
         "subtasks": [],
         "implementation": {
-          "commitHash": "e37ff121bac6710085f1d282131cca82f287283e", // Add this
+          "commitHash": "e37ff121bac6710085f1d282131cca82f287283e",
           "summary": "fix(webview): improve filter initialization with robust DOM ready detection - DI-004",
           "filesChanged": ["src/tasks/providers/TaskWebviewProvider.ts"],
           "completedDate": "2025-01-25T14:30:00Z",
@@ -124,7 +124,7 @@
         "status": "not_started",
         "subtasks": [],
         "implementation": {
-          "commitHash": "e37ff121bac6710085f1d282131cca82f287283e", // Add this
+          "commitHash": "e37ff121bac6710085f1d282131cca82f287283e",
           "summary": "fix(webview): improve filter initialization with robust DOM ready detection - DI-004",
           "filesChanged": ["src/tasks/providers/TaskWebviewProvider.ts"],
           "completedDate": "2025-01-25T14:30:00Z",
@@ -161,7 +161,7 @@
         "status": "not_started",
         "subtasks": [],
         "implementation": {
-          "commitHash": "e37ff121bac6710085f1d282131cca82f287283e", // Add this
+          "commitHash": "e37ff121bac6710085f1d282131cca82f287283e",
           "summary": "fix(webview): improve filter initialization with robust DOM ready detection - DI-004",
           "filesChanged": ["src/tasks/providers/TaskWebviewProvider.ts"],
           "completedDate": "2025-01-25T14:30:00Z",
@@ -199,7 +199,7 @@
         "status": "not_started",
         "subtasks": [],
         "implementation": {
-          "commitHash": "e37ff121bac6710085f1d282131cca82f287283e", // Add this
+          "commitHash": "e37ff121bac6710085f1d282131cca82f287283e",
           "summary": "fix(webview): improve filter initialization with robust DOM ready detection - DI-004",
           "filesChanged": ["src/tasks/providers/TaskWebviewProvider.ts"],
           "completedDate": "2025-01-25T14:30:00Z",
