@@ -2,7 +2,7 @@
   "master": {
     "tasks": [
       {
-        "id": "1",
+        "id": 1,
         "title": "Foundational Setup: Base Agent & Docker Compose",
         "description": "Create the foundational `BaseAgent` class providing common services and set up the `docker-compose.yml` for a complete local development environment.",
         "details": "Implement the Base Agent to initialize clients for Consul (config), Redis (state), and LiteLLM. Create a `docker-compose` file that includes all services: FastAPI orchestrator, agents, Redis, Consul, LiteLLM, and a mock Taskmaster/ADO server for testing.",

@@ -137,4 +137,109 @@ describe("TaskWebviewProvider", () => {
       expect(result).toBe(complexPath);
     });
   });
+
+  describe("generateTaskMeta", () => {
+    test("should generate metadata HTML with test strategy when present", () => {
+      // Arrange
+      const task = {
+        id: "1",
+        complexity: "high",
+        estimatedDuration: "15-30 min",
+        testStrategy: "Unit test client initializations in the Base Agent. Validate that `docker-compose up` successfully starts all required services without errors."
+      };
+
+      // Act
+      const result = (provider as any).generateTaskMeta(task);
+
+      // Assert
+      expect(result).toContain("Test Strategy");
+      expect(result).toContain("Unit test client initializations in the Base Agent");
+      expect(result).toContain("Complexity");
+      expect(result).toContain("Estimated");
+      expect(result).toContain("High");
+      expect(result).toContain("15-30 min");
+    });
+
+    test("should generate metadata HTML with fallback text when test strategy is missing", () => {
+      // Arrange
+      const task = {
+        id: "2",
+        complexity: "medium",
+        estimatedDuration: "20-25 min"
+        // testStrategy is intentionally omitted
+      };
+
+      // Act
+      const result = (provider as any).generateTaskMeta(task);
+
+      // Assert
+      expect(result).toContain("Test Strategy");
+      expect(result).toContain("No test strategy specified");
+      expect(result).toContain("Complexity");
+      expect(result).toContain("Estimated");
+      expect(result).toContain("Medium");
+      expect(result).toContain("20-25 min");
+    });
+
+    test("should generate metadata HTML with fallback text when test strategy is empty", () => {
+      // Arrange
+      const task = {
+        id: "3",
+        complexity: "low",
+        estimatedDuration: "10-15 min",
+        testStrategy: ""
+      };
+
+      // Act
+      const result = (provider as any).generateTaskMeta(task);
+
+      // Assert
+      expect(result).toContain("Test Strategy");
+      expect(result).toContain("No test strategy specified");
+      expect(result).toContain("Complexity");
+      expect(result).toContain("Estimated");
+      expect(result).toContain("Low");
+      expect(result).toContain("10-15 min");
+    });
+
+    test("should generate metadata HTML with fallback text when test strategy is whitespace only", () => {
+      // Arrange
+      const task = {
+        id: "4",
+        complexity: "high",
+        estimatedDuration: "30-45 min",
+        testStrategy: "   "
+      };
+
+      // Act
+      const result = (provider as any).generateTaskMeta(task);
+
+      // Assert
+      expect(result).toContain("Test Strategy");
+      expect(result).toContain("No test strategy specified");
+      expect(result).toContain("Complexity");
+      expect(result).toContain("Estimated");
+      expect(result).toContain("High");
+      expect(result).toContain("30-45 min");
+    });
+
+    test("should escape HTML in test strategy content", () => {
+      // Arrange
+      const task = {
+        id: "5",
+        complexity: "medium",
+        estimatedDuration: "15-20 min",
+        testStrategy: "Test with <script>alert('xss')</script> and > < characters"
+      };
+
+      // Act
+      const result = (provider as any).generateTaskMeta(task);
+
+      // Assert
+      expect(result).toContain("Test Strategy");
+      expect(result).toContain("&lt;script&gt;alert(&#39;xss&#39;)&lt;/script&gt;");
+      expect(result).not.toContain("<script>");
+      expect(result).not.toContain("alert('xss')");
+    });
+  });
 });

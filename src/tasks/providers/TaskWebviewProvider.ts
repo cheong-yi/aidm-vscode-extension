@@ -868,13 +868,20 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
 
   /**
    * Generates task metadata section HTML
-   * Renders complexity and estimated duration information
+   * Now includes Test Strategy alongside Complexity and Estimated duration
    *
    * @param task - Task object to generate metadata for
    * @returns HTML string for task metadata
    */
   private generateTaskMeta(task: Task): string {
     const complexityClass = `complexity-${task.complexity}`;
+
+    // Handle testStrategy field with fallback
+    const testStrategy =
+      task.testStrategy && task.testStrategy.trim()
+        ? task.testStrategy
+        : "No test strategy specified";
+
     return `<div class="task-meta">
       <div class="meta-item">
         <div class="meta-label">Complexity</div>
@@ -887,6 +894,10 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
         <div class="meta-value">${
           task.estimatedDuration || "Not specified"
         }</div>
+      </div>
+      <div class="meta-item">
+        <div class="meta-label">Test Strategy</div>
+        <div class="meta-value">${this.escapeHtml(testStrategy)}</div>
       </div>
     </div>`;
   }
@@ -2431,7 +2442,7 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
   public async viewCode(taskId: string, filePath: string): Promise<void> {
     try {
       const tasks = await this.tasksDataService.getTasks();
-      const task = tasks.find((t) => t.id === taskId);
+      const task = tasks.find((t) => String(t.id) === String(taskId));
 
       if (!task || !task.implementation?.commitHash) {
         console.error(
