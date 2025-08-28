@@ -22,6 +22,8 @@ import {
   TaskErrorResponse,
 } from "../../types/tasks";
 import { TasksDataService } from "../../services";
+import { GitUtilities } from "../../services";
+import * as path from "path";
 
 /**
  * Webview message interface for task interactions
@@ -2205,6 +2207,69 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
     } catch (error) {
       console.error("Error handling View Tests:", error);
       vscode.window.showErrorMessage("Failed to open test results file");
+    }
+  }
+
+  /**
+   * Open VS Code's native diff editor for a single file using git URIs
+   * DIFF-002: Implement single file diff opening using VS Code's native diff command
+   *
+   * @param filePath - Relative file path from workspace root
+   * @param commitHash - Git commit hash to compare against
+   * @param workspaceRoot - VSCode workspace root URI
+   */
+  private async openDiffForFile(
+    filePath: string,
+    commitHash: string,
+    workspaceRoot: vscode.Uri
+  ): Promise<void> {
+    try {
+      // Security: Basic validation of file path (no path traversal)
+      if (!filePath || filePath.includes("..") || path.isAbsolute(filePath)) {
+        console.warn(
+          `[TaskWebviewProvider] Invalid file path for diff: ${filePath}`
+        );
+        return;
+      }
+
+      // Security: Validate commit hash format using GitUtilities patterns
+      const gitHashPattern = /^[a-fA-F0-9]{40}$|^[a-fA-F0-9]{7,40}$/;
+      if (!gitHashPattern.test(commitHash.trim())) {
+        console.warn(
+          `[TaskWebviewProvider] Invalid commit hash for diff: ${commitHash}`
+        );
+        return;
+      }
+
+      // Create git URIs: git:hash~1:path and git:hash:path
+      const beforeUri = vscode.Uri.parse(`git:${commitHash}~1:${filePath}`);
+      const afterUri = vscode.Uri.parse(`git:${commitHash}:${filePath}`);
+
+      // Generate descriptive title with filename and short hash
+      const filename = path.basename(filePath);
+      const shortHash = commitHash.substring(0, 7);
+      const diffTitle = `${filename} (${shortHash}~1 ↔ ${shortHash})`;
+
+      // Call vscode.commands.executeCommand to open diff view
+      await vscode.commands.executeCommand(
+        "vscode.diff",
+        beforeUri,
+        afterUri,
+        diffTitle
+      );
+
+      console.debug(
+        `[TaskWebviewProvider] Opened diff for file: ${filePath} at commit ${shortHash}`
+      );
+    } catch (error) {
+      console.error(
+        `[TaskWebviewProvider] Failed to open diff for file: ${filePath}`,
+        error
+      );
+      // Handle only vscode.commands.executeCommand failures gracefully
+      vscode.window.showErrorMessage(
+        `Could not open diff view for ${path.basename(filePath)}`
+      );
     }
   }
 
