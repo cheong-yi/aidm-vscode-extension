@@ -2093,6 +2093,7 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
    * Task IMPL-002: Implement View Code button handler
    * Task DI-003: Add workspace validation for View Implementation file operations
    * Task DIFF-003: Update to use async git-based diff opening
+   * Task DIFF-004: Add VS Code-specific error handling with user feedback
    *
    * @param taskId - The ID of the task to view code for
    */
@@ -2102,24 +2103,89 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
       const task = tasks.find((t) => t.id === taskId);
 
       if (!task?.implementation?.commitHash) {
-        vscode.window.showWarningMessage(
-          `No commit hash found for task ${taskId}`
-        );
+        await this.handleGitDiffError("NO_COMMIT_HASH", taskId);
         return;
       }
 
-      // Add workspace validation
+      const commitHash = task.implementation.commitHash;
+
+      // Validate git diff operation with VS Code-specific checks
+      const validation = await this.validateGitDiffOperation(
+        taskId,
+        commitHash
+      );
+      if (!validation.valid) {
+        await this.handleGitDiffError(validation.error!, taskId, commitHash);
+        return;
+      }
+
+      // Get changed files from git commit
+      const changedFiles = await GitUtilities.getChangedFilesFromCommit(
+        commitHash,
+        vscode.workspace.workspaceFolders![0].uri.fsPath
+      );
+
+      if (changedFiles.length === 0) {
+        await this.handleGitDiffError("NO_CHANGED_FILES", taskId, commitHash);
+        return;
+      }
+
+      // Open diff views for each changed file
+      let successfulDiffs = 0;
+      for (const filePath of changedFiles) {
+        try {
+          await this.openDiffForFile(
+            filePath,
+            commitHash,
+            vscode.workspace.workspaceFolders![0].uri
+          );
+          successfulDiffs++;
+          console.debug(
+            `[TaskWebviewProvider] Opened diff for file: ${filePath}`
+          );
+        } catch (error) {
+          console.error(
+            `[TaskWebviewProvider] Failed to open diff for file: ${filePath}`,
+            error
+          );
+          // Individual file diff failures don't stop the entire operation
+        }
+      }
+
+      if (successfulDiffs > 0) {
+        await this.showGitDiffResults(taskId, successfulDiffs);
+      } else {
+        await this.handleGitDiffError("VSCODE_DIFF_FAILED", taskId, commitHash);
+      }
+
+      console.log(
+        `[TaskWebviewProvider] Opened diff views for ${successfulDiffs} files for task ${taskId}`
+      );
+    } catch (error) {
+      console.error("[TaskWebviewProvider] Error handling View Code:", error);
+      await this.handleGitDiffError("VSCODE_DIFF_FAILED", taskId);
+    }
+  }
+
+  /**
+   * Validate git diff operation with VS Code-specific checks
+   * Task DIFF-004: Implement structured validation for git diff operations
+   *
+   * @param taskId - The ID of the task to validate
+   * @param commitHash - The commit hash to validate
+   * @returns Promise<ValidationResult> - Structured validation result
+   */
+  private async validateGitDiffOperation(
+    taskId: string,
+    commitHash: string
+  ): Promise<{ valid: boolean; error?: string }> {
+    try {
+      // Check workspace availability
       if (
         !vscode.workspace.workspaceFolders ||
         vscode.workspace.workspaceFolders.length === 0
       ) {
-        vscode.window.showErrorMessage(
-          "No workspace folder available to open files. Please open a folder or workspace."
-        );
-        console.error(
-          `[TaskWebviewProvider] No workspace folders available for task ${taskId}`
-        );
-        return;
+        return { valid: false, error: "NO_WORKSPACE" };
       }
 
       const workspaceRoot = vscode.workspace.workspaceFolders[0];
@@ -2129,76 +2195,228 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
 
       // Validate git repository
       if (!(await GitUtilities.isGitRepository(workspaceRoot.uri.fsPath))) {
-        vscode.window.showErrorMessage(
-          "Git repository not available in workspace"
-        );
-        console.error(
-          `[TaskWebviewProvider] No git repository found in workspace for task ${taskId}`
-        );
-        return;
+        return { valid: false, error: "NOT_GIT_REPO" };
       }
 
       // Validate commit exists
       if (
-        !(await GitUtilities.commitExists(
-          task.implementation.commitHash,
-          workspaceRoot.uri.fsPath
-        ))
+        !(await GitUtilities.commitExists(commitHash, workspaceRoot.uri.fsPath))
       ) {
-        vscode.window.showErrorMessage(
-          `Commit hash not found in repository: ${task.implementation.commitHash.substring(
-            0,
-            7
-          )}`
-        );
-        console.error(
-          `[TaskWebviewProvider] Commit hash not found for task ${taskId}: ${task.implementation.commitHash}`
-        );
-        return;
+        return { valid: false, error: "INVALID_COMMIT" };
       }
 
-      // Get changed files from git commit
-      const changedFiles = await GitUtilities.getChangedFilesFromCommit(
-        task.implementation.commitHash,
-        workspaceRoot.uri.fsPath
-      );
-
-      if (changedFiles.length === 0) {
-        vscode.window.showWarningMessage("No file changes found in commit");
-        console.debug(
-          `[TaskWebviewProvider] No file changes found in commit for task ${taskId}`
-        );
-        return;
-      }
-
-      // Open diff views for each changed file
-      for (const filePath of changedFiles) {
-        try {
-          await this.openDiffForFile(
-            filePath,
-            task.implementation.commitHash,
-            workspaceRoot.uri
-          );
-          console.debug(
-            `[TaskWebviewProvider] Opened diff for file: ${filePath}`
-          );
-        } catch (error) {
-          console.error(
-            `[TaskWebviewProvider] Failed to open diff for file: ${filePath}`,
-            error
-          );
-          vscode.window.showErrorMessage(
-            `Could not open diff for file: ${filePath}`
-          );
-        }
-      }
-
-      console.log(
-        `[TaskWebviewProvider] Opened diff views for ${changedFiles.length} files for task ${taskId}`
-      );
+      return { valid: true };
     } catch (error) {
-      console.error("[TaskWebviewProvider] Error handling View Code:", error);
-      vscode.window.showErrorMessage("Failed to open diff views");
+      console.error(
+        `[TaskWebviewProvider] Error validating git diff operation for task ${taskId}:`,
+        error
+      );
+      return { valid: false, error: "VALIDATION_ERROR" };
+    }
+  }
+
+  /**
+   * Handle git diff errors with user-friendly messages and action options
+   * Task DIFF-004: Implement VS Code-specific error handling with recovery options
+   *
+   * @param error - The error type to handle
+   * @param taskId - The ID of the task that caused the error
+   * @param commitHash - Optional commit hash for context
+   */
+  private async handleGitDiffError(
+    error: string,
+    taskId: string,
+    commitHash?: string
+  ): Promise<void> {
+    const shortHash = commitHash ? commitHash.substring(0, 7) : undefined;
+
+    let message: string;
+    let actions: string[] = [];
+
+    switch (error) {
+      case "NO_COMMIT_HASH":
+        message = `Task ${taskId} is missing commit information`;
+        actions = ["Open Settings", "Refresh Tasks"];
+        break;
+      case "NO_WORKSPACE":
+        message =
+          "No workspace folder available to open files. Please open a folder or workspace.";
+        actions = ["Open Folder", "Refresh Tasks"];
+        break;
+      case "NOT_GIT_REPO":
+        message = "Workspace is not a git repository";
+        actions = ["Open Settings", "Refresh Tasks"];
+        break;
+      case "INVALID_COMMIT":
+        message = `Commit not found - may have been rebased or deleted: ${
+          shortHash || "unknown"
+        }`;
+        actions = ["Refresh Tasks", "View Files Instead"];
+        break;
+      case "NO_CHANGED_FILES":
+        message = "No file changes found in this commit";
+        actions = ["Refresh Tasks", "View Files Instead"];
+        break;
+      case "VSCODE_DIFF_FAILED":
+        message = "Failed to open diff view";
+        actions = ["Retry", "View Files Instead"];
+        break;
+      case "VALIDATION_ERROR":
+        message = "Error validating git operation";
+        actions = ["Retry", "Refresh Tasks"];
+        break;
+      default:
+        message = "Unknown error occurred while opening diff views";
+        actions = ["Retry", "Refresh Tasks"];
+    }
+
+    // Show error message with action options
+    const selectedAction = await vscode.window.showErrorMessage(
+      message,
+      ...actions
+    );
+
+    // Handle user-selected action
+    if (selectedAction) {
+      await this.handleGitDiffErrorAction(selectedAction, taskId, error);
+    }
+  }
+
+  /**
+   * Handle user-selected error recovery actions
+   * Task DIFF-004: Implement action handling for error recovery
+   *
+   * @param action - The action selected by the user
+   * @param taskId - The ID of the task for context
+   * @param errorType - The original error type for context
+   */
+  private async handleGitDiffErrorAction(
+    action: string,
+    taskId: string,
+    errorType: string
+  ): Promise<void> {
+    try {
+      switch (action) {
+        case "Open Settings":
+          await vscode.commands.executeCommand("workbench.action.openSettings");
+          break;
+        case "Refresh Tasks":
+          await this.tasksDataService.refreshTasks();
+          break;
+        case "Open Folder":
+          await vscode.commands.executeCommand(
+            "workbench.action.files.openFolder"
+          );
+          break;
+        case "View Files Instead":
+          // Fallback to viewing files directly instead of diff
+          await this.fallbackToFileView(taskId);
+          break;
+        case "Retry":
+          // Retry the original operation
+          await this.handleViewCode(taskId);
+          break;
+        default:
+          console.debug(
+            `[TaskWebviewProvider] Unknown error action: ${action}`
+          );
+      }
+    } catch (error) {
+      console.error(
+        `[TaskWebviewProvider] Error handling action '${action}' for task ${taskId}:`,
+        error
+      );
+    }
+  }
+
+  /**
+   * Fallback method to view files directly instead of diff
+   * Task DIFF-004: Provide alternative file viewing when diff fails
+   *
+   * @param taskId - The ID of the task to view files for
+   */
+  private async fallbackToFileView(taskId: string): Promise<void> {
+    try {
+      const tasks = await this.tasksDataService.getTasks();
+      const task = tasks.find((t) => t.id === taskId);
+
+      if (!task?.implementation?.filesChanged?.length) {
+        vscode.window.showInformationMessage(
+          `No files to view for task ${taskId}`
+        );
+        return;
+      }
+
+      // Open the first changed file directly
+      const firstFile = task.implementation.filesChanged[0];
+      const workspaceRoot = vscode.workspace.workspaceFolders![0].uri;
+      const fileUri = vscode.Uri.joinPath(workspaceRoot, firstFile);
+
+      try {
+        const document = await vscode.workspace.openTextDocument(fileUri);
+        await vscode.window.showTextDocument(document);
+
+        vscode.window.showInformationMessage(
+          `Opened file directly: ${firstFile}`
+        );
+      } catch (error) {
+        console.error(
+          `[TaskWebviewProvider] Failed to open file directly: ${firstFile}`,
+          error
+        );
+        vscode.window.showErrorMessage(`Could not open file: ${firstFile}`);
+      }
+    } catch (error) {
+      console.error(
+        `[TaskWebviewProvider] Error in fallback file view for task ${taskId}:`,
+        error
+      );
+    }
+  }
+
+  /**
+   * Show success feedback for git diff operations
+   * Task DIFF-004: Provide user feedback when diff views open successfully
+   *
+   * @param taskId - The ID of the task that was processed
+   * @param fileCount - The number of files successfully opened in diff views
+   */
+  private async showGitDiffResults(
+    taskId: string,
+    fileCount: number
+  ): Promise<void> {
+    try {
+      const tasks = await this.tasksDataService.getTasks();
+      const task = tasks.find((t) => t.id === taskId);
+      const commitHash = task?.implementation?.commitHash;
+      const shortHash = commitHash ? commitHash.substring(0, 7) : "unknown";
+
+      const message = `Opened diff views for ${fileCount} file${
+        fileCount !== 1 ? "s" : ""
+      } from commit ${shortHash}`;
+
+      // Show success notification with optional action
+      const action = await vscode.window.showInformationMessage(
+        message,
+        "View in Git History"
+      );
+
+      if (action === "View in Git History") {
+        // Open git history view for the commit
+        await vscode.commands.executeCommand(
+          "git.showQuickCommitDetails",
+          commitHash
+        );
+      }
+    } catch (error) {
+      console.error(
+        `[TaskWebviewProvider] Error showing git diff results for task ${taskId}:`,
+        error
+      );
+      // Fallback to simple success message
+      vscode.window.showInformationMessage(
+        `Opened diff views for ${fileCount} file${fileCount !== 1 ? "s" : ""}`
+      );
     }
   }
 

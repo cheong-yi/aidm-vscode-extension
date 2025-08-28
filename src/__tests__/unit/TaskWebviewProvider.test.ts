@@ -701,10 +701,10 @@ describe("TaskWebviewProvider", () => {
 
     it("should show warning when task has no implementation data", async () => {
       // Mock vscode.window API
-      const mockShowWarningMessage = jest.fn();
+      const mockShowErrorMessage = jest.fn();
       jest
-        .spyOn(vscode.window, "showWarningMessage")
-        .mockImplementation(mockShowWarningMessage);
+        .spyOn(vscode.window, "showErrorMessage")
+        .mockImplementation(mockShowErrorMessage);
 
       // Create a task without implementation data
       const mockTask: Task = {
@@ -739,9 +739,11 @@ describe("TaskWebviewProvider", () => {
       // Call the message handler with our viewCode message
       await messageHandler(mockMessage);
 
-      // Verify warning message was shown
-      expect(mockShowWarningMessage).toHaveBeenCalledWith(
-        "No implementation files found for task test-task-2"
+      // Verify error message was shown with the new error handling format
+      expect(mockShowErrorMessage).toHaveBeenCalledWith(
+        "Task test-task-2 is missing commit information",
+        "Open Settings",
+        "Refresh Tasks"
       );
     });
   });
@@ -1218,18 +1220,20 @@ describe("TaskWebviewProvider", () => {
         complexity: TaskComplexity.MEDIUM,
         dependencies: [],
         requirements: [],
-        createdDate: "2024-01-01T00:00:00.000Z",
-        lastModified: "2024-01-01T00:00:00.000Z",
+        createdDate: "2025-01-01T00:00:00.000Z",
+        lastModified: "2025-01-30T10:30:00Z",
       };
 
       // Act
       const actionsHtml = (provider as any).generateActions(inProgressTask);
 
       // Assert
-      // Should contain functional actions for in-progress status
-      expect(actionsHtml).toContain("Continue Work");
+      // Should contain functional actions for in-progress status (after filtering)
       expect(actionsHtml).toContain("Mark Complete");
-      expect(actionsHtml).toContain("View Dependencies");
+
+      // Should not contain filtered out actions
+      expect(actionsHtml).not.toContain("Continue Work");
+      expect(actionsHtml).not.toContain("View Dependencies");
 
       // Should not contain any Cursor-related actions
       expect(actionsHtml).not.toContain("🤖");
