@@ -336,12 +336,6 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
     return `<div class="branding-header">
       <div class="branding-content">
         <img src="${this.logoDataUri}" alt="AiDM" class="aidm-logo" />
-        <button class="refresh-btn" onclick="refreshTasks()">
-          <svg class="refresh-icon" viewBox="0 0 16 16" fill="currentColor">
-            <path d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2v1z"/>
-            <path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466z"/>
-          </svg>
-        </button>
       </div>
     </div>`;
   }
@@ -1183,6 +1177,24 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
             overflow-y: auto;
         }
 
+        .branding-header {
+            padding: clamp(12px, 2.5vw, 16px);
+            border-bottom: 1px solid var(--vscode-sideBar-border);
+            background: var(--vscode-sideBarSectionHeader-background);
+        }
+
+        .branding-content {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .aidm-logo {
+            height: 32px;
+            width: auto;
+            max-width: 100%;
+        }
+
         .webview-header {
             padding: clamp(8px, 2vw, 12px);
             border-bottom: 1px solid var(--vscode-sideBar-border);
@@ -1790,6 +1802,39 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
             flex: 1;
             overflow-y: auto;
             overflow-x: hidden;
+        }
+
+        /* BRANDING HEADER STYLES - Task WV-015 */
+        .branding-header {
+            background: var(--vscode-sideBarSectionHeader-background);
+            border-bottom: 1px solid var(--vscode-sideBar-border);
+            padding: 8px 12px;
+        }
+
+        .branding-content {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .aidm-logo {
+            width: 60px;
+            height: 16px;
+            flex-shrink: 0;
+            object-fit: contain;
+        }
+
+        @media (max-width: 280px) {
+            .aidm-logo {
+                width: 45px;
+                height: 12px;
+            }
+        }
+
+        @media (max-width: 220px) {
+            .aidm-logo {
+                display: none;
+            }
         }`;
   }
 
