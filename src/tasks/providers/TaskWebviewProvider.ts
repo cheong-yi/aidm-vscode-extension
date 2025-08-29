@@ -792,6 +792,7 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
   /**
    * Generates expandable subtask item HTML with nested accordion structure
    * Task UI-004: Create nested accordion behavior for subtasks
+   * Task SUB-001: Fixed field mapping to use existing JSON fields
    *
    * @param subtask - Subtask object to render
    * @param parentTaskId - ID of the parent task for data attributes
@@ -806,18 +807,11 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
     const subtaskId = `${parentTaskId}.${subtaskIdStr}`;
     const statusClass = this.getSubtaskStatusClass(subtask.status);
 
-    // Handle missing properties gracefully
-    const details = subtask.details || "No details available";
-    const testStrategy = subtask.testStrategy || "No test strategy defined";
-    const dependencies =
-      subtask.dependencies && subtask.dependencies.length > 0
-        ? subtask.dependencies
-            .map(
-              (dep: string) =>
-                `<span class="dependency-tag">${this.escapeHtml(dep)}</span>`
-            )
-            .join("")
-        : '<span class="dependency-tag">None</span>';
+    // FIXED: Use fields that actually exist in JSON subtask data
+    const details = subtask.description || "No details available";
+    // Remove testStrategy and dependencies since they don't exist in subtask JSON
+    const testStrategy = "";
+    const dependencies = "";
 
     return `<div class="subtask-item" data-subtask-id="${subtaskIdStr}" data-parent-id="${parentTaskId}" data-full-id="${subtaskId}">
       <div class="subtask-header" onclick="toggleSubtask(this.parentElement)">
