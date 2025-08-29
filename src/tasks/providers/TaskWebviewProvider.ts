@@ -1182,7 +1182,7 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
             width: 100%;
             min-width: 250px;
             max-width: 100%;
-            background: var(--vscode-sideBar-background);
+            background: var(--vscode-sideBarSectionHeader-background);
             display: flex;
             flex-direction: column;
             flex: 1;
@@ -1204,6 +1204,7 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
             display: flex;
             align-items: center;
             justify-content: center;
+            min-height: 56px;
         }
 
         .aidm-logo {
@@ -1833,6 +1834,7 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
             display: flex;
             align-items: center;
             justify-content: center;
+            min-height: 56px;
         }
 
         .aidm-logo {
@@ -1844,16 +1846,15 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
 
         @media (max-width: 280px) {
             .aidm-logo {
-                width: 60px !important;
+                width: 120px !important;
                 height: 32px !important;
             }
         }
 
         @media (max-width: 220px) {
             .aidm-logo {
-                width: 50px !important;
+                width: 100px !important;
                 height: 28px !important;
-                /* Remove display: none; */
             }
         }`;
   }
