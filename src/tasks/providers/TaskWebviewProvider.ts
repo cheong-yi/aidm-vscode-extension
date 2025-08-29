@@ -692,9 +692,16 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
     </style>
 </head>
 <body>
+    <!-- NEW: Top-level branding container above sidebar -->
+    <div class="top-branding">
+        <div class="branding-content">
+            <img src="${this.logoDataUri}" alt="AiDM" class="aidm-logo" />
+        </div>
+    </div>
+    
+    <!-- MODIFIED: Sidebar without internal branding -->
     <div class="sidebar">
         <div class="sidebar-content">
-            ${this.generateBrandingHeader()}
             ${this.generateWebviewHeader()}
             <div class="task-list">
                 ${taskListHTML}
@@ -1158,8 +1165,16 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
             color: var(--vscode-sideBar-foreground);
             height: 100vh;
             display: flex;
+            flex-direction: column;
             margin: 0 !important;
             padding: 0 !important;  /* Override VSCode's padding: 0 20px */
+        }
+
+        .top-branding {
+            background: var(--vscode-sideBarSectionHeader-background);
+            border-bottom: 1px solid var(--vscode-sideBar-border);
+            padding: 8px 12px;
+            flex-shrink: 0;
         }
 
         .sidebar {
@@ -1169,7 +1184,8 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
             background: var(--vscode-sideBar-background);
             display: flex;
             flex-direction: column;
-            height: 100vh;
+            flex: 1;
+            overflow: hidden;
         }
 
         .sidebar-content {
