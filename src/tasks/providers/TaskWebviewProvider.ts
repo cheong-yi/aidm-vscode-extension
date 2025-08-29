@@ -807,9 +807,6 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
     const subtaskId = `${parentTaskId}.${subtaskIdStr}`;
     const statusClass = this.getSubtaskStatusClass(subtask.status);
 
-    // FIXED: Use fields that actually exist in JSON subtask data
-    const details = subtask.description || "No details available";
-
     return `<div class="subtask-item" data-subtask-id="${subtaskIdStr}" data-parent-id="${parentTaskId}" data-full-id="${subtaskId}">
       <div class="subtask-header" onclick="toggleSubtask(this.parentElement)">
         <svg class="subtask-expand-icon" viewBox="0 0 16 16" fill="currentColor" width="12" height="12">
@@ -820,12 +817,6 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
           subtask.title || subtask.description || "Untitled"
         )}</span>
         <span class="subtask-status ${statusClass}">${subtask.status}</span>
-      </div>
-      <div class="subtask-details">
-        <div class="subtask-full-details">
-          <div class="subtask-details-title">Details</div>
-          <div class="subtask-details-content">${this.escapeHtml(details)}</div>
-        </div>
       </div>
     </div>`;
   }
