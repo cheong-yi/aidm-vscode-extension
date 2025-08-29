@@ -808,10 +808,7 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
     const statusClass = this.getSubtaskStatusClass(subtask.status);
 
     return `<div class="subtask-item" data-subtask-id="${subtaskIdStr}" data-parent-id="${parentTaskId}" data-full-id="${subtaskId}">
-      <div class="subtask-header" onclick="toggleSubtask(this.parentElement)">
-        <svg class="subtask-expand-icon" viewBox="0 0 16 16" fill="currentColor" width="12" height="12">
-          <path d="m12.14 8.753-5.482 4.796c-.646.566-1.658.106-1.658-.753V3.204a1 1 0 0 1 1.659-.753l5.48 4.796a1 1 0 0 1 0 1.506z"/>
-        </svg>
+      <div class="subtask-header">
         <span class="subtask-id">${parentTaskId}.${subtaskIdStr}</span>
         <span class="subtask-title">${this.escapeHtml(
           subtask.title || subtask.description || "Untitled"
@@ -1653,17 +1650,7 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
             background: var(--vscode-list-hoverBackground);
         }
 
-        .subtask-expand-icon {
-            width: 12px;
-            height: 12px;
-            transition: transform 0.2s;
-            flex-shrink: 0;
-            color: var(--vscode-descriptionForeground);
-        }
 
-        .subtask-item.expanded .subtask-expand-icon {
-            transform: rotate(90deg);
-        }
 
         .subtask-id {
             font-family: 'Courier New', monospace;
@@ -1888,33 +1875,7 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
         failuresSection.classList.toggle('expanded');
       }
 
-      // Task UI-004: Subtask accordion behavior with independent expansion state
-      let expandedSubtaskIds = new Set();
-      
-      function toggleSubtask(subtaskElement) {
-        // Prevent event propagation to avoid triggering parent task toggle
-        event.stopPropagation();
-        
-        const subtaskId = subtaskElement.dataset.subtaskId;
-        const parentId = subtaskElement.dataset.parentId;
-        const fullId = \`\${parentId}.\${subtaskId}\`;
-        
-        if (!subtaskId || !parentId) return;
-        
-        const isCurrentlyExpanded = expandedSubtaskIds.has(fullId);
-        
-        if (isCurrentlyExpanded) {
-          // Collapse subtask
-          subtaskElement.classList.remove('expanded');
-          expandedSubtaskIds.delete(fullId);
-          console.debug('Webview: Subtask collapsed:', fullId);
-        } else {
-          // Expand subtask
-          subtaskElement.classList.add('expanded');
-          expandedSubtaskIds.add(fullId);
-          console.debug('Webview: Subtask expanded:', fullId);
-        }
-      }
+
       
       // State restoration function called by extension via message
       function setInitialExpandedState(taskId) {
