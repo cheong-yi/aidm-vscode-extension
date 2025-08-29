@@ -1206,9 +1206,10 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
         }
 
         .aidm-logo {
-            height: 48px;
-            width: auto;
-            max-width: 100%;
+            width: 60px !important;
+            height: 32px !important;
+            flex-shrink: 0;
+            object-fit: contain;
         }
 
         .webview-header {
@@ -1834,22 +1835,24 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
         }
 
         .aidm-logo {
-            width: 60px;
-            height: 16px;
+            width: 60px !important;
+            height: 32px !important;
             flex-shrink: 0;
             object-fit: contain;
         }
 
         @media (max-width: 280px) {
             .aidm-logo {
-                width: 45px;
-                height: 12px;
+                width: 60px !important;
+                height: 32px !important;
             }
         }
 
         @media (max-width: 220px) {
             .aidm-logo {
-                display: none;
+                width: 50px !important;
+                height: 28px !important;
+                /* Remove display: none; */
             }
         }`;
   }
