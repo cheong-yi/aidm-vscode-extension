@@ -10,12 +10,9 @@
 
 export interface Subtask {
   id: string;
-  description: string;
-  status: string;
-  details?: string; // Added: matches JSON "details" field
-  testStrategy?: string; // Added: matches JSON "testStrategy" field
-  dependencies?: string[]; // Added: matches JSON "dependencies" field
-  title?: string; // Added: matches JSON "title" field
+  title?: string; // Keep: exists in JSON
+  description: string; // Keep: exists in JSON and used in rendering
+  status: string; // Keep: exists in JSON and used in rendering
 }
 
 export interface TaskImplementation {
