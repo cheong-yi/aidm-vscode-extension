@@ -809,9 +809,6 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
 
     // FIXED: Use fields that actually exist in JSON subtask data
     const details = subtask.description || "No details available";
-    // Remove testStrategy and dependencies since they don't exist in subtask JSON
-    const testStrategy = "";
-    const dependencies = "";
 
     return `<div class="subtask-item" data-subtask-id="${subtaskIdStr}" data-parent-id="${parentTaskId}" data-full-id="${subtaskId}">
       <div class="subtask-header" onclick="toggleSubtask(this.parentElement)">
@@ -828,16 +825,6 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
         <div class="subtask-full-details">
           <div class="subtask-details-title">Details</div>
           <div class="subtask-details-content">${this.escapeHtml(details)}</div>
-        </div>
-        <div class="subtask-test-strategy">
-          <div class="subtask-details-title">Test Strategy</div>
-          <div class="subtask-details-content">${this.escapeHtml(
-            testStrategy
-          )}</div>
-        </div>
-        <div class="subtask-dependencies">
-          <div class="subtask-details-title">Dependencies</div>
-          <div class="dependency-list">${dependencies}</div>
         </div>
       </div>
     </div>`;
