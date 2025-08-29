@@ -1,5 +1,71 @@
 # AiDM VSCode Extension - Version History
 
+## Version 0.77.1 (Packaged)
+**Date**: 2025-08-29
+**Status**: Auto-packaged for testing
+
+### 📦 Packaging Notes
+- **Auto-versioned**: Incremented from 0.76.1
+- **Build Date**: 2025-08-29T01:05:30.296Z
+- **Purpose**: Testing and demo packaging
+
+---
+
+## Version 0.76.1 (Packaged)
+**Date**: 2025-08-29
+**Status**: Auto-packaged for testing
+
+### 📦 Packaging Notes
+- **Auto-versioned**: Incremented from 0.75.1
+- **Build Date**: 2025-08-29T00:59:33.123Z
+- **Purpose**: Testing and demo packaging
+
+---
+
+## Version 0.75.1 (Packaged)
+**Date**: 2025-08-29
+**Status**: Auto-packaged for testing
+
+### 📦 Packaging Notes
+- **Auto-versioned**: Incremented from 0.74.1
+- **Build Date**: 2025-08-29T00:58:02.872Z
+- **Purpose**: Testing and demo packaging
+
+---
+
+## Version 0.74.1 (Packaged)
+**Date**: 2025-08-29
+**Status**: Auto-packaged for testing
+
+### 📦 Packaging Notes
+- **Auto-versioned**: Incremented from 0.73.1
+- **Build Date**: 2025-08-29T00:55:22.766Z
+- **Purpose**: Testing and demo packaging
+
+---
+
+## Version 0.73.1 (Packaged)
+**Date**: 2025-08-29
+**Status**: Auto-packaged for testing
+
+### 📦 Packaging Notes
+- **Auto-versioned**: Incremented from 0.72.1
+- **Build Date**: 2025-08-29T00:49:01.265Z
+- **Purpose**: Testing and demo packaging
+
+---
+
+## Version 0.72.1 (Packaged)
+**Date**: 2025-08-29
+**Status**: Auto-packaged for testing
+
+### 📦 Packaging Notes
+- **Auto-versioned**: Incremented from 0.71.1
+- **Build Date**: 2025-08-29T00:44:23.050Z
+- **Purpose**: Testing and demo packaging
+
+---
+
 ## Version 0.71.1 (Packaged)
 **Date**: 2025-08-28
 **Status**: Auto-packaged for testing
