@@ -112,6 +112,12 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
   private currentExpandedTaskId: string | null = null;
 
   /**
+   * Cached logo data URI to avoid repeated file system access
+   * Task WV-015: Pre-loaded during webview initialization
+   */
+  private logoDataUri: string = "";
+
+  /**
    * Constructor for TaskWebviewProvider
    * Task WV-007: Accept TasksDataService for data integration
    * Task API-1: Accept ExtensionContext for VSCode Memento API
@@ -285,6 +291,59 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
     </div>
 </body>
 </html>`;
+  }
+
+  /**
+   * Initialize logo data URI during webview resolution
+   * Task WV-015: Pre-load logo file and cache as base64 data URI
+   * Called once during webview initialization to avoid async cascade
+   */
+  private async initializeLogoDataUri(): Promise<void> {
+    try {
+      const logoUri = vscode.Uri.joinPath(
+        this.context.extensionUri,
+        "resources",
+        "images",
+        "aidm-logo.svg"
+      );
+      const logoBytes = await vscode.workspace.fs.readFile(logoUri);
+      const logoContent = Buffer.from(logoBytes).toString("utf8");
+      const logoBase64 = Buffer.from(logoContent).toString("base64");
+      this.logoDataUri = `data:image/svg+xml;base64,${logoBase64}`;
+      console.debug("TaskWebviewProvider: AiDM logo loaded successfully");
+    } catch (error) {
+      console.warn(
+        "TaskWebviewProvider: Failed to load AiDM logo, using fallback"
+      );
+      this.logoDataUri =
+        "data:image/svg+xml;base64," +
+        Buffer.from(
+          `
+        <svg viewBox="0 0 240 60" xmlns="http://www.w3.org/2000/svg">
+          <text x="20" y="40" font-family="Arial" font-size="32" font-weight="bold" fill="#9333ea">AiDM</text>
+        </svg>
+      `
+        ).toString("base64");
+    }
+  }
+
+  /**
+   * Generate branding header HTML with cached logo
+   * Task WV-015: Returns HTML for branding header using pre-loaded logoDataUri
+   * Synchronous method that uses cached logo data to avoid async cascade
+   */
+  private generateBrandingHeader(): string {
+    return `<div class="branding-header">
+      <div class="branding-content">
+        <img src="${this.logoDataUri}" alt="AiDM" class="aidm-logo" />
+        <button class="refresh-btn" onclick="refreshTasks()">
+          <svg class="refresh-icon" viewBox="0 0 16 16" fill="currentColor">
+            <path d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2v1z"/>
+            <path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466z"/>
+          </svg>
+        </button>
+      </div>
+    </div>`;
   }
 
   /**
@@ -491,6 +550,20 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
       // Set loading HTML immediately to prevent race conditions
       webviewView.webview.html = this.getLoadingHTML();
 
+      // Initialize logo data URI BEFORE setting up content
+      this.initializeLogoDataUri()
+        .then(() => {
+          console.debug(
+            "TaskWebviewProvider: Logo initialized, proceeding with content loading"
+          );
+        })
+        .catch((error) => {
+          console.error(
+            "TaskWebviewProvider: Logo initialization failed:",
+            error
+          );
+        });
+
       // Task WV-005: Setup message handling for webview communication
       this.setupMessageHandling();
 
@@ -627,6 +700,7 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
 <body>
     <div class="sidebar">
         <div class="sidebar-content">
+            ${this.generateBrandingHeader()}
             ${this.generateWebviewHeader()}
             <div class="task-list">
                 ${taskListHTML}
