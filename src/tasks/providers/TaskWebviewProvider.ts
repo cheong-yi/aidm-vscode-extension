@@ -1175,6 +1175,7 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
             border-bottom: 1px solid var(--vscode-sideBar-border);
             padding: 8px 12px;
             flex-shrink: 0;
+            min-height: 64px;
         }
 
         .sidebar {
@@ -1206,7 +1207,7 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
         }
 
         .aidm-logo {
-            width: 60px !important;
+            width: 120px !important;
             height: 32px !important;
             flex-shrink: 0;
             object-fit: contain;
@@ -1835,7 +1836,7 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
         }
 
         .aidm-logo {
-            width: 60px !important;
+            width: 120px !important;
             height: 32px !important;
             flex-shrink: 0;
             object-fit: contain;
