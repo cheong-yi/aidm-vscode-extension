@@ -28,63 +28,6 @@ import { TimeFormattingUtility } from "./utils";
 import { TaskErrorResponse } from "./types/tasks";
 
 
-/**
- * DEBUG-001: Isolate exact path construction failure point
- * Single-concern function to trace path transformation from config to error
- */
-function debugPathConstruction() {
-  console.log("=== PATH CONSTRUCTION DEBUG ===");
-
-  // 1. Check workspace folders
-  const workspaceFolders = vscode.workspace.workspaceFolders;
-  console.log(
-    "Workspace folders:",
-    workspaceFolders?.map((f) => ({
-      name: f.name,
-      uri: f.uri.toString(),
-      fsPath: f.uri.fsPath,
-      scheme: f.uri.scheme,
-    }))
-  );
-
-  // 2. Check configuration
-  const config = vscode.workspace.getConfiguration("aidmVscodeExtension");
-  const configPath = config.get<string>("tasks.filePath", "tasks.json");
-  console.log("Raw config path:", JSON.stringify(configPath));
-  console.log("Config path type:", typeof configPath);
-  console.log("Config path length:", configPath?.length);
-
-  // 3. Test VS Code URI construction
-  if (workspaceFolders && workspaceFolders.length > 0) {
-    const workspace = workspaceFolders[0];
-
-    try {
-      const joinedUri = vscode.Uri.joinPath(
-        workspace.uri,
-        configPath || "tasks.json"
-      );
-      console.log("VS Code joinPath result:");
-      console.log("  - toString():", joinedUri.toString());
-      console.log("  - fsPath:", JSON.stringify(joinedUri.fsPath));
-      console.log("  - path:", JSON.stringify(joinedUri.path));
-      console.log("  - scheme:", joinedUri.scheme);
-    } catch (error) {
-      console.log("VS Code joinPath FAILED:", error);
-    }
-
-    // 4. Test file URI construction
-    try {
-      const fileUri = vscode.Uri.file(configPath || "tasks.json");
-      console.log("Direct Uri.file result:");
-      console.log("  - toString():", fileUri.toString());
-      console.log("  - fsPath:", JSON.stringify(fileUri.fsPath));
-    } catch (error) {
-      console.log("Direct Uri.file FAILED:", error);
-    }
-  }
-
-  console.log("=== END PATH DEBUG ===");
-}
 
 /**
  * Task click event payload for UI synchronization and Cursor integration
@@ -450,8 +393,6 @@ export async function activate(
     const config = vscode.workspace.getConfiguration();
     console.log("✅ Configuration loaded");
 
-    // DEBUG-001: Isolate exact path construction failure point
-    debugPathConstruction();
 
     console.log("=== ACTIVATION STEP 5: Building process config ===");
     // Get configured port or use smart port selection
