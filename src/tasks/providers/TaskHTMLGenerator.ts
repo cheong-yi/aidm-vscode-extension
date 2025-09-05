@@ -25,6 +25,26 @@ export class TaskHTMLGenerator {
   }
 
   /**
+   * Send task data to webview for safe rendering (replaces HTML escaping)
+   */
+  sendTaskDataToWebview(tasks: Task[], webview: any): void {
+    const taskData = tasks.map(task => ({
+      id: task.id,
+      title: task.title || '',
+      description: task.description || 'No description available',
+      testStrategy: (task.testStrategy && task.testStrategy.trim()) ? task.testStrategy : 'No test strategy specified',
+      dependencies: task.dependencies || [],
+      subtasks: task.subtasks || [],
+      assignee: task.assignee || 'dev-team'
+    }));
+    
+    webview.postMessage({
+      type: 'updateTaskData',
+      tasks: taskData
+    });
+  }
+
+  /**
    * Generate loading HTML for workspace initialization state
    */
   generateLoadingHTML(): string {
@@ -120,7 +140,7 @@ export class TaskHTMLGenerator {
 
     return `<div class="task-item" data-task-id="${
       task.id
-    }" data-assignee="${this.escapeHtml(assignee)}">
+    }" data-assignee="${assignee}">
       ${this.generateTaskHeader(task, statusClass, statusDisplay, isExecutable)}
       ${this.generateTaskDetails(task)}
       ${subtasksHtml}
@@ -167,9 +187,98 @@ export class TaskHTMLGenerator {
    */
   private generateScripts(): string {
     return `<script>
-      // Placeholder for JavaScript functionality
-      console.log('TaskHTMLGenerator scripts loaded');
+      ${this.getAccordionScript()}
+      ${this.getFilterToggleScript()}
+      ${this.getMessageSendingScript()}
     </script>`;
+  }
+
+  private getAccordionScript(): string {
+    return `
+      let expandedTaskId = null;
+      
+      function toggleTask(taskElement) {
+        const taskId = taskElement.dataset.taskId;
+        if (!taskId) return;
+        
+        const isCurrentlyExpanded = expandedTaskId === taskId;
+        
+        // Collapse all tasks first (accordion behavior)
+        document.querySelectorAll('.task-item.expanded').forEach(item => {
+          item.classList.remove('expanded');
+        });
+        
+        if (!isCurrentlyExpanded) {
+          // Expand clicked task
+          taskElement.classList.add('expanded');
+          expandedTaskId = taskId;
+          
+          // Notify extension of expansion (extension handles persistence)
+          sendMessage('toggleAccordion', { taskId: taskId, expanded: true });
+        } else {
+          // Collapse clicked task
+          expandedTaskId = null;
+          sendMessage('toggleAccordion', { taskId: taskId, expanded: false });
+        }
+      }
+
+      function toggleFailures(failuresSection) {
+        failuresSection.classList.toggle('expanded');
+      }
+
+      function restoreExpandedTask(taskId) {
+        if (!taskId) return;
+        
+        const taskElement = document.querySelector(\`[data-task-id="\${taskId}"]\`);
+        if (taskElement) {
+          taskElement.classList.add('expanded');
+          expandedTaskId = taskId;
+        }
+      }`;
+  }
+
+  private getFilterToggleScript(): string {
+    return `
+      document.addEventListener('DOMContentLoaded', function() {
+        const filterToggle = document.getElementById('my-tasks-filter');
+        if (filterToggle) {
+          filterToggle.addEventListener('change', function() {
+            const isChecked = this.checked;
+            const taskItems = document.querySelectorAll('.task-item');
+            
+            taskItems.forEach(item => {
+              const assignee = item.dataset.assignee;
+              if (isChecked) {
+                // Show only tasks assigned to current user or dev-team
+                if (assignee === 'dev-team' || assignee === 'current-user') {
+                  item.style.display = 'block';
+                } else {
+                  item.style.display = 'none';
+                }
+              } else {
+                // Show all tasks
+                item.style.display = 'block';
+              }
+            });
+          });
+        }
+      });`;
+  }
+
+  private getMessageSendingScript(): string {
+    return `
+      function sendMessage(type, payload) {
+        if (typeof acquireVsCodeApi !== 'undefined') {
+          const vscode = acquireVsCodeApi();
+          vscode.postMessage({
+            type: type,
+            ...payload
+          });
+        }
+      }
+      
+      ${this.getTaskDataScript()}
+    `;
   }
 
   // Helper methods (simplified versions for initial implementation)
@@ -187,34 +296,246 @@ export class TaskHTMLGenerator {
   }
 
   private generateSubtasksSection(task: Task): string {
-    // Simplified for initial implementation
-    return "";
+    if (!task.subtasks || task.subtasks.length === 0) {
+      return "";
+    }
+
+    const subtaskItems = task.subtasks
+      .map((subtask) => this.generateExpandableSubtaskItem(subtask, task.id))
+      .join("");
+
+    return `<div class="subtasks-section">
+      <div class="subtasks-header">Subtasks (${task.subtasks.length})</div>
+      <div class="subtasks-list">${subtaskItems}</div>
+    </div>`;
+  }
+
+  private generateExpandableSubtaskItem(
+    subtask: any,
+    parentTaskId: string
+  ): string {
+    const subtaskIdStr = String(subtask.id);
+    const subtaskId = `${parentTaskId}.${subtaskIdStr}`;
+    const statusClass = this.getSubtaskStatusClass(subtask.status);
+
+    return `<div class="subtask-item" data-subtask-id="${subtaskIdStr}" data-parent-id="${parentTaskId}" data-full-id="${subtaskId}">
+      <div class="subtask-header">
+        <span class="subtask-id">${parentTaskId}.${subtaskIdStr}</span>
+        <span class="subtask-title" data-subtask-field="title"></span>
+        <span class="subtask-status ${statusClass}">${subtask.status}</span>
+      </div>
+    </div>`;
+  }
+
+  private getSubtaskStatusClass(status: string): string {
+    return status.toLowerCase().replace(/[^a-z0-9]/g, "-");
   }
 
   private generateTaskHeader(task: Task, statusClass: string, statusDisplay: string, isExecutable: boolean): string {
-    return `<div class="task-header ${statusClass}">
-      <h3>${this.escapeHtml(task.title)}</h3>
-      <span class="status-badge">${statusDisplay}</span>
+    const executableIcon = ""; // Disabled for now
+    const executableClass = ""; // Disabled for now
+
+    return `<div class="task-header${executableClass}">
+      <svg class="task-expand-icon" viewBox="0 0 16 16" fill="currentColor" onclick="toggleTask(this.closest('.task-item'))">
+        <path d="m12.14 8.753-5.482 4.796c-.646.566-1.658.106-1.658-.753V3.204a1 1 0 0 1 1.659-.753l5.48 4.796a1 1 0 0 1 0 1.506z"/>
+      </svg>
+      <span class="task-id">${task.id}</span>
+      <span class="task-title" data-task-field="title"></span>
+      <span class="task-status ${statusClass}">${statusDisplay}</span>
+      ${executableIcon}
     </div>`;
   }
 
   private generateTaskDetails(task: Task): string {
     return `<div class="task-details">
-      <p>${this.escapeHtml(task.description || "No description available")}</p>
+      <div class="task-description" data-task-field="description"></div>
+      ${this.generateTestStrategy(task)}
+      ${this.generateTaskMeta(task)}
+      ${this.generateDependencies(task)}
+      ${this.generateTestResults(task)}
+      ${this.generateActions(task)}
     </div>`;
   }
 
-  private escapeHtml(text: string | undefined | null): string {
-    if (!text) return "";
+  private generateTestStrategy(task: Task): string {
+    return `<div class="task-test-strategy">
+      <div class="test-strategy-title">Test Strategy</div>
+      <div class="test-strategy-content" data-task-field="testStrategy"></div>
+    </div>`;
+  }
 
-    const htmlEntities: Record<string, string> = {
-      "&": "&amp;",
-      "<": "&lt;",
-      ">": "&gt;",
-      '"': "&quot;",
-      "'": "&#39;",
-    };
+  private generateTaskMeta(task: Task): string {
+    const complexityClass = `complexity-${task.complexity}`;
 
-    return text.replace(/[&<>"']/g, (char) => htmlEntities[char] || char);
+    return `<div class="task-meta">
+      <div class="meta-item">
+        <div class="meta-label">Complexity</div>
+        <div class="meta-value ${complexityClass}">${
+      task.complexity.charAt(0).toUpperCase() + task.complexity.slice(1)
+    }</div>
+      </div>
+      <div class="meta-item">
+        <div class="meta-label">Estimated</div>
+        <div class="meta-value">${
+          task.estimatedDuration || "Not specified"
+        }</div>
+      </div>
+    </div>`;
+  }
+
+  private generateDependencies(task: Task): string {
+    return `<div class="dependencies">
+      <div class="dependencies-title">Dependencies</div>
+      <div class="dependency-list" data-task-field="dependencies">
+        <!-- Dependencies will be populated via postMessage -->
+      </div>
+    </div>`;
+  }
+
+  private generateTestResults(task: Task): string {
+    if (!task.testStatus || task.testStatus.totalTests === 0) {
+      return '<div class="no-tests">No tests available yet</div>';
+    }
+
+    const testStatus = task.testStatus;
+    const hasFailures = testStatus.failedTests > 0;
+
+    return `<div class="test-results">
+      <div class="test-header">
+        <div class="test-title">Test Results</div>
+        <div class="test-date">Last run: ${
+          testStatus.lastRunDate
+            ? this.formatRelativeTime(testStatus.lastRunDate)
+            : "Not run yet"
+        }</div>
+      </div>
+      ${this.generateTestStats(testStatus)}
+      ${
+        hasFailures
+          ? this.generateFailuresSection(testStatus.failingTestsList || [])
+          : ""
+      }
+    </div>`;
+  }
+
+  private generateTestStats(testStatus: any): string {
+    return `<div class="test-stats">
+      <div class="test-stat">
+        <div class="test-stat-value test-total">${testStatus.totalTests}</div>
+        <div class="test-stat-label">Total</div>
+      </div>
+      <div class="test-stat">
+        <div class="test-stat-value test-passed">${testStatus.passedTests}</div>
+        <div class="test-stat-label">Passed</div>
+      </div>
+      <div class="test-stat">
+        <div class="test-stat-value test-failed">${testStatus.failedTests}</div>
+        <div class="test-stat-label">Failed</div>
+      </div>
+    </div>`;
+  }
+
+  private generateFailuresSection(failingTestsList: any[]): string {
+    if (!failingTestsList || failingTestsList.length === 0) {
+      return "";
+    }
+
+    const failuresHTML = failingTestsList
+      .map(
+        (failure) => `
+        <div class="failure-item">
+          <div class="failure-name" data-failure-field="name"></div>
+          <div class="failure-message" data-failure-field="message"></div>
+        </div>
+      `
+      )
+      .join("");
+
+    return `<div class="failures-section">
+      <div class="failures-header" onclick="toggleFailures(this.parentElement)">
+        <span>${failingTestsList.length} Failed Tests</span>
+        <svg class="failure-toggle-icon" viewBox="0 0 16 16" fill="currentColor" width="12" height="12">
+          <path d="m12.14 8.753-5.482 4.796c-.646.566-1.658.106-1.658-.753V3.204a1 1 0 0 1 1.659-.753l5.48 4.796a1 1 0 0 1 0 1.506z"/>
+        </svg>
+      </div>
+      <div class="failures-list">
+        ${failuresHTML}
+      </div>
+    </div>`;
+  }
+
+  private generateActions(task: Task): string {
+    return `<div class="actions">
+      <!-- Actions removed for demo presentation -->
+    </div>`;
+  }
+
+  private formatRelativeTime(dateString: string): string {
+    // Simple implementation for now
+    return new Date(dateString).toLocaleString();
+  }
+
+  /**
+   * Add script to handle task data via postMessage (replaces escapeHtml)
+   */
+  private getTaskDataScript(): string {
+    return `
+      // Handle task data updates via postMessage
+      window.addEventListener('message', function(event) {
+        const message = event.data;
+        if (message.type === 'updateTaskData') {
+          updateTaskContent(message.tasks);
+        }
+      });
+      
+      function updateTaskContent(tasks) {
+        tasks.forEach(task => {
+          const taskElement = document.querySelector('[data-task-id="' + task.id + '"]');
+          if (taskElement) {
+            // Update title
+            const titleElement = taskElement.querySelector('[data-task-field="title"]');
+            if (titleElement) titleElement.textContent = task.title || '';
+            
+            // Update description
+            const descElement = taskElement.querySelector('[data-task-field="description"]');
+            if (descElement) descElement.textContent = task.description || 'No description available';
+            
+            // Update test strategy
+            const testStrategyElement = taskElement.querySelector('[data-task-field="testStrategy"]');
+            if (testStrategyElement) {
+              testStrategyElement.textContent = (task.testStrategy && task.testStrategy.trim()) 
+                ? task.testStrategy : 'No test strategy specified';
+            }
+            
+            // Update dependencies
+            const depsElement = taskElement.querySelector('[data-task-field="dependencies"]');
+            if (depsElement) {
+              if (task.dependencies && task.dependencies.length > 0) {
+                depsElement.innerHTML = task.dependencies.map(dep => 
+                  '<span class="dependency-tag"></span>'
+                ).join('');
+                // Set textContent for each dependency tag
+                const depTags = depsElement.querySelectorAll('.dependency-tag');
+                task.dependencies.forEach((dep, index) => {
+                  if (depTags[index]) depTags[index].textContent = dep;
+                });
+              } else {
+                depsElement.innerHTML = '<span class="dependency-tag">None</span>';
+              }
+            }
+            
+            // Update subtasks
+            const subtaskElements = taskElement.querySelectorAll('[data-subtask-field="title"]');
+            if (task.subtasks && subtaskElements.length > 0) {
+              task.subtasks.forEach((subtask, index) => {
+                if (subtaskElements[index]) {
+                  subtaskElements[index].textContent = subtask.title || subtask.description || 'Untitled';
+                }
+              });
+            }
+          }
+        });
+      }
+    `;
   }
 }
