@@ -1874,8 +1874,6 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
       function toggleFailures(failuresSection) {
         failuresSection.classList.toggle('expanded');
       }
-
-
       
       // State restoration function called by extension via message
       function setInitialExpandedState(taskId) {
@@ -2190,8 +2188,7 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
    */
   private async handleViewCode(taskId: string): Promise<void> {
     try {
-      const tasks = await this.tasksDataService.getTasks();
-      const task = tasks.find((t) => t.id === taskId);
+      const task = await this.tasksDataService.getTaskById(taskId);
 
       if (!task?.implementation?.commitHash) {
         await this.handleGitDiffError("NO_COMMIT_HASH", taskId);
@@ -2428,8 +2425,7 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
    */
   private async fallbackToFileView(taskId: string): Promise<void> {
     try {
-      const tasks = await this.tasksDataService.getTasks();
-      const task = tasks.find((t) => t.id === taskId);
+      const task = await this.tasksDataService.getTaskById(taskId);
 
       if (!task?.implementation?.filesChanged?.length) {
         vscode.window.showInformationMessage(
@@ -2477,8 +2473,7 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
     fileCount: number
   ): Promise<void> {
     try {
-      const tasks = await this.tasksDataService.getTasks();
-      const task = tasks.find((t) => t.id === taskId);
+      const task = await this.tasksDataService.getTaskById(taskId);
       const commitHash = task?.implementation?.commitHash;
       const shortHash = commitHash ? commitHash.substring(0, 7) : "unknown";
 
@@ -2521,8 +2516,7 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
    */
   public async viewCode(taskId: string, filePath: string): Promise<void> {
     try {
-      const tasks = await this.tasksDataService.getTasks();
-      const task = tasks.find((t) => String(t.id) === String(taskId));
+      const task = await this.tasksDataService.getTaskById(taskId);
 
       if (!task || !task.implementation?.commitHash) {
         console.error(
@@ -2585,8 +2579,7 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
    */
   private async handleViewTests(taskId: string): Promise<void> {
     try {
-      const tasks = await this.tasksDataService.getTasks();
-      const task = tasks.find((t) => t.id === taskId);
+      const task = await this.tasksDataService.getTaskById(taskId);
 
       if (!task?.testResults?.resultsFile) {
         vscode.window.showWarningMessage(
