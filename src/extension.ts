@@ -27,6 +27,7 @@ import { TaskWebviewProvider } from "./tasks/providers";
 import { TimeFormattingUtility } from "./utils";
 import { TaskErrorResponse } from "./types/tasks";
 
+
 /**
  * DEBUG-001: Isolate exact path construction failure point
  * Single-concern function to trace path transformation from config to error
@@ -1121,91 +1122,91 @@ export async function activate(
 
     // Register seed hover context command
     try {
-      const seedHoverContextCommand = vscode.commands.registerCommand(
-        getCommandId("seedHoverContext"),
-        async () => {
-          const editor = vscode.window.activeTextEditor;
-          if (!editor) {
-            vscode.window.showWarningMessage("No active editor");
-            return;
+        const seedHoverContextCommand = vscode.commands.registerCommand(
+          getCommandId("seedHoverContext"),
+          async () => {
+            const editor = vscode.window.activeTextEditor;
+            if (!editor) {
+              vscode.window.showWarningMessage("No active editor");
+              return;
+            }
+
+            const selection = editor.selection;
+            const document = editor.document;
+            const text = document.getText(selection);
+
+            if (!text.trim()) {
+              vscode.window.showWarningMessage("No text selected");
+              return;
+            }
+
+            try {
+              // Create a simple business context for the selected code
+              const mockContext = {
+                requirements: [
+                  {
+                    id: `mock-${Date.now()}`,
+                    title: "Mock Requirement for Selected Code",
+                    description: `This is a mock business requirement for the selected code: ${text.substring(
+                      0,
+                      100
+                    )}...`,
+                    type: "functional" as any,
+                    priority: "medium" as any,
+                    status: "completed" as any,
+                    stakeholders: ["developer"],
+                    createdDate: new Date(),
+                    lastModified: new Date(),
+                    tags: ["mock", "demo"],
+                  },
+                ],
+                implementationStatus: {
+                  completionPercentage: 100,
+                  lastVerified: new Date(),
+                  verificationMethod: "manual",
+                  notes: "Mock implementation for demo purposes",
+                } as any,
+                relatedChanges: [],
+                lastUpdated: new Date(),
+              };
+
+              // Store in mock cache
+              const workspaceRoot =
+                vscode.workspace.workspaceFolders?.[0]?.uri.fsPath ||
+                process.cwd();
+              const mockCache = new MockCache(workspaceRoot);
+              mockCache.load();
+
+              const codeLocation = {
+                filePath: document.fileName,
+                startLine: selection.start.line + 1,
+                endLine: selection.end.line + 1,
+                symbolName: "selected_code",
+              };
+
+              mockCache.upsert(
+                codeLocation.filePath,
+                codeLocation.startLine,
+                codeLocation.endLine,
+                mockContext
+              );
+
+              mockCache.save();
+
+              vscode.window.showInformationMessage(
+                "Mock business context seeded for selected code"
+              );
+            } catch (error) {
+              vscode.window.showErrorMessage(
+                `Failed to seed hover context: ${
+                  error instanceof Error ? error.message : "Unknown error"
+                }`
+              );
+            }
           }
-
-          const selection = editor.selection;
-          const document = editor.document;
-          const text = document.getText(selection);
-
-          if (!text.trim()) {
-            vscode.window.showWarningMessage("No text selected");
-            return;
-          }
-
-          try {
-            // Create a simple business context for the selected code
-            const mockContext = {
-              requirements: [
-                {
-                  id: `mock-${Date.now()}`,
-                  title: "Mock Requirement for Selected Code",
-                  description: `This is a mock business requirement for the selected code: ${text.substring(
-                    0,
-                    100
-                  )}...`,
-                  type: "functional" as any,
-                  priority: "medium" as any,
-                  status: "completed" as any,
-                  stakeholders: ["developer"],
-                  createdDate: new Date(),
-                  lastModified: new Date(),
-                  tags: ["mock", "demo"],
-                },
-              ],
-              implementationStatus: {
-                completionPercentage: 100,
-                lastVerified: new Date(),
-                verificationMethod: "manual",
-                notes: "Mock implementation for demo purposes",
-              } as any,
-              relatedChanges: [],
-              lastUpdated: new Date(),
-            };
-
-            // Store in mock cache
-            const workspaceRoot =
-              vscode.workspace.workspaceFolders?.[0]?.uri.fsPath ||
-              process.cwd();
-            const mockCache = new MockCache(workspaceRoot);
-            mockCache.load();
-
-            const codeLocation = {
-              filePath: document.fileName,
-              startLine: selection.start.line + 1,
-              endLine: selection.end.line + 1,
-              symbolName: "selected_code",
-            };
-
-            mockCache.upsert(
-              codeLocation.filePath,
-              codeLocation.startLine,
-              codeLocation.endLine,
-              mockContext
-            );
-
-            mockCache.save();
-
-            vscode.window.showInformationMessage(
-              "Mock business context seeded for selected code"
-            );
-          } catch (error) {
-            vscode.window.showErrorMessage(
-              `Failed to seed hover context: ${
-                error instanceof Error ? error.message : "Unknown error"
-              }`
-            );
-          }
-        }
-      );
-      context.subscriptions.push(seedHoverContextCommand);
-      console.log("✅ seedHoverContext command registered");
+        );
+        context.subscriptions.push(seedHoverContextCommand);
+        console.log("✅ seedHoverContext command registered");
     } catch (error) {
       console.error("❌ seedHoverContext command failed:", error);
     }
