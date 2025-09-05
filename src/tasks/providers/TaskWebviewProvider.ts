@@ -26,6 +26,7 @@ import {
 } from "../../types/tasks";
 import { TasksDataService } from "../../services";
 import { GitUtilities } from "../../services";
+import { TaskHTMLGenerator } from "./TaskHTMLGenerator";
 import * as path from "path";
 
 /**
@@ -116,6 +117,11 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
    * Task WV-015: Pre-loaded during webview initialization
    */
   private logoDataUri: string = "";
+  
+  /**
+   * HTML generator instance for webview content
+   */
+  private htmlGenerator: TaskHTMLGenerator;
 
   /**
    * Constructor for TaskWebviewProvider
@@ -131,6 +137,7 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
   ) {
     this.tasksDataService = tasksDataService;
     this.context = context;
+    this.htmlGenerator = new TaskHTMLGenerator(context.extensionUri);
 
     // Task WV-007: Setup event listeners but defer data loading until initializeData() called
     this.setupEventListeners();
@@ -638,7 +645,9 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
    */
   private getHtmlContent(tasks: Task[] = []): string {
     // FIXED: Always return task content since loading state is handled separately
-    return this.generateTaskmasterHTML(tasks);
+    // Update logo in generator and generate HTML
+    this.htmlGenerator.setLogoDataUri(this.logoDataUri);
+    return this.htmlGenerator.generateFullHTML(tasks, this.currentExpandedTaskId);
   }
 
   /**
@@ -648,22 +657,7 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
    * @returns HTML string for loading state
    */
   private getLoadingHTML(): string {
-    return `<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Content-Security-Policy" 
-          content="default-src 'none'; style-src 'unsafe-inline' 'self'; script-src 'unsafe-inline' 'self'; img-src vscode-resource: https: data: 'self'; font-src vscode-resource: https: 'self'; connect-src 'self';">
-    <title>Taskmaster</title>
-</head>
-<body>
-    <div id="taskmaster-root">
-        <h3>Loading Tasks...</h3>
-        <p>Please wait while workspace initializes...</p>
-    </div>
-</body>
-</html>`;
+    return this.htmlGenerator.generateLoadingHTML();
   }
 
   /**
