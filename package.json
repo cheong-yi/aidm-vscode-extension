@@ -72,49 +72,10 @@
   "contributes": {
     "commands": [
       {
-        "command": "aidm-vscode-extension.showStatus",
-        "title": "Show Connection Status",
-        "category": "AiDM"
-      },
-      {
-        "command": "aidm-vscode-extension.restartServer",
-        "title": "Restart MCP Server",
-        "category": "AiDM"
-      },
-      {
-        "command": "aidm-vscode-extension.showPort",
-        "title": "Show MCP Server Port",
-        "category": "AiDM"
-      },
-      {
-        "command": "aidm-vscode-extension.runRooCodeDemo",
-        "title": "Run RooCode Integration Demo",
-        "category": "AiDM"
-      },
-      {
-        "command": "aidm-vscode-extension.connectRemoteMCP",
-        "title": "Connect to Remote MCP Server",
-        "category": "AiDM"
-      },
-      {
-        "command": "aidm-vscode-extension.showDemoPanel",
-        "title": "Show Demo Panel",
-        "category": "AiDM"
-      },
-      {
-        "command": "aidm-vscode-extension.openConfiguration",
-        "title": "Open Configuration Panel",
-        "category": "AiDM"
-      },
-      {
-        "command": "aidm-vscode-extension.seedHoverContext",
-        "title": "Seed Hover Context for Selection",
-        "category": "AiDM"
-      },
-      {
-        "command": "aidm-vscode-extension.version",
-        "title": "Show Extension Version",
-        "category": "AiDM"
+        "command": "aidm-vscode-extension.showTasks",
+        "title": "Show Tasks",
+        "category": "Taskmaster",
+        "icon": "$(list-tree)"
       },
       {
         "command": "aidm-vscode-extension.refreshTasks",
@@ -123,29 +84,10 @@
         "icon": "$(refresh)"
       },
       {
-        "command": "aidm-vscode-extension.updateTaskStatus",
-        "title": "Update Task Status",
+        "command": "aidm.openDiff",
+        "title": "Open Git Diff",
         "category": "Taskmaster",
-        "icon": "$(edit)"
-      },
-      {
-        "command": "aidm-vscode-extension.executeTaskWithCursor",
-        "title": "Execute Task with Cursor",
-        "category": "Taskmaster",
-        "icon": "$(robot)",
-        "when": "view == aidm-vscode-extension.tasks-list && viewItem == executable-task"
-      },
-      {
-        "command": "aidm-vscode-extension.generateTaskPrompt",
-        "title": "Generate Task Prompt",
-        "category": "Taskmaster",
-        "icon": "$(code)"
-      },
-      {
-        "command": "aidm-vscode-extension.viewTestResults",
-        "title": "View Test Results",
-        "category": "Taskmaster",
-        "icon": "$(beaker)"
+        "icon": "$(git-compare)"
       }
     ],
     "configuration": {
