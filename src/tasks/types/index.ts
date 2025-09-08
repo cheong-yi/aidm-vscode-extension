@@ -12,22 +12,8 @@
 export * from "../../types/tasks";
 
 // ============================================================================
-// TASK-SPECIFIC BUSINESS LOGIC TYPES
+// CONSOLIDATED TASK-SPECIFIC TYPES
 // ============================================================================
 
-// Export unique task-specific interfaces
+// Export all task-specific types from single consolidated file
 export * from "./taskTypes";
-
-// ============================================================================
-// TASK SERVICE INTERFACES
-// ============================================================================
-
-// Export service interfaces for task management
-export * from "./taskInterfaces";
-
-// ============================================================================
-// TASK JSON-RPC TYPES
-// ============================================================================
-
-// Export JSON-RPC specific types
-export * from "./taskJsonRpc";
