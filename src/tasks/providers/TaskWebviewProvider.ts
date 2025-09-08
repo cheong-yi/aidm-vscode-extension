@@ -452,8 +452,13 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
       // Configure webview options for HTML content rendering
       webviewView.webview.options = {
         enableScripts: true,
-        localResourceRoots: [],
+        localResourceRoots: [
+          vscode.Uri.joinPath(this.context.extensionUri, 'src', 'tasks', 'providers')
+        ],
       };
+
+      // Set the webview on the HTML generator so it can generate resource URIs
+      this.htmlGenerator.setWebview(webviewView.webview);
 
       // Set loading HTML immediately to prevent race conditions
       webviewView.webview.html = this.getLoadingHTML();

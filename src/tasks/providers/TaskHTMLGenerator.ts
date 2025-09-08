@@ -7,8 +7,36 @@ import { Task, TaskStatus, STATUS_DISPLAY_NAMES } from "../../types/tasks";
  */
 export class TaskHTMLGenerator {
   private logoDataUri: string = "";
+  private webview?: vscode.Webview;
 
   constructor(private extensionUri: vscode.Uri) {}
+
+  /**
+   * Set the webview reference for resource URI generation
+   */
+  setWebview(webview: vscode.Webview): void {
+    this.webview = webview;
+  }
+
+  /**
+   * Get a resource URI for webview content
+   */
+  private getResourceUri(filename: string): string {
+    if (!this.webview) {
+      // Fallback for when webview is not set (shouldn't happen in practice)
+      return '';
+    }
+    
+    const resourcePath = vscode.Uri.joinPath(
+      this.extensionUri,
+      'src',
+      'tasks',
+      'providers',
+      filename
+    );
+    
+    return this.webview.asWebviewUri(resourcePath).toString();
+  }
 
   /**
    * Set the logo data URI (called from TaskWebviewProvider when logo is loaded)
@@ -75,17 +103,18 @@ export class TaskHTMLGenerator {
         ? tasks.map((task) => this.generateTaskItem(task)).join("")
         : '<div class="no-tasks">No tasks available</div>';
 
+    // Get the CSS file URI
+    const styleUri = this.getResourceUri('styles.css');
+
     return `<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="Content-Security-Policy" 
-          content="default-src 'none'; style-src 'unsafe-inline' 'self'; script-src 'unsafe-inline' 'self'; img-src vscode-resource: https: data: 'self'; font-src vscode-resource: https: 'self'; connect-src 'self';">
+          content="default-src 'none'; style-src ${styleUri} 'self'; script-src 'unsafe-inline' 'self'; img-src vscode-resource: https: data: 'self'; font-src vscode-resource: https: 'self'; connect-src 'self';">
     <title>Taskmaster Dashboard</title>
-    <style>
-        ${this.generateStyles()}
-    </style>
+    <link rel="stylesheet" href="${styleUri}">
 </head>
 <body>
     <!-- NEW: Top-level branding container above sidebar -->
@@ -147,40 +176,6 @@ export class TaskHTMLGenerator {
     </div>`;
   }
 
-  /**
-   * Generate CSS styles for the webview
-   */
-  private generateStyles(): string {
-    return `/* WEBVIEW CONTAINER RESET - CSS-001 */
-        html, body {
-            margin: 0 !important;
-            padding: 0 !important;
-            height: 100% !important;
-            width: 100% !important;
-            overflow: hidden !important;
-            background: var(--vscode-sideBar-background, #f3f3f3) !important;
-            color: var(--vscode-sideBar-foreground, #333) !important;
-            font-family: var(--vscode-font-family, 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif) !important;
-            font-size: var(--vscode-font-size, 13px) !important;
-            box-sizing: border-box !important;
-        }
-        
-        /* Task container styles */
-        .task-item {
-            margin-bottom: 12px;
-            border: 1px solid var(--vscode-panel-border, #ddd);
-            border-radius: 6px;
-            background: var(--vscode-editor-background, white);
-            overflow: hidden;
-        }
-        
-        .no-tasks {
-            padding: 20px;
-            text-align: center;
-            color: var(--vscode-descriptionForeground, #666);
-            font-style: italic;
-        }`;
-  }
 
   /**
    * Generate JavaScript for the webview

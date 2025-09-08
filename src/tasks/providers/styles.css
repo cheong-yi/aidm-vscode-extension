@@ -1,0 +1,576 @@
+/* =================================================================
+   Taskmaster Dashboard Styles
+   External stylesheet for TaskWebviewProvider
+   ================================================================= */
+
+/* =================================================================
+   WEBVIEW CONTAINER RESET - CSS-001
+   ================================================================= */
+html, body {
+    margin: 0 !important;
+    padding: 0 !important;
+    height: 100% !important;
+    width: 100% !important;
+    overflow: hidden !important;
+    background: var(--vscode-sideBar-background, #f3f3f3) !important;
+    color: var(--vscode-sideBar-foreground, #333) !important;
+    font-family: var(--vscode-font-family, 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif) !important;
+    font-size: var(--vscode-font-size, 13px) !important;
+    box-sizing: border-box !important;
+}
+
+/* =================================================================
+   BRANDING & LAYOUT
+   ================================================================= */
+.top-branding {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 48px;
+    background: var(--vscode-sideBar-background);
+    border-bottom: 1px solid var(--vscode-panel-border);
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+}
+
+.branding-content {
+    display: flex;
+    align-items: center;
+}
+
+.aidm-logo {
+    height: 32px;
+    width: auto;
+}
+
+.sidebar {
+    position: fixed;
+    top: 48px;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    overflow-y: auto;
+    padding: 16px;
+}
+
+.sidebar-content {
+    max-width: 100%;
+}
+
+/* =================================================================
+   HEADER & FILTER CONTROLS
+   ================================================================= */
+.webview-header {
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--vscode-panel-border);
+}
+
+.filter-controls {
+    display: flex;
+    align-items: center;
+}
+
+.filter-toggle {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    user-select: none;
+}
+
+.filter-toggle input[type="checkbox"] {
+    display: none;
+}
+
+.filter-checkbox {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    border: 1px solid var(--vscode-checkbox-border);
+    border-radius: 3px;
+    background: var(--vscode-checkbox-background);
+    margin-right: 8px;
+}
+
+.filter-checkbox .filter-icon {
+    display: none;
+}
+
+.filter-toggle input[type="checkbox"]:checked + .filter-checkbox {
+    background: var(--vscode-checkbox-selectBackground);
+    border-color: var(--vscode-checkbox-selectBorder);
+}
+
+.filter-toggle input[type="checkbox"]:checked + .filter-checkbox .filter-icon {
+    display: block;
+    color: var(--vscode-checkbox-foreground);
+}
+
+.filter-label {
+    color: var(--vscode-foreground);
+}
+
+/* =================================================================
+   TASK LIST & ITEMS
+   ================================================================= */
+.task-list {
+    padding-top: 8px;
+}
+
+.task-item {
+    margin-bottom: 12px;
+    border: 1px solid var(--vscode-panel-border, #ddd);
+    border-radius: 6px;
+    background: var(--vscode-editor-background, white);
+    overflow: hidden;
+    transition: all 0.2s ease;
+}
+
+.task-item:hover {
+    border-color: var(--vscode-focusBorder);
+}
+
+.task-item.expanded {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.no-tasks {
+    padding: 20px;
+    text-align: center;
+    color: var(--vscode-descriptionForeground, #666);
+    font-style: italic;
+}
+
+/* =================================================================
+   TASK HEADER
+   ================================================================= */
+.task-header {
+    display: flex;
+    align-items: center;
+    padding: 12px;
+    cursor: pointer;
+    user-select: none;
+    background: var(--vscode-list-hoverBackground);
+}
+
+.task-header:hover {
+    background: var(--vscode-list-activeSelectionBackground);
+}
+
+.task-expand-icon {
+    width: 16px;
+    height: 16px;
+    margin-right: 8px;
+    transition: transform 0.2s ease;
+    flex-shrink: 0;
+}
+
+.task-item.expanded .task-expand-icon {
+    transform: rotate(90deg);
+}
+
+.task-id {
+    font-weight: bold;
+    margin-right: 12px;
+    color: var(--vscode-textLink-foreground);
+    flex-shrink: 0;
+}
+
+.task-title {
+    flex: 1;
+    margin-right: 12px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.task-status {
+    padding: 2px 8px;
+    border-radius: 3px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    flex-shrink: 0;
+}
+
+/* Status color variants */
+.status-completed {
+    background: #28a745;
+    color: white;
+}
+
+.status-in-progress {
+    background: #ffc107;
+    color: #333;
+}
+
+.status-not-started {
+    background: #6c757d;
+    color: white;
+}
+
+.status-unknown {
+    background: #dc3545;
+    color: white;
+}
+
+/* =================================================================
+   TASK DETAILS (Expanded View)
+   ================================================================= */
+.task-details {
+    display: none;
+    padding: 16px;
+    border-top: 1px solid var(--vscode-panel-border);
+}
+
+.task-item.expanded .task-details {
+    display: block;
+}
+
+.task-description {
+    margin-bottom: 16px;
+    line-height: 1.5;
+}
+
+/* =================================================================
+   TEST STRATEGY SECTION
+   ================================================================= */
+.task-test-strategy {
+    margin-bottom: 16px;
+    padding: 12px;
+    background: var(--vscode-textBlockQuote-background);
+    border-left: 3px solid var(--vscode-textBlockQuote-border);
+    border-radius: 3px;
+}
+
+.test-strategy-title {
+    font-weight: bold;
+    margin-bottom: 8px;
+    color: var(--vscode-textLink-foreground);
+}
+
+.test-strategy-content {
+    line-height: 1.5;
+}
+
+/* =================================================================
+   TASK META INFORMATION
+   ================================================================= */
+.task-meta {
+    display: flex;
+    gap: 24px;
+    margin-bottom: 16px;
+    padding: 12px;
+    background: var(--vscode-editor-inactiveSelectionBackground);
+    border-radius: 3px;
+}
+
+.meta-item {
+    display: flex;
+    flex-direction: column;
+}
+
+.meta-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    color: var(--vscode-descriptionForeground);
+    margin-bottom: 4px;
+}
+
+.meta-value {
+    font-weight: 600;
+}
+
+/* Complexity color coding */
+.complexity-high {
+    color: #dc3545;
+}
+
+.complexity-medium {
+    color: #ffc107;
+}
+
+.complexity-low {
+    color: #28a745;
+}
+
+/* =================================================================
+   DEPENDENCIES SECTION
+   ================================================================= */
+.dependencies {
+    margin-bottom: 16px;
+}
+
+.dependencies-title {
+    font-weight: bold;
+    margin-bottom: 8px;
+    color: var(--vscode-textLink-foreground);
+}
+
+.dependency-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.dependency-item {
+    padding: 4px 8px;
+    background: var(--vscode-badge-background);
+    color: var(--vscode-badge-foreground);
+    border-radius: 3px;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.dependency-item:hover {
+    background: var(--vscode-textLink-activeForeground);
+}
+
+/* =================================================================
+   TEST RESULTS SECTION
+   ================================================================= */
+.test-results {
+    margin-bottom: 16px;
+    padding: 12px;
+    background: var(--vscode-editor-background);
+    border: 1px solid var(--vscode-panel-border);
+    border-radius: 3px;
+}
+
+.test-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.test-title {
+    font-weight: bold;
+    color: var(--vscode-textLink-foreground);
+}
+
+.test-date {
+    font-size: 11px;
+    color: var(--vscode-descriptionForeground);
+}
+
+.test-stats {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 12px;
+}
+
+.test-stat {
+    text-align: center;
+}
+
+.test-stat-value {
+    font-size: 20px;
+    font-weight: bold;
+    margin-bottom: 4px;
+}
+
+.test-stat-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    color: var(--vscode-descriptionForeground);
+}
+
+/* Test result color coding */
+.test-total {
+    color: var(--vscode-foreground);
+}
+
+.test-passed {
+    color: #28a745;
+}
+
+.test-failed {
+    color: #dc3545;
+}
+
+.no-tests {
+    padding: 12px;
+    text-align: center;
+    color: var(--vscode-descriptionForeground);
+    font-style: italic;
+}
+
+/* =================================================================
+   FAILURES SECTION
+   ================================================================= */
+.failures-section {
+    margin-top: 12px;
+    padding: 12px;
+    background: #fff5f5;
+    border: 1px solid #ffcccc;
+    border-radius: 3px;
+}
+
+.failures-header {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    user-select: none;
+}
+
+.failures-title {
+    font-weight: bold;
+    color: #dc3545;
+    margin-right: 8px;
+}
+
+.failures-count {
+    padding: 2px 6px;
+    background: #dc3545;
+    color: white;
+    border-radius: 10px;
+    font-size: 11px;
+}
+
+.failures-list {
+    display: none;
+    margin-top: 12px;
+}
+
+.failures-section.expanded .failures-list {
+    display: block;
+}
+
+.failure-item {
+    margin-bottom: 8px;
+    padding: 8px;
+    background: white;
+    border-left: 3px solid #dc3545;
+    border-radius: 3px;
+}
+
+.failure-name {
+    font-weight: bold;
+    margin-bottom: 4px;
+    color: #dc3545;
+}
+
+.failure-message {
+    font-size: 12px;
+    color: #666;
+    line-height: 1.4;
+}
+
+/* =================================================================
+   SUBTASKS SECTION
+   ================================================================= */
+.subtasks-section {
+    margin-top: 16px;
+    padding: 12px;
+    background: var(--vscode-editor-inactiveSelectionBackground);
+    border-radius: 3px;
+}
+
+.subtasks-header {
+    font-weight: bold;
+    margin-bottom: 8px;
+    color: var(--vscode-textLink-foreground);
+}
+
+.subtasks-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.subtask-item {
+    padding: 8px;
+    background: var(--vscode-editor-background);
+    border: 1px solid var(--vscode-panel-border);
+    border-radius: 3px;
+}
+
+.subtask-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.subtask-id {
+    font-weight: bold;
+    color: var(--vscode-textLink-foreground);
+    font-size: 11px;
+}
+
+.subtask-title {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.subtask-status {
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+/* =================================================================
+   ACTION BUTTONS
+   ================================================================= */
+.actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid var(--vscode-panel-border);
+}
+
+.action-button {
+    padding: 6px 12px;
+    background: var(--vscode-button-background);
+    color: var(--vscode-button-foreground);
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 500;
+    transition: background 0.2s ease;
+}
+
+.action-button:hover {
+    background: var(--vscode-button-hoverBackground);
+}
+
+.action-button:active {
+    transform: translateY(1px);
+}
+
+/* =================================================================
+   UTILITY CLASSES
+   ================================================================= */
+.hidden {
+    display: none !important;
+}
+
+.expanded {
+    /* Applied dynamically via JavaScript */
+}
+
+/* =================================================================
+   RESPONSIVE ADJUSTMENTS
+   ================================================================= */
+@media (max-width: 600px) {
+    .task-meta {
+        flex-direction: column;
+        gap: 12px;
+    }
+    
+    .test-stats {
+        flex-direction: column;
+        gap: 8px;
+    }
+}
