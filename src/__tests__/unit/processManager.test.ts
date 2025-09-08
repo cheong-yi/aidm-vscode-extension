@@ -43,7 +43,8 @@ describe("ProcessManager Unit Tests", () => {
   describe("Configuration Management", () => {
     test("should initialize with correct configuration", () => {
       expect(processManager).toBeDefined();
-      expect(processManager.isHealthy()).toBe(false);
+      const stats = processManager.getStats();
+      expect(stats.isRunning).toBe(false);
     });
 
     test("should update configuration", async () => {
@@ -75,7 +76,6 @@ describe("ProcessManager Unit Tests", () => {
       const stats = processManager.getStats();
       expect(stats.isRunning).toBe(false);
       expect(stats.uptime).toBe(0);
-      expect(stats.restartCount).toBe(0);
       expect(stats.lastError).toBeUndefined();
     });
 
@@ -120,10 +120,6 @@ describe("ProcessManager Unit Tests", () => {
       expect(mockStart).toBeDefined();
     });
 
-    test("should track restart count", () => {
-      const initialStats = processManager.getStats();
-      expect(initialStats.restartCount).toBe(0);
-    });
 
     test("should handle graceful shutdown errors", async () => {
       // Should not throw even if shutdown encounters issues
@@ -157,16 +153,6 @@ describe("ProcessManager Unit Tests", () => {
     });
   });
 
-  describe("Health Monitoring", () => {
-    test("should report health status correctly", () => {
-      expect(processManager.isHealthy()).toBe(false);
-    });
-
-    test("should handle health check failures", () => {
-      // Health check should not throw
-      expect(() => processManager.isHealthy()).not.toThrow();
-    });
-  });
 
   describe("Process Statistics", () => {
     test("should provide accurate statistics", () => {
@@ -174,10 +160,8 @@ describe("ProcessManager Unit Tests", () => {
 
       expect(stats).toHaveProperty("isRunning");
       expect(stats).toHaveProperty("uptime");
-      expect(stats).toHaveProperty("restartCount");
       expect(typeof stats.isRunning).toBe("boolean");
       expect(typeof stats.uptime).toBe("number");
-      expect(typeof stats.restartCount).toBe("number");
     });
 
     test("should track memory usage when running", () => {

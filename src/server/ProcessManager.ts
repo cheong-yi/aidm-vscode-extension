@@ -30,7 +30,6 @@ export interface ProcessStats {
   isRunning: boolean;
   pid?: number;
   uptime: number;
-  restartCount: number;
   lastError?: string;
   memoryUsage?: NodeJS.MemoryUsage;
 }
@@ -41,9 +40,7 @@ export class ProcessManager {
   private config: ProcessManagerConfig;
   private isRunning: boolean = false;
   private startTime: number = 0;
-  private restartCount: number = 0;
   private lastError: string | null = null;
-  private restartTimer: NodeJS.Timeout | null = null;
   private shutdownPromise: Promise<void> | null = null;
   private statusChangeListeners: ((status: ConnectionStatus) => void)[] = [];
 
@@ -124,10 +121,6 @@ export class ProcessManager {
       console.error("Failed to start MCP server:", this.lastError);
       this.notifyStatusChange(ConnectionStatus.Error);
 
-      // Schedule restart if configured
-      if (this.config.retryAttempts > this.restartCount) {
-        this.scheduleRestart();
-      }
 
       throw error;
     }
@@ -144,11 +137,6 @@ export class ProcessManager {
     console.log("Stopping MCP server process...");
     this.notifyStatusChange(ConnectionStatus.Disconnected);
 
-    // Clear timers
-    if (this.restartTimer) {
-      clearTimeout(this.restartTimer);
-      this.restartTimer = null;
-    }
 
 
     try {
@@ -205,10 +193,7 @@ export class ProcessManager {
       await this.stop();
       await new Promise((resolve) => setTimeout(resolve, 1000)); // Brief pause
       await this.start();
-      this.restartCount++;
-      console.log(
-        `MCP server restarted successfully (restart count: ${this.restartCount})`
-      );
+      console.log(`MCP server restarted successfully`);
     } catch (error) {
       console.error("Failed to restart MCP server:", error);
       throw error;
@@ -304,7 +289,6 @@ export class ProcessManager {
       isRunning: this.isRunning,
       pid: this.serverProcess?.pid,
       uptime: this.isRunning ? Date.now() - this.startTime : 0,
-      restartCount: this.restartCount,
       lastError: this.lastError || undefined,
       memoryUsage: this.isRunning ? process.memoryUsage() : undefined,
     };
@@ -385,54 +369,8 @@ export class ProcessManager {
     }
   }
 
-  /**
-   * Schedule automatic restart after failure
-   */
-  private scheduleRestart(): void {
-    if (this.restartTimer) {
-      return;
-    }
-
-    const delay = Math.min(1000 * Math.pow(2, this.restartCount), 30000); // Exponential backoff, max 30s
-    console.log(
-      `Scheduling restart in ${delay}ms (attempt ${this.restartCount + 1}/${
-        this.config.retryAttempts
-      })`
-    );
-
-    this.restartTimer = setTimeout(async () => {
-      this.restartTimer = null;
-      try {
-        await this.start();
-      } catch (error) {
-        console.error("Restart attempt failed:", error);
-        if (this.restartCount < this.config.retryAttempts) {
-          this.scheduleRestart();
-        }
-      }
-    }, delay);
-  }
 
 
-  /**
-   * Handle server failure and recovery
-   */
-  private handleServerFailure(reason: string): void {
-    console.error(`Server failure detected: ${reason}`);
-    this.lastError = reason;
-    this.isRunning = false;
-    this.notifyStatusChange(ConnectionStatus.Error);
-
-    // Attempt restart if within retry limits
-    if (this.restartCount < this.config.retryAttempts) {
-      this.scheduleRestart();
-    } else {
-      console.error(
-        `Maximum restart attempts (${this.config.retryAttempts}) exceeded`
-      );
-      this.notifyStatusChange(ConnectionStatus.Disconnected);
-    }
-  }
 
   /**
    * Notify status change listeners
