@@ -550,7 +550,7 @@
           "failingTestsList": []
         },
         "implementation": {
-          "commitHash": "[pending - will be updated after commit]",
+          "commitHash": "48087f7ffa5c410e6efcbfcbeeef9594d1ae9b26",
           "summary": "Extracted all CSS styles to external styles.css file, updated TaskHTMLGenerator to use external stylesheet with proper VSCode resource URIs",
           "filesChanged": ["src/tasks/providers/TaskHTMLGenerator.ts", "src/tasks/providers/TaskWebviewProvider.ts", "src/tasks/providers/styles.css"],
           "completedDate": "2025-09-08T22:45:00.000Z",
@@ -571,7 +571,7 @@
         "priority": "critical",
         "assignee": "unassigned",
         "dependencies": ["REF-008"],
-        "status": "not_started",
+        "status": "completed",
         "phase": "Phase 1",
         "riskLevel": "HIGH",
         "estimatedMinutes": 20,
@@ -586,10 +586,16 @@
           "executionTime": 0,
           "failingTestsList": []
         },
-        "implementation": null,
+        "implementation": {
+          "commitHash": "pending",
+          "summary": "Fixed URI construction for git diff functionality in TaskMessageHandler and added aidm.openDiff command to extension.ts",
+          "filesChanged": ["src/tasks/providers/TaskMessageHandler.ts", "src/extension.ts"],
+          "completedDate": "2025-09-08T23:55:00.000Z",
+          "diffAvailable": true
+        },
         "testResults": null,
         "filesAffected": [
-          "src/tasks/providers/TaskWebviewProvider.ts",
+          "src/tasks/providers/TaskMessageHandler.ts",
           "src/extension.ts"
         ]
       },

@@ -333,18 +333,22 @@ export class TaskMessageHandler {
     commitHash: string,
     workspaceUri: vscode.Uri
   ): Promise<void> {
-    const fullPath = path.resolve(workspaceUri.fsPath, filePath);
-    const fileUri = vscode.Uri.file(fullPath);
+    // Properly resolve absolute path
+    const absolutePath = path.isAbsolute(filePath) 
+      ? filePath 
+      : path.join(workspaceUri.fsPath, filePath);
     
-    // Create git URI for the commit version
-    const gitUri = vscode.Uri.parse(`git:${fullPath}?${commitHash}^`);
+    const fileUri = vscode.Uri.file(absolutePath);
+    
+    // Create proper git URI with correct protocol format
+    const gitUri = vscode.Uri.parse(`git:${fileUri.fsPath}?${commitHash}^`);
     
     // Open diff view
     await vscode.commands.executeCommand(
       "vscode.diff",
       gitUri,
       fileUri,
-      `${path.basename(filePath)} (Task Changes)`
+      `${path.basename(filePath)} (Git Diff)`
     );
   }
 }

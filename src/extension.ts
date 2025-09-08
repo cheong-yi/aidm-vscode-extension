@@ -1410,6 +1410,45 @@ export async function activate(
       console.error("❌ viewTestResults command failed:", error);
     }
 
+    // Register openDiff command for git diff functionality
+    try {
+      const openDiffCommand = vscode.commands.registerCommand(
+        "aidm.openDiff",
+        async (uriString: string) => {
+          // Parameter validation
+          if (!uriString || typeof uriString !== "string") {
+            vscode.window.showErrorMessage(
+              "File URI is required and must be a string"
+            );
+            return;
+          }
+
+          try {
+            // Parse the URI and construct git diff
+            const fileUri = vscode.Uri.parse(uriString);
+            const gitUri = vscode.Uri.parse(`git:${fileUri.fsPath}`);
+
+            await vscode.commands.executeCommand(
+              "vscode.diff",
+              gitUri,
+              fileUri,
+              `${path.basename(fileUri.fsPath)} (Git Diff)`
+            );
+          } catch (error) {
+            const errorMessage =
+              error instanceof Error ? error.message : "Unknown error occurred";
+            console.error("❌ openDiff command failed:", error);
+            vscode.window.showErrorMessage(
+              `Failed to open diff view: ${errorMessage}`
+            );
+          }
+        }
+      );
+      context.subscriptions.push(openDiffCommand);
+    } catch (error) {
+      console.error("❌ openDiff command failed:", error);
+    }
+
     // Expansion diagnostics command removed - replaced by webview-based diagnostics
     console.log(
       "ℹ️ expansionDiagnostics command removed - webview handles expansion state"
