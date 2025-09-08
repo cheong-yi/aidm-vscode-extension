@@ -1,29 +1,24 @@
 /**
- * MCP Server Process Manager
- * Handles spawning, lifecycle management, and error recovery for the MCP server process
+ * Simple Process Manager for MCP Server
+ * Direct server control with start/stop/getStatus methods only
  */
 
-import * as vscode from "vscode";
-import { spawn, ChildProcess } from "child_process";
-import * as path from "path";
 import { SimpleMCPServer } from "./SimpleMCPServer";
 import { ContextManager } from "./ContextManager";
 import { MockDataProvider } from "../mock/MockDataProvider";
-import { MockCache } from "./MockCache";
-import { ConnectionStatus, ErrorCode, ErrorResponse } from "../types/extension";
 import { TaskStatusManager } from "../services/TaskStatusManager";
-import { MarkdownTaskParser } from "../services/MarkdownTaskParser";
+import { JSONTaskParser } from "../services/JSONTaskParser";
 
 export interface ProcessManagerConfig {
   port: number;
-  timeout: number;
-  retryAttempts: number;
-  maxConcurrentRequests: number;
-  mock: {
+  timeout?: number; // Optional for backward compatibility
+  retryAttempts?: number; // Optional for backward compatibility
+  maxConcurrentRequests?: number; // Optional for backward compatibility
+  mock?: {
     enabled: boolean;
     dataSize: "small" | "medium" | "large";
     enterprisePatterns: boolean;
-  };
+  }; // Optional for backward compatibility
 }
 
 export interface ProcessStats {
@@ -36,352 +31,109 @@ export interface ProcessStats {
 
 export class ProcessManager {
   private server: SimpleMCPServer | null = null;
-  private serverProcess: ChildProcess | null = null;
-  private config: ProcessManagerConfig;
   private isRunning: boolean = false;
-  private startTime: number = 0;
-  private lastError: string | null = null;
-  private shutdownPromise: Promise<void> | null = null;
-  private statusChangeListeners: ((status: ConnectionStatus) => void)[] = [];
+  private config: ProcessManagerConfig;
 
   constructor(config: ProcessManagerConfig) {
     this.config = config;
   }
 
-  /**
-   * Start the MCP server process
-   */
   async start(): Promise<void> {
     if (this.isRunning) {
-      console.log("MCP server is already running");
-      return;
+      throw new Error('Server already running');
     }
 
     try {
-      console.log(
-        `🚀 Starting MCP server process on port ${this.config.port}...`
-      );
-      this.notifyStatusChange(ConnectionStatus.Connecting);
-
       // Initialize mock data provider
       const mockDataProvider = new MockDataProvider({
-        dataSize: this.config.mock.dataSize,
-        enterprisePatterns: this.config.mock.enterprisePatterns,
-        responseDelay: 50, // Minimal delay for better performance
-        errorRate: 0, // No errors in production mode
+        dataSize: 'medium',
+        enterprisePatterns: true,
+        responseDelay: 50,
+        errorRate: 0,
       });
 
-      // Initialize mock cache persisted under workspace
-      let mockCache: MockCache | undefined;
-      if (!process.env.DEMO_MODE) {
-        const workspaceRoot =
-          vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || process.cwd();
-        mockCache = new MockCache(workspaceRoot);
-        mockCache.load();
-        console.log("✅ MockCache initialized");
-      } else {
-        // Demo mode: MockCache disabled (no console output)
-      }
-
-      // Initialize context manager with mock cache
-      const contextManager = new ContextManager(mockDataProvider, mockCache);
+      // Initialize context manager
+      const contextManager = new ContextManager(mockDataProvider);
 
       // Initialize task status manager
-      const taskStatusManager = new TaskStatusManager(new MarkdownTaskParser());
+      const taskStatusManager = new TaskStatusManager(new JSONTaskParser());
 
-      // Create server instance with current config port
-      console.log(
-        `🔧 Creating SimpleMCPServer instance on port ${this.config.port}`
-      );
+      // Create and start server
       this.server = new SimpleMCPServer(
         this.config.port,
         contextManager,
         taskStatusManager
       );
 
-      // Configure server
-      this.server.updateConfiguration({
-        maxConcurrentRequests: this.config.maxConcurrentRequests,
-      });
-
-      // Start the server
       await this.server.start();
-
       this.isRunning = true;
-      this.startTime = Date.now();
-      this.lastError = null;
-
-
-      this.notifyStatusChange(ConnectionStatus.Connected);
-      console.log(
-        `MCP server started successfully on port ${this.config.port}`
-      );
+      console.log(`MCP server started on port ${this.config.port}`);
     } catch (error) {
-      this.lastError = error instanceof Error ? error.message : "Unknown error";
-      console.error("Failed to start MCP server:", this.lastError);
-      this.notifyStatusChange(ConnectionStatus.Error);
-
-
+      console.error('Failed to start server:', error);
       throw error;
     }
   }
 
-  /**
-   * Stop the MCP server process
-   */
   async stop(): Promise<void> {
     if (!this.isRunning) {
       return;
     }
 
-    console.log("Stopping MCP server process...");
-    this.notifyStatusChange(ConnectionStatus.Disconnected);
-
-
-
     try {
-      // Stop the server gracefully
       if (this.server) {
         await this.server.stop();
         this.server = null;
       }
-
-      // Persist mock cache on shutdown
-      if (!process.env.DEMO_MODE) {
-        try {
-          const workspaceRoot =
-            vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || process.cwd();
-          const cache = new MockCache(workspaceRoot);
-          cache.load();
-          cache.save();
-        } catch (e) {
-          // eslint-disable-next-line no-console
-          console.error("Failed to persist mock cache on shutdown:", e);
-        }
-      } else {
-        // Demo mode: MockCache persistence skipped (no console output)
-      }
-
-      // Kill process if it exists
-      if (this.serverProcess && !this.serverProcess.killed) {
-        this.serverProcess.kill("SIGTERM");
-
-        // Force kill after timeout
-        setTimeout(() => {
-          if (this.serverProcess && !this.serverProcess.killed) {
-            this.serverProcess.kill("SIGKILL");
-          }
-        }, 5000);
-      }
-
       this.isRunning = false;
-      this.serverProcess = null;
-      console.log("MCP server stopped successfully");
+      console.log('MCP server stopped');
     } catch (error) {
-      console.error("Error stopping MCP server:", error);
+      console.error('Failed to stop server:', error);
       throw error;
     }
   }
 
-  /**
-   * Restart the MCP server process
-   */
-  async restart(): Promise<void> {
-    console.log("Restarting MCP server...");
-
-    try {
-      await this.stop();
-      await new Promise((resolve) => setTimeout(resolve, 1000)); // Brief pause
-      await this.start();
-      console.log(`MCP server restarted successfully`);
-    } catch (error) {
-      console.error("Failed to restart MCP server:", error);
-      throw error;
-    }
+  getStatus(): 'running' | 'stopped' {
+    return this.isRunning ? 'running' : 'stopped';
   }
 
-  /**
-   * Update configuration and restart if necessary
-   */
-  async updateConfig(newConfig: Partial<ProcessManagerConfig>): Promise<void> {
-    const oldConfig = { ...this.config };
-    this.config = { ...this.config, ...newConfig };
-
-    // Check if restart is needed
-    const needsRestart =
-      oldConfig.port !== this.config.port ||
-      oldConfig.maxConcurrentRequests !== this.config.maxConcurrentRequests ||
-      JSON.stringify(oldConfig.mock) !== JSON.stringify(this.config.mock);
-
-    if (needsRestart && this.isRunning) {
-      console.log("Configuration changed, restarting server...");
-      await this.restart();
-    } else if (this.server) {
-      // Update server configuration without restart
-      this.server.updateConfiguration({
-        maxConcurrentRequests: this.config.maxConcurrentRequests,
-      });
-    }
-  }
-
-  /**
-   * Update port configuration
-   */
-  updatePort(newPort: number): void {
-    if (this.config.port !== newPort) {
-      console.log(
-        `🔄 ProcessManager: Updating port from ${this.config.port} to ${newPort}`
-      );
-      this.config.port = newPort;
-
-      // If server is already running, we need to restart it with the new port
-      if (this.isRunning && this.server) {
-        console.log(
-          `🔄 Port changed while server running, restarting server on new port ${newPort}`
-        );
-        this.restart().catch((error) => {
-          console.error(
-            `❌ Failed to restart server on new port ${newPort}:`,
-            error
-          );
-        });
-      }
-    }
-  }
-
-  /**
-   * Get current port
-   */
   getPort(): number {
     return this.config.port;
   }
 
-  /**
-   * Get the actual port the server is running on (if different from config)
-   */
+  // Backward compatibility methods (simplified)
   getActualPort(): number {
-    if (this.server && this.isRunning) {
-      // Get the actual port from the server instance
-      try {
-        const serverPort = this.server.getPort();
-        if (serverPort && typeof serverPort === "number") {
-          return serverPort;
-        }
-      } catch (error) {
-        console.log("Could not get actual server port, using config port");
-      }
-    }
     return this.config.port;
   }
 
-  /**
-   * Get current timeout
-   */
   getTimeout(): number {
-    return this.config.timeout;
+    return this.config.timeout || 30000;
   }
 
-  /**
-   * Get current process statistics
-   */
+  async restart(): Promise<void> {
+    await this.stop();
+    await this.start();
+  }
+
+  async updateConfig(newConfig: Partial<ProcessManagerConfig>): Promise<void> {
+    this.config = { ...this.config, ...newConfig };
+  }
+
+  updatePort(newPort: number): void {
+    this.config.port = newPort;
+  }
+
+  async shutdown(): Promise<void> {
+    await this.stop();
+  }
+
+  onStatusChange(listener: (status: any) => void): void {
+    // Simplified - no status change notifications
+  }
+
   getStats(): ProcessStats {
     return {
       isRunning: this.isRunning,
-      pid: this.serverProcess?.pid,
-      uptime: this.isRunning ? Date.now() - this.startTime : 0,
-      lastError: this.lastError || undefined,
-      memoryUsage: this.isRunning ? process.memoryUsage() : undefined,
+      uptime: 0,
     };
-  }
-
-
-  /**
-   * Add status change listener
-   */
-  onStatusChange(listener: (status: ConnectionStatus) => void): void {
-    this.statusChangeListeners.push(listener);
-  }
-
-  /**
-   * Remove status change listener
-   */
-  removeStatusChangeListener(
-    listener: (status: ConnectionStatus) => void
-  ): void {
-    const index = this.statusChangeListeners.indexOf(listener);
-    if (index > -1) {
-      this.statusChangeListeners.splice(index, 1);
-    }
-  }
-
-  /**
-   * Graceful shutdown with cleanup
-   */
-  async shutdown(): Promise<void> {
-    if (this.shutdownPromise) {
-      return this.shutdownPromise;
-    }
-
-    this.shutdownPromise = this.performShutdown();
-    return this.shutdownPromise;
-  }
-
-  private async performShutdown(): Promise<void> {
-    console.log("Performing graceful shutdown...");
-
-    try {
-      // Stop accepting new requests
-      this.notifyStatusChange(ConnectionStatus.Disconnected);
-
-      // Wait for active requests to complete (with timeout)
-      if (this.server) {
-        const stats = this.server.getServerStats();
-        if (stats.activeRequests > 0) {
-          console.log(
-            `Waiting for ${stats.activeRequests} active requests to complete...`
-          );
-
-          // Wait up to 10 seconds for requests to complete
-          const maxWait = 10000;
-          const checkInterval = 100;
-          let waited = 0;
-
-          while (waited < maxWait) {
-            const currentStats = this.server.getServerStats();
-            if (currentStats.activeRequests === 0) {
-              break;
-            }
-            await new Promise((resolve) => setTimeout(resolve, checkInterval));
-            waited += checkInterval;
-          }
-        }
-      }
-
-      // Stop the server
-      await this.stop();
-
-      console.log("Graceful shutdown completed");
-    } catch (error) {
-      console.error("Error during graceful shutdown:", error);
-      throw error;
-    } finally {
-      this.shutdownPromise = null;
-    }
-  }
-
-
-
-
-  /**
-   * Notify status change listeners
-   */
-  private notifyStatusChange(status: ConnectionStatus): void {
-    this.statusChangeListeners.forEach((listener) => {
-      try {
-        listener(status);
-      } catch (error) {
-        console.error("Error in status change listener:", error);
-      }
-    });
   }
 }
