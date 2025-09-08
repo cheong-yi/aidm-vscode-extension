@@ -6,12 +6,6 @@
 import { ContextManager as IContextManager } from "../types/extension";
 import { BusinessContext, CodeLocation } from "../types/business";
 import { MockDataProvider } from "../mock/MockDataProvider";
-import {
-  AuditLogger,
-  AuditSeverity,
-  AuditOutcome,
-  AuditCategory,
-} from "../security/AuditLogger";
 import { ErrorHandler, ErrorContext } from "../utils/ErrorHandler";
 import { MockCache } from "./MockCache";
 
@@ -25,7 +19,6 @@ export class ContextManager implements IContextManager {
   private mockDataProvider: MockDataProvider;
   private cache: Map<string, CacheEntry> = new Map();
   private defaultTTL: number = 5 * 60 * 1000; // 5 minutes
-  private auditLogger: AuditLogger;
   private errorHandler: ErrorHandler;
   private cleanupInterval: NodeJS.Timeout | null = null;
   private mockCache?: MockCache;
@@ -33,12 +26,7 @@ export class ContextManager implements IContextManager {
   constructor(mockDataProvider: MockDataProvider, mockCache?: MockCache) {
     this.mockDataProvider = mockDataProvider;
     this.mockCache = mockCache;
-    this.auditLogger = new AuditLogger({
-      enabled: true,
-      logLevel: AuditSeverity.LOW,
-      enablePerformanceTracking: true,
-    });
-    this.errorHandler = new ErrorHandler(this.auditLogger);
+    this.errorHandler = new ErrorHandler();
 
     // Start cache cleanup
     this.startCacheCleanup();
@@ -63,11 +51,7 @@ export class ContextManager implements IContextManager {
     };
 
     // Log data access
-    await this.auditLogger.logDataAccess(
-      "business_context_requested",
-      `${codeLocation.filePath}:${codeLocation.startLine}-${codeLocation.endLine}`,
-      context.metadata
-    );
+    console.log(`Business context requested for ${codeLocation.filePath}:${codeLocation.startLine}-${codeLocation.endLine}`);
 
     const result = await this.errorHandler.executeWithErrorHandling(
       async () => {
@@ -96,11 +80,7 @@ export class ContextManager implements IContextManager {
     };
 
     // Log data access
-    await this.auditLogger.logDataAccess(
-      "requirement_requested",
-      id,
-      context.metadata
-    );
+    console.log(`Requirement requested: ${id}`);
 
     return await this.errorHandler.executeWithErrorHandling(
       async () => {
@@ -135,23 +115,9 @@ export class ContextManager implements IContextManager {
         keysToDelete.forEach((key) => this.cache.delete(key));
       }
 
-      this.auditLogger.logEvent({
-        action: "cache_invalidated",
-        category: AuditCategory.SYSTEM_EVENT,
-        severity: AuditSeverity.LOW,
-        outcome: AuditOutcome.SUCCESS,
-        metadata: {
-          pattern,
-          entriesCleared: pattern ? "pattern-based" : "all",
-        },
-      });
+      console.log(`Cache invalidated successfully, pattern: ${pattern || 'all entries'}`);
     } catch (error) {
-      this.auditLogger.logError(
-        "cache_invalidation_failed",
-        error instanceof Error ? error : new Error(String(error)),
-        { pattern },
-        AuditSeverity.MEDIUM
-      );
+      console.error('Cache invalidation failed:', error);
     }
   }
 
@@ -234,9 +200,8 @@ export class ContextManager implements IContextManager {
     codeLocation: CodeLocation
   ): Promise<BusinessContext> {
     const cacheKey = this.generateCacheKey(codeLocation);
-    const tracker = this.auditLogger.createPerformanceTracker(
-      "get_business_context_internal"
-    );
+    const startTime = Date.now();
+    console.log(`Starting context retrieval for ${codeLocation.filePath}:${codeLocation.startLine}`);
 
     try {
       console.log(
@@ -252,7 +217,7 @@ export class ContextManager implements IContextManager {
         );
         if (cachedFromMock) {
           console.log("✅ Found data in MockCache!");
-          await tracker.finish(AuditOutcome.SUCCESS);
+          console.log(`Context retrieval completed in ${Date.now() - startTime}ms`);
           return cachedFromMock;
         } else {
           console.log(
@@ -270,14 +235,8 @@ export class ContextManager implements IContextManager {
       // Check cache first
       const cachedEntry = this.cache.get(cacheKey);
       if (cachedEntry && this.isCacheValid(cachedEntry)) {
-        await tracker.finish(AuditOutcome.SUCCESS);
-        await this.auditLogger.logEvent({
-          action: "cache_hit",
-          category: AuditCategory.PERFORMANCE_EVENT,
-          severity: AuditSeverity.LOW,
-          outcome: AuditOutcome.SUCCESS,
-          metadata: { cacheKey },
-        });
+        console.log(`Context retrieval completed in ${Date.now() - startTime}ms`);
+        console.log(`Cache hit for key: ${cacheKey}`);
         return cachedEntry.data;
       }
 
@@ -299,20 +258,13 @@ export class ContextManager implements IContextManager {
         // Cache health monitoring removed
       } catch (cacheError) {
         // Cache health monitoring removed
-        await this.auditLogger.logError(
-          "cache_write_failed",
-          cacheError instanceof Error
-            ? cacheError
-            : new Error(String(cacheError)),
-          { cacheKey },
-          AuditSeverity.MEDIUM
-        );
+        console.error('Cache write failed:', cacheError);
       }
 
-      await tracker.finish(AuditOutcome.SUCCESS);
+      console.log(`Context retrieval completed in ${Date.now() - startTime}ms`);
       return relevantContext;
     } catch (error) {
-      await tracker.finish(AuditOutcome.FAILURE);
+      console.log(`Context retrieval failed after ${Date.now() - startTime}ms`);
       // Data provider health monitoring removed
       throw error;
     }
@@ -400,15 +352,10 @@ export class ContextManager implements IContextManager {
         this.cleanupInterval = null;
       }
 
-      await this.auditLogger.shutdown();
+      console.log('ContextManager shutting down');
       // Degraded mode manager shutdown removed
 
-      await this.auditLogger.logEvent({
-        action: "context_manager_shutdown",
-        category: AuditCategory.SYSTEM_EVENT,
-        severity: AuditSeverity.LOW,
-        outcome: AuditOutcome.SUCCESS,
-      });
+      console.log(`ContextManager shutdown completed, cleared ${this.cache.size} cache entries`);
     } catch (error) {
       console.error("Error during context manager shutdown:", error);
     }
