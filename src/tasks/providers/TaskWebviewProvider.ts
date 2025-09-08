@@ -28,17 +28,10 @@ import { TasksDataService } from "../../services";
 import { GitUtilities } from "../../services";
 import { TaskHTMLGenerator } from "./TaskHTMLGenerator";
 import { TaskMessageHandler } from "./TaskMessageHandler";
+import { TaskViewState } from "./TaskViewState";
 import * as path from "path";
 
 
-/**
- * Webview state interface for persistence
- * Task WV-009: State structure for accordion expansion persistence
- */
-interface WebviewState {
-  expandedTaskId: string | null;
-  lastUpdated: number;
-}
 
 /**
  * TaskWebviewProvider implements vscode.WebviewViewProvider to provide
@@ -93,10 +86,10 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
    */
 
   /**
-   * Currently expanded task ID for accordion behavior
-   * Task WV-009: Track expansion state for persistence
+   * View state manager for accordion and filter state
+   * REF-012: Centralized state management
    */
-  private currentExpandedTaskId: string | null = null;
+  private viewState: TaskViewState;
 
   /**
    * Cached logo data URI to avoid repeated file system access
@@ -129,6 +122,7 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
     this.tasksDataService = tasksDataService;
     this.context = context;
     this.htmlGenerator = new TaskHTMLGenerator(context.extensionUri);
+    this.viewState = new TaskViewState(context);
 
     // Task WV-007: Setup event listeners but defer data loading until initializeData() called
     this.setupEventListeners();
@@ -211,15 +205,16 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
     }, 50); // Send data before state restoration
 
     // Restore accordion state after content loads
-    if (this.currentExpandedTaskId) {
+    const expandedTaskId = this.viewState.getExpandedTask();
+    if (expandedTaskId) {
       // Small delay to ensure HTML is rendered before state restoration
       setTimeout(() => {
-        this.restoreAccordionState(this.currentExpandedTaskId!);
+        this.restoreAccordionState(expandedTaskId);
       }, 100);
     }
 
     console.debug(
-      `TaskWebviewProvider: Content updated with ${tasks.length} tasks, expanded: ${this.currentExpandedTaskId}`
+      `TaskWebviewProvider: Content updated with ${tasks.length} tasks, expanded: ${expandedTaskId}`
     );
   }
 
@@ -344,90 +339,18 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
     return true;
   }
 
-  /**
-   * Save current webview state to VSCode workspace storage
-   * Task API-1: Use VSCode Memento API for native state management
-   */
-  private async saveWebviewState(expandedTaskId: string | null): Promise<void> {
-    try {
-      await this.context.workspaceState.update(
-        "taskmaster.expandedTask",
-        expandedTaskId
-      );
-      await this.context.workspaceState.update(
-        "taskmaster.lastUpdated",
-        Date.now()
-      );
 
-      console.debug("TaskWebviewProvider: State saved to workspace storage:", {
-        expandedTaskId,
-        timestamp: Date.now(),
-      });
-    } catch (error) {
-      console.warn(
-        "TaskWebviewProvider: Failed to save state to workspace storage:",
-        error
-      );
-    }
-  }
-
-  /**
-   * Load webview state from VSCode workspace storage
-   * Task API-1: Use VSCode Memento API for native state management
-   */
-  private async loadWebviewState(): Promise<string | null> {
-    try {
-      const expandedTaskId = this.context.workspaceState.get<string | null>(
-        "taskmaster.expandedTask",
-        null
-      );
-      const lastUpdated = this.context.workspaceState.get<number>(
-        "taskmaster.lastUpdated",
-        0
-      );
-
-      console.debug(
-        "TaskWebviewProvider: State loaded from workspace storage:",
-        {
-          expandedTaskId,
-          lastUpdated: new Date(lastUpdated).toISOString(),
-        }
-      );
-
-      return expandedTaskId;
-    } catch (error) {
-      console.warn(
-        "TaskWebviewProvider: Failed to load state from workspace storage:",
-        error
-      );
-      return null;
-    }
-  }
 
   /**
    * Handle accordion toggle with state persistence
-   * Task WV-009: Update both memory and persistent state on user interaction
-   * Task API-4: Save state to VSCode workspace storage
+   * REF-012: Delegate to TaskViewState for state management
    */
   private async handleAccordionToggle(taskId: string): Promise<void> {
     try {
-      const wasExpanded = this.currentExpandedTaskId === taskId;
-
-      if (wasExpanded) {
-        // Collapse currently expanded task
-        this.currentExpandedTaskId = null;
-        console.debug("TaskWebviewProvider: Task collapsed:", taskId);
-      } else {
-        // Expand new task (accordion behavior)
-        this.currentExpandedTaskId = taskId;
-        console.debug("TaskWebviewProvider: Task expanded:", taskId);
-      }
-
-      // Save state to VSCode workspace storage
-      await this.saveWebviewState(this.currentExpandedTaskId);
-
+      const isNowExpanded = this.viewState.toggleExpanded(taskId);
+      
       console.debug(
-        `TaskWebviewProvider: Accordion toggled and state saved: ${taskId}`
+        `TaskWebviewProvider: Task ${isNowExpanded ? 'expanded' : 'collapsed'}: ${taskId}`
       );
     } catch (error) {
       console.error(
@@ -552,10 +475,8 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
       // Task WV-005: Setup message handling for webview communication
       this.setupMessageHandling();
 
-      // Task WV-009: Initialize state loading for accordion persistence
-      this.loadWebviewState().then((expandedTaskId) => {
-        this.currentExpandedTaskId = expandedTaskId;
-      });
+      // REF-012: State is automatically loaded in TaskViewState constructor
+      console.debug('TaskWebviewProvider: State initialized via TaskViewState');
 
       // FIXED: Load data asynchronously after webview is ready
       // This prevents race conditions by ensuring webview is fully resolved first
@@ -599,8 +520,7 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
 
       // FIXED: Data initialization flag removed - no longer needed
 
-      // Load accordion state from VSCode workspace storage
-      this.currentExpandedTaskId = await this.loadWebviewState();
+      // REF-012: State is managed by TaskViewState (already loaded in constructor)
 
       // Setup event listeners now that service is initialized
       if (this.eventDisposables.length === 0) {
@@ -631,7 +551,7 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
     // FIXED: Always return task content since loading state is handled separately
     // Update logo in generator and generate HTML
     this.htmlGenerator.setLogoDataUri(this.logoDataUri);
-    return this.htmlGenerator.generateFullHTML(tasks, this.currentExpandedTaskId);
+    return this.htmlGenerator.generateFullHTML(tasks, this.viewState.getExpandedTask());
   }
 
   /**
