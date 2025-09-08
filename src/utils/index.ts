@@ -15,9 +15,3 @@ export { auditTrail } from "./auditTrail";
 export { ConfigLoader } from "./configLoader";
 export { PortFinder } from "./portFinder";
 export { TaskValidator } from "./TaskValidator";
-export {
-  validateExtensionManifest,
-  validateWebpackCompatibility,
-  validatePackagingReadiness,
-  ValidationResult,
-} from "./manifestValidator";
