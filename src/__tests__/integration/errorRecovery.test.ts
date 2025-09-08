@@ -7,10 +7,6 @@
  */
 
 import { ErrorHandler } from "../../utils/ErrorHandler";
-import {
-  DegradedModeManager,
-  DegradedModeLevel,
-} from "../../utils/DegradedModeManager";
 import { auditTrail } from "../../utils/auditTrail";
 import { LoggerFactory } from "../../utils/logger";
 import { AuditLogger } from "../../security/AuditLogger";
@@ -39,7 +35,6 @@ jest.mock("vscode", () => ({
 
 describe("Error Recovery Integration", () => {
   let errorHandler: ErrorHandler;
-  let degradedModeManager: DegradedModeManager;
   let auditLogger: AuditLogger;
 
   beforeEach(() => {
@@ -48,13 +43,7 @@ describe("Error Recovery Integration", () => {
     // Create proper instances
     auditLogger = new AuditLogger();
     errorHandler = new ErrorHandler(auditLogger);
-    degradedModeManager = new DegradedModeManager(auditLogger);
-
-    // Reset degraded mode manager to normal state
-    degradedModeManager.forceDegradedMode(
-      DegradedModeLevel.NORMAL,
-      "Test reset"
-    );
+    // DegradedModeManager removed
   });
 
   afterEach(async () => {
@@ -62,7 +51,7 @@ describe("Error Recovery Integration", () => {
     if (auditLogger && typeof auditLogger.shutdown === "function") {
       await auditLogger.shutdown();
     }
-    await degradedModeManager.shutdown();
+    // DegradedModeManager shutdown removed
   });
 
   describe("network failure scenarios", () => {
@@ -134,64 +123,7 @@ describe("Error Recovery Integration", () => {
     }, 15000); // Increase timeout to 15 seconds
   });
 
-  describe("service degradation scenarios", () => {
-    it("should handle MCP server unavailability", async () => {
-      // Simulate MCP server being down
-      await degradedModeManager.forceDegradedMode(
-        DegradedModeLevel.PARTIAL,
-        "MCP server unavailable"
-      );
-
-      const mcpOperation = jest
-        .fn()
-        .mockRejectedValue(new Error("MCP server not responding"));
-      const fallback = jest.fn().mockResolvedValue({
-        requirements: [],
-        implementationStatus: {
-          completionPercentage: 0,
-          lastVerified: new Date().toISOString(),
-          verifiedBy: "System",
-        },
-        relatedChanges: [],
-        lastUpdated: new Date().toISOString(),
-      });
-
-      const result = await degradedModeManager.executeWithDegradation(
-        mcpOperation,
-        fallback,
-        { component: "MCPClient", operation: "getContext" }
-      );
-
-      expect(result).toBeDefined();
-      expect(mcpOperation).not.toHaveBeenCalled(); // Should skip primary operation in degraded mode
-      expect(fallback).toHaveBeenCalled();
-    });
-
-    it("should recover when services become available", async () => {
-      // Start in degraded mode
-      await degradedModeManager.forceDegradationLevel(
-        DegradedModeLevel.MINIMAL,
-        "Multiple services down"
-      );
-
-      // Mock health checks to simulate recovery
-      jest
-        .spyOn(degradedModeManager as any, "performHealthChecks")
-        .mockResolvedValue({
-          mcpServer: true,
-          dataProvider: true,
-          cache: true,
-          network: true,
-        });
-
-      const recovered = await degradedModeManager.attemptRecovery();
-
-      expect(recovered).toBe(true);
-      expect(degradedModeManager.getCurrentState().level).toBe(
-        DegradedModeLevel.NORMAL
-      );
-    });
-  });
+  // Service degradation test section removed - DegradedModeManager eliminated
 
   describe("data consistency scenarios", () => {
     it("should maintain audit trail during error conditions", async () => {
@@ -311,7 +243,7 @@ describe("Error Recovery Integration", () => {
       expect(endTime - startTime).toBeLessThan(10000);
 
       // System should remain stable (not crash)
-      expect(degradedModeManager.getCurrentState()).toBeDefined();
+      // DegradedModeManager state check removed
     });
   });
 
@@ -426,66 +358,7 @@ describe("Error Recovery Integration", () => {
     });
   });
 
-  describe("DegradedModeManager Business Context", () => {
-    it("should get business context with fallback", async () => {
-      const mcpOperation = jest
-        .fn()
-        .mockRejectedValue(new Error("MCP server not responding"));
-
-      const result = await degradedModeManager.getBusinessContextWithFallback(
-        { filePath: "/test/file.ts", startLine: 1, endLine: 10 },
-        mcpOperation
-      );
-
-      expect(result).toBeDefined();
-      expect(result).toHaveProperty("requirements");
-    });
-
-    it("should handle requirement lookup failures", async () => {
-      // First, put the system into degraded mode where fallbacks are not available
-      await degradedModeManager.forceDegradedMode(
-        DegradedModeLevel.MINIMAL,
-        "Testing degraded mode fallback behavior"
-      );
-
-      // Simulate requirement lookup failure
-      const requirementOperation = jest
-        .fn()
-        .mockRejectedValue(new Error("Requirement not found"));
-
-      const result = await degradedModeManager.getRequirementWithFallback(
-        "req123",
-        requirementOperation
-      );
-
-      // In minimal degraded mode with no cache, should return null instead of fallback data
-      expect(result).toBeNull();
-
-      // Verify the primary operation was not called (degraded mode behavior)
-      expect(requirementOperation).not.toHaveBeenCalled();
-    });
-
-    it("should track service health status", async () => {
-      // Simulate service failure
-      degradedModeManager.updateServiceHealth("dataProvider", false);
-
-      const healthStatus = degradedModeManager.getServiceHealth();
-      expect(healthStatus.dataProvider).toBe(false);
-      expect(healthStatus.mcpServer).toBe(true);
-    });
-  });
-
-  describe("MCP Client Error Scenarios", () => {
-    it("should track client health status", async () => {
-      // Simulate MCP client failure
-      degradedModeManager.updateServiceHealth("mcpServer", false);
-
-      const healthStatus = degradedModeManager.getServiceHealth();
-      expect(healthStatus).toHaveProperty("mcpServer");
-      expect(healthStatus).toHaveProperty("dataProvider");
-      expect(healthStatus.mcpServer).toBe(false);
-    });
-  });
+  // DegradedModeManager and MCP Client test sections removed
 
   describe("End-to-End Error Recovery", () => {
     it("should maintain audit trail during error scenarios", async () => {
@@ -541,14 +414,7 @@ describe("Error Recovery Integration", () => {
       expect(stats.totalErrors).toBeGreaterThan(0);
     });
 
-    it("should provide health status across all components", async () => {
-      const healthStatus = degradedModeManager.getServiceHealth();
-
-      expect(healthStatus).toHaveProperty("mcpServer");
-      expect(healthStatus).toHaveProperty("dataProvider");
-      expect(healthStatus).toHaveProperty("cache");
-      expect(healthStatus).toHaveProperty("auditLogger");
-    });
+    // Health status test removed - DegradedModeManager eliminated
   });
 
   describe("Recovery Strategy Management", () => {
@@ -777,44 +643,7 @@ describe("Error Recovery Integration", () => {
       expect(errorCount).toBeGreaterThan(0);
     });
 
-    it("should validate degraded mode affects all error handling subsystems", async () => {
-      // Force degraded mode and verify it affects all components
-      await degradedModeManager.forceDegradedMode(
-        DegradedModeLevel.PARTIAL,
-        "Integration test degraded mode"
-      );
-
-      const operation = jest
-        .fn()
-        .mockRejectedValue(new Error("Degraded mode test"));
-
-      // Execute operation in degraded mode
-      const result = await errorHandler.executeWithErrorHandling(
-        operation,
-        {
-          component: "DegradedModeTest",
-          operation: "degradedOperation",
-          requestId: "degraded-test-1",
-        },
-        { fallbackValue: "degraded-fallback" }
-      );
-
-      expect(result).toBe("degraded-fallback");
-
-      // Verify degraded mode is affecting the system
-      const currentMode = degradedModeManager.getCurrentMode();
-      expect(currentMode).toBe(DegradedModeLevel.PARTIAL);
-
-      // Verify error handling still works in degraded mode
-      const stats = errorHandler.getErrorStats();
-      expect(
-        stats.errorsByComponent["DegradedModeTest.degradedOperation"]
-      ).toBeGreaterThan(0);
-
-      // Verify audit trail still records events
-      const events = auditTrail.getEvents({ component: "DegradedModeTest" });
-      expect(events.length).toBeGreaterThan(0);
-    });
+    // Degraded mode integration test removed
 
     it("should validate circuit breaker integration with retry and concurrent scenarios", async () => {
       // Test circuit breaker opens after repeated failures
@@ -937,7 +766,7 @@ describe("Error Recovery Integration", () => {
       expect(endTime - startTime).toBeLessThan(5000);
 
       // System should remain stable
-      expect(degradedModeManager.getCurrentState()).toBeDefined();
+      // DegradedModeManager state check removed
       expect(errorHandler.getErrorStats()).toBeDefined();
       expect(auditTrail.getStats()).toBeDefined();
     });
@@ -965,7 +794,7 @@ describe("Error Recovery Integration", () => {
       // Verify data consistency across components
       const stats = errorHandler.getErrorStats();
       const events = auditTrail.getEvents({ component: "DataConsistencyTest" });
-      const healthStatus = degradedModeManager.getServiceHealth();
+      // DegradedModeManager health status check removed
 
       // Error statistics should be consistent
       expect(
@@ -1005,13 +834,7 @@ describe("Error Recovery Integration", () => {
       expect(basicResult).toBeDefined();
       expect(basicResult.code).toBeDefined();
 
-      // 2. Test degraded mode functionality
-      const degradedResult = await degradedModeManager.executeWithDegradation(
-        () => Promise.reject(new Error("Degraded mode test")),
-        () => Promise.resolve("degraded-success"),
-        { component: "RegressionTest", operation: "degradedTest" }
-      );
-      expect(degradedResult).toBe("degraded-success");
+      // 2. Degraded mode functionality removed
 
       // 3. Test audit trail functionality
       const initialEventCount = auditTrail.getEvents().length;
@@ -1029,7 +852,7 @@ describe("Error Recovery Integration", () => {
       expect(stats.circuitBreakerStatus).toBeDefined();
 
       // 5. Test service health
-      const health = degradedModeManager.getServiceHealth();
+      // DegradedModeManager health check removed
       expect(health.mcpServer).toBeDefined();
       expect(health.dataProvider).toBeDefined();
     });
@@ -1145,14 +968,14 @@ describe("Error Recovery Integration", () => {
       // System should remain stable and functional
       const stats = errorHandler.getErrorStats();
       const events = auditTrail.getEvents({ component: "StressTest" });
-      const healthStatus = degradedModeManager.getServiceHealth();
+      // DegradedModeManager health status check removed
 
       expect(stats.totalErrors).toBeGreaterThan(0);
       expect(events.length).toBeGreaterThan(0);
       expect(healthStatus).toBeDefined();
 
       // Verify no memory leaks or resource exhaustion
-      expect(degradedModeManager.getCurrentState()).toBeDefined();
+      // DegradedModeManager state check removed
       expect(errorHandler.getErrorStats()).toBeDefined();
       expect(auditTrail.getStats()).toBeDefined();
     });
@@ -1182,7 +1005,7 @@ describe("Error Recovery Integration", () => {
       // Verify data synchronization across all components
       const errorStats = errorHandler.getErrorStats();
       const auditEvents = auditTrail.getEvents({ component: testComponent });
-      const degradedState = degradedModeManager.getCurrentState();
+      // DegradedModeManager state retrieval removed
 
       // Error statistics should reflect all operations
       expect(errorStats.totalErrors).toBeGreaterThan(0);

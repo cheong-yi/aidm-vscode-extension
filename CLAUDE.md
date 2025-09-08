@@ -127,10 +127,13 @@ cleanup(demo): remove DEMO_MODE flags from extension.ts - separate concerns - RE
 
 4. **Save the JSON file** before committing code changes
 
-5. **After successful git commit**, update implementation.commitHash:
+5. **After successful git commit**, update implementation.commitHash using full SHA:
+   ```bash
+   git rev-parse HEAD  # Get full 40-character commit hash
+   ```
    ```json
    "implementation": {
-     "commitHash": "[actual git commit SHA]",
+     "commitHash": "[full 40-character git commit SHA from git rev-parse HEAD]",
      ...
    }
    ```
@@ -155,6 +158,7 @@ cleanup(demo): remove DEMO_MODE flags from extension.ts - separate concerns - RE
 - **One task per commit**: Each atomic task gets exactly one commit
 - **Include affected files**: List main files changed in commit description
 - **Keep commits small**: Easier to review and rollback if needed
+- **Use full commit hash**: Always use `git rev-parse HEAD` for the complete 40-character SHA, not the short version
 
 ## Error Handling & Recovery
 

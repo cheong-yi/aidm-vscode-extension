@@ -13,7 +13,6 @@ import {
   AuditCategory,
 } from "../security/AuditLogger";
 import { ErrorHandler, ErrorContext } from "../utils/ErrorHandler";
-import { DegradedModeManager } from "../utils/DegradedModeManager";
 import { MockCache } from "./MockCache";
 
 interface CacheEntry {
@@ -28,7 +27,6 @@ export class ContextManager implements IContextManager {
   private defaultTTL: number = 5 * 60 * 1000; // 5 minutes
   private auditLogger: AuditLogger;
   private errorHandler: ErrorHandler;
-  private degradedModeManager: DegradedModeManager;
   private cleanupInterval: NodeJS.Timeout | null = null;
   private mockCache?: MockCache;
 
@@ -41,7 +39,6 @@ export class ContextManager implements IContextManager {
       enablePerformanceTracking: true,
     });
     this.errorHandler = new ErrorHandler(this.auditLogger);
-    this.degradedModeManager = new DegradedModeManager(this.auditLogger);
 
     // Start cache cleanup
     this.startCacheCleanup();
@@ -74,10 +71,7 @@ export class ContextManager implements IContextManager {
 
     const result = await this.errorHandler.executeWithErrorHandling(
       async () => {
-        return await this.degradedModeManager.getBusinessContextWithFallback(
-          codeLocation,
-          async () => await this.getBusinessContextInternal(codeLocation)
-        );
+        return await this.getBusinessContextInternal(codeLocation);
       },
       context,
       {
@@ -110,10 +104,7 @@ export class ContextManager implements IContextManager {
 
     return await this.errorHandler.executeWithErrorHandling(
       async () => {
-        return await this.degradedModeManager.getRequirementWithFallback(
-          id,
-          async () => await this.mockDataProvider.getRequirementById(id)
-        );
+        return await this.mockDataProvider.getRequirementById(id);
       },
       context,
       {
@@ -132,7 +123,7 @@ export class ContextManager implements IContextManager {
       if (!pattern) {
         // Clear all cache
         this.cache.clear();
-        this.degradedModeManager.clearCache();
+        // Degraded mode cache clearing removed
       } else {
         // Clear cache entries matching pattern
         const keysToDelete: string[] = [];
@@ -305,9 +296,9 @@ export class ContextManager implements IContextManager {
           timestamp: new Date(),
           ttl: this.defaultTTL,
         });
-        this.degradedModeManager.updateServiceHealth("cache", true);
+        // Cache health monitoring removed
       } catch (cacheError) {
-        this.degradedModeManager.updateServiceHealth("cache", false);
+        // Cache health monitoring removed
         await this.auditLogger.logError(
           "cache_write_failed",
           cacheError instanceof Error
@@ -322,7 +313,7 @@ export class ContextManager implements IContextManager {
       return relevantContext;
     } catch (error) {
       await tracker.finish(AuditOutcome.FAILURE);
-      this.degradedModeManager.updateServiceHealth("dataProvider", false);
+      // Data provider health monitoring removed
       throw error;
     }
   }
@@ -377,27 +368,26 @@ export class ContextManager implements IContextManager {
    */
   getHealthStatus(): {
     isHealthy: boolean;
-    degradedMode: string;
     cacheStats: any;
     errorStats: any;
   } {
     return {
-      isHealthy: !this.degradedModeManager.isDegraded(),
-      degradedMode: this.degradedModeManager.getCurrentMode(),
-      cacheStats: this.degradedModeManager.getCacheStats(),
+      isHealthy: true, // Always healthy without degraded mode
+      cacheStats: {
+        size: this.cache.size,
+        oldestEntry: null,
+        newestEntry: null,
+      },
       errorStats: this.errorHandler.getErrorStats(),
     };
   }
 
   /**
-   * Update service health status
+   * Update service health status (simplified - no degraded mode)
    */
   updateServiceHealth(service: string, isHealthy: boolean): void {
-    if (service === "dataProvider") {
-      this.degradedModeManager.updateServiceHealth("dataProvider", isHealthy);
-    } else if (service === "cache") {
-      this.degradedModeManager.updateServiceHealth("cache", isHealthy);
-    }
+    // Service health monitoring removed with degraded mode
+    console.log(`Service ${service} health: ${isHealthy}`);
   }
 
   /**
@@ -411,7 +401,7 @@ export class ContextManager implements IContextManager {
       }
 
       await this.auditLogger.shutdown();
-      await this.degradedModeManager.shutdown();
+      // Degraded mode manager shutdown removed
 
       await this.auditLogger.logEvent({
         action: "context_manager_shutdown",

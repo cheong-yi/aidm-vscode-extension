@@ -4,7 +4,6 @@
  * Provides access to:
  * - TimeFormattingUtility: Time formatting with performance-optimized caching
  * - ErrorHandler: Centralized error handling and recovery
- * - DegradedModeManager: Comprehensive graceful degradation management with fallback mechanisms
  * - Logger, LogLevel: Structured logging with configurable levels
  * - auditTrail: User action tracking and audit logging
  * - ConfigLoader: Configuration loading and validation (class with static methods)
@@ -14,7 +13,6 @@
 
 export { TimeFormattingUtility } from "./TimeFormattingUtility";
 export { ErrorHandler } from "./ErrorHandler";
-export { DegradedModeManager } from "./DegradedModeManager";
 export { Logger, LogLevel } from "./logger";
 export { auditTrail } from "./auditTrail";
 export { ConfigLoader } from "./configLoader";
