@@ -387,7 +387,7 @@
           "failingTestsList": []
         },
         "implementation": {
-          "commitHash": "[pending - will be updated after commit]",
+          "commitHash": "2af240658dc651ab772b8cd04f1fb78c09780ddd",
           "summary": "Created TaskViewState class and extracted all state management logic from TaskWebviewProvider including accordion state and workspace persistence",
           "filesChanged": ["src/tasks/providers/TaskWebviewProvider.ts", "src/tasks/providers/TaskViewState.ts", "src/__tests__/unit/TaskViewState.test.ts"],
           "completedDate": "2025-09-08T23:00:00.000Z",
