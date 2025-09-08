@@ -96,127 +96,14 @@
         "aidmVscodeExtension.mcpServer.port": {
           "type": "number",
           "default": 3001,
-          "description": "Port for MCP server (default: 3001 to avoid conflicts with Cursor)"
-        },
-        "aidmVscodeExtension.mcpServer.timeout": {
-          "type": "number",
-          "default": 5000,
-          "description": "Request timeout in milliseconds"
-        },
-        "aidmVscodeExtension.mcpServer.retryAttempts": {
-          "type": "number",
-          "default": 3,
-          "description": "Number of restart attempts on server failure"
-        },
-        "aidmVscodeExtension.performance.maxConcurrentRequests": {
-          "type": "number",
-          "default": 10,
-          "description": "Maximum concurrent requests to MCP server"
-        },
-        "aidmVscodeExtension.mock.enabled": {
-          "type": "boolean",
-          "default": true,
-          "description": "Enable mock data mode"
-        },
-        "aidmVscodeExtension.mock.dataSize": {
-          "type": "string",
-          "enum": [
-            "small",
-            "medium",
-            "large"
-          ],
-          "default": "medium",
-          "description": "Size of mock data set"
-        },
-        "aidmVscodeExtension.mock.enterprisePatterns": {
-          "type": "boolean",
-          "default": true,
-          "description": "Use realistic enterprise patterns in mock data"
-        },
-        "aidmVscodeExtension.demo.scenarioComplexity": {
-          "type": "string",
-          "enum": [
-            "basic",
-            "intermediate",
-            "advanced"
-          ],
-          "default": "intermediate",
-          "description": "Complexity level of demo scenarios"
-        },
-        "aidmVscodeExtension.demo.includeComplianceData": {
-          "type": "boolean",
-          "default": true,
-          "description": "Include compliance and regulatory data in demos"
-        },
-        "aidmVscodeExtension.demo.industryVertical": {
-          "type": "string",
-          "enum": [
-            "financial-services",
-            "healthcare",
-            "retail",
-            "manufacturing",
-            "technology",
-            "generic"
-          ],
-          "default": "financial-services",
-          "description": "Industry vertical for specialized demo data"
-        },
-        "aidmVscodeExtension.ui.hoverPopupTheme": {
-          "type": "string",
-          "enum": [
-            "default",
-            "compact",
-            "detailed"
-          ],
-          "default": "detailed",
-          "description": "Hover popup display theme"
-        },
-        "aidmVscodeExtension.ui.showProgressBars": {
-          "type": "boolean",
-          "default": true,
-          "description": "Show progress bars in hover popups"
-        },
-        "aidmVscodeExtension.ui.maxRequirementsShown": {
-          "type": "number",
-          "default": 3,
-          "minimum": 1,
-          "maximum": 10,
-          "description": "Maximum number of requirements to show in hover popup"
-        },
-        "aidmVscodeExtension.remote.mcpServerUrl": {
-          "type": "string",
-          "default": "",
-          "description": "URL of remote MCP server (e.g., https://your-roocode-server.com)"
-        },
-        "aidmVscodeExtension.remote.enabled": {
-          "type": "boolean",
-          "default": false,
-          "description": "Enable remote MCP server connection"
-        },
-        "aidmVscodeExtension.remote.apiKey": {
-          "type": "string",
-          "default": "",
-          "description": "API key for remote MCP server authentication"
+          "description": "Port for MCP server"
         },
         "aidmVscodeExtension.tasks.filePath": {
           "type": "string",
           "default": "tasks.json",
-          "description": "Path to tasks.json file relative to workspace root. Can be a filename (tasks.json) or relative path (config/tasks.json).",
+          "description": "Path to tasks.json file relative to workspace root",
           "pattern": "^[^<>:\"|?*\\x00-\\x1f]*\\.(json|JSON)$",
-          "patternErrorMessage": "Must be a valid file path ending with .json (e.g., 'tasks.json' or 'config/tasks.json')",
-          "examples": [
-            "tasks.json",
-            "config/tasks.json",
-            ".taskmaster/tasks.json",
-            "project-tasks.json"
-          ]
-        },
-        "aidmVscodeExtension.taskmaster.currentUserEmail": {
-          "type": "string",
-          "default": "",
-          "description": "Email address of the current user for task filtering",
-          "pattern": "^[\\w.-]+@[\\w.-]+\\.[a-zA-Z]{2,}$",
-          "patternErrorMessage": "Please enter a valid email address"
+          "patternErrorMessage": "Must be a valid file path ending with .json"
         }
       }
     },
