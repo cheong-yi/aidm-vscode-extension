@@ -1,6 +1,6 @@
 /**
- * Cache Manager
- * Mock implementation for demo purposes
+ * Basic TTL Cache Manager
+ * Simple in-memory cache with time-to-live expiration
  */
 
 export class CacheManager {
@@ -19,6 +19,10 @@ export class CacheManager {
   }
 
   async set<T>(key: string, data: T, ttlMs: number): Promise<void> {
+    if (ttlMs <= 0) {
+      throw new Error('TTL must be positive');
+    }
+    
     this.cache.set(key, {
       data,
       expiry: Date.now() + ttlMs,
@@ -31,5 +35,29 @@ export class CacheManager {
 
   async clear(): Promise<void> {
     this.cache.clear();
+  }
+
+  /**
+   * Get cache size (number of items)
+   */
+  size(): number {
+    return this.cache.size;
+  }
+
+  /**
+   * Cleanup expired entries manually
+   */
+  cleanup(): number {
+    const now = Date.now();
+    let removed = 0;
+    
+    for (const [key, item] of this.cache.entries()) {
+      if (now > item.expiry) {
+        this.cache.delete(key);
+        removed++;
+      }
+    }
+    
+    return removed;
   }
 }
