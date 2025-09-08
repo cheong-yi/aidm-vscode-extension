@@ -779,7 +779,6 @@ export class MockDataProvider {
       "src/migration/ValidationService.ts",
       "src/ml/RecommendationEngine.ts",
       "src/ml/ModelTrainer.ts",
-      "src/ml/InferenceService.ts",
       "src/microservices/ServiceMesh.ts",
       "src/microservices/ServiceDiscovery.ts",
       "src/support/TicketManager.ts",
