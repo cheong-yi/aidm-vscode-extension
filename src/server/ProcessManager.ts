@@ -44,7 +44,6 @@ export class ProcessManager {
   private restartCount: number = 0;
   private lastError: string | null = null;
   private restartTimer: NodeJS.Timeout | null = null;
-  private healthCheckInterval: NodeJS.Timeout | null = null;
   private shutdownPromise: Promise<void> | null = null;
   private statusChangeListeners: ((status: ConnectionStatus) => void)[] = [];
 
@@ -115,8 +114,6 @@ export class ProcessManager {
       this.startTime = Date.now();
       this.lastError = null;
 
-      // Start health monitoring
-      this.startHealthMonitoring();
 
       this.notifyStatusChange(ConnectionStatus.Connected);
       console.log(
@@ -153,10 +150,6 @@ export class ProcessManager {
       this.restartTimer = null;
     }
 
-    if (this.healthCheckInterval) {
-      clearInterval(this.healthCheckInterval);
-      this.healthCheckInterval = null;
-    }
 
     try {
       // Stop the server gracefully
@@ -317,12 +310,6 @@ export class ProcessManager {
     };
   }
 
-  /**
-   * Check if server is healthy
-   */
-  isHealthy(): boolean {
-    return this.isRunning && this.server?.isHealthy() === true;
-  }
 
   /**
    * Add status change listener
@@ -426,21 +413,6 @@ export class ProcessManager {
     }, delay);
   }
 
-  /**
-   * Start health monitoring
-   */
-  private startHealthMonitoring(): void {
-    if (this.healthCheckInterval) {
-      return;
-    }
-
-    this.healthCheckInterval = setInterval(() => {
-      if (!this.isHealthy()) {
-        console.warn("Health check failed, server appears unhealthy");
-        this.handleServerFailure("Health check failed");
-      }
-    }, 30000); // Check every 30 seconds
-  }
 
   /**
    * Handle server failure and recovery
