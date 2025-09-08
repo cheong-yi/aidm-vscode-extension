@@ -12,7 +12,7 @@
  */
 
 export { TimeFormattingUtility } from "./TimeFormattingUtility";
-export { ErrorHandler } from "./ErrorHandler";
+export { ErrorHandler } from "./errorHandler";
 export { Logger, LogLevel } from "./logger";
 export { auditTrail } from "./auditTrail";
 export { ConfigLoader } from "./configLoader";

@@ -12,19 +12,12 @@ import {
   MCPCommunication,
 } from "../types/jsonrpc";
 import { ErrorCode, ErrorResponse } from "../types/extension";
-import {
-  AuditLogger,
-  AuditSeverity,
-  AuditOutcome,
-  AuditCategory,
-} from "../security/AuditLogger";
-import { ErrorHandler, ErrorContext } from "../utils/ErrorHandler";
+import { ErrorHandler, ErrorContext } from "../utils/errorHandler";
 
 export class MCPClient {
   private httpClient: AxiosInstance;
   private config: MCPCommunication;
   private requestId: number = 1;
-  private auditLogger: AuditLogger;
   private errorHandler: ErrorHandler;
   private remoteConfig?: {
     url: string;
@@ -33,12 +26,7 @@ export class MCPClient {
   };
 
   constructor(port: number = 3001, timeout: number = 5000) {
-    this.auditLogger = new AuditLogger({
-      enabled: true,
-      logLevel: AuditSeverity.LOW,
-      enablePerformanceTracking: true,
-    });
-    this.errorHandler = new ErrorHandler(this.auditLogger);
+    this.errorHandler = new ErrorHandler();
     this.config = {
       endpoint: `http://localhost:${port}/rpc`,
       method: "POST",
@@ -138,10 +126,7 @@ export class MCPClient {
       metadata: { filePath, line },
     };
 
-    await this.auditLogger.logUserInteraction(
-      "business_context_requested",
-      context.metadata
-    );
+    console.log('[MCPClient] Business context requested:', context.metadata);
 
     return await this.errorHandler.executeWithErrorHandling(
       async () => {
@@ -190,22 +175,14 @@ export class MCPClient {
 
       await this.sendRequest(request);
 
-      await this.auditLogger.logEvent({
-        action: "mcp_server_ping_success",
-        category: AuditCategory.SYSTEM_EVENT,
-        severity: AuditSeverity.LOW,
-        outcome: AuditOutcome.SUCCESS,
-        metadata: { endpoint: this.config.endpoint },
-      });
+      console.log('[MCPClient] MCP server ping successful:', { endpoint: this.config.endpoint });
 
       return true;
     } catch (error) {
-      await this.auditLogger.logError(
-        "mcp_server_ping_failed",
-        error instanceof Error ? error : new Error(String(error)),
-        { endpoint: this.config.endpoint },
-        AuditSeverity.MEDIUM
-      );
+      console.error('[MCPClient] MCP server ping failed:', {
+        error: error instanceof Error ? error.message : String(error),
+        endpoint: this.config.endpoint
+      });
       return false;
     }
   }
@@ -329,14 +306,9 @@ export class MCPClient {
    */
   async shutdown(): Promise<void> {
     try {
-      await this.auditLogger.shutdown();
+      // No audit logger to shutdown
 
-      await this.auditLogger.logEvent({
-        action: "mcp_client_shutdown",
-        category: AuditCategory.SYSTEM_EVENT,
-        severity: AuditSeverity.LOW,
-        outcome: AuditOutcome.SUCCESS,
-      });
+      console.log('[MCPClient] Client shutdown');
     } catch (error) {
       console.error("Error during MCP client shutdown:", error);
     }

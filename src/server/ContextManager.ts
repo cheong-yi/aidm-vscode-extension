@@ -6,7 +6,7 @@
 import { ContextManager as IContextManager } from "../types/extension";
 import { BusinessContext, CodeLocation } from "../types/business";
 import { MockDataProvider } from "../mock/MockDataProvider";
-import { ErrorHandler, ErrorContext } from "../utils/ErrorHandler";
+import { ErrorHandler, ErrorContext } from "../utils/errorHandler";
 import { MockCache } from "./MockCache";
 
 interface CacheEntry {
