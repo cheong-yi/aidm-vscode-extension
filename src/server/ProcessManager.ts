@@ -46,8 +46,6 @@ export class ProcessManager {
     try {
       // Initialize mock data provider
       const mockDataProvider = new MockDataProvider({
-        dataSize: 'medium',
-        enterprisePatterns: true,
         responseDelay: 50,
         errorRate: 0,
       });

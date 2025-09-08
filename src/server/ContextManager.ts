@@ -84,7 +84,8 @@ export class ContextManager implements IContextManager {
 
     return await this.errorHandler.executeWithErrorHandling(
       async () => {
-        return await this.mockDataProvider.getRequirementById(id);
+        // Mock business requirement lookup removed - return null
+        return null;
       },
       context,
       {
@@ -240,10 +241,8 @@ export class ContextManager implements IContextManager {
         return cachedEntry.data;
       }
 
-      // 2) Fallback to mock data provider mapping
-      const contexts = await this.mockDataProvider.getContextForFile(
-        codeLocation.filePath
-      );
+      // 2) Mock business context lookup removed - return empty array
+      const contexts: any[] = [];
 
       // Find the most relevant context for the specific location
       const relevantContext = this.findRelevantContext(contexts, codeLocation);

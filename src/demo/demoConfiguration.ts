@@ -12,19 +12,7 @@ export interface DemoConfiguration extends MockConfiguration {
   showProgressBars: boolean;
   maxRequirementsShown: number;
 
-  // Demo Scenario Configuration
-  scenarioComplexity: "basic" | "intermediate" | "advanced";
-  includeComplianceData: boolean;
-  industryVertical:
-    | "financial-services"
-    | "healthcare"
-    | "retail"
-    | "manufacturing"
-    | "technology"
-    | "generic";
-
-  // Performance Configuration
-  responseDelay: number;
+  // Performance Configuration  
   maxConcurrentRequests: number;
   cacheEnabled: boolean;
 }
@@ -52,31 +40,8 @@ export class DemoConfigurationManager {
 
     return {
       // Mock Data Configuration
-      dataSize: config.get<"small" | "medium" | "large">(
-        "aidmVscodeExtension.mock.dataSize",
-        "medium"
-      ),
       responseDelay: config.get<number>("aidmVscodeExtension.mcpServer.timeout", 5000) / 10, // 10% of timeout
       errorRate: 0, // No errors in demo mode
-      enterprisePatterns: config.get<boolean>("aidmVscodeExtension.mock.enterprisePatterns", true),
-
-      // Demo-specific Configuration
-      scenarioComplexity: config.get<"basic" | "intermediate" | "advanced">(
-        "aidmVscodeExtension.demo.scenarioComplexity",
-        "intermediate"
-      ),
-      includeComplianceData: config.get<boolean>(
-        "aidmVscodeExtension.demo.includeComplianceData",
-        true
-      ),
-      industryVertical: config.get<
-        | "financial-services"
-        | "healthcare"
-        | "retail"
-        | "manufacturing"
-        | "technology"
-        | "generic"
-      >("aidmVscodeExtension.demo.industryVertical", "financial-services"),
 
       // UI Configuration
       hoverPopupTheme: config.get<"default" | "compact" | "detailed">(
@@ -164,88 +129,19 @@ export class DemoConfigurationManager {
       },
     ];
 
-    // Add industry-specific scenarios
-    switch (this.currentConfig.industryVertical) {
-      case "healthcare":
-        baseScenarios.push({
-          id: "patient-data-management",
-          title: "Patient Data Management",
-          description:
-            "HIPAA compliant patient data handling with consent management",
-          filePath: "src/demo/sampleFiles/PatientService.ts",
-          businessContext: {
-            requirements: ["REQ-011: HIPAA Compliance Framework"],
-            stakeholders: [
-              "Chief Medical Officer",
-              "Privacy Officer",
-              "Compliance Team",
-            ],
-            complianceFrameworks: ["HIPAA", "HITECH", "FDA"],
-          },
-        });
-        break;
-
-      case "retail":
-        baseScenarios.push({
-          id: "inventory-management",
-          title: "Inventory Management System",
-          description: "Real-time inventory tracking with demand forecasting",
-          filePath: "src/demo/sampleFiles/InventoryService.ts",
-          businessContext: {
-            requirements: ["REQ-012: Inventory Management System"],
-            stakeholders: [
-              "Operations Manager",
-              "Supply Chain Team",
-              "Data Analytics",
-            ],
-            complianceFrameworks: ["SOX", "GDPR"],
-          },
-        });
-        break;
-
-      case "manufacturing":
-        baseScenarios.push({
-          id: "iot-sensor-integration",
-          title: "IoT Sensor Integration",
-          description:
-            "Real-time equipment monitoring with predictive maintenance",
-          filePath: "src/demo/sampleFiles/IoTService.ts",
-          businessContext: {
-            requirements: ["REQ-013: IoT Sensor Integration"],
-            stakeholders: [
-              "Operations Manager",
-              "Maintenance Team",
-              "IoT Architect",
-            ],
-            complianceFrameworks: ["ISO-27001", "IEC-62443"],
-          },
-        });
-        break;
-    }
+    // Note: Industry-specific scenarios removed
 
     return baseScenarios;
   }
 
   /**
-   * Get complexity-appropriate demo data
+   * Get demo data configuration
    */
   public getDemoDataConfiguration(): MockConfiguration {
     const baseConfig: MockConfiguration = {
-      dataSize: this.currentConfig.dataSize,
       responseDelay: this.currentConfig.responseDelay,
       errorRate: this.currentConfig.errorRate,
-      enterprisePatterns: this.currentConfig.enterprisePatterns,
-      scenarioComplexity: this.currentConfig.scenarioComplexity,
-      includeComplianceData: this.currentConfig.includeComplianceData,
-      industryVertical: this.currentConfig.industryVertical,
     };
-
-    // Adjust data size based on complexity
-    if (this.currentConfig.scenarioComplexity === "advanced") {
-      baseConfig.dataSize = "large";
-    } else if (this.currentConfig.scenarioComplexity === "basic") {
-      baseConfig.dataSize = "small";
-    }
 
     return baseConfig;
   }
@@ -258,8 +154,6 @@ export class DemoConfigurationManager {
       theme: this.currentConfig.hoverPopupTheme,
       showProgressBars: this.currentConfig.showProgressBars,
       maxRequirementsShown: this.currentConfig.maxRequirementsShown,
-      includeComplianceInfo: this.currentConfig.includeComplianceData,
-      industryContext: this.currentConfig.industryVertical,
     };
   }
 
@@ -281,9 +175,6 @@ export class DemoConfigurationManager {
       })),
       metrics: {
         totalScenarios: scenarios.length,
-        industrySpecific: scenarios.filter((s) =>
-          s.id.includes(this.currentConfig.industryVertical)
-        ).length,
         complianceFrameworks: [
           ...new Set(
             scenarios.flatMap((s) => s.businessContext.complianceFrameworks)
@@ -311,8 +202,6 @@ export interface HoverConfiguration {
   theme: "default" | "compact" | "detailed";
   showProgressBars: boolean;
   maxRequirementsShown: number;
-  includeComplianceInfo: boolean;
-  industryContext: string;
 }
 
 export interface DemoSummary {
@@ -327,7 +216,6 @@ export interface DemoSummary {
   }[];
   metrics: {
     totalScenarios: number;
-    industrySpecific: number;
     complianceFrameworks: string[];
     estimatedDemoTime: number;
   };

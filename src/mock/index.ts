@@ -5,11 +5,7 @@
 
 export { MockDataProvider, MockConfiguration } from "./MockDataProvider";
 export {
-  sampleRequirements,
-  sampleCodeMappings,
-  sampleChanges,
-  enterpriseScenarios,
-  fileContextMappings,
+  sampleTasks,
 } from "./sampleData";
 
 export {
