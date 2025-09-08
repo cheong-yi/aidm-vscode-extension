@@ -109,6 +109,7 @@ describe("TaskDetailCardProvider", () => {
       options: {},
       html: "",
       onDidReceiveMessage: jest.fn(),
+      postMessage: jest.fn(),
     } as unknown as vscode.Webview;
 
     mockWebviewView = {

@@ -2,12 +2,19 @@
  * Dashboard Analytics - Real-time analytics and predictive insights
  */
 
-import {
-  AnalyticsData,
-  DashboardWidget,
-  PredictiveInsight,
-  UserMetrics,
-} from "../../models/Analytics";
+// Model imports removed - REF-006
+// import {
+//   AnalyticsData,
+//   DashboardWidget,
+//   PredictiveInsight,
+//   UserMetrics,
+// } from "../../models/Analytics";
+
+// Temporary type definitions until demo files are removed
+type AnalyticsData = any;
+type DashboardWidget = any;
+type PredictiveInsight = any;
+type UserMetrics = any;
 import { AuditLogger } from "../../security/AuditLogger";
 import { CacheManager } from "../../services/CacheManager";
 import { MLInferenceService } from "../../ml/InferenceService";

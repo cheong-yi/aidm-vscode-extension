@@ -3,7 +3,11 @@
  * Mock implementation for demo purposes
  */
 
-import { FraudScore } from "../../models/Payment";
+// Model imports removed - REF-006
+// import { FraudScore } from "../../models/Payment";
+
+// Temporary type definition until demo files are removed
+type FraudScore = any;
 
 export class FraudDetection {
   async analyzeTransaction(transactionData: {

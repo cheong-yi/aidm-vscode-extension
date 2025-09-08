@@ -253,7 +253,7 @@ export class ContextManager implements IContextManager {
       );
 
       // 1) Check explicit mock cache first (line-aware)
-      if (this.mockCache) {
+      if (this.mockCache && !process.env.DEMO_MODE) {
         console.log("MockCache is available, checking for cached data...");
         const cachedFromMock = this.mockCache.get(
           codeLocation.filePath,
@@ -269,7 +269,11 @@ export class ContextManager implements IContextManager {
           );
         }
       } else {
-        console.log("❌ No MockCache available");
+        if (process.env.DEMO_MODE) {
+          // Demo mode: MockCache disabled (no console output)
+        } else {
+          console.log("❌ No MockCache available");
+        }
       }
 
       // Check cache first
@@ -332,7 +336,7 @@ export class ContextManager implements IContextManager {
     endLine: number,
     context: BusinessContext
   ): void {
-    if (!this.mockCache) return;
+    if (!this.mockCache || process.env.DEMO_MODE) return;
     this.mockCache.upsert(filePath, startLine, endLine, context);
   }
 
@@ -340,7 +344,7 @@ export class ContextManager implements IContextManager {
    * Admin: clear mock cache (optionally by path substring)
    */
   clearMockCache(pattern?: string): void {
-    if (!this.mockCache) return;
+    if (!this.mockCache || process.env.DEMO_MODE) return;
     this.mockCache.clear(pattern);
   }
 

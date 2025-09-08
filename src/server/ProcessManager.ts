@@ -76,10 +76,16 @@ export class ProcessManager {
       });
 
       // Initialize mock cache persisted under workspace
-      const workspaceRoot =
-        vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || process.cwd();
-      const mockCache = new MockCache(workspaceRoot);
-      mockCache.load();
+      let mockCache: MockCache | undefined;
+      if (!process.env.DEMO_MODE) {
+        const workspaceRoot =
+          vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || process.cwd();
+        mockCache = new MockCache(workspaceRoot);
+        mockCache.load();
+        console.log("✅ MockCache initialized");
+      } else {
+        // Demo mode: MockCache disabled (no console output)
+      }
 
       // Initialize context manager with mock cache
       const contextManager = new ContextManager(mockDataProvider, mockCache);
@@ -91,7 +97,11 @@ export class ProcessManager {
       console.log(
         `🔧 Creating SimpleMCPServer instance on port ${this.config.port}`
       );
-      this.server = new SimpleMCPServer(this.config.port, contextManager, taskStatusManager);
+      this.server = new SimpleMCPServer(
+        this.config.port,
+        contextManager,
+        taskStatusManager
+      );
 
       // Configure server
       this.server.updateConfiguration({
@@ -156,15 +166,19 @@ export class ProcessManager {
       }
 
       // Persist mock cache on shutdown
-      try {
-        const workspaceRoot =
-          vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || process.cwd();
-        const cache = new MockCache(workspaceRoot);
-        cache.load();
-        cache.save();
-      } catch (e) {
-        // eslint-disable-next-line no-console
-        console.error("Failed to persist mock cache on shutdown:", e);
+      if (!process.env.DEMO_MODE) {
+        try {
+          const workspaceRoot =
+            vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || process.cwd();
+          const cache = new MockCache(workspaceRoot);
+          cache.load();
+          cache.save();
+        } catch (e) {
+          // eslint-disable-next-line no-console
+          console.error("Failed to persist mock cache on shutdown:", e);
+        }
+      } else {
+        // Demo mode: MockCache persistence skipped (no console output)
       }
 
       // Kill process if it exists

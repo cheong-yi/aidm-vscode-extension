@@ -39,13 +39,13 @@ export class BusinessContextHover
       // Normalize the file path to match cache format
       const relativePath = vscode.workspace.asRelativePath(document.fileName);
       console.log("Hover Provider - Relative Path:", relativePath);
-      
+
       const codeLocation: CodeLocation = {
         filePath: relativePath,
         startLine: position.line + 1, // Convert to 1-based line numbers
         endLine: position.line + 1,
       };
-      
+
       console.log("Hover Provider - CodeLocation:", codeLocation);
 
       // Get business context from MCP server
@@ -62,26 +62,36 @@ export class BusinessContextHover
 
       // Load mock cache for diagnostics
       let mockCacheRanges: string[] = [];
-      try {
-        // Get the workspace folder and construct proper path
-        const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
-        if (!workspaceFolder) {
-          throw new Error("No workspace folder found");
-        }
-        
-        const mockCacheUri = vscode.Uri.joinPath(workspaceFolder.uri, ".aidm", "mock-cache.json");
-        const mockCache = JSON.parse(
-          await vscode.workspace.fs
-            .readFile(mockCacheUri)
-            .then((buffer) => buffer.toString())
-        );
+      if (!process.env.DEMO_MODE) {
+        try {
+          // Get the workspace folder and construct proper path
+          const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+          if (!workspaceFolder) {
+            throw new Error("No workspace folder found");
+          }
 
-        const relativePath = vscode.workspace.asRelativePath(document.fileName);
-        if (mockCache[relativePath]) {
-          mockCacheRanges = Object.keys(mockCache[relativePath]);
+          const mockCacheUri = vscode.Uri.joinPath(
+            workspaceFolder.uri,
+            ".aidm",
+            "mock-cache.json"
+          );
+          const mockCache = JSON.parse(
+            await vscode.workspace.fs
+              .readFile(mockCacheUri)
+              .then((buffer) => buffer.toString())
+          );
+
+          const relativePath = vscode.workspace.asRelativePath(
+            document.fileName
+          );
+          if (mockCache[relativePath]) {
+            mockCacheRanges = Object.keys(mockCache[relativePath]);
+          }
+        } catch (e) {
+          console.error("Failed to read mock cache for diagnostics:", e);
         }
-      } catch (e) {
-        console.error("Failed to read mock cache for diagnostics:", e);
+      } else {
+        // Demo mode: Mock cache diagnostics disabled (no console output)
       }
 
       // Prepare diagnostic info
@@ -477,24 +487,31 @@ export class BusinessContextHover
     }
 
     // Function Mappings section
-    if (context.functionMappings && Object.keys(context.functionMappings).length > 0) {
+    if (
+      context.functionMappings &&
+      Object.keys(context.functionMappings).length > 0
+    ) {
       markdown.appendMarkdown("### 🎯 Function Mappings\n\n");
-      
-      Object.entries(context.functionMappings).forEach(([functionName, mapping]) => {
-        markdown.appendMarkdown(
-          `<div style="background-color: #f6f8fa; border-left: 4px solid #28a745; padding: 12px; margin: 8px 0; border-radius: 4px;">\n`
-        );
-        markdown.appendMarkdown(
-          `<strong style="color: #28a745;">⚙️ ${functionName}</strong><br/>\n`
-        );
-        markdown.appendMarkdown(
-          `<small style="color: #586069;">Lines ${mapping.startLine}-${mapping.endLine} • Requirements: ${mapping.requirements.join(", ")}</small><br/>\n`
-        );
-        markdown.appendMarkdown(
-          `<em style="color: #586069;">${mapping.description}</em>\n`
-        );
-        markdown.appendMarkdown(`</div>\n\n`);
-      });
+
+      Object.entries(context.functionMappings).forEach(
+        ([functionName, mapping]) => {
+          markdown.appendMarkdown(
+            `<div style="background-color: #f6f8fa; border-left: 4px solid #28a745; padding: 12px; margin: 8px 0; border-radius: 4px;">\n`
+          );
+          markdown.appendMarkdown(
+            `<strong style="color: #28a745;">⚙️ ${functionName}</strong><br/>\n`
+          );
+          markdown.appendMarkdown(
+            `<small style="color: #586069;">Lines ${mapping.startLine}-${
+              mapping.endLine
+            } • Requirements: ${mapping.requirements.join(", ")}</small><br/>\n`
+          );
+          markdown.appendMarkdown(
+            `<em style="color: #586069;">${mapping.description}</em>\n`
+          );
+          markdown.appendMarkdown(`</div>\n\n`);
+        }
+      );
     }
 
     // Enhanced recent changes section

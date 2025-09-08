@@ -2,7 +2,13 @@
  * User Service - Core user management functionality
  */
 
-import { User, UserProfile, AuthenticationResult } from "../../models/User";
+// Model imports removed - REF-006
+// import { User, UserProfile, AuthenticationResult } from "../../models/User";
+
+// Temporary type definitions until demo files are removed
+type User = any;
+type UserProfile = any;
+type AuthenticationResult = any;
 import { AuditLogger } from "../../security/AuditLogger";
 import { EncryptionUtil } from "../../security/EncryptionUtil";
 

@@ -216,6 +216,13 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
 
         // Update webview content with formatted timestamps
         this.webview.webview.html = formattedHtml;
+        
+        // Send task data via postMessage for safe rendering (replaces HTML escaping)
+        setTimeout(() => {
+          if (this.webview) {
+            this.sendTaskDataToWebview(task, this.webview.webview);
+          }
+        }, 100); // Small delay to ensure HTML is loaded
       }
     } catch (error) {
       console.error(
@@ -573,15 +580,9 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
           <span class="failure-category-icon">${categoryIcon}</span>
           <span class="failure-category-badge">${category}</span>
         </div>
-        <div class="failure-name">${this.escapeHtml(failure.name)}</div>
-        <div class="failure-message">${this.escapeHtml(failure.message)}</div>
-        ${
-          failure.stackTrace
-            ? `<div class="failure-stacktrace">${this.escapeHtml(
-                failure.stackTrace
-              )}</div>`
-            : ""
-        }
+        <div class="failure-name" data-failure-field="name"></div>
+        <div class="failure-message" data-failure-field="message"></div>
+        <div class="failure-stacktrace" data-failure-field="stackTrace" style="display: none;"></div>
       </div>
     `;
   }
@@ -725,9 +726,9 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
           <div class="task-details">
             <!-- Task Header Section -->
             <div class="task-header">
-              <div class="task-title">${this.escapeHtml(task.title)}</div>
+              <div class="task-title" data-task-field="title"></div>
               <div>
-                <span class="task-id">${this.escapeHtml(task.id)}</span>
+                <span class="task-id" data-task-field="id"></span>
                 <span class="status-badge ${this.getStatusClass(
                   task.status
                 )}">${this.getStatusDisplayName(task.status)}</span>
@@ -741,7 +742,7 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
             
             <!-- Task Description Section -->
             <div class="task-description">
-              <p>${this.escapeHtml(task.description)}</p>
+              <p data-task-field="description"></p>
             </div>
             
             <!-- Metadata Grid Section -->
@@ -869,6 +870,8 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
               // Set up any additional initialization needed for message handling
               console.log('TaskDetailCardProvider webview initialized with message handling');
             });
+            
+            ${this.getTaskDataScript()}
           </script>
         </body>
         </html>
@@ -1432,9 +1435,9 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
       <body>
         <div class="fallback">
           <div class="error">Warning Error loading task details</div>
-          <h3>Task ${task.id}: ${this.escapeHtml(task.title)}</h3>
+          <h3>Task <span data-task-field="id"></span>: <span data-task-field="title"></span></h3>
           <p>Status: ${task.status}</p>
-          <p>Description: ${this.escapeHtml(task.description)}</p>
+          <p>Description: <span data-task-field="description"></span></p>
           <p>Please try refreshing the view or contact support if the problem persists.</p>
         </div>
         
@@ -1466,7 +1469,7 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
 
     return dependencies
       .map(
-        (dep) => `<span class="dependency-tag">${this.escapeHtml(dep)}</span>`
+        (dep, index) => `<span class="dependency-tag" data-dependency-index="${index}"></span>`
       )
       .join("");
   }
@@ -1817,15 +1820,80 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
    * @param text - Text to escape
    * @returns Escaped HTML-safe text
    */
-  private escapeHtml(text: string): string {
-    if (!text) return "";
+  /**
+   * Send task data to webview for safe rendering via postMessage (replaces escapeHtml)
+   */
+  private sendTaskDataToWebview(task: any, webview: any): void {
+    const taskData = {
+      id: task.id || '',
+      title: task.title || '',
+      description: task.description || '',
+      dependencies: task.dependencies || [],
+      failures: task.testStatus?.failingTestsList?.map((failure: any) => ({
+        name: failure.name || '',
+        message: failure.message || '',
+        stackTrace: failure.stackTrace || ''
+      })) || []
+    };
+    
+    webview.postMessage({
+      type: 'updateTaskDetailData',
+      task: taskData
+    });
+  }
 
-    return text
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;")
-      .replace(/'/g, "&#39;");
+  /**
+   * Generate JavaScript to handle task data via postMessage
+   */
+  private getTaskDataScript(): string {
+    return `
+      // Handle task detail data updates via postMessage
+      window.addEventListener('message', function(event) {
+        const message = event.data;
+        if (message.type === 'updateTaskDetailData') {
+          updateTaskDetailContent(message.task);
+        }
+      });
+      
+      function updateTaskDetailContent(task) {
+        // Update basic task fields
+        const taskFields = ['id', 'title', 'description'];
+        taskFields.forEach(field => {
+          const elements = document.querySelectorAll('[data-task-field="' + field + '"]');
+          elements.forEach(element => {
+            element.textContent = task[field] || '';
+          });
+        });
+        
+        // Update dependencies
+        const depElements = document.querySelectorAll('[data-dependency-index]');
+        depElements.forEach((element, index) => {
+          if (task.dependencies && task.dependencies[index]) {
+            element.textContent = task.dependencies[index];
+          }
+        });
+        
+        // Update failure information
+        const failureElements = document.querySelectorAll('.failure-item');
+        failureElements.forEach((failureElement, index) => {
+          if (task.failures && task.failures[index]) {
+            const failure = task.failures[index];
+            
+            const nameElement = failureElement.querySelector('[data-failure-field="name"]');
+            if (nameElement) nameElement.textContent = failure.name || '';
+            
+            const messageElement = failureElement.querySelector('[data-failure-field="message"]');
+            if (messageElement) messageElement.textContent = failure.message || '';
+            
+            const stackTraceElement = failureElement.querySelector('[data-failure-field="stackTrace"]');
+            if (stackTraceElement && failure.stackTrace) {
+              stackTraceElement.textContent = failure.stackTrace;
+              stackTraceElement.style.display = 'block';
+            }
+          }
+        });
+      }
+    `;
   }
 
   /**
@@ -2640,6 +2708,13 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
       this.webview.webview.html = this.generateTaskDetailsHTML(
         this.currentTask
       );
+      
+      // Send task data via postMessage for safe rendering (replaces HTML escaping)
+      setTimeout(() => {
+        if (this.currentTask && this.webview) {
+          this.sendTaskDataToWebview(this.currentTask, this.webview.webview);
+        }
+      }, 100); // Small delay to ensure HTML is loaded
     } catch (error) {
       console.error("Failed to refresh displayed times:", error);
     }

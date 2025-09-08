@@ -2,12 +2,19 @@
  * Payment Processor - Secure payment processing with PCI DSS compliance
  */
 
-import {
-  PaymentMethod,
-  Transaction,
-  PaymentResult,
-  FraudScore,
-} from "../../models/Payment";
+// Model imports removed - REF-006
+// import {
+//   PaymentMethod,
+//   Transaction,
+//   PaymentResult,
+//   FraudScore,
+// } from "../../models/Payment";
+
+// Temporary type definitions until demo files are removed
+type PaymentMethod = any;
+type Transaction = any;
+type PaymentResult = any;
+type FraudScore = any;
 import { AuditLogger } from "../../security/AuditLogger";
 import { EncryptionUtil } from "../../security/EncryptionUtil";
 import { FraudDetection } from "./FraudDetection";
