@@ -27,23 +27,9 @@ import {
 import { TasksDataService } from "../../services";
 import { GitUtilities } from "../../services";
 import { TaskHTMLGenerator } from "./TaskHTMLGenerator";
+import { TaskMessageHandler } from "./TaskMessageHandler";
 import * as path from "path";
 
-/**
- * Webview message interface for task interactions
- * Task WV-005: Message structure for webview-to-extension communication
- */
-interface WebviewMessage {
-  type:
-    | "updateTaskStatus"
-    | "executeWithCursor"
-    | "toggleAccordion"
-    | "viewCode"
-    | "viewTests";
-  taskId: string;
-  newStatus?: TaskStatus;
-  payload?: any;
-}
 
 /**
  * Webview state interface for persistence
@@ -122,6 +108,11 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
    * HTML generator instance for webview content
    */
   private htmlGenerator: TaskHTMLGenerator;
+
+  /**
+   * Message handler instance for webview message processing
+   */
+  private messageHandler?: TaskMessageHandler;
 
   /**
    * Constructor for TaskWebviewProvider
@@ -665,104 +656,23 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
       return;
     }
 
-    const onMessage = (message: any) => {
-      console.log("Received message from webview:", message);
+    // Create message handler with dependencies
+    this.messageHandler = new TaskMessageHandler(
+      this.tasksDataService,
+      this._view,
+      this.handleAccordionToggle.bind(this)
+    );
 
-      switch (message.type) {
-        case "updateTaskStatus":
-          this.handleUpdateTaskStatus(message.taskId, message.newStatus);
-          break;
-        case "executeWithCursor":
-          this.handleExecuteWithCursor(message.taskId);
-          break;
-        case "toggleAccordion":
-          this.handleToggleAccordion(message.taskId);
-          break;
-        case "viewCode":
-          this.handleViewCode(message.taskId);
-          break;
-        case "viewTests":
-          this.handleViewTests(message.taskId);
-          break;
-        case "restoreState":
-          // This message is sent TO the webview, so no handler needed here
-          break;
-
-        default:
-          console.warn("Unknown message type:", message.type);
-          break;
-      }
-    };
-
+    // Setup message listener
     this._view.webview.onDidReceiveMessage(
-      onMessage,
+      (message: any) => this.messageHandler!.handleMessage(message),
       undefined,
       this._disposables
     );
   }
 
-  /**
-   * Task WV-005: Handle message to update task status
-   * Updates the status of a task in the extension's task list.
-   *
-   * @param taskId - The ID of the task to update
-   * @param newStatus - The new status to set
-   */
-  private async handleUpdateTaskStatus(
-    taskId: string,
-    newStatus?: TaskStatus
-  ): Promise<void> {
-    try {
-      if (!newStatus) {
-        console.warn("No new status provided for task status update");
-        return;
-      }
 
-      await vscode.commands.executeCommand(
-        "aidm-vscode-extension.updateTaskStatus",
-        taskId,
-        newStatus
-      );
 
-      console.log(`Task status updated: ${taskId} -> ${newStatus}`);
-    } catch (error) {
-      console.error("Error updating task status:", error);
-    }
-  }
-
-  /**
-   * Task WV-005: Handle message to execute task with Cursor
-   * Executes a task using the Cursor extension.
-   *
-   * @param taskId - The ID of the task to execute
-   */
-  private async handleExecuteWithCursor(taskId: string): Promise<void> {
-    try {
-      await vscode.commands.executeCommand(
-        "aidm-vscode-extension.executeTaskWithCursor",
-        taskId
-      );
-
-      console.log(`Task executed with Cursor: ${taskId}`);
-    } catch (error) {
-      console.error("Error executing task with Cursor:", error);
-    }
-  }
-
-  /**
-   * Task WV-005: Handle message to toggle accordion
-   * Toggles the expanded state of a task's details section.
-   *
-   * @param taskId - The ID of the task to toggle
-   */
-  private async handleToggleAccordion(taskId: string): Promise<void> {
-    try {
-      // Use the new accordion toggle handler with state persistence
-      await this.handleAccordionToggle(taskId);
-    } catch (error) {
-      console.error("Error toggling task accordion:", error);
-    }
-  }
 
   /**
    * Handle View Code button clicks from webview
