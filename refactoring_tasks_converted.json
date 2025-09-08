@@ -587,7 +587,7 @@
           "failingTestsList": []
         },
         "implementation": {
-          "commitHash": "pending",
+          "commitHash": "1421f6aef59e7467bdff63d3460ebd2c720905c7",
           "summary": "Fixed URI construction for git diff functionality in TaskMessageHandler and added aidm.openDiff command to extension.ts",
           "filesChanged": ["src/tasks/providers/TaskMessageHandler.ts", "src/extension.ts"],
           "completedDate": "2025-09-08T23:55:00.000Z",
