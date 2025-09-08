@@ -45,8 +45,8 @@ export interface Task {
   priority?: TaskPriority; // Made optional to support test scenarios
   dependencies: string[];
   requirements: string[];
-  createdDate: string; // ISO date string for TimeFormattingUtility compatibility
-  lastModified: string; // ISO date string for TimeFormattingUtility compatibility
+  createdDate: string; // ISO date string for time formatting compatibility
+  lastModified: string; // ISO date string for time formatting compatibility
   assignee?: string;
   estimatedHours?: number;
   actualHours?: number;
@@ -65,7 +65,7 @@ export interface Task {
 }
 
 export interface TestStatus {
-  lastRunDate?: string; // ISO date string for TimeFormattingUtility compatibility
+  lastRunDate?: string; // ISO date string for time formatting compatibility
   totalTests: number;
   passedTests: number;
   failedTests: number;

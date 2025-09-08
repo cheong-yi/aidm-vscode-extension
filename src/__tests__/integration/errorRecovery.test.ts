@@ -6,10 +6,9 @@
  * Requirements: Complete error recovery system validation
  */
 
-import { ErrorHandler } from "../../utils/ErrorHandler";
+import { ErrorHandler } from "../../utils/errorHandler";
 import { auditTrail } from "../../utils/auditTrail";
 import { LoggerFactory } from "../../utils/logger";
-import { AuditLogger } from "../../security/AuditLogger";
 import { ErrorRecoveryStrategy } from "../../types/extension";
 
 // Mock VSCode

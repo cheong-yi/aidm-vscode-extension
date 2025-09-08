@@ -3,24 +3,17 @@
  * Comprehensive tests for error handling and recovery mechanisms
  */
 
-import { ErrorHandler, ErrorContext } from "../../utils/ErrorHandler";
-import { AuditLogger, AuditSeverity } from "../../security/AuditLogger";
+import { ErrorHandler, ErrorContext } from "../../utils/errorHandler";
 import { ErrorCode } from "../../types/extension";
 
 describe("ErrorHandler", () => {
   let errorHandler: ErrorHandler;
-  let auditLogger: AuditLogger;
 
   beforeEach(() => {
-    auditLogger = new AuditLogger({
-      enabled: true,
-      logLevel: AuditSeverity.LOW,
-    });
-    errorHandler = new ErrorHandler(auditLogger);
+    errorHandler = new ErrorHandler();
   });
 
-  afterEach(async () => {
-    await auditLogger.shutdown();
+  afterEach(() => {
     errorHandler.reset();
   });
 

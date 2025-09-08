@@ -3,8 +3,7 @@
  * Tests for the retry mechanism in ErrorHandler
  */
 
-import { ErrorHandler } from "../../utils/ErrorHandler";
-import { AuditLogger } from "../../security/AuditLogger";
+import { ErrorHandler } from "../../utils/errorHandler";
 
 // Mock VSCode
 jest.mock("vscode", () => ({
@@ -29,18 +28,14 @@ jest.mock("vscode", () => ({
 
 describe("ErrorHandler Retry Logic", () => {
   let errorHandler: ErrorHandler;
-  let auditLogger: AuditLogger;
 
   beforeEach(() => {
     jest.clearAllMocks();
-    auditLogger = new AuditLogger();
-    errorHandler = new ErrorHandler(auditLogger);
+    errorHandler = new ErrorHandler();
   });
 
-  afterEach(async () => {
-    if (auditLogger) {
-      await auditLogger.shutdown();
-    }
+  afterEach(() => {
+    // No cleanup needed
   });
 
   describe("retryOperationWithBackoff", () => {

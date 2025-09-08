@@ -3,8 +3,7 @@
  * Tests for audit trail integration and error handling functionality
  */
 
-import { ErrorHandler } from "../../utils/ErrorHandler";
-import { AuditLogger } from "../../security/AuditLogger";
+import { ErrorHandler } from "../../utils/errorHandler";
 import { auditTrail } from "../../utils/auditTrail";
 
 // Mock VSCode
@@ -30,14 +29,12 @@ jest.mock("vscode", () => ({
 
 describe("ErrorHandler Audit Trail Integration", () => {
   let errorHandler: ErrorHandler;
-  let auditLogger: AuditLogger;
 
   beforeEach(() => {
     jest.clearAllMocks();
 
     // Create fresh instances for each test
-    auditLogger = new AuditLogger();
-    errorHandler = new ErrorHandler(auditLogger);
+    errorHandler = new ErrorHandler();
 
     // Clear audit trail for clean test state
     (auditTrail as any).events = [];
@@ -46,9 +43,6 @@ describe("ErrorHandler Audit Trail Integration", () => {
   afterEach(async () => {
     // Clean up audit trail
     (auditTrail as any).events = [];
-    if (auditLogger) {
-      await auditLogger.shutdown();
-    }
   });
 
   describe("audit trail integration", () => {

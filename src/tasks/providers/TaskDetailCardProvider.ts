@@ -11,7 +11,6 @@
 
 import * as vscode from "vscode";
 import { Task, TaskStatus, STATUS_ACTIONS } from "../types";
-import { TimeFormattingUtility } from "../../utils/TimeFormattingUtility";
 
 /**
  * TaskDetailCardProvider implements vscode.WebviewViewProvider to display
@@ -21,7 +20,7 @@ import { TimeFormattingUtility } from "../../utils/TimeFormattingUtility";
  * - VSCode WebviewViewProvider interface compliance
  * - Event emitter preparation for tree view integration
  * - Webview options setup for HTML content rendering
- * - TimeFormattingUtility integration for relative time display
+ * - Inline time formatting methods for relative time display
  * - Periodic refresh mechanism for dynamic time updates
  */
 export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
@@ -88,11 +87,9 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
   private readonly disposables: vscode.Disposable[] = [];
 
   /**
-   * Time formatting utility for duration and date formatting
-   * Used for enhanced metadata display and relative time formatting
-   * Task 3.3.9: Dependency injection for TimeFormattingUtility service
+   * Simple time formatting methods for duration and date formatting
+   * Simple inline implementation for time formatting
    */
-  private readonly timeFormattingUtility: TimeFormattingUtility;
 
   /**
    * Interval reference for periodic time refresh
@@ -102,15 +99,10 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
   private timeRefreshInterval: NodeJS.Timeout | null = null;
 
   /**
-   * Constructor with TimeFormattingUtility dependency injection
-   * Task 3.3.9: Constructor dependency injection for time formatting service
-   *
-   * @param timeFormattingUtility - TimeFormattingUtility service instance
+   * Constructor for TaskDetailCardProvider
+   * Simplified with inline time formatting methods
    */
-  constructor(timeFormattingUtility?: TimeFormattingUtility) {
-    // Initialize time formatting utility with dependency injection
-    this.timeFormattingUtility =
-      timeFormattingUtility || new TimeFormattingUtility();
+  constructor() {
 
     // Initialize event emitters for webview communication
     this._onTaskSelected = new vscode.EventEmitter<Task>();
@@ -699,6 +691,55 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
     } catch (error) {
       // Fallback to original ISO string if parsing fails
       return isoDate;
+    }
+  }
+
+  /**
+   * Parse estimated duration string to numeric value
+   * Simple inline duration parsing implementation
+   * @param duration - Duration string like "15-30 min" or "45 min"
+   * @returns Numeric average in minutes, or 0 on error
+   */
+  private parseEstimatedDuration(duration: string): number {
+    if (!duration || typeof duration !== "string") {
+      return 0;
+    }
+
+    try {
+      const trimmed = duration.trim().toLowerCase();
+      
+      // Handle range format (e.g., "15-30 min")
+      const rangeMatch = trimmed.match(/^(\d+(?:\.\d+)?)\s*-\s*(\d+(?:\.\d+)?)\s*(min|minute|minutes|hour|hours|h|m)$/);
+      if (rangeMatch) {
+        const [, minStr, maxStr, unit] = rangeMatch;
+        const min = parseFloat(minStr);
+        const max = parseFloat(maxStr);
+        
+        if (isNaN(min) || isNaN(max) || min > max) {
+          return 0;
+        }
+        
+        const multiplier = (unit.startsWith('h') || unit === 'hour' || unit === 'hours') ? 60 : 1;
+        return ((min + max) / 2) * multiplier;
+      }
+      
+      // Handle single value format (e.g., "45 min")
+      const singleMatch = trimmed.match(/^(\d+(?:\.\d+)?)\s*(min|minute|minutes|hour|hours|h|m)$/);
+      if (singleMatch) {
+        const [, valueStr, unit] = singleMatch;
+        const value = parseFloat(valueStr);
+        
+        if (isNaN(value)) {
+          return 0;
+        }
+        
+        const multiplier = (unit.startsWith('h') || unit === 'hour' || unit === 'hours') ? 60 : 1;
+        return value * multiplier;
+      }
+      
+      return 0;
+    } catch (error) {
+      return 0;
     }
   }
 
@@ -2533,13 +2574,13 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
           </div>
           <div class="meta-item">
             <div class="meta-label">Created</div>
-            <div class="meta-value created-date">${this.timeFormattingUtility.formatRelativeTime(
+            <div class="meta-value created-date">${this.formatRelativeTime(
               task.createdDate
             )}</div>
           </div>
           <div class="meta-item">
             <div class="meta-label">Modified</div>
-            <div class="meta-value modified-date">${this.timeFormattingUtility.formatRelativeTime(
+            <div class="meta-value modified-date">${this.formatRelativeTime(
               task.lastModified
             )}</div>
           </div>
@@ -2564,9 +2605,9 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
     }
 
     try {
-      // Use TimeFormattingUtility to parse and format duration if needed
+      // Use inline method to parse and format duration if needed
       const parsedDuration =
-        this.timeFormattingUtility.parseEstimatedDuration(duration);
+        this.parseEstimatedDuration(duration);
       if (parsedDuration > 0) {
         // Return original format for now, could be enhanced with parsed formatting
         return duration.trim();
@@ -2722,7 +2763,7 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
 
   /**
    * Handles time formatting failures gracefully with fallback display
-   * Called when TimeFormattingUtility fails to format a timestamp
+   * Called when inline time formatting fails to format a timestamp
    * Task 3.3.9: Graceful error handling for time formatting failures
    *
    * @param error - The error that occurred during time formatting
@@ -2749,9 +2790,9 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
   }
 
   /**
-   * Formats timestamps in HTML content using TimeFormattingUtility
+   * Formats timestamps in HTML content using inline time formatting methods
    * Called when generating HTML to ensure consistent time formatting
-   * Task 3.3.9: Integration of TimeFormattingUtility throughout HTML generation
+   * Task 3.3.9: Integration of inline time formatting throughout HTML generation
    *
    * @param html - HTML content to format timestamps in
    * @param task - The task containing timestamp data
@@ -2766,7 +2807,7 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
       if (task.createdDate) {
         try {
           const formattedCreated =
-            this.timeFormattingUtility.formatRelativeTime(task.createdDate);
+            this.formatRelativeTime(task.createdDate);
           formattedHtml = formattedHtml.replace(
             /{{CREATED_DATE}}/g,
             formattedCreated
@@ -2793,7 +2834,7 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
       if (task.lastModified) {
         try {
           const formattedModified =
-            this.timeFormattingUtility.formatRelativeTime(task.lastModified);
+            this.formatRelativeTime(task.lastModified);
           formattedHtml = formattedHtml.replace(
             /{{LAST_MODIFIED}}/g,
             formattedModified
@@ -2820,7 +2861,7 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
       if (task.testStatus?.lastRunDate) {
         try {
           const formattedLastRun =
-            this.timeFormattingUtility.formatRelativeTime(
+            this.formatRelativeTime(
               task.testStatus.lastRunDate
             );
           formattedHtml = formattedHtml.replace(
@@ -2853,14 +2894,9 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
   }
 
   /**
-   * Gets the TimeFormattingUtility instance for testing and external access
-   * Task 3.3.9: Access to time formatting utility for testing and integration
-   *
-   * @returns The TimeFormattingUtility instance
+   * Access to time formatting methods for testing and external access
+   * Using simple inline methods for time formatting
    */
-  public getTimeFormattingUtility(): TimeFormattingUtility {
-    return this.timeFormattingUtility;
-  }
 
   /**
    * Gets the time refresh interval for testing and monitoring

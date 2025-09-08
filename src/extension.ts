@@ -24,7 +24,6 @@ import { MockDataProvider } from "./mock";
 import { TaskStatus, Task } from "./types/tasks";
 import { TaskDetailCardProvider } from "./tasks/providers/TaskDetailCardProvider";
 import { TaskWebviewProvider } from "./tasks/providers";
-import { TimeFormattingUtility } from "./utils";
 import { TaskErrorResponse } from "./types/tasks";
 
 
@@ -197,7 +196,6 @@ let processManager: ProcessManager;
 let tasksDataService: TasksDataService;
 let taskDetailProvider: TaskDetailCardProvider;
 let taskWebviewProvider: TaskWebviewProvider;
-let timeFormattingUtility: TimeFormattingUtility;
 
 /**
  * Setup comprehensive UI event synchronization between tree view and detail panel
@@ -553,23 +551,12 @@ export async function activate(
       // Continue without enhanced error handling
     }
 
-    console.log(
-      "=== ACTIVATION STEP 8.6: Initializing TimeFormattingUtility ==="
-    );
-    try {
-      // Initialize shared TimeFormattingUtility instance
-      timeFormattingUtility = new TimeFormattingUtility();
-      console.log("✅ TimeFormattingUtility initialized");
-    } catch (error) {
-      console.error("❌ TimeFormattingUtility initialization failed:", error);
-      throw error;
-    }
 
     console.log(
-      "=== ACTIVATION STEP 8.7: Initializing TaskDetailCardProvider ==="
+      "=== ACTIVATION STEP 8.6: Initializing TaskDetailCardProvider ==="
     );
     try {
-      taskDetailProvider = new TaskDetailCardProvider(timeFormattingUtility);
+      taskDetailProvider = new TaskDetailCardProvider();
       console.log("✅ TaskDetailCardProvider initialized");
     } catch (error) {
       console.error("❌ TaskDetailCardProvider initialization failed:", error);
@@ -577,7 +564,7 @@ export async function activate(
     }
 
     console.log(
-      "=== ACTIVATION STEP 8.7.5: Initializing VSCode FileSystemWatcher ==="
+      "=== ACTIVATION STEP 8.7: Initializing VSCode FileSystemWatcher ==="
     );
     try {
       // Get configured tasks file path
@@ -1735,7 +1722,6 @@ export async function deactivate() {
     }
 
     // Additional cleanup for any global state or timers
-    // (TimeFormattingUtility timer should already be in subscriptions)
     console.log("AIDM VSCode Extension: All resources cleaned up successfully");
   } catch (error) {
     console.error("AIDM VSCode Extension: Error during deactivation:", error);

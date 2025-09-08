@@ -9,15 +9,12 @@
 type User = any;
 type UserProfile = any;
 type AuthenticationResult = any;
-import { AuditLogger } from "../../security/AuditLogger";
 import { EncryptionUtil } from "../../security/EncryptionUtil";
 
 export class UserService {
-  private auditLogger: AuditLogger;
   private encryptionUtil: EncryptionUtil;
 
-  constructor(auditLogger: AuditLogger, encryptionUtil: EncryptionUtil) {
-    this.auditLogger = auditLogger;
+  constructor(encryptionUtil: EncryptionUtil) {
     this.encryptionUtil = encryptionUtil;
   }
 
@@ -30,11 +27,8 @@ export class UserService {
     mfaToken?: string
   ): Promise<AuthenticationResult> {
     // Log authentication attempt
-    await this.auditLogger.logEvent({
-      action: "USER_AUTHENTICATION_ATTEMPT",
-      userId: username,
-      timestamp: new Date(),
-      metadata: { hasMultiFactor: !!mfaToken },
+    console.log(`[UserService] Authentication attempt for user: ${username}`, {
+      hasMultiFactor: !!mfaToken
     });
 
     try {
@@ -48,11 +42,8 @@ export class UserService {
       );
 
       if (!isValid) {
-        await this.auditLogger.logEvent({
-          action: "USER_AUTHENTICATION_FAILED",
-          userId: username,
-          timestamp: new Date(),
-          reason: "INVALID_CREDENTIALS",
+        console.log(`[UserService] Authentication failed for user: ${username}`, {
+          reason: "INVALID_CREDENTIALS"
         });
 
         return {
@@ -74,11 +65,8 @@ export class UserService {
 
       // Validate MFA token if provided
       if (mfaToken && !(await this.validateMFAToken(user.id, mfaToken))) {
-        await this.auditLogger.logEvent({
-          action: "USER_AUTHENTICATION_FAILED",
-          userId: username,
-          timestamp: new Date(),
-          reason: "INVALID_MFA_TOKEN",
+        console.log(`[UserService] Authentication failed for user: ${username}`, {
+          reason: "INVALID_MFA_TOKEN"
         });
 
         return {
@@ -91,11 +79,8 @@ export class UserService {
       // Generate secure session token
       const sessionToken = await this.generateSessionToken(user.id);
 
-      await this.auditLogger.logEvent({
-        action: "USER_AUTHENTICATION_SUCCESS",
-        userId: user.id,
-        timestamp: new Date(),
-        metadata: { sessionId: sessionToken.id },
+      console.log(`[UserService] Authentication successful for user: ${user.id}`, {
+        sessionId: sessionToken.id
       });
 
       return {
@@ -105,11 +90,8 @@ export class UserService {
         expiresAt: sessionToken.expiresAt,
       };
     } catch (error) {
-      await this.auditLogger.logEvent({
-        action: "USER_AUTHENTICATION_ERROR",
-        userId: username,
-        timestamp: new Date(),
-        error: error instanceof Error ? error.message : String(error),
+      console.error(`[UserService] Authentication error for user: ${username}`, {
+        error: error instanceof Error ? error.message : String(error)
       });
 
       throw error;
@@ -146,16 +128,11 @@ export class UserService {
     // Create user record
     const user = await this.saveUser(encryptedUser);
 
-    // Log user creation for audit
-    await this.auditLogger.logEvent({
-      action: "USER_CREATED",
-      userId: user.id,
-      timestamp: new Date(),
-      metadata: {
-        createdBy: "SYSTEM",
-        hasPhone: !!userData.phone,
-        hasSSN: !!userData.ssn,
-      },
+    // Log user creation
+    console.log(`[UserService] User created: ${user.id}`, {
+      createdBy: "SYSTEM",
+      hasPhone: !!userData.phone,
+      hasSSN: !!userData.ssn
     });
 
     return user;
@@ -188,17 +165,12 @@ export class UserService {
     // Update user profile
     const updatedProfile = await this.updateProfile(userId, encryptedUpdates);
 
-    // Log profile update for audit
-    await this.auditLogger.logEvent({
-      action: "USER_PROFILE_UPDATED",
-      userId: userId,
-      timestamp: new Date(),
-      metadata: {
-        updatedFields: Object.keys(updates),
-        hasEncryptedData: Object.keys(updates).some((key) =>
-          ["email", "phone", "ssn"].includes(key)
-        ),
-      },
+    // Log profile update
+    console.log(`[UserService] Profile updated for user: ${userId}`, {
+      updatedFields: Object.keys(updates),
+      hasEncryptedData: Object.keys(updates).some((key) =>
+        ["email", "phone", "ssn"].includes(key)
+      )
     });
 
     return updatedProfile;

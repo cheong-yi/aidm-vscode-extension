@@ -4,7 +4,7 @@
  * Requirements: 4.8, 7.9, 9.3
  *
  * Generates realistic timestamp distributions for mock data that create
- * meaningful relative time displays when processed by TimeFormattingUtility.
+ * meaningful relative time displays when processed by time formatting methods.
  * Supports comprehensive testing of various time ranges from "just now" to "weeks ago".
  */
 
