@@ -10,6 +10,7 @@ import { TasksDataService } from "../../services";
 import { TaskHTMLGenerator } from "./TaskHTMLGenerator";
 import { TaskMessageHandler } from "./TaskMessageHandler";
 import { TaskViewState } from "./TaskViewState";
+import { TaskEventManager, EventCallbacks } from "./TaskEventManager";
 
 /**
  * TaskWebviewProvider - Thin Facade implementing vscode.WebviewViewProvider
@@ -17,11 +18,11 @@ import { TaskViewState } from "./TaskViewState";
  */
 export class TaskWebviewProvider implements vscode.WebviewViewProvider {
   private view?: vscode.WebviewView;
-  private readonly disposables: vscode.Disposable[] = [];
   
   // Delegate objects
   private readonly htmlGenerator: TaskHTMLGenerator;
   private readonly viewState: TaskViewState;
+  private readonly eventManager: TaskEventManager;
   private messageHandler?: TaskMessageHandler;
   
   constructor(
@@ -32,26 +33,22 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
     this.htmlGenerator = new TaskHTMLGenerator(context.extensionUri);
     this.viewState = new TaskViewState(context);
     
+    // Initialize event manager with callbacks
+    const callbacks: EventCallbacks = {
+      onTasksUpdated: (tasks: Task[]) => this.handleTasksUpdated(tasks),
+      onServiceError: (error: TaskErrorResponse) => this.handleServiceError(error),
+      onMessageReceived: async (message: any) => {
+        if (this.messageHandler) {
+          await this.messageHandler.handleMessage(message);
+        }
+      }
+    };
+    this.eventManager = new TaskEventManager(this.tasksDataService, callbacks);
+    
     // Setup event listeners
-    this.setupEventHandlers();
+    this.eventManager.setupEventHandlers();
   }
 
-  /**
-   * Setup event handlers for data service events
-   */
-  private setupEventHandlers(): void {
-    // Listen for task updates
-    const tasksUpdatedDisposable = this.tasksDataService.onTasksUpdated.event(
-      (tasks: Task[]) => this.handleTasksUpdated(tasks)
-    );
-    this.disposables.push(tasksUpdatedDisposable);
-
-    // Listen for service errors  
-    const errorDisposable = this.tasksDataService.onError.event(
-      (error: TaskErrorResponse) => this.handleServiceError(error)
-    );
-    this.disposables.push(errorDisposable);
-  }
 
   /**
    * Handle tasks updated event from service
@@ -115,15 +112,8 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
       (taskId: string) => this.handleAccordionToggle(taskId)
     );
     
-    // Setup message handling
-    const messageDisposable = webviewView.webview.onDidReceiveMessage(
-      async (message: any) => {
-        if (this.messageHandler) {
-          await this.messageHandler.handleMessage(message);
-        }
-      }
-    );
-    this.disposables.push(messageDisposable);
+    // Setup message handling through event manager
+    this.eventManager.setupMessageHandling(webviewView.webview);
     
     // Initial render
     this.updateWebview();
@@ -192,11 +182,6 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
    * Clean up disposables
    */
   public dispose(): void {
-    while (this.disposables.length) {
-      const disposable = this.disposables.pop();
-      if (disposable) {
-        disposable.dispose();
-      }
-    }
+    this.eventManager.dispose();
   }
 }
