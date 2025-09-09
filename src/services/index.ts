@@ -6,7 +6,6 @@
 export { TasksDataService } from "./TasksDataService";
 export { MarkdownTaskParser } from "./MarkdownTaskParser";
 export { JSONTaskParser } from "./JSONTaskParser";
-export { TaskStatusManager } from "./TaskStatusManager";
 export { CacheManager } from "./CacheManager";
 export { GitUtilities } from "./GitUtilities";
 export { TaskFilterService } from "./TaskFilterService";

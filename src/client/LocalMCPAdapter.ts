@@ -6,7 +6,6 @@
 import { BaseMCPClient, MCPClientInterface } from "./MCPInterface";
 import { SimpleMCPServer } from "../server/SimpleMCPServer";
 import { ContextManager } from "../server/ContextManager";
-import { TaskStatusManager } from "../services/TaskStatusManager";
 import { JSONTaskParser } from "../services/JSONTaskParser";
 import { MockDataProvider } from "../mock/MockDataProvider";
 import { ErrorCode } from "../types/extension";
@@ -18,29 +17,29 @@ import { ErrorCode } from "../types/extension";
 export class LocalMCPAdapter extends BaseMCPClient {
   private server: SimpleMCPServer;
   private contextManager: ContextManager;
-  private taskStatusManager: TaskStatusManager;
+  private jsonTaskParser: JSONTaskParser;
   private isServerOwned: boolean = false;
 
   constructor(
     port: number = 3001,
     timeout: number = 5000,
     contextManager?: ContextManager,
-    taskStatusManager?: TaskStatusManager
+    jsonTaskParser?: JSONTaskParser
   ) {
     super(port, timeout);
     
     // If managers not provided, create minimal instances
     this.contextManager = contextManager || new ContextManager(new MockDataProvider());
-    this.taskStatusManager = taskStatusManager || new TaskStatusManager(new JSONTaskParser());
+    this.jsonTaskParser = jsonTaskParser || new JSONTaskParser();
     
     this.server = new SimpleMCPServer(
       this.port,
       this.contextManager,
-      this.taskStatusManager
+      this.jsonTaskParser
     );
     
     // Mark as owned if we created the managers
-    this.isServerOwned = !contextManager && !taskStatusManager;
+    this.isServerOwned = !contextManager && !jsonTaskParser;
   }
 
   /**
@@ -136,7 +135,7 @@ export class LocalMCPAdapter extends BaseMCPClient {
       this.server = new SimpleMCPServer(
         this.port,
         this.contextManager,
-        this.taskStatusManager
+        this.jsonTaskParser
       );
     }
     

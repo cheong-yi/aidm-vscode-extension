@@ -21,7 +21,6 @@ import {
   TaskPriority,
   TaskErrorResponse,
 } from "../types/tasks";
-import { TaskStatusManager } from "./TaskStatusManager";
 import { JSONTaskParser } from "./JSONTaskParser";
 import { MockDataProvider } from "../mock";
 import * as vscode from "vscode";
@@ -47,7 +46,6 @@ export class TasksDataService implements ITasksDataService {
   private isInitialized: boolean = false;
 
   constructor(
-    private taskStatusManager: TaskStatusManager,
     private jsonTaskParser: JSONTaskParser,
     private mockDataProvider: MockDataProvider
   ) {
@@ -430,25 +428,32 @@ export class TasksDataService implements ITasksDataService {
         throw error;
       }
 
-      // Fallback to TaskStatusManager if HTTP fails (network issues, timeouts, etc.)
+      // Fallback to file parsing if HTTP fails (network issues, timeouts, etc.)
       console.warn(
-        "HTTP call failed, falling back to TaskStatusManager:",
+        "HTTP call failed, falling back to file parsing:",
         error instanceof Error ? error.message : String(error)
       );
       console.log(
-        `[TasksDataService] Falling back to TaskStatusManager for task ${id}`
+        `[TasksDataService] Falling back to file parsing for task ${id}`
       );
-      const fallbackTask = await this.taskStatusManager.getTaskById(id);
-      if (fallbackTask) {
-        console.log(
-          `[TasksDataService] Retrieved task ${id} from TaskStatusManager fallback`
-        );
-      } else {
-        console.log(
-          `[TasksDataService] Task ${id} not found in TaskStatusManager fallback`
-        );
+      
+      try {
+        const allTasks = await this.getTasks();
+        const fallbackTask = allTasks.find(task => task.id === id) || null;
+        if (fallbackTask) {
+          console.log(
+            `[TasksDataService] Retrieved task ${id} from file parsing fallback`
+          );
+        } else {
+          console.log(
+            `[TasksDataService] Task ${id} not found in file parsing fallback`
+          );
+        }
+        return fallbackTask;
+      } catch (fallbackError) {
+        console.error(`[TasksDataService] File parsing fallback failed:`, fallbackError);
+        return null;
       }
-      return fallbackTask;
     }
   }
 
@@ -476,8 +481,8 @@ export class TasksDataService implements ITasksDataService {
           `[TasksDataService] Successfully updated task ${id} status via MCP server`
         );
         // Fire onTasksUpdated event after successful update
-        // Use TaskStatusManager directly to avoid additional HTTP calls
-        const updatedTasks = await this.taskStatusManager.getTasks();
+        // Refresh tasks to get the updated status
+        const updatedTasks = await this.getTasks();
         this.onTasksUpdated.fire(updatedTasks);
       } else {
         console.log(
@@ -524,20 +529,14 @@ export class TasksDataService implements ITasksDataService {
       });
 
       console.warn(
-        "HTTP call failed, falling back to TaskStatusManager:",
+        "HTTP call failed, status update not possible:",
         error instanceof Error ? error.message : String(error)
       );
       console.log(
-        `[TasksDataService] Falling back to TaskStatusManager for task ${id} status update`
+        `[TasksDataService] Status update failed for task ${id} - no fallback mechanism available`
       );
-      const fallbackSuccess = await this.taskStatusManager.updateTaskStatus(
-        id,
-        status
-      );
-      console.log(
-        `[TasksDataService] TaskStatusManager fallback result for ${id}: ${fallbackSuccess}`
-      );
-      return fallbackSuccess;
+      // TaskStatusManager didn't actually implement status updates, so we return false
+      return false;
     }
   }
 

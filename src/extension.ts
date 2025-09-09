@@ -18,7 +18,6 @@ import { PortFinder } from "./utils/portFinder";
 import {
   TasksDataService,
   JSONTaskParser,
-  TaskStatusManager,
 } from "./services";
 import { MockDataProvider } from "./mock";
 import { TaskStatus, Task } from "./types/tasks";
@@ -434,10 +433,8 @@ export async function activate(
     console.log("=== ACTIVATION STEP 8.5: Initializing TasksDataService ===");
     try {
       const jsonParser = new JSONTaskParser();
-      const taskStatusManager = new TaskStatusManager(jsonParser);
       const mockDataProvider = new MockDataProvider();
       tasksDataService = new TasksDataService(
-        taskStatusManager,
         jsonParser,
         mockDataProvider
       );

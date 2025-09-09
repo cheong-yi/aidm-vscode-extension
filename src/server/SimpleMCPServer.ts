@@ -13,9 +13,10 @@ import {
 } from "../types/jsonrpc";
 import { ContextManager } from "../types/extension";
 import { CodeLocation } from "../types/business";
-import { TaskStatusManager } from "../services/TaskStatusManager";
-import { TaskStatus } from "../types/tasks";
+import { JSONTaskParser } from "../services/JSONTaskParser";
+import { TaskStatus, Task } from "../types/tasks";
 import { PortFinder } from "../utils/portFinder";
+import * as vscode from "vscode";
 
 export interface Tool {
   name: string;
@@ -27,7 +28,7 @@ export class SimpleMCPServer {
   private server: http.Server | null = null;
   private port: number;
   private contextManager: ContextManager;
-  private taskStatusManager: TaskStatusManager;
+  private jsonTaskParser: JSONTaskParser;
   private isRunning: boolean = false;
   private activeRequests: Map<string, Promise<any>> = new Map();
   private maxConcurrentRequests: number = 10;
@@ -36,11 +37,57 @@ export class SimpleMCPServer {
   constructor(
     port: number,
     contextManager: ContextManager,
-    taskStatusManager: TaskStatusManager
+    jsonTaskParser: JSONTaskParser
   ) {
     this.port = port;
     this.contextManager = contextManager;
-    this.taskStatusManager = taskStatusManager;
+    this.jsonTaskParser = jsonTaskParser;
+  }
+
+  /**
+   * Helper method to get tasks from the JSON parser
+   * Replaces TaskStatusManager.getTasks()
+   */
+  private async getTasks(): Promise<Task[]> {
+    try {
+      return await this.jsonTaskParser.parseTasksFromFile(vscode.Uri.file("./tasks.json"));
+    } catch (error) {
+      console.error("Failed to parse tasks:", error);
+      return [];
+    }
+  }
+
+  /**
+   * Helper method to get a task by ID
+   * Replaces TaskStatusManager.getTaskById()
+   */
+  private async getTaskById(id: string): Promise<Task | null> {
+    try {
+      const allTasks = await this.getTasks();
+      return allTasks.find(task => task.id === id) || null;
+    } catch (error) {
+      console.error("Failed to get task by ID:", error);
+      return null;
+    }
+  }
+
+  /**
+   * Helper method for status updates (no-op implementation)
+   * Replaces TaskStatusManager.updateTaskStatus()
+   */
+  private async updateTaskStatus(id: string, status: TaskStatus): Promise<boolean> {
+    // TaskStatusManager had empty implementation that returned false
+    console.warn(`Status update not implemented: task ${id} to ${status}`);
+    return false;
+  }
+
+  /**
+   * Helper method for task dependencies (no-op implementation)
+   * Replaces TaskStatusManager.getTaskDependencies()
+   */
+  private async getTaskDependencies(id: string): Promise<string[]> {
+    // TaskStatusManager had empty implementation that returned empty array
+    return [];
   }
 
   /**
@@ -935,7 +982,7 @@ export class SimpleMCPServer {
     args: any
   ): Promise<JSONRPCResponse> {
     try {
-      const allTasks = await this.taskStatusManager.getTasks();
+      const allTasks = await this.getTasks();
 
       let filteredTasks = allTasks;
       if (args?.status) {
@@ -982,7 +1029,7 @@ export class SimpleMCPServer {
         throw new Error("Task ID is required");
       }
 
-      const task = await this.taskStatusManager.getTaskById(args.id);
+      const task = await this.getTaskById(args.id);
 
       if (!task) {
         return {
@@ -1064,7 +1111,7 @@ export class SimpleMCPServer {
       }
 
       // Verify task exists before updating
-      const existingTask = await this.taskStatusManager.getTaskById(args.id);
+      const existingTask = await this.getTaskById(args.id);
       if (!existingTask) {
         return {
           jsonrpc: "2.0",
@@ -1088,7 +1135,7 @@ export class SimpleMCPServer {
         };
       }
 
-      const success = await this.taskStatusManager.updateTaskStatus(
+      const success = await this.updateTaskStatus(
         args.id,
         args.newStatus as TaskStatus
       );
@@ -1144,8 +1191,8 @@ export class SimpleMCPServer {
     request: JSONRPCRequest
   ): Promise<JSONRPCResponse> {
     try {
-      await this.taskStatusManager.refreshTasksFromFile();
-      const refreshedTasks = await this.taskStatusManager.getTasks();
+      // refreshTasksFromFile was empty in TaskStatusManager, so we skip it
+      const refreshedTasks = await this.getTasks();
 
       return {
         jsonrpc: "2.0",
@@ -1200,7 +1247,7 @@ export class SimpleMCPServer {
         throw new Error("Task ID is required");
       }
 
-      const dependencies = await this.taskStatusManager.getTaskDependencies(
+      const dependencies = await this.getTaskDependencies(
         args.id
       );
 
@@ -1257,7 +1304,7 @@ export class SimpleMCPServer {
         throw new Error("Task ID is required");
       }
 
-      const task = await this.taskStatusManager.getTaskById(args.id);
+      const task = await this.getTaskById(args.id);
 
       if (!task) {
         return {

@@ -6,7 +6,6 @@
 import { SimpleMCPServer } from "./SimpleMCPServer";
 import { ContextManager } from "./ContextManager";
 import { MockDataProvider } from "../mock/MockDataProvider";
-import { TaskStatusManager } from "../services/TaskStatusManager";
 import { JSONTaskParser } from "../services/JSONTaskParser";
 
 export interface ProcessManagerConfig {
@@ -53,14 +52,14 @@ export class ProcessManager {
       // Initialize context manager
       const contextManager = new ContextManager(mockDataProvider);
 
-      // Initialize task status manager
-      const taskStatusManager = new TaskStatusManager(new JSONTaskParser());
+      // Initialize JSON task parser
+      const jsonTaskParser = new JSONTaskParser();
 
       // Create and start server
       this.server = new SimpleMCPServer(
         this.config.port,
         contextManager,
-        taskStatusManager
+        jsonTaskParser
       );
 
       await this.server.start();
