@@ -1512,7 +1512,7 @@
           "failingTestsList": []
         },
         "implementation": {
-          "commitHash": "[pending - will be updated after commit]",
+          "commitHash": "69c5e4887a1cfcf9f876b1f82450e4cd5a269a46",
           "summary": "Extracted all inline JavaScript from TaskHTMLGenerator to external webview.js file, updated HTML to use external script tag with proper CSP",
           "filesChanged": ["src/tasks/providers/TaskHTMLGenerator.ts", "src/tasks/providers/webview.js"],
           "completedDate": "2025-09-09T14:30:00.000Z",
