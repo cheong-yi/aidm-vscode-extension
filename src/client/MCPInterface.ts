@@ -240,8 +240,18 @@ export class MCPClientFactory {
    * @returns Remote MCP client instance
    */
   static createRemoteClient(config: MCPClientConfig): MCPClientInterface {
-    // This will be implemented by the RemoteMCPAdapter in REF-031
-    throw new Error("Remote MCP adapter not yet implemented - see REF-031");
+    const { RemoteMCPAdapter } = require("./RemoteMCPAdapter");
+    
+    if (!config.endpoint) {
+      throw new Error("Remote endpoint is required for remote MCP client");
+    }
+    
+    return new RemoteMCPAdapter(
+      config.endpoint,
+      config.port,
+      config.timeout,
+      config.apiKey
+    );
   }
 
   /**
