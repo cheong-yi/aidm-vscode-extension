@@ -4,3 +4,4 @@
 
 export * from "./mcpClient";
 export * from "./MCPInterface";
+export * from "./LocalMCPAdapter";

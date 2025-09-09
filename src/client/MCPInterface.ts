@@ -230,8 +230,8 @@ export class MCPClientFactory {
    * @returns Local MCP client instance
    */
   static createLocalClient(config: MCPClientConfig): MCPClientInterface {
-    // This will be implemented by the LocalMCPAdapter in REF-030
-    throw new Error("Local MCP adapter not yet implemented - see REF-030");
+    const { LocalMCPAdapter } = require("./LocalMCPAdapter");
+    return new LocalMCPAdapter(config.port, config.timeout);
   }
 
   /**
