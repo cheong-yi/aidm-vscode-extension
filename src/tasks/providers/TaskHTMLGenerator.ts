@@ -1,6 +1,5 @@
 import * as vscode from "vscode";
 import { Task, TaskStatus, STATUS_DISPLAY_NAMES } from "../../types/tasks";
-import { TaskFilterService } from "../../services/TaskFilterService";
 
 /**
  * TaskHTMLGenerator - Responsible for generating all HTML content for the task webview
@@ -9,10 +8,8 @@ import { TaskFilterService } from "../../services/TaskFilterService";
 export class TaskHTMLGenerator {
   private logoDataUri: string = "";
   private webview?: vscode.Webview;
-  private filterService: TaskFilterService;
 
   constructor(private extensionUri: vscode.Uri) {
-    this.filterService = new TaskFilterService();
   }
 
   /**
@@ -107,8 +104,9 @@ export class TaskHTMLGenerator {
         ? tasks.map((task) => this.generateTaskItem(task)).join("")
         : '<div class="no-tasks">No tasks available</div>';
 
-    // Get the CSS file URI
+    // Get the CSS and JavaScript file URIs
     const styleUri = this.getResourceUri('styles.css');
+    const scriptUri = this.getResourceUri('webview.js');
 
     return `<!DOCTYPE html>
 <html lang="en">
@@ -116,7 +114,7 @@ export class TaskHTMLGenerator {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="Content-Security-Policy" 
-          content="default-src 'none'; style-src ${styleUri} 'self'; script-src 'unsafe-inline' 'self'; img-src vscode-resource: https: data: 'self'; font-src vscode-resource: https: 'self'; connect-src 'self';">
+          content="default-src 'none'; style-src ${styleUri} 'self'; script-src ${scriptUri} 'self'; img-src vscode-resource: https: data: 'self'; font-src vscode-resource: https: 'self'; connect-src 'self';">
     <title>Taskmaster Dashboard</title>
     <link rel="stylesheet" href="${styleUri}">
 </head>
@@ -137,7 +135,7 @@ export class TaskHTMLGenerator {
             </div>
         </div>
     </div>
-    ${this.generateScripts()}
+    <script src="${scriptUri}"></script>
 </body>
 </html>`;
   }
@@ -181,80 +179,6 @@ export class TaskHTMLGenerator {
   }
 
 
-  /**
-   * Generate JavaScript for the webview
-   */
-  private generateScripts(): string {
-    return `<script>
-      ${this.getAccordionScript()}
-      ${this.getFilterToggleScript()}
-      ${this.getMessageSendingScript()}
-    </script>`;
-  }
-
-  private getAccordionScript(): string {
-    return `
-      let expandedTaskId = null;
-      
-      function toggleTask(taskElement) {
-        const taskId = taskElement.dataset.taskId;
-        if (!taskId) return;
-        
-        const isCurrentlyExpanded = expandedTaskId === taskId;
-        
-        // Collapse all tasks first (accordion behavior)
-        document.querySelectorAll('.task-item.expanded').forEach(item => {
-          item.classList.remove('expanded');
-        });
-        
-        if (!isCurrentlyExpanded) {
-          // Expand clicked task
-          taskElement.classList.add('expanded');
-          expandedTaskId = taskId;
-          
-          // Notify extension of expansion (extension handles persistence)
-          sendMessage('toggleAccordion', { taskId: taskId, expanded: true });
-        } else {
-          // Collapse clicked task
-          expandedTaskId = null;
-          sendMessage('toggleAccordion', { taskId: taskId, expanded: false });
-        }
-      }
-
-      function toggleFailures(failuresSection) {
-        failuresSection.classList.toggle('expanded');
-      }
-
-      function restoreExpandedTask(taskId) {
-        if (!taskId) return;
-        
-        const taskElement = document.querySelector(\`[data-task-id="\${taskId}"]\`);
-        if (taskElement) {
-          taskElement.classList.add('expanded');
-          expandedTaskId = taskId;
-        }
-      }`;
-  }
-
-  private getFilterToggleScript(): string {
-    return this.filterService.generateFilterScript();
-  }
-
-  private getMessageSendingScript(): string {
-    return `
-      function sendMessage(type, payload) {
-        if (typeof acquireVsCodeApi !== 'undefined') {
-          const vscode = acquireVsCodeApi();
-          vscode.postMessage({
-            type: type,
-            ...payload
-          });
-        }
-      }
-      
-      ${this.getTaskDataScript()}
-    `;
-  }
 
   // Helper methods (simplified versions for initial implementation)
   private getStatusClass(status: TaskStatus): string {
@@ -450,67 +374,4 @@ export class TaskHTMLGenerator {
     return new Date(dateString).toLocaleString();
   }
 
-  /**
-   * Add script to handle task data via postMessage (replaces escapeHtml)
-   */
-  private getTaskDataScript(): string {
-    return `
-      // Handle task data updates via postMessage
-      window.addEventListener('message', function(event) {
-        const message = event.data;
-        if (message.type === 'updateTaskData') {
-          updateTaskContent(message.tasks);
-        }
-      });
-      
-      function updateTaskContent(tasks) {
-        tasks.forEach(task => {
-          const taskElement = document.querySelector('[data-task-id="' + task.id + '"]');
-          if (taskElement) {
-            // Update title
-            const titleElement = taskElement.querySelector('[data-task-field="title"]');
-            if (titleElement) titleElement.textContent = task.title || '';
-            
-            // Update description
-            const descElement = taskElement.querySelector('[data-task-field="description"]');
-            if (descElement) descElement.textContent = task.description || 'No description available';
-            
-            // Update test strategy
-            const testStrategyElement = taskElement.querySelector('[data-task-field="testStrategy"]');
-            if (testStrategyElement) {
-              testStrategyElement.textContent = (task.testStrategy && task.testStrategy.trim()) 
-                ? task.testStrategy : 'No test strategy specified';
-            }
-            
-            // Update dependencies
-            const depsElement = taskElement.querySelector('[data-task-field="dependencies"]');
-            if (depsElement) {
-              if (task.dependencies && task.dependencies.length > 0) {
-                depsElement.innerHTML = task.dependencies.map(dep => 
-                  '<span class="dependency-tag"></span>'
-                ).join('');
-                // Set textContent for each dependency tag
-                const depTags = depsElement.querySelectorAll('.dependency-tag');
-                task.dependencies.forEach((dep, index) => {
-                  if (depTags[index]) depTags[index].textContent = dep;
-                });
-              } else {
-                depsElement.innerHTML = '<span class="dependency-tag">None</span>';
-              }
-            }
-            
-            // Update subtasks
-            const subtaskElements = taskElement.querySelectorAll('[data-subtask-field="title"]');
-            if (task.subtasks && subtaskElements.length > 0) {
-              task.subtasks.forEach((subtask, index) => {
-                if (subtaskElements[index]) {
-                  subtaskElements[index].textContent = subtask.title || subtask.description || 'Untitled';
-                }
-              });
-            }
-          }
-        });
-      }
-    `;
-  }
 }
