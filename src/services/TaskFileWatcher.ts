@@ -1,93 +1,65 @@
 /**
- * TaskFileWatcher - File watching functionality using VSCode FileSystemWatcher
- * REFRESH-001: Implement file change detection and automatic UI refresh
- * Requirements: 3.1-3.6, 4.1-4.4, 7.1-7.6
+ * TaskFileWatcher - Simplified file watching functionality
  */
 
 import * as vscode from "vscode";
-import { Task } from "../types/tasks";
 import * as path from "path";
 
 export class TaskFileWatcher {
   private watcher: vscode.FileSystemWatcher | null = null;
   private refreshCallback: (() => void) | null = null;
   private debounceTimer: NodeJS.Timeout | null = null;
-  private readonly DEBOUNCE_DELAY = 500; // milliseconds
-  private readonly _onFileChanged: vscode.EventEmitter<string> =
-    new vscode.EventEmitter<string>();
-  private readonly _onTasksChanged: vscode.EventEmitter<Task[]> =
-    new vscode.EventEmitter<Task[]>();
+  private readonly DEBOUNCE_DELAY = 500;
+  private readonly _onFileChanged: vscode.EventEmitter<string> = new vscode.EventEmitter<string>();
 
   constructor(private filePath: string) {}
 
   /**
-   * Start watching the configured file for changes and trigger UI refresh
-   * @param onFileChanged Callback function to execute when file changes
+   * Start watching the configured file for changes
    */
   startWatching(onFileChanged: () => void): void {
-    if (this.watcher) {
-      return; // Already watching
-    }
+    if (this.watcher) return;
 
     this.refreshCallback = onFileChanged;
 
+    if (!vscode.workspace.workspaceFolders?.length) {
+      console.warn("No workspace folders found");
+      return;
+    }
+
     try {
-      // Create file system watcher for configured file using workspace relative pattern
-      if (
-        vscode.workspace.workspaceFolders &&
-        vscode.workspace.workspaceFolders.length > 0
-      ) {
-        const workspaceRoot = vscode.workspace.workspaceFolders[0];
-        // Extract filename from configured path, fallback to "tasks.json" if invalid
-        const fileName = path.basename(this.filePath) || "tasks.json";
-        const pattern = new vscode.RelativePattern(
-          workspaceRoot,
-          `**/${fileName}`
-        );
+      const workspaceRoot = vscode.workspace.workspaceFolders[0];
+      const fileName = path.basename(this.filePath) || "tasks.json";
+      const pattern = new vscode.RelativePattern(workspaceRoot, `**/${fileName}`);
 
-        this.watcher = vscode.workspace.createFileSystemWatcher(pattern);
+      this.watcher = vscode.workspace.createFileSystemWatcher(pattern);
+      this.watcher.onDidChange(() => this.handleFileChange());
+      this.watcher.onDidCreate(() => this.handleFileChange());
+      this.watcher.onDidDelete(() => this.handleFileChange());
 
-        // Handle file change events with debouncing
-        this.watcher.onDidChange(() => this.handleFileChange());
-        this.watcher.onDidCreate(() => this.handleFileChange());
-        this.watcher.onDidDelete(() => this.handleFileChange());
-
-        console.log(
-          `✅ Started watching ${fileName} files for changes in workspace: ${workspaceRoot.uri.fsPath}`
-        );
-      } else {
-        console.warn(
-          "⚠️ No workspace folders found, cannot create file watcher"
-        );
-      }
+      console.log(`Started watching ${fileName}`);
     } catch (error) {
-      console.error("❌ Failed to create file watcher:", error);
-      // Continue without file watching - extension will still function
+      console.error("Failed to create file watcher:", error);
     }
   }
 
   /**
-   * Handle file change events with debouncing to prevent excessive refreshes
+   * Handle file change events with debouncing
    */
   private handleFileChange(): void {
-    // Debounce rapid file changes
     if (this.debounceTimer) {
       clearTimeout(this.debounceTimer);
     }
 
     this.debounceTimer = setTimeout(() => {
-      const fileName = path.basename(this.filePath) || "tasks.json";
-      console.log(`🔄 ${fileName} file changed, refreshing UI`);
-
-      // Fire event for external listeners
+      console.log("File changed, refreshing");
       this._onFileChanged.fire(this.filePath);
-
-      // Execute refresh callback if provided
+      
       if (this.refreshCallback) {
         try {
           this.refreshCallback();
         } catch (error) {
-          console.error("❌ Error executing refresh callback:", error);
+          console.error("Error executing refresh callback:", error);
         }
       }
     }, this.DEBOUNCE_DELAY);
@@ -96,7 +68,7 @@ export class TaskFileWatcher {
   /**
    * Stop watching the file
    */
-  async stopWatching(): Promise<void> {
+  stopWatching(): void {
     if (this.watcher) {
       this.watcher.dispose();
       this.watcher = null;
@@ -107,19 +79,11 @@ export class TaskFileWatcher {
       this.debounceTimer = null;
     }
 
-    const fileName = path.basename(this.filePath) || "tasks.json";
-    console.log(`🛑 Stopped watching ${fileName} files`);
+    console.log("Stopped watching files");
   }
 
-  /**
-   * Public event emitters for external access
-   */
   get onFileChanged() {
     return this._onFileChanged;
-  }
-
-  get onTasksChanged() {
-    return this._onTasksChanged;
   }
 
   /**
@@ -128,6 +92,5 @@ export class TaskFileWatcher {
   dispose(): void {
     this.stopWatching();
     this._onFileChanged.dispose();
-    this._onTasksChanged.dispose();
   }
 }

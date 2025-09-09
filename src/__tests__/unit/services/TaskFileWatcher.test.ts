@@ -200,11 +200,6 @@ describe("TaskFileWatcher", () => {
       expect(watcher.onFileChanged).toBeDefined();
       expect(typeof watcher.onFileChanged.event).toBe("function");
     });
-
-    it("should provide access to onTasksChanged event emitter", () => {
-      expect(watcher.onTasksChanged).toBeDefined();
-      expect(typeof watcher.onTasksChanged.event).toBe("function");
-    });
   });
 
   // Test 5: Error handling
@@ -228,7 +223,7 @@ describe("TaskFileWatcher", () => {
       // Wait for debounce delay and error handling
       setTimeout(() => {
         expect(consoleSpy).toHaveBeenCalledWith(
-          "❌ Error executing refresh callback:",
+          "Error executing refresh callback:",
           expect.any(Error)
         );
         consoleSpy.mockRestore();
