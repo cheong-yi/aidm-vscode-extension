@@ -349,6 +349,53 @@ npm run validate-manifest    # Validate extension manifest
 npm run test:packaging      # Test packaging process
 ```
 
+#### Enhanced Test Runner
+```bash
+./scripts/run-tests.sh <language> [test-args]
+
+# Examples:
+./scripts/run-tests.sh typescript                                    # Run all TypeScript/Jest tests  
+./scripts/run-tests.sh jest src/__tests__/unit                       # Run specific directory
+./scripts/run-tests.sh ts --testPathPattern="TaskHTMLGenerator"      # Run pattern match
+./scripts/run-tests.sh python unit-tests/                           # Run all Python/pytest tests
+./scripts/run-tests.sh pytest test_specific.py::test_function       # Run specific test function
+```
+
+**Enhanced JSON Output Features:**
+- **Actionable failure information** with file, line, and specific error details
+- **Human-readable summary** answering "What do I fix?" immediately
+- **Detailed failing test data** including stack traces and error types
+- **Execution metrics** and performance data
+- **Results saved to** `test-results/test-output.json`
+
+**Enhanced Output Format:**
+```json
+{
+  "lastRunDate": "2025-09-09T02:11:27Z",
+  "totalTests": 24,
+  "passedTests": 23,
+  "failedTests": 1,
+  "executionTime": 10322,
+  "failingTestsList": [
+    {
+      "name": "should validate project type assessment",
+      "file": "src/__tests__/unit/services/TasksDataService.test.ts",
+      "line": 127,
+      "error": "AssertionError: Expected 'python' but got 'unknown'",
+      "errorType": "AssertionError",
+      "duration": 245,
+      "stackTrace": "Full stack trace with context..."
+    }
+  ],
+  "framework": "jest",
+  "language": "typescript",
+  "summary": {
+    "quickFix": "1 assertion failure in TasksDataService.test.ts",
+    "actionRequired": "Check project type detection logic"
+  }
+}
+```
+
 #### Packaging & Deployment
 ```bash
 npm run package     # Create VSIX package using package-extension.js
