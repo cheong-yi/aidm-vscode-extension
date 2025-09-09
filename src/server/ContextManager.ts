@@ -1,6 +1,6 @@
 /**
  * Context Manager Implementation
- * Manages business context retrieval with caching layer, error handling, and audit logging
+ * Consolidated implementation with single caching mechanism
  */
 
 import { ContextManager as IContextManager } from "../types/extension";
@@ -27,13 +27,11 @@ export class ContextManager implements IContextManager {
     this.mockDataProvider = mockDataProvider;
     this.mockCache = mockCache;
     this.errorHandler = new ErrorHandler();
-
-    // Start cache cleanup
     this.startCacheCleanup();
   }
 
   /**
-   * Get business context for a code location with comprehensive error handling
+   * Get business context for a code location
    */
   async getBusinessContext(
     codeLocation: CodeLocation
@@ -50,12 +48,11 @@ export class ContextManager implements IContextManager {
       },
     };
 
-    // Log data access
     console.log(`Business context requested for ${codeLocation.filePath}:${codeLocation.startLine}-${codeLocation.endLine}`);
 
     const result = await this.errorHandler.executeWithErrorHandling(
       async () => {
-        return await this.getBusinessContextInternal(codeLocation);
+        return await this.getContextFromCache(codeLocation);
       },
       context,
       {
@@ -69,54 +66,25 @@ export class ContextManager implements IContextManager {
   }
 
   /**
-   * Get requirement by ID with error handling and audit logging
+   * Get requirement by ID - simplified implementation
    */
   async getRequirementById(id: string): Promise<any> {
-    const context: ErrorContext = {
-      operation: "getRequirementById",
-      component: "ContextManager",
-      requestId: this.generateRequestId(),
-      metadata: { requirementId: id },
-    };
-
-    // Log data access
     console.log(`Requirement requested: ${id}`);
-
-    return await this.errorHandler.executeWithErrorHandling(
-      async () => {
-        // Mock business requirement lookup removed - return null
-        return null;
-      },
-      context,
-      {
-        enableRecovery: true,
-        maxRetries: 2,
-        fallbackValue: null,
-      }
-    );
+    return null; // Simplified - no business requirements in current implementation
   }
 
   /**
-   * Invalidate cache entries with audit logging
+   * Invalidate cache entries
    */
   invalidateCache(pattern?: string): void {
     try {
       if (!pattern) {
-        // Clear all cache
         this.cache.clear();
-        // Degraded mode cache clearing removed
       } else {
-        // Clear cache entries matching pattern
-        const keysToDelete: string[] = [];
-        for (const key of this.cache.keys()) {
-          if (key.includes(pattern)) {
-            keysToDelete.push(key);
-          }
-        }
-        keysToDelete.forEach((key) => this.cache.delete(key));
+        const keysToDelete = Array.from(this.cache.keys()).filter(key => key.includes(pattern));
+        keysToDelete.forEach(key => this.cache.delete(key));
       }
-
-      console.log(`Cache invalidated successfully, pattern: ${pattern || 'all entries'}`);
+      console.log(`Cache invalidated: ${pattern || 'all entries'}`);
     } catch (error) {
       console.error('Cache invalidation failed:', error);
     }
@@ -139,31 +107,6 @@ export class ContextManager implements IContextManager {
     return now.getTime() - entry.timestamp.getTime() < entry.ttl;
   }
 
-  /**
-   * Find the most relevant context for a specific code location
-   */
-  private findRelevantContext(
-    contexts: BusinessContext[],
-    codeLocation: CodeLocation
-  ): BusinessContext {
-    if (contexts.length === 0) {
-      return {
-        requirements: [],
-        implementationStatus: {
-          completionPercentage: 0,
-          lastVerified: new Date(),
-          verifiedBy: "System",
-        },
-        relatedChanges: [],
-        lastUpdated: new Date(),
-      };
-    }
-
-    // For now, return the first context
-    // In a real implementation, this would use more sophisticated matching
-    // based on line numbers, symbol names, etc.
-    return contexts[0];
-  }
 
   /**
    * Clean up expired cache entries
@@ -195,78 +138,47 @@ export class ContextManager implements IContextManager {
   }
 
   /**
-   * Internal method to get business context
+   * Get context from cache with consolidated caching logic
    */
-  private async getBusinessContextInternal(
+  private async getContextFromCache(
     codeLocation: CodeLocation
   ): Promise<BusinessContext> {
     const cacheKey = this.generateCacheKey(codeLocation);
-    const startTime = Date.now();
-    console.log(`Starting context retrieval for ${codeLocation.filePath}:${codeLocation.startLine}`);
+    console.log(`Context retrieval for ${codeLocation.filePath}:${codeLocation.startLine}`);
 
-    try {
-      console.log(
-        `ContextManager.getBusinessContextInternal() called for: ${codeLocation.filePath}:${codeLocation.startLine}`
+    // Check MockCache first if available
+    if (this.mockCache && !process.env.DEMO_MODE) {
+      const cachedFromMock = this.mockCache.get(
+        codeLocation.filePath,
+        codeLocation.startLine
       );
-
-      // 1) Check explicit mock cache first (line-aware)
-      if (this.mockCache && !process.env.DEMO_MODE) {
-        console.log("MockCache is available, checking for cached data...");
-        const cachedFromMock = this.mockCache.get(
-          codeLocation.filePath,
-          codeLocation.startLine
-        );
-        if (cachedFromMock) {
-          console.log("✅ Found data in MockCache!");
-          console.log(`Context retrieval completed in ${Date.now() - startTime}ms`);
-          return cachedFromMock;
-        } else {
-          console.log(
-            "❌ No data found in MockCache, falling back to MockDataProvider..."
-          );
-        }
-      } else {
-        if (process.env.DEMO_MODE) {
-          // Demo mode: MockCache disabled (no console output)
-        } else {
-          console.log("❌ No MockCache available");
-        }
+      if (cachedFromMock) {
+        console.log("Found data in MockCache");
+        return cachedFromMock;
       }
-
-      // Check cache first
-      const cachedEntry = this.cache.get(cacheKey);
-      if (cachedEntry && this.isCacheValid(cachedEntry)) {
-        console.log(`Context retrieval completed in ${Date.now() - startTime}ms`);
-        console.log(`Cache hit for key: ${cacheKey}`);
-        return cachedEntry.data;
-      }
-
-      // 2) Mock business context lookup removed - return empty array
-      const contexts: any[] = [];
-
-      // Find the most relevant context for the specific location
-      const relevantContext = this.findRelevantContext(contexts, codeLocation);
-
-      // Cache the result (in-memory)
-      try {
-        this.cache.set(cacheKey, {
-          data: relevantContext,
-          timestamp: new Date(),
-          ttl: this.defaultTTL,
-        });
-        // Cache health monitoring removed
-      } catch (cacheError) {
-        // Cache health monitoring removed
-        console.error('Cache write failed:', cacheError);
-      }
-
-      console.log(`Context retrieval completed in ${Date.now() - startTime}ms`);
-      return relevantContext;
-    } catch (error) {
-      console.log(`Context retrieval failed after ${Date.now() - startTime}ms`);
-      // Data provider health monitoring removed
-      throw error;
     }
+
+    // Check internal cache
+    const cachedEntry = this.cache.get(cacheKey);
+    if (cachedEntry && this.isCacheValid(cachedEntry)) {
+      console.log(`Cache hit for key: ${cacheKey}`);
+      return cachedEntry.data;
+    }
+
+    // Create empty context and cache it
+    const emptyContext = this.createEmptyContext(codeLocation);
+    
+    try {
+      this.cache.set(cacheKey, {
+        data: emptyContext,
+        timestamp: new Date(),
+        ttl: this.defaultTTL,
+      });
+    } catch (cacheError) {
+      console.error('Cache write failed:', cacheError);
+    }
+
+    return emptyContext;
   }
 
   /**
@@ -323,12 +235,8 @@ export class ContextManager implements IContextManager {
     errorStats: any;
   } {
     return {
-      isHealthy: true, // Always healthy without degraded mode
-      cacheStats: {
-        size: this.cache.size,
-        oldestEntry: null,
-        newestEntry: null,
-      },
+      isHealthy: true,
+      cacheStats: { size: this.cache.size },
       errorStats: this.errorHandler.getErrorStats(),
     };
   }
@@ -350,11 +258,9 @@ export class ContextManager implements IContextManager {
         clearInterval(this.cleanupInterval);
         this.cleanupInterval = null;
       }
-
-      console.log('ContextManager shutting down');
-      // Degraded mode manager shutdown removed
-
-      console.log(`ContextManager shutdown completed, cleared ${this.cache.size} cache entries`);
+      const cacheSize = this.cache.size;
+      this.cache.clear();
+      console.log(`ContextManager shutdown completed, cleared ${cacheSize} cache entries`);
     } catch (error) {
       console.error("Error during context manager shutdown:", error);
     }
