@@ -344,11 +344,7 @@ export class ConfigurationPanel {
           config.mock.dataSize,
           vscode.ConfigurationTarget.Workspace
         );
-        await vsConfig.update(
-          "demo.industryVertical",
-          config.mock.industryVertical,
-          vscode.ConfigurationTarget.Workspace
-        );
+        // Demo configuration removed
       }
 
       this._panel.webview.postMessage({
@@ -426,10 +422,7 @@ export class ConfigurationPanel {
         },
         mock: {
           dataSize: config.get("aidmVscodeExtension.mock.dataSize", "medium"),
-          industryVertical: config.get(
-            "aidmVscodeExtension.demo.industryVertical",
-            "financial-services"
-          ),
+          industryVertical: "financial-services", // Default removed demo config
         },
       };
 

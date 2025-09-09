@@ -6,7 +6,18 @@ import * as vscode from "vscode";
 import { MCPClient } from "../client/mcpClient";
 import { BusinessContext, CodeLocation } from "../types/business";
 import { BusinessContextHoverProvider, ErrorCode } from "../types/extension";
-import { demoConfig, HoverConfiguration } from "../demo/demoConfiguration";
+// Inline hover configuration (removed demo dependency)
+interface HoverConfiguration {
+  theme: "default" | "compact" | "detailed";
+  showProgressBars: boolean;
+  maxRequirementsShown: number;
+}
+
+const hoverConfig: HoverConfiguration = {
+  theme: "detailed",
+  showProgressBars: true,
+  maxRequirementsShown: 3
+};
 
 export class BusinessContextHover
   implements vscode.HoverProvider, BusinessContextHoverProvider
@@ -291,8 +302,7 @@ export class BusinessContextHover
       }</small>\n\n`
     );
 
-    // Get current hover configuration
-    const hoverConfig = demoConfig.getHoverConfiguration();
+    // Use inline hover configuration
 
     // Enhanced header with styling
     markdown.appendMarkdown("## 🏢 Enterprise Business Context\n\n");

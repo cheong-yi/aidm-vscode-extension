@@ -4,7 +4,8 @@
  */
 
 import { HybridMCPClient } from "../../client/hybridMCPClient";
-import { RooCodeIntegrationDemo } from "../../demo/rooCodeIntegrationDemo";
+// Demo import removed
+// import { RooCodeIntegrationDemo } from "../../demo/rooCodeIntegrationDemo";
 import { SimpleMCPServer } from "../../server/SimpleMCPServer";
 import { ContextManager } from "../../server/ContextManager";
 import { MockDataProvider } from "../../mock/MockDataProvider";
@@ -16,7 +17,8 @@ import { getNextAvailablePort } from "../utils/testPorts";
 describe("RooCode Hybrid MCP Integration", () => {
   let hybridClient: HybridMCPClient;
   let mcpServer: SimpleMCPServer;
-  let demo: RooCodeIntegrationDemo;
+  // Demo functionality removed
+  // let demo: RooCodeIntegrationDemo;
   let isServerRunning = false;
 
   beforeAll(async () => {
@@ -56,7 +58,7 @@ describe("RooCode Hybrid MCP Integration", () => {
 
     // Clean up demo resources
     if (demo) {
-      await demo.cleanup();
+//       await demo.cleanup();
     }
 
     // Clean up any remaining timers and async operations
@@ -205,7 +207,7 @@ describe("RooCode Hybrid MCP Integration", () => {
           "Implement secure authentication with proper error handling",
       };
 
-      const response = await demo.simulateRooCodeQuery(query);
+//       const response = await demo.simulateRooCodeQuery(query);
 
       expect(response).toBeDefined();
       expect(response.suggestion).toBeTruthy();
@@ -249,7 +251,7 @@ describe("RooCode Hybrid MCP Integration", () => {
           "Understand business requirements and relationships for Order model",
       };
 
-      const response = await demo.simulateRooCodeQuery(query);
+//       const response = await demo.simulateRooCodeQuery(query);
 
       expect(response).toBeDefined();
       expect(response.suggestion).toContain("Context Analysis");
@@ -272,7 +274,7 @@ describe("RooCode Hybrid MCP Integration", () => {
           "Get delivery guidance for payment API following enterprise patterns",
       };
 
-      const response = await demo.simulateRooCodeQuery(query);
+//       const response = await demo.simulateRooCodeQuery(query);
 
       expect(response).toBeDefined();
       expect(response.suggestion).toContain("Delivery Guidance");
@@ -310,7 +312,7 @@ describe("RooCode Hybrid MCP Integration", () => {
 
       const startTime = Date.now();
       const responses = await Promise.all(
-        queries.map((query) => demo.simulateRooCodeQuery(query))
+//         queries.map((query) => demo.simulateRooCodeQuery(query))
       );
       const totalTime = Date.now() - startTime;
 
@@ -354,7 +356,7 @@ describe("RooCode Hybrid MCP Integration", () => {
         userIntent: "",
       };
 
-      const response = await demo.simulateRooCodeQuery(invalidQuery);
+//       const response = await demo.simulateRooCodeQuery(invalidQuery);
 
       expect(response).toBeDefined();
       expect(response.confidence).toBeGreaterThan(0); // Should still provide some confidence
@@ -390,7 +392,7 @@ describe("RooCode Hybrid MCP Integration", () => {
         userIntent: "Helper class implementation",
       };
 
-      const response = await demo.simulateRooCodeQuery(query);
+//       const response = await demo.simulateRooCodeQuery(query);
 
       // Validate response structure
       expect(response).toMatchObject({

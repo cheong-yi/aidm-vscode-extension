@@ -3,11 +3,12 @@
  * Tests dual-context AI responses and concurrent request handling
  */
 
-import {
-  RooCodeIntegration,
-  RooCodeQuery,
-} from "../../demo/rooCodeIntegration";
-import { DemoScenarios } from "../../demo/demoScenarios";
+// Demo imports removed - tests disabled
+// import {
+//   RooCodeIntegration,
+//   RooCodeQuery,
+// } from "../../demo/rooCodeIntegration";
+// import { DemoScenarios } from "../../demo/demoScenarios";
 
 describe("RooCode Hybrid MCP Integration", () => {
   let rooCodeIntegration: RooCodeIntegration;

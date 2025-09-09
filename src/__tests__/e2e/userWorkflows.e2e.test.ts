@@ -4,20 +4,20 @@
  */
 
 import * as vscode from "vscode";
-import { DemoScenarios } from "../../demo/demoScenarios";
-import { RooCodeIntegration } from "../../demo/rooCodeIntegration";
+// Demo imports removed - functionality disabled
+// import { DemoScenarios } from "../../demo/demoScenarios";
+// import { RooCodeIntegration } from "../../demo/rooCodeIntegration";
 
 describe("Complete User Workflows E2E", () => {
-  let demoScenarios: DemoScenarios;
-  let rooCodeIntegration: RooCodeIntegration;
+  // Demo functionality disabled
+  // let demoScenarios: DemoScenarios;
+  // let rooCodeIntegration: RooCodeIntegration;
 
   beforeAll(async () => {
-    // Initialize demo environment
-    demoScenarios = new DemoScenarios(3002);
-    rooCodeIntegration = new RooCodeIntegration(3002);
-
-    // Configure for comprehensive testing
-    demoScenarios.configureRemoteServer("http://localhost:3003");
+    // Demo environment initialization removed
+    // demoScenarios = new DemoScenarios(3002);
+    // rooCodeIntegration = new RooCodeIntegration(3002);
+    // demoScenarios.configureRemoteServer("http://localhost:3003");
   });
 
   describe("Developer Onboarding Workflow", () => {
@@ -294,19 +294,18 @@ export class PricingEngine {
 
   describe("Configuration and Customization Workflow", () => {
     it("should adapt to different enterprise configurations", async () => {
-      // Test healthcare industry configuration
-      const healthcareConfig = {
-        "enterpriseAiContext.demo.industryVertical": "healthcare",
-        "enterpriseAiContext.demo.includeComplianceData": true,
-        "enterpriseAiContext.demo.scenarioComplexity": "advanced",
-      };
+      // Demo configuration tests removed
+      // const healthcareConfig = {
+      //   "enterpriseAiContext.demo.industryVertical": "healthcare",
+      //   "enterpriseAiContext.demo.includeComplianceData": true,
+      //   "enterpriseAiContext.demo.scenarioComplexity": "advanced",
+      // };
 
-      // Simulate configuration change
-      await vscode.workspace
-        .getConfiguration()
-        .update(
-          "enterpriseAiContext.demo.industryVertical",
-          "healthcare",
+      // await vscode.workspace
+      //   .getConfiguration()
+      //   .update(
+      //     "enterpriseAiContext.demo.industryVertical",
+      //     "healthcare",
           vscode.ConfigurationTarget.Workspace
         );
 
