@@ -1,5 +1,6 @@
 import * as vscode from "vscode";
 import { Task, TaskStatus, STATUS_DISPLAY_NAMES } from "../../types/tasks";
+import { TaskFilterService } from "../../services/TaskFilterService";
 
 /**
  * TaskHTMLGenerator - Responsible for generating all HTML content for the task webview
@@ -8,8 +9,11 @@ import { Task, TaskStatus, STATUS_DISPLAY_NAMES } from "../../types/tasks";
 export class TaskHTMLGenerator {
   private logoDataUri: string = "";
   private webview?: vscode.Webview;
+  private filterService: TaskFilterService;
 
-  constructor(private extensionUri: vscode.Uri) {}
+  constructor(private extensionUri: vscode.Uri) {
+    this.filterService = new TaskFilterService();
+  }
 
   /**
    * Set the webview reference for resource URI generation
@@ -233,31 +237,7 @@ export class TaskHTMLGenerator {
   }
 
   private getFilterToggleScript(): string {
-    return `
-      document.addEventListener('DOMContentLoaded', function() {
-        const filterToggle = document.getElementById('my-tasks-filter');
-        if (filterToggle) {
-          filterToggle.addEventListener('change', function() {
-            const isChecked = this.checked;
-            const taskItems = document.querySelectorAll('.task-item');
-            
-            taskItems.forEach(item => {
-              const assignee = item.dataset.assignee;
-              if (isChecked) {
-                // Show only tasks assigned to current user or dev-team
-                if (assignee === 'dev-team' || assignee === 'current-user') {
-                  item.style.display = 'block';
-                } else {
-                  item.style.display = 'none';
-                }
-              } else {
-                // Show all tasks
-                item.style.display = 'block';
-              }
-            });
-          });
-        }
-      });`;
+    return this.filterService.generateFilterScript();
   }
 
   private getMessageSendingScript(): string {
