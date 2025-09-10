@@ -373,7 +373,7 @@ export async function activate(
     // Get configured port or use smart port selection
     const configuredPort = config.get<number>(
       getConfigKey("mcpServer.port"),
-      3000
+      3005
     );
 
     // Build process manager configuration

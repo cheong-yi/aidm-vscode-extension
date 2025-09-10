@@ -95,7 +95,7 @@
       "properties": {
         "aidmVscodeExtension.mcpServer.port": {
           "type": "number",
-          "default": 3001,
+          "default": 3005,
           "description": "Port for MCP server"
         },
         "aidmVscodeExtension.tasks.filePath": {
