@@ -1121,11 +1121,10 @@ export async function activate(
 
 async function startMCPServer(): Promise<void> {
   try {
-    // Use fixed port 3000
-    const port = 3000;
-    console.log(`🔍 Using fixed port ${port}`);
+    // Use configured port from settings (no dynamic port finding)
+    const port = processManager.getPort();
+    console.log(`🔍 Using configured port ${port}`);
 
-    processManager.updatePort(port);
     mcpClient.updateConfig(port, processManager.getTimeout());
 
     console.log(`🔍 Final port before start: ${port}`);
