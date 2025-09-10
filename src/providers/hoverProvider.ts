@@ -4,7 +4,61 @@
 
 import * as vscode from "vscode";
 import { MCPClient } from "../client/mcpClient";
-import { BusinessContext, CodeLocation } from "../types/business";
+// Inline business types (removed business.ts dependency)
+interface CodeLocation {
+  filePath: string;
+  startLine: number;
+  endLine: number;
+  symbolName?: string;
+  symbolType?: string;
+}
+
+interface Requirement {
+  id: string;
+  title: string;
+  description: string;
+  type: string;
+  priority: string;
+  status: string;
+  stakeholders: string[];
+  createdDate: Date;
+  lastModified: Date;
+  tags: string[];
+  linkedRequirements?: string[];
+  functions?: string[];
+}
+
+interface ImplementationStatus {
+  completionPercentage: number;
+  lastVerified: Date;
+  verifiedBy: string;
+  notes?: string;
+}
+
+interface Change {
+  id: string;
+  type: string;
+  description: string;
+  author: string;
+  timestamp: Date;
+  relatedRequirements: string[];
+  codeChanges: CodeLocation[];
+}
+
+interface FunctionMapping {
+  startLine: number;
+  endLine: number;
+  requirements: string[];
+  description: string;
+}
+
+interface BusinessContext {
+  requirements: Requirement[];
+  implementationStatus: ImplementationStatus;
+  relatedChanges: Change[];
+  lastUpdated: Date;
+  functionMappings?: Record<string, FunctionMapping>;
+}
 import { BusinessContextHoverProvider, ErrorCode } from "../types/extension";
 // Inline hover configuration (removed demo dependency)
 interface HoverConfiguration {

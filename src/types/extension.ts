@@ -3,7 +3,22 @@
  * Interfaces for extension components and configuration
  */
 
-import { BusinessContext, CodeLocation } from "./business";
+// Inline business types (removed business.ts dependency)
+interface CodeLocation {
+  filePath: string;
+  startLine: number;
+  endLine: number;
+  symbolName?: string;
+  symbolType?: string;
+}
+
+interface BusinessContext {
+  requirements: any[];
+  implementationStatus: any;
+  relatedChanges: any[];
+  lastUpdated: Date;
+  functionMappings?: Record<string, any>;
+}
 
 export interface ExtensionConfiguration {
   mcpServer: {

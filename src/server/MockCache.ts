@@ -1,6 +1,13 @@
 import * as fs from "fs";
 import * as path from "path";
-import { BusinessContext } from "../types/business";
+// Inline business types (removed business.ts dependency)
+interface BusinessContext {
+  requirements: any[];
+  implementationStatus: any;
+  relatedChanges: any[];
+  lastUpdated: Date;
+  functionMappings?: Record<string, any>;
+}
 
 export interface CachedContextEntry {
   startLine: number;

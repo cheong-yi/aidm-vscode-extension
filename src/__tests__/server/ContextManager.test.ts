@@ -5,7 +5,14 @@
 
 import { ContextManager } from "../../server/ContextManager";
 import { MockDataProvider } from "../../mock/MockDataProvider";
-import { CodeLocation } from "../../types/business";
+// Inline business types (removed business.ts dependency)
+interface CodeLocation {
+  filePath: string;
+  startLine: number;
+  endLine: number;
+  symbolName?: string;
+  symbolType?: string;
+}
 
 describe("ContextManager", () => {
   let contextManager: ContextManager;

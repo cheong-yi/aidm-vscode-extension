@@ -5,8 +5,7 @@
 // JSON-RPC and MCP types
 export * from "./jsonrpc";
 
-// Business domain types
-export * from "./business";
+// Business domain types removed - REF-043
 
 // Extension-specific types
 export * from "./extension";

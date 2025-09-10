@@ -4,7 +4,22 @@
  */
 
 import { ContextManager as IContextManager } from "../types/extension";
-import { BusinessContext, CodeLocation } from "../types/business";
+// Inline business types (removed business.ts dependency)
+interface CodeLocation {
+  filePath: string;
+  startLine: number;
+  endLine: number;
+  symbolName?: string;
+  symbolType?: string;
+}
+
+interface BusinessContext {
+  requirements: any[];
+  implementationStatus: any;
+  relatedChanges: any[];
+  lastUpdated: Date;
+  functionMappings?: Record<string, any>;
+}
 import { MockDataProvider } from "../mock/MockDataProvider";
 import { ErrorHandler, ErrorContext } from "../utils/errorHandler";
 import { MockCache } from "./MockCache";
