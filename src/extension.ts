@@ -14,7 +14,6 @@ import {
   getConfigKey,
 } from "./config/extensionConfig";
 import { MockCache } from "./server/MockCache";
-import { PortFinder } from "./utils/portFinder";
 import {
   TasksDataService,
   JSONTaskParser,
@@ -1122,29 +1121,14 @@ export async function activate(
 
 async function startMCPServer(): Promise<void> {
   try {
-    // Find available port before starting
-    const currentPort = processManager.getPort();
-    console.log(`🔍 PortFinder: Starting with configured port ${currentPort}`);
+    // Use fixed port 3000
+    const port = 3000;
+    console.log(`🔍 Using fixed port ${port}`);
 
-    const availablePort = await PortFinder.findAvailablePort(currentPort);
-    console.log(`🔍 PortFinder: Found available port ${availablePort}`);
+    processManager.updatePort(port);
+    mcpClient.updateConfig(port, processManager.getTimeout());
 
-    // Update the process manager with the available port
-    if (availablePort !== currentPort) {
-      console.log(
-        `🔄 Port ${currentPort} is busy, switching to port ${availablePort}`
-      );
-      processManager.updatePort(availablePort);
-
-      // Update MCP client with new port
-      mcpClient.updateConfig(availablePort, processManager.getTimeout());
-    } else {
-      console.log(`✅ Port ${currentPort} is available, using configured port`);
-    }
-
-    // Get the final port that will actually be used
-    const finalPort = processManager.getPort();
-    console.log(`🔍 Final port before start: ${finalPort}`);
+    console.log(`🔍 Final port before start: ${port}`);
 
     await processManager.start();
 
