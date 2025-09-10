@@ -11,10 +11,11 @@ import * as vscode from "vscode";
 // Mock vscode.ExtensionContext
 const mockContext = {
   workspaceState: {
-    get: jest.fn(),
+    get: jest.fn().mockReturnValue({}), // Return empty object instead of undefined
     update: jest.fn(),
   },
   subscriptions: [],
+  extensionUri: { scheme: 'file', fsPath: '/mock/extension/path' } as vscode.Uri,
 } as unknown as vscode.ExtensionContext;
 
 // Mock TasksDataService
