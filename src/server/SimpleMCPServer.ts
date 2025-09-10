@@ -9,7 +9,7 @@ import {
   JSONRPCResponse,
   ToolCallRequest,
   ToolCallResponse,
-} from "../types/jsonrpc";
+} from "../types/extension";
 
 export interface Tool {
   name: string;

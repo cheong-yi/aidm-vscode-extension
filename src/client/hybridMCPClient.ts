@@ -8,8 +8,9 @@ import {
   JSONRPCRequest,
   JSONRPCResponse,
   ToolCallRequest,
-} from "../types/jsonrpc";
-import { ErrorCode, ErrorResponse } from "../types/extension";
+  ErrorCode,
+  ErrorResponse,
+} from "../types/extension";
 
 export interface LocalContext {
   sprintDetails: SprintInfo;

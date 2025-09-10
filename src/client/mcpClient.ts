@@ -10,8 +10,9 @@ import {
   ToolCallRequest,
   ToolCallResponse,
   MCPCommunication,
-} from "../types/jsonrpc";
-import { ErrorCode, ErrorResponse } from "../types/extension";
+  ErrorCode,
+  ErrorResponse,
+} from "../types/extension";
 import { ErrorHandler, ErrorContext } from "../utils/errorHandler";
 
 export class MCPClient {

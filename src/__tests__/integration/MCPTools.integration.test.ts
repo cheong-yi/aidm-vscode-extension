@@ -9,7 +9,7 @@ import { MockDataProvider } from "../../mock/MockDataProvider";
 import { TaskStatusManager } from "../../services/TaskStatusManager";
 import { MarkdownTaskParser } from "../../services/MarkdownTaskParser";
 import { getNextAvailablePort } from "../utils/testPorts";
-import { JSONRPCRequest, ToolCallRequest } from "../../types/jsonrpc";
+import { JSONRPCRequest, ToolCallRequest } from "../../types/extension";
 import * as http from "http";
 
 describe("MCP Tools Integration Tests", () => {

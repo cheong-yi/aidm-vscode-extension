@@ -9,7 +9,7 @@ import { MockDataProvider } from "../../mock/MockDataProvider";
 import { TaskStatusManager } from "../../services/TaskStatusManager";
 import { MarkdownTaskParser } from "../../services/MarkdownTaskParser";
 import { trackAuditLogger } from "../jest.setup";
-import { JSONRPCRequest, ToolCallRequest } from "../../types/jsonrpc";
+import { JSONRPCRequest, ToolCallRequest } from "../../types/extension";
 import { getNextAvailablePort } from "../utils/testPorts";
 import * as http from "http";
 

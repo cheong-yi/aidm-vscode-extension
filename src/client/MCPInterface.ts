@@ -3,8 +3,7 @@
  * Defines clean interface for future MCP implementations
  */
 
-import { JSONRPCResponse } from "../types/jsonrpc";
-import { ErrorResponse, ErrorCode } from "../types/extension";
+import { JSONRPCResponse, ErrorResponse, ErrorCode } from "../types/extension";
 
 /**
  * Core MCP client interface

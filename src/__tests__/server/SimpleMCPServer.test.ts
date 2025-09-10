@@ -8,7 +8,7 @@ import { ContextManager } from "../../server/ContextManager";
 import { MockDataProvider } from "../../mock/MockDataProvider";
 import { TaskStatusManager } from "../../services/TaskStatusManager";
 import { MarkdownTaskParser } from "../../services/MarkdownTaskParser";
-import { JSONRPCRequest, ToolCallRequest } from "../../types/jsonrpc";
+import { JSONRPCRequest, ToolCallRequest } from "../../types/extension";
 import {
   Task,
   TaskStatus,
