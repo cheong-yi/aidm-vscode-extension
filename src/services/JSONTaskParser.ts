@@ -29,39 +29,12 @@ export class JSONTaskParser {
   private async validateTasksFile(
     fileUri: vscode.Uri
   ): Promise<{ isValid: boolean; error?: string }> {
-    console.log(
-      `[JSONTaskParser] Validating tasks file: ${fileUri.toString()}`
-    );
-    console.log(`[JSONTaskParser] File system path: ${fileUri.fsPath}`);
-    console.log(`[JSONTaskParser] Scheme: ${fileUri.scheme}`);
-    console.log(`[JSONTaskParser] Authority: ${fileUri.authority}`);
-
     try {
       // Check if file exists and get stats using VS Code API
-      console.log(
-        `[JSONTaskParser] Attempting to stat file: ${fileUri.fsPath}`
-      );
       const stats = await vscode.workspace.fs.stat(fileUri);
-
-      console.log(`[JSONTaskParser] File stats retrieved successfully`);
-      console.log(
-        `[JSONTaskParser] File type: ${
-          stats.type === vscode.FileType.File
-            ? "File"
-            : stats.type === vscode.FileType.Directory
-            ? "Directory"
-            : "Unknown"
-        }`
-      );
-      console.log(`[JSONTaskParser] File size: ${stats.size} bytes`);
-      console.log(`[JSONTaskParser] File creation time: ${stats.ctime} ms`);
-      console.log(`[JSONTaskParser] File modification time: ${stats.mtime} ms`);
 
       // Check if path is actually a file (not a directory)
       if (stats.type !== vscode.FileType.File) {
-        console.log(
-          `[JSONTaskParser] Path exists but is not a file: ${fileUri.fsPath}`
-        );
         return {
           isValid: false,
           error: `Path exists but is not a file: ${fileUri.fsPath}`,
@@ -70,54 +43,28 @@ export class JSONTaskParser {
 
       // Check if file has content (not empty)
       if (stats.size === 0) {
-        console.log(`[JSONTaskParser] Tasks file is empty: ${fileUri.fsPath}`);
         return {
           isValid: false,
           error: `Tasks file is empty: ${fileUri.fsPath}`,
         };
       }
 
-      console.log(
-        `[JSONTaskParser] File validation successful: ${fileUri.fsPath}`
-      );
-      console.log(
-        `[JSONTaskParser] File is readable and contains ${stats.size} bytes of data`
-      );
       return { isValid: true };
     } catch (error) {
-      console.log(
-        `[JSONTaskParser] File validation error occurred: ${
-          error instanceof Error ? error.message : String(error)
-        }`
-      );
-
       if (error instanceof vscode.FileSystemError) {
-        console.log(
-          `[JSONTaskParser] VS Code FileSystemError detected with code: ${error.code}`
-        );
-
         if (error.code === "FileNotFound") {
-          console.log(
-            `[JSONTaskParser] File not found error: ${fileUri.fsPath}`
-          );
           return {
             isValid: false,
             error: `Tasks file not found: ${fileUri.fsPath}`,
           };
         }
         if (error.code === "NoPermissions") {
-          console.log(
-            `[JSONTaskParser] Permission denied error: ${fileUri.fsPath}`
-          );
           return {
             isValid: false,
             error: `Cannot read tasks file: Permission denied for ${fileUri.fsPath}`,
           };
         }
         if (error.code === "Unavailable") {
-          console.log(
-            `[JSONTaskParser] File unavailable error: ${fileUri.fsPath}`
-          );
           return {
             isValid: false,
             error: `Tasks file is unavailable: ${fileUri.fsPath}`,
@@ -125,16 +72,9 @@ export class JSONTaskParser {
         }
       }
 
-      console.log(
-        `[JSONTaskParser] Unknown error type during validation: ${
-          error instanceof Error ? error.constructor.name : typeof error
-        }`
-      );
       return {
         isValid: false,
-        error: `Cannot read tasks file: ${
-          error instanceof Error ? error.message : "Unknown error"
-        }`,
+        error: `Cannot access tasks file: ${fileUri.fsPath} - ${error}`,
       };
     }
   }
@@ -465,7 +405,7 @@ export class JSONTaskParser {
    * @returns TaskImplementation | undefined - Parsed implementation or undefined
    */
   private parseImplementation(impl: any): any {
-    if (!impl || typeof impl !== "object") return undefined;
+    if (!impl || typeof impl !== "object") {return undefined;}
 
     return {
       summary: this.convertToString(impl.summary),
@@ -483,7 +423,7 @@ export class JSONTaskParser {
    * @returns TaskTestResults | undefined - Parsed test results or undefined
    */
   private parseTestResults(testResultsObj: any): any {
-    if (!testResultsObj || typeof testResultsObj !== "object") return undefined;
+    if (!testResultsObj || typeof testResultsObj !== "object") {return undefined;}
 
     return {
       resultsFile: this.convertToString(testResultsObj.resultsFile),
@@ -505,19 +445,19 @@ export class JSONTaskParser {
   // ============================================================================
 
   private convertToString(value: any): string | undefined {
-    if (value === null || value === undefined) return undefined;
+    if (value === null || value === undefined) {return undefined;}
     return String(value);
   }
 
   private convertToStringArray(value: any): string[] {
-    if (!Array.isArray(value)) return [];
+    if (!Array.isArray(value)) {return [];}
     return value
       .map((item) => this.convertToString(item))
       .filter(Boolean) as string[];
   }
 
   private convertToSubtaskArray(value: any): any[] {
-    if (!Array.isArray(value)) return [];
+    if (!Array.isArray(value)) {return [];}
     return value
       .map((item) => {
         if (typeof item === "object" && item !== null) {
@@ -534,24 +474,24 @@ export class JSONTaskParser {
   }
 
   private convertToNumber(value: any): number | undefined {
-    if (value === null || value === undefined) return undefined;
+    if (value === null || value === undefined) {return undefined;}
     const num = Number(value);
     return isNaN(num) ? undefined : num;
   }
 
   private convertToBoolean(value: any, defaultValue: boolean): boolean {
-    if (value === null || value === undefined) return defaultValue;
-    if (typeof value === "boolean") return value;
+    if (value === null || value === undefined) {return defaultValue;}
+    if (typeof value === "boolean") {return value;}
     if (typeof value === "string") {
       const lower = value.toLowerCase();
-      if (lower === "true" || lower === "1" || lower === "yes") return true;
-      if (lower === "false" || lower === "0" || lower === "no") return false;
+      if (lower === "true" || lower === "1" || lower === "yes") {return true;}
+      if (lower === "false" || lower === "0" || lower === "no") {return false;}
     }
     return defaultValue;
   }
 
   private convertToISOString(value: any): string | undefined {
-    if (!value) return undefined;
+    if (!value) {return undefined;}
     try {
       const date = new Date(value);
       return isNaN(date.getTime()) ? undefined : date.toISOString();
@@ -608,7 +548,7 @@ export class JSONTaskParser {
   }
 
   private mapComplexity(complexity: any): TaskComplexity {
-    if (!complexity) return TaskComplexity.LOW;
+    if (!complexity) {return TaskComplexity.LOW;}
 
     const complexityStr = String(complexity).toLowerCase();
 
@@ -626,7 +566,7 @@ export class JSONTaskParser {
   }
 
   private mapPriority(priority: any): TaskPriority {
-    if (!priority) return TaskPriority.MEDIUM;
+    if (!priority) {return TaskPriority.MEDIUM;}
 
     const priorityStr = String(priority).toLowerCase();
 
@@ -644,7 +584,7 @@ export class JSONTaskParser {
   }
 
   private mapTestStatus(status: any): TestStatusEnum {
-    if (!status) return TestStatusEnum.NOT_RUN;
+    if (!status) {return TestStatusEnum.NOT_RUN;}
 
     const statusStr = String(status).toLowerCase();
 
@@ -666,7 +606,7 @@ export class JSONTaskParser {
   private mapTestCategory(
     category: any
   ): "assertion" | "type" | "filesystem" | "timeout" | "network" {
-    if (!category) return "assertion";
+    if (!category) {return "assertion";}
 
     const categoryStr = String(category).toLowerCase();
 
