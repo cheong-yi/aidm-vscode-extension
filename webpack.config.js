@@ -33,6 +33,11 @@ module.exports = {
       {
         test: /\.css$/,
         use: 'raw-loader'
+      },
+      {
+        test: /\.js$/,
+        include: path.resolve(__dirname, 'src/tasks/providers'),
+        use: 'raw-loader'
       }
     ]
   },

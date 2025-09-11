@@ -4,6 +4,8 @@ import * as path from "path";
 import { Task, TaskStatus, STATUS_DISPLAY_NAMES } from "../../types/tasks";
 // Import bundled CSS content at build time
 import cssContent from './styles.css';
+// Import bundled JavaScript content at build time
+import jsContent from './webview.js';
 
 /**
  * TaskHTMLGenerator - Responsible for generating all HTML content for the task webview
@@ -13,8 +15,7 @@ export class TaskHTMLGenerator {
   private logoDataUri: string = "";
   private webview?: vscode.Webview;
   
-  // Static cache for JavaScript (CSS now bundled at build time)
-  private static jsCache: string = '';
+  // CSS and JavaScript now bundled at build time (no caching needed)
 
   constructor(private extensionUri: vscode.Uri) {}
 
@@ -398,43 +399,10 @@ ${this.getInlineJavaScript()}
   }
 
   /**
-   * Get cached JavaScript content for webview (loaded once, used forever)
-   * Uses VSCode extension context for proper resource loading
+   * Get bundled JavaScript content (bundled at build time, no file system access)
    */
   private getInlineJavaScript(): string {
-    // Return cached JavaScript if already loaded
-    if (TaskHTMLGenerator.jsCache) {
-      return TaskHTMLGenerator.jsCache;
-    }
-
-    try {
-      // Use VSCode extension URI to properly resolve the webview.js path
-      const jsUri = vscode.Uri.joinPath(this.extensionUri, 'src', 'tasks', 'providers', 'webview.js');
-      TaskHTMLGenerator.jsCache = fs.readFileSync(jsUri.fsPath, "utf8");
-      return TaskHTMLGenerator.jsCache;
-    } catch (error) {
-      console.warn(
-        "TaskHTMLGenerator: Could not read webview.js, using fallback:",
-        error
-      );
-      // Fallback to minimal JavaScript if file reading fails
-      const fallbackJS = `
-        function toggleTask(taskElement) {
-          const taskId = taskElement.dataset.taskId;
-          if (!taskId) return;
-          
-          const isExpanded = taskElement.classList.contains('expanded');
-          document.querySelectorAll('.task-item.expanded').forEach(item => {
-            item.classList.remove('expanded');
-          });
-          
-          if (!isExpanded) {
-            taskElement.classList.add('expanded');
-          }
-        }
-      `;
-      TaskHTMLGenerator.jsCache = fallbackJS;
-      return fallbackJS;
-    }
+    // JavaScript is now bundled at build time via webpack raw-loader
+    return jsContent;
   }
 }

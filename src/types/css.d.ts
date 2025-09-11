@@ -1,5 +1,10 @@
-// Type declaration for CSS imports via raw-loader
+// Type declarations for raw-loader imports
 declare module '*.css' {
+  const content: string;
+  export default content;
+}
+
+declare module '*.js' {
   const content: string;
   export default content;
 }
