@@ -1,6 +1,4 @@
 import * as vscode from "vscode";
-import * as fs from "fs";
-import * as path from "path";
 import { Task, TaskStatus, STATUS_DISPLAY_NAMES } from "../../types/tasks";
 // Import bundled CSS content at build time
 import cssContent from './styles.css';
@@ -14,10 +12,51 @@ import jsContent from './webview.js';
 export class TaskHTMLGenerator {
   private logoDataUri: string = "";
   private webview?: vscode.Webview;
+  private static templateCache = new Map<string, string>();
   
   // CSS and JavaScript now bundled at build time (no caching needed)
 
   constructor(private extensionUri: vscode.Uri) {}
+
+  /**
+   * Load template from external file with caching using VSCode filesystem API
+   */
+  private async loadTemplate(templateName: string): Promise<string> {
+    if (!TaskHTMLGenerator.templateCache.has(templateName)) {
+      const templateUri = vscode.Uri.joinPath(
+        this.extensionUri, 
+        'src', 'tasks', 'templates', 
+        `${templateName}.html`
+      );
+      
+      try {
+        const templateBytes = await vscode.workspace.fs.readFile(templateUri);
+        const template = Buffer.from(templateBytes).toString('utf8');
+        TaskHTMLGenerator.templateCache.set(templateName, template);
+      } catch (error) {
+        console.warn(`Failed to load template ${templateName}:`, error);
+        // Fallback to inline template
+        TaskHTMLGenerator.templateCache.set(templateName, this.getFallbackTemplate(templateName));
+      }
+    }
+    return TaskHTMLGenerator.templateCache.get(templateName)!;
+  }
+
+  /**
+   * Provide fallback templates for critical templates
+   */
+  private getFallbackTemplate(templateName: string): string {
+    switch (templateName) {
+      case 'task-item':
+        return '<div class="task-item" data-task-id="{{id}}" data-assignee="{{assignee}}">{{header}}{{details}}{{subtasks}}</div>';
+      case 'task-header':
+        return '<div class="task-header{{executableClass}}"><svg class="task-expand-icon" viewBox="0 0 16 16" fill="currentColor" onclick="toggleTask(this.closest(\'.task-item\'))"><path d="m12.14 8.753-5.482 4.796c-.646.566-1.658.106-1.658-.753V3.204a1 1 0 0 1 1.659-.753l5.48 4.796a1 1 0 0 1 0 1.506z"/></svg><span class="task-id">{{id}}</span><span class="task-title" data-task-field="title"></span><span class="task-status {{statusClass}}">{{statusDisplay}}</span>{{executableIcon}}</div>';
+      case 'task-details':
+        return '<div class="task-details"><div class="task-description" data-task-field="description"></div>{{testStrategy}}{{taskMeta}}{{dependencies}}{{testResults}}{{actions}}</div>';
+      default:
+        return '<div>{{content}}</div>';
+    }
+  }
 
   /**
    * Set the webview reference for resource URI generation
@@ -36,8 +75,8 @@ export class TaskHTMLGenerator {
   /**
    * Generate the complete HTML content for the webview
    */
-  generateFullHTML(tasks: Task[], expandedId: string | null = null): string {
-    return this.generateTaskmasterHTML(tasks);
+  async generateFullHTML(tasks: Task[], expandedId: string | null = null): Promise<string> {
+    return await this.generateTaskmasterHTML(tasks);
   }
 
   /**
@@ -108,10 +147,10 @@ export class TaskHTMLGenerator {
   /**
    * Generate complete Taskmaster dashboard HTML with CSS and JavaScript
    */
-  private generateTaskmasterHTML(tasks: Task[]): string {
+  private async generateTaskmasterHTML(tasks: Task[]): Promise<string> {
     const taskListHTML =
       tasks.length > 0
-        ? tasks.map((task) => this.generateTaskItem(task)).join("")
+        ? (await Promise.all(tasks.map((task) => this.generateTaskItem(task)))).join("")
         : '<div class="no-tasks">No tasks available</div>';
 
     return `<!DOCTYPE html>
@@ -175,20 +214,20 @@ ${this.getInlineJavaScript()}
   /**
    * Generate individual task item HTML
    */
-  private generateTaskItem(task: Task): string {
+  private async generateTaskItem(task: Task): Promise<string> {
     const statusClass = this.getStatusClass(task.status);
     const statusDisplay = STATUS_DISPLAY_NAMES[task.status] || task.status;
     const isExecutable = false; // Disabled for now
     const subtasksHtml = this.generateSubtasksSection(task);
     const assignee = task.assignee || "dev-team";
 
-    return `<div class="task-item" data-task-id="${
-      task.id
-    }" data-assignee="${assignee}">
-      ${this.generateTaskHeader(task, statusClass, statusDisplay, isExecutable)}
-      ${this.generateTaskDetails(task)}
-      ${subtasksHtml}
-    </div>`;
+    const template = await this.loadTemplate('task-item');
+    return template
+      .replace('{{id}}', task.id)
+      .replace('{{assignee}}', assignee)
+      .replace('{{header}}', await this.generateTaskHeader(task, statusClass, statusDisplay, isExecutable))
+      .replace('{{details}}', await this.generateTaskDetails(task))
+      .replace('{{subtasks}}', subtasksHtml);
   }
 
   // Helper methods (simplified versions for initial implementation)
@@ -241,35 +280,32 @@ ${this.getInlineJavaScript()}
     return status.toLowerCase().replace(/[^a-z0-9]/g, "-");
   }
 
-  private generateTaskHeader(
+  private async generateTaskHeader(
     task: Task,
     statusClass: string,
     statusDisplay: string,
     isExecutable: boolean
-  ): string {
+  ): Promise<string> {
     const executableIcon = ""; // Disabled for now
     const executableClass = ""; // Disabled for now
 
-    return `<div class="task-header${executableClass}">
-      <svg class="task-expand-icon" viewBox="0 0 16 16" fill="currentColor" onclick="toggleTask(this.closest('.task-item'))">
-        <path d="m12.14 8.753-5.482 4.796c-.646.566-1.658.106-1.658-.753V3.204a1 1 0 0 1 1.659-.753l5.48 4.796a1 1 0 0 1 0 1.506z"/>
-      </svg>
-      <span class="task-id">${task.id}</span>
-      <span class="task-title" data-task-field="title"></span>
-      <span class="task-status ${statusClass}">${statusDisplay}</span>
-      ${executableIcon}
-    </div>`;
+    const template = await this.loadTemplate('task-header');
+    return template
+      .replace('{{executableClass}}', executableClass)
+      .replace('{{id}}', task.id)
+      .replace('{{statusClass}}', statusClass)
+      .replace('{{statusDisplay}}', statusDisplay)
+      .replace('{{executableIcon}}', executableIcon);
   }
 
-  private generateTaskDetails(task: Task): string {
-    return `<div class="task-details">
-      <div class="task-description" data-task-field="description"></div>
-      ${this.generateTestStrategy(task)}
-      ${this.generateTaskMeta(task)}
-      ${this.generateDependencies(task)}
-      ${this.generateTestResults(task)}
-      ${this.generateActions(task)}
-    </div>`;
+  private async generateTaskDetails(task: Task): Promise<string> {
+    const template = await this.loadTemplate('task-details');
+    return template
+      .replace('{{testStrategy}}', this.generateTestStrategy(task))
+      .replace('{{taskMeta}}', this.generateTaskMeta(task))
+      .replace('{{dependencies}}', this.generateDependencies(task))
+      .replace('{{testResults}}', this.generateTestResults(task))
+      .replace('{{actions}}', this.generateActions(task));
   }
 
   private generateTestStrategy(task: Task): string {

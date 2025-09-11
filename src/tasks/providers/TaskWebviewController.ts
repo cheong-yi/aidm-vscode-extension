@@ -6,6 +6,8 @@
  */
 
 import * as vscode from "vscode";
+import * as fs from "fs";
+import * as path from "path";
 import { Task, TaskErrorResponse } from "../../types/tasks";
 import { TasksDataService } from "../../services";
 import { TaskHTMLGenerator } from "./TaskHTMLGenerator";
@@ -56,6 +58,9 @@ export class TaskWebviewController implements WebviewController {
     };
     
     this.eventManager = new TaskEventManager(this.tasksDataService, orchestrationCallbacks);
+    
+    // Load logo on initialization
+    this.loadLogo();
   }
 
   /**
@@ -223,7 +228,7 @@ export class TaskWebviewController implements WebviewController {
       const expandedId = this.viewState.getExpandedTask();
       
       // Coordinate HTML generation
-      const html = this.htmlGenerator.generateFullHTML(tasks, expandedId);
+      const html = await this.htmlGenerator.generateFullHTML(tasks, expandedId);
       
       // Coordinate view update
       this.view.webview.html = html;
@@ -320,6 +325,23 @@ export class TaskWebviewController implements WebviewController {
    */
   public isControllerInitialized(): boolean {
     return this.isInitialized;
+  }
+
+  /**
+   * Load logo and convert to data URI
+   * @private utility method
+   */
+  private async loadLogo(): Promise<void> {
+    try {
+      const logoPath = vscode.Uri.joinPath(this.context.extensionUri, 'resources', 'images', 'aidm-logo.svg');
+      const logoData = await vscode.workspace.fs.readFile(logoPath);
+      const logoSvg = Buffer.from(logoData).toString('utf8');
+      const logoDataUri = `data:image/svg+xml;base64,${Buffer.from(logoSvg).toString('base64')}`;
+      this.htmlGenerator.setLogoDataUri(logoDataUri);
+    } catch (error) {
+      console.warn("TaskWebviewController: Failed to load logo:", error);
+      // Continue without logo - not critical for functionality
+    }
   }
 
   /**

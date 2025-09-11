@@ -15,7 +15,7 @@ describe('Webview Performance Benchmarks', () => {
   it('should generate HTML in under 100ms', async () => {
     const start = performance.now();
     
-    const html = generator.generateFullHTML(mockTasks);
+    const html = await generator.generateFullHTML(mockTasks);
     
     const end = performance.now();
     const duration = end - start;
@@ -24,13 +24,13 @@ describe('Webview Performance Benchmarks', () => {
     expect(html).toContain('task-item');
   });
   
-  it('should use bundled CSS and avoid file system access', () => {
+  it('should use bundled CSS and avoid file system access', async () => {
     const fsSpy = jest.spyOn(require('fs'), 'readFileSync');
     
     // Multiple generations should not read files at all
-    const html1 = generator.generateFullHTML(mockTasks);
-    const html2 = generator.generateFullHTML(mockTasks);
-    const html3 = generator.generateFullHTML(mockTasks);
+    const html1 = await generator.generateFullHTML(mockTasks);
+    const html2 = await generator.generateFullHTML(mockTasks);
+    const html3 = await generator.generateFullHTML(mockTasks);
     
     // No file system reads should occur with bundled CSS
     expect(fsSpy).not.toHaveBeenCalled();
@@ -41,6 +41,20 @@ describe('Webview Performance Benchmarks', () => {
       expect(html).toContain('width: 12px');
     });
     fsSpy.mockRestore();
+  });
+  
+  it('should load templates with proper CSP compliance', async () => {
+    const generator = new TaskHTMLGenerator(vscode.Uri.file('/mock'));
+    const mockWebview = {
+      asWebviewUri: jest.fn((uri) => uri),
+      options: { localResourceRoots: [vscode.Uri.file('/mock')] }
+    };
+    
+    generator.setWebview(mockWebview as any);
+    const html = await generator.generateFullHTML(mockTasks);
+    
+    expect(html).not.toContain('file://');
+    expect(html).toContain('task-item');
   });
 });
 
