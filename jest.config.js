@@ -26,6 +26,9 @@ module.exports = {
   testTimeout: 30000, // Increased timeout for integration tests
   moduleNameMapper: {
     "^vscode$": "<rootDir>/src/__tests__/__mocks__/vscode.ts",
+    // Mock CSS and JS imports for webpack raw-loader
+    "\\.(css|scss)$": "<rootDir>/src/__tests__/__mocks__/mockAsset.js",
+    "\\.(js)$": "<rootDir>/src/__tests__/__mocks__/mockAsset.js",
   },
   // Better handling for integration tests
   testPathIgnorePatterns: [
