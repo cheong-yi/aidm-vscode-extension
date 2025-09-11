@@ -29,6 +29,10 @@ module.exports = {
             loader: 'ts-loader'
           }
         ]
+      },
+      {
+        test: /\.css$/,
+        use: 'raw-loader'
       }
     ]
   },

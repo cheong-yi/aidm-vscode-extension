@@ -1,5 +1,9 @@
 import * as vscode from "vscode";
+import * as fs from "fs";
+import * as path from "path";
 import { Task, TaskStatus, STATUS_DISPLAY_NAMES } from "../../types/tasks";
+// Import bundled CSS content at build time
+import cssContent from './styles.css';
 
 /**
  * TaskHTMLGenerator - Responsible for generating all HTML content for the task webview
@@ -8,35 +12,17 @@ import { Task, TaskStatus, STATUS_DISPLAY_NAMES } from "../../types/tasks";
 export class TaskHTMLGenerator {
   private logoDataUri: string = "";
   private webview?: vscode.Webview;
+  
+  // Static cache for JavaScript (CSS now bundled at build time)
+  private static jsCache: string = '';
 
-  constructor(private extensionUri: vscode.Uri) {
-  }
+  constructor(private extensionUri: vscode.Uri) {}
 
   /**
    * Set the webview reference for resource URI generation
    */
   setWebview(webview: vscode.Webview): void {
     this.webview = webview;
-  }
-
-  /**
-   * Get a resource URI for webview content
-   */
-  private getResourceUri(filename: string): string {
-    if (!this.webview) {
-      // Fallback for when webview is not set (shouldn't happen in practice)
-      return '';
-    }
-    
-    const resourcePath = vscode.Uri.joinPath(
-      this.extensionUri,
-      'src',
-      'tasks',
-      'providers',
-      filename
-    );
-    
-    return this.webview.asWebviewUri(resourcePath).toString();
   }
 
   /**
@@ -57,19 +43,22 @@ export class TaskHTMLGenerator {
    * Send task data to webview for safe rendering (replaces HTML escaping)
    */
   sendTaskDataToWebview(tasks: Task[], webview: any): void {
-    const taskData = tasks.map(task => ({
+    const taskData = tasks.map((task) => ({
       id: task.id,
-      title: task.title || '',
-      description: task.description || 'No description available',
-      testStrategy: (task.testStrategy && task.testStrategy.trim()) ? task.testStrategy : 'No test strategy specified',
+      title: task.title || "",
+      description: task.description || "No description available",
+      testStrategy:
+        task.testStrategy && task.testStrategy.trim()
+          ? task.testStrategy
+          : "No test strategy specified",
       dependencies: task.dependencies || [],
       subtasks: task.subtasks || [],
-      assignee: task.assignee || 'dev-team'
+      assignee: task.assignee || "dev-team",
     }));
-    
+
     webview.postMessage({
-      type: 'updateTaskData',
-      tasks: taskData
+      type: "updateTaskData",
+      tasks: taskData,
     });
   }
 
@@ -83,8 +72,28 @@ export class TaskHTMLGenerator {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="Content-Security-Policy" 
-          content="default-src 'none'; style-src 'unsafe-inline' 'self'; script-src 'unsafe-inline' 'self'; img-src vscode-resource: https: data: 'self'; font-src vscode-resource: https: 'self'; connect-src 'self';">
+          content="default-src 'none'; style-src vscode-resource: 'unsafe-inline' 'self'; script-src vscode-resource: 'unsafe-inline' 'self'; img-src vscode-resource: https: data: 'self'; font-src vscode-resource: https: 'self'; connect-src 'self';">
     <title>Taskmaster</title>
+    <style>
+      body { 
+        font-family: var(--vscode-font-family); 
+        padding: 20px; 
+        background: var(--vscode-editor-background);
+        color: var(--vscode-editor-foreground);
+        margin: 0;
+      }
+      #taskmaster-root {
+        text-align: center;
+        padding: 40px 20px;
+      }
+      h3 {
+        color: var(--vscode-titleBar-activeForeground);
+        margin-bottom: 16px;
+      }
+      p {
+        color: var(--vscode-descriptionForeground);
+      }
+    </style>
 </head>
 <body>
     <div id="taskmaster-root">
@@ -104,19 +113,17 @@ export class TaskHTMLGenerator {
         ? tasks.map((task) => this.generateTaskItem(task)).join("")
         : '<div class="no-tasks">No tasks available</div>';
 
-    // Get the CSS and JavaScript file URIs
-    const styleUri = this.getResourceUri('styles.css');
-    const scriptUri = this.getResourceUri('webview.js');
-
     return `<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="Content-Security-Policy" 
-          content="default-src 'none'; style-src ${styleUri} 'self'; script-src ${scriptUri} 'self'; img-src vscode-resource: https: data: 'self'; font-src vscode-resource: https: 'self'; connect-src 'self';">
+          content="default-src 'none'; style-src vscode-resource: 'unsafe-inline' 'self'; script-src vscode-resource: 'unsafe-inline' 'self'; img-src vscode-resource: https: data: 'self'; font-src vscode-resource: https: 'self'; connect-src 'self';">
     <title>Taskmaster Dashboard</title>
-    <link rel="stylesheet" href="${styleUri}">
+    <style>
+${this.getInlineCSS()}
+    </style>
 </head>
 <body>
     <!-- NEW: Top-level branding container above sidebar -->
@@ -126,8 +133,11 @@ export class TaskHTMLGenerator {
         </div>
     </div>
     
-    <!-- MODIFIED: Sidebar without internal branding -->
+    <!-- MODIFIED: Sidebar with Taskmaster header -->
     <div class="sidebar">
+        <div class="sidebar-header">
+            TASKMASTER DASHBOARD
+        </div>
         <div class="sidebar-content">
             ${this.generateWebviewHeader()}
             <div class="task-list">
@@ -135,7 +145,9 @@ export class TaskHTMLGenerator {
             </div>
         </div>
     </div>
-    <script src="${scriptUri}"></script>
+    <script>
+${this.getInlineJavaScript()}
+    </script>
 </body>
 </html>`;
   }
@@ -177,8 +189,6 @@ export class TaskHTMLGenerator {
       ${subtasksHtml}
     </div>`;
   }
-
-
 
   // Helper methods (simplified versions for initial implementation)
   private getStatusClass(status: TaskStatus): string {
@@ -230,7 +240,12 @@ export class TaskHTMLGenerator {
     return status.toLowerCase().replace(/[^a-z0-9]/g, "-");
   }
 
-  private generateTaskHeader(task: Task, statusClass: string, statusDisplay: string, isExecutable: boolean): string {
+  private generateTaskHeader(
+    task: Task,
+    statusClass: string,
+    statusDisplay: string,
+    isExecutable: boolean
+  ): string {
     const executableIcon = ""; // Disabled for now
     const executableClass = ""; // Disabled for now
 
@@ -374,4 +389,52 @@ export class TaskHTMLGenerator {
     return new Date(dateString).toLocaleString();
   }
 
+  /**
+   * Get bundled CSS content (bundled at build time, no file system access)
+   */
+  private getInlineCSS(): string {
+    // CSS is now bundled at build time via webpack raw-loader
+    return cssContent;
+  }
+
+  /**
+   * Get cached JavaScript content for webview (loaded once, used forever)
+   * Uses VSCode extension context for proper resource loading
+   */
+  private getInlineJavaScript(): string {
+    // Return cached JavaScript if already loaded
+    if (TaskHTMLGenerator.jsCache) {
+      return TaskHTMLGenerator.jsCache;
+    }
+
+    try {
+      // Use VSCode extension URI to properly resolve the webview.js path
+      const jsUri = vscode.Uri.joinPath(this.extensionUri, 'src', 'tasks', 'providers', 'webview.js');
+      TaskHTMLGenerator.jsCache = fs.readFileSync(jsUri.fsPath, "utf8");
+      return TaskHTMLGenerator.jsCache;
+    } catch (error) {
+      console.warn(
+        "TaskHTMLGenerator: Could not read webview.js, using fallback:",
+        error
+      );
+      // Fallback to minimal JavaScript if file reading fails
+      const fallbackJS = `
+        function toggleTask(taskElement) {
+          const taskId = taskElement.dataset.taskId;
+          if (!taskId) return;
+          
+          const isExpanded = taskElement.classList.contains('expanded');
+          document.querySelectorAll('.task-item.expanded').forEach(item => {
+            item.classList.remove('expanded');
+          });
+          
+          if (!isExpanded) {
+            taskElement.classList.add('expanded');
+          }
+        }
+      `;
+      TaskHTMLGenerator.jsCache = fallbackJS;
+      return fallbackJS;
+    }
+  }
 }
