@@ -23,6 +23,7 @@ import { TaskStatus, Task } from "./types/tasks";
 import { TaskDetailCardProvider } from "./tasks/providers/TaskDetailCardProvider";
 import { TaskWebviewProvider } from "./tasks/providers";
 import { TaskErrorResponse } from "./types/tasks";
+import { TaskApiIntegration } from "./integrations/TaskApiIntegration";
 
 
 
@@ -194,6 +195,7 @@ let processManager: ProcessManager;
 let tasksDataService: TasksDataService;
 let taskDetailProvider: TaskDetailCardProvider;
 let taskWebviewProvider: TaskWebviewProvider;
+let taskApiIntegration: TaskApiIntegration;
 
 /**
  * Setup comprehensive UI event synchronization between tree view and detail panel
@@ -445,6 +447,16 @@ export async function activate(
     } catch (error) {
       console.error("❌ TasksDataService initialization failed:", error);
       throw error;
+    }
+
+    console.log("=== ACTIVATION STEP 8.6: Initializing Task API Integration ===");
+    try {
+      taskApiIntegration = new TaskApiIntegration(tasksDataService, context);
+      await taskApiIntegration.initialize();
+      console.log("✅ Task API integration initialized");
+    } catch (error) {
+      console.warn("⚠️ Task API integration initialization failed (non-critical):", error);
+      // Don't throw - allow extension to continue without API integration
     }
 
     console.log(

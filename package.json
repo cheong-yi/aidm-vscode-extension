@@ -88,6 +88,36 @@
         "title": "Open Git Diff",
         "category": "Taskmaster",
         "icon": "$(git-compare)"
+      },
+      {
+        "command": "aidm.taskApi.configure",
+        "title": "Configure Task API",
+        "category": "AiDM",
+        "icon": "$(settings-gear)"
+      },
+      {
+        "command": "aidm.taskApi.connect",
+        "title": "Connect to Task API",
+        "category": "AiDM",
+        "icon": "$(plug)"
+      },
+      {
+        "command": "aidm.taskApi.disconnect",
+        "title": "Disconnect from Task API",
+        "category": "AiDM",
+        "icon": "$(debug-disconnect)"
+      },
+      {
+        "command": "aidm.taskApi.status",
+        "title": "Show Task API Status",
+        "category": "AiDM",
+        "icon": "$(info)"
+      },
+      {
+        "command": "aidm.taskApi.testConnection",
+        "title": "Test API Connection",
+        "category": "AiDM",
+        "icon": "$(debug-connect)"
       }
     ],
     "configuration": {
@@ -104,6 +134,40 @@
           "description": "Path to tasks.json file relative to workspace root",
           "pattern": "^[^<>:\"|?*\\x00-\\x1f]*\\.(json|JSON)$",
           "patternErrorMessage": "Must be a valid file path ending with .json"
+        },
+        "aidmVscodeExtension.taskApi.enabled": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable task API integration for fetching tasks from external services"
+        },
+        "aidmVscodeExtension.taskApi.baseUrl": {
+          "type": "string",
+          "default": "",
+          "description": "Task API base URL (e.g., https://api.yourcompany.com)",
+          "pattern": "^https://.*",
+          "patternErrorMessage": "Must be a valid HTTPS URL (HTTP not allowed for production APIs)"
+        },
+        "aidmVscodeExtension.taskApi.userId": {
+          "type": "string",
+          "default": "",
+          "description": "Your user identifier for API task filtering"
+        },
+        "aidmVscodeExtension.taskApi.authToken": {
+          "type": "string",
+          "default": "",
+          "description": "Bearer token or API key for authentication"
+        },
+        "aidmVscodeExtension.taskApi.enableStreaming": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable real-time SSE streaming (optional, REST API is primary method)"
+        },
+        "aidmVscodeExtension.taskApi.pollInterval": {
+          "type": "number",
+          "default": 60000,
+          "minimum": 10000,
+          "maximum": 600000,
+          "description": "API polling interval in milliseconds (10s-10m)"
         }
       }
     },
