@@ -158,6 +158,258 @@
           "minimum": 10000,
           "maximum": 600000,
           "description": "API polling interval in milliseconds (10s-10m)"
+        },
+        "aidmVscodeExtension.enterprise.enabled": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable enterprise features including multi-tenancy, audit logging, and compliance controls"
+        },
+        "aidmVscodeExtension.enterprise.configPath": {
+          "type": "string",
+          "default": "",
+          "description": "Path to enterprise configuration file (JSON). Leave empty to use default settings."
+        },
+        "aidmVscodeExtension.enterprise.multiTenant": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable multi-tenant support with separate SSO configurations per organization"
+        },
+        "aidmVscodeExtension.enterprise.defaultTenant": {
+          "type": "string",
+          "default": "default",
+          "description": "Default tenant ID for single-tenant deployments or fallback"
+        },
+        "aidmVscodeExtension.enterprise.sso.provider": {
+          "type": "string",
+          "enum": ["microsoft", "okta", "ping", "custom"],
+          "default": "microsoft",
+          "description": "SSO provider for authentication (Microsoft, Okta, Ping Identity, or custom)"
+        },
+        "aidmVscodeExtension.enterprise.sso.enforcement": {
+          "type": "string",
+          "enum": ["optional", "required", "strict"],
+          "default": "optional",
+          "description": "SSO enforcement level: optional (local auth allowed), required (SSO preferred), strict (SSO only)"
+        },
+        "aidmVscodeExtension.enterprise.sso.clientId": {
+          "type": "string",
+          "default": "",
+          "description": "SSO application client ID for authentication"
+        },
+        "aidmVscodeExtension.enterprise.sso.authority": {
+          "type": "string",
+          "default": "",
+          "description": "Custom SSO authority URL (for custom or Okta providers)"
+        },
+        "aidmVscodeExtension.enterprise.sso.scopes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": ["openid", "profile", "email"],
+          "description": "OAuth scopes requested during SSO authentication"
+        },
+        "aidmVscodeExtension.enterprise.audit.enabled": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable audit logging for compliance and security monitoring"
+        },
+        "aidmVscodeExtension.enterprise.audit.level": {
+          "type": "string",
+          "enum": ["minimal", "standard", "comprehensive"],
+          "default": "standard",
+          "description": "Audit logging level: minimal (auth only), standard (actions), comprehensive (all events)"
+        },
+        "aidmVscodeExtension.enterprise.audit.destinations": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["local", "siem", "cloud", "webhook"]
+          },
+          "default": ["local"],
+          "description": "Audit log destinations: local file, SIEM integration, cloud service, or webhook"
+        },
+        "aidmVscodeExtension.enterprise.audit.retention": {
+          "type": "number",
+          "default": 365,
+          "minimum": 30,
+          "maximum": 2555,
+          "description": "Audit log retention period in days (30 days to 7 years for compliance)"
+        },
+        "aidmVscodeExtension.enterprise.audit.sensitiveDataMasking": {
+          "type": "boolean",
+          "default": true,
+          "description": "Mask sensitive data (PII, credentials) in audit logs"
+        },
+        "aidmVscodeExtension.enterprise.compliance.dataRetentionDays": {
+          "type": "number",
+          "default": 365,
+          "minimum": 1,
+          "maximum": 2555,
+          "description": "User data retention period in days for compliance (1 day to 7 years)"
+        },
+        "aidmVscodeExtension.enterprise.compliance.encryptionAtRest": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable encryption at rest for stored data"
+        },
+        "aidmVscodeExtension.enterprise.compliance.encryptionInTransit": {
+          "type": "boolean",
+          "default": true,
+          "description": "Require encryption in transit (HTTPS/TLS) for all communications"
+        },
+        "aidmVscodeExtension.enterprise.compliance.requireMFA": {
+          "type": "boolean",
+          "default": false,
+          "description": "Require multi-factor authentication for all users"
+        },
+        "aidmVscodeExtension.enterprise.compliance.sessionTimeout": {
+          "type": "number",
+          "default": 480,
+          "minimum": 5,
+          "maximum": 1440,
+          "description": "Session timeout in minutes (5 minutes to 24 hours)"
+        },
+        "aidmVscodeExtension.enterprise.compliance.maxConcurrentSessions": {
+          "type": "number",
+          "default": 3,
+          "minimum": 1,
+          "maximum": 10,
+          "description": "Maximum concurrent sessions per user"
+        },
+        "aidmVscodeExtension.enterprise.compliance.ipWhitelist": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "description": "IP whitelist (CIDR blocks) for access control. Empty array allows all IPs."
+        },
+        "aidmVscodeExtension.enterprise.branding.companyName": {
+          "type": "string",
+          "default": "",
+          "description": "Company name for branding and UI customization"
+        },
+        "aidmVscodeExtension.enterprise.branding.primaryColor": {
+          "type": "string",
+          "default": "#0078d4",
+          "pattern": "^#[0-9A-Fa-f]{6}$",
+          "description": "Primary brand color (hex format, e.g., #0078d4)"
+        },
+        "aidmVscodeExtension.enterprise.branding.secondaryColor": {
+          "type": "string",
+          "default": "#106ebe",
+          "pattern": "^#[0-9A-Fa-f]{6}$",
+          "description": "Secondary brand color (hex format, e.g., #106ebe)"
+        },
+        "aidmVscodeExtension.enterprise.branding.logoUrl": {
+          "type": "string",
+          "default": "",
+          "description": "Company logo URL for custom branding"
+        },
+        "aidmVscodeExtension.enterprise.branding.customCSS": {
+          "type": "string",
+          "default": "",
+          "description": "Custom CSS for advanced UI customization"
+        },
+        "aidmVscodeExtension.enterprise.features.offlineMode": {
+          "type": "boolean",
+          "default": true,
+          "description": "Allow offline operation without SSO connectivity"
+        },
+        "aidmVscodeExtension.enterprise.features.apiIntegration": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable external API integration capabilities"
+        },
+        "aidmVscodeExtension.enterprise.features.taskStreaming": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable real-time task streaming with Server-Sent Events"
+        },
+        "aidmVscodeExtension.enterprise.features.advancedReporting": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable advanced analytics and reporting features"
+        },
+        "aidmVscodeExtension.enterprise.features.dataExport": {
+          "type": "boolean",
+          "default": true,
+          "description": "Allow data export functionality for users"
+        },
+        "aidmVscodeExtension.enterprise.features.bulkOperations": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable bulk operations for task management"
+        },
+        "aidmVscodeExtension.enterprise.features.customBranding": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable custom branding and theming capabilities"
+        },
+        "aidmVscodeExtension.enterprise.features.userManagement": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable user management and role-based access control"
+        },
+        "aidmVscodeExtension.enterprise.features.webhookIntegration": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable webhook integration for external notifications"
+        },
+        "aidmVscodeExtension.enterprise.features.performanceMonitoring": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable performance monitoring and metrics collection"
+        },
+        "aidmVscodeExtension.enterprise.system.maxUsers": {
+          "type": "number",
+          "default": 1000,
+          "minimum": 1,
+          "maximum": 10000,
+          "description": "Maximum number of users supported by this instance"
+        },
+        "aidmVscodeExtension.enterprise.system.apiRateLimit": {
+          "type": "number",
+          "default": 1000,
+          "minimum": 10,
+          "maximum": 10000,
+          "description": "API rate limit (requests per minute) per user"
+        },
+        "aidmVscodeExtension.enterprise.system.memoryLimit": {
+          "type": "number",
+          "default": 512,
+          "minimum": 128,
+          "maximum": 4096,
+          "description": "Memory limit in MB for extension processes"
+        },
+        "aidmVscodeExtension.enterprise.monitoring.enabled": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable system monitoring and alerting"
+        },
+        "aidmVscodeExtension.enterprise.monitoring.alertEmail": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "email"
+          },
+          "default": [],
+          "description": "Email addresses for monitoring alerts"
+        },
+        "aidmVscodeExtension.enterprise.monitoring.errorRateThreshold": {
+          "type": "number",
+          "default": 5,
+          "minimum": 1,
+          "maximum": 50,
+          "description": "Error rate threshold (%) for alerting"
+        },
+        "aidmVscodeExtension.enterprise.monitoring.responseTimeThreshold": {
+          "type": "number",
+          "default": 5000,
+          "minimum": 100,
+          "maximum": 30000,
+          "description": "Response time threshold (ms) for alerting"
         }
       }
     },
