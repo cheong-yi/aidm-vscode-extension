@@ -5,8 +5,6 @@
  */
 
 import * as vscode from 'vscode';
-import * as fs from 'fs';
-import * as path from 'path';
 import {
     EnterpriseConfiguration,
     TenantConfig,
@@ -23,22 +21,8 @@ import {
     isAuditingEnabled
 } from '../common/enterpriseConfig';
 import { ConfigService } from './configService';
+import { AuditService } from './auditService';
 
-export interface AuditEvent {
-    timestamp: string;
-    eventType: 'auth' | 'user_action' | 'system_event' | 'api_call' | 'data_access' | 'configuration_change';
-    userId?: string;
-    tenantId?: string;
-    action: string;
-    resource?: string;
-    details?: Record<string, any>;
-    userAgent?: string;
-    ipAddress?: string;
-    sessionId?: string;
-    severity: 'low' | 'medium' | 'high' | 'critical';
-    success: boolean;
-    errorMessage?: string;
-}
 
 export interface UserSession {
     sessionId: string;
@@ -64,17 +48,16 @@ export interface EnterpriseContext {
 export class EnterpriseManager {
     private config: EnterpriseConfiguration;
     private activeSessions: Map<string, UserSession> = new Map();
-    private auditEventQueue: AuditEvent[] = [];
     private sessionCleanupInterval?: NodeJS.Timeout;
-    private auditFlushInterval?: NodeJS.Timeout;
     private configService: ConfigService;
+    private auditService: AuditService;
 
     constructor(private context: vscode.ExtensionContext) {
         this.config = DEFAULT_ENTERPRISE_CONFIG;
         this.configService = new ConfigService(context);
+        this.auditService = new AuditService(this.configService, context);
         this.initializeConfiguration();
         this.startSessionCleanup();
-        this.startAuditFlushing();
     }
 
     /**
@@ -91,7 +74,7 @@ export class EnterpriseManager {
             // Validate configuration
             const validation = validateEnterpriseConfig(this.config);
             if (!validation.valid) {
-                await this.auditEvent({
+                await this.auditService.auditEvent({
                     eventType: 'configuration_change',
                     action: 'configuration_validation_failed',
                     details: { errors: validation.errors },
@@ -103,7 +86,7 @@ export class EnterpriseManager {
                 // Use default config if validation fails
                 this.config = DEFAULT_ENTERPRISE_CONFIG;
             } else {
-                await this.auditEvent({
+                await this.auditService.auditEvent({
                     eventType: 'configuration_change',
                     action: 'configuration_loaded',
                     details: { version: this.config.version },
@@ -118,7 +101,7 @@ export class EnterpriseManager {
             });
 
         } catch (error) {
-            await this.auditEvent({
+            await this.auditService.auditEvent({
                 eventType: 'system_event',
                 action: 'configuration_load_error',
                 details: { error: String(error) },
@@ -358,7 +341,7 @@ export class EnterpriseManager {
 
         this.activeSessions.set(sessionId, session);
 
-        await this.auditEvent({
+        await this.auditService.auditEvent({
             eventType: 'auth',
             userId,
             tenantId,
@@ -394,7 +377,7 @@ export class EnterpriseManager {
             session.isActive = false;
             this.activeSessions.set(sessionId, session);
 
-            await this.auditEvent({
+            await this.auditService.auditEvent({
                 eventType: 'auth',
                 userId: session.userId,
                 tenantId: session.tenantId,
@@ -433,145 +416,6 @@ export class EnterpriseManager {
         }, 60000); // Check every minute
     }
 
-    /**
-     * Record an audit event
-     */
-    public async auditEvent(event: Omit<AuditEvent, 'timestamp'>): Promise<void> {
-        if (!isAuditingEnabled(this.config)) {
-            return;
-        }
-
-        const auditEvent: AuditEvent = {
-            ...event,
-            timestamp: new Date().toISOString()
-        };
-
-        // Mask sensitive data if required
-        if (this.config.audit.sensitiveDataMasking && auditEvent.details) {
-            auditEvent.details = this.maskSensitiveData(auditEvent.details);
-        }
-
-        this.auditEventQueue.push(auditEvent);
-
-        // Flush immediately for critical events
-        if (event.severity === 'critical') {
-            await this.flushAuditEvents();
-        }
-    }
-
-    /**
-     * Mask sensitive data in audit events
-     */
-    private maskSensitiveData(data: Record<string, any>): Record<string, any> {
-        const masked = { ...data };
-        const sensitiveKeys = ['password', 'token', 'secret', 'key', 'authorization', 'cookie'];
-
-        for (const key in masked) {
-            if (sensitiveKeys.some(sensitive => key.toLowerCase().includes(sensitive))) {
-                masked[key] = '[MASKED]';
-            }
-        }
-
-        return masked;
-    }
-
-    /**
-     * Start audit event flushing
-     */
-    private startAuditFlushing(): void {
-        if (!isAuditingEnabled(this.config)) {
-            return;
-        }
-
-        this.auditFlushInterval = setInterval(async () => {
-            await this.flushAuditEvents();
-        }, this.config.audit.flushInterval);
-    }
-
-    /**
-     * Flush audit events to configured destinations
-     */
-    private async flushAuditEvents(): Promise<void> {
-        if (this.auditEventQueue.length === 0) {
-            return;
-        }
-
-        const events = this.auditEventQueue.splice(0, this.config.audit.batchSize);
-
-        for (const destination of this.config.audit.destinations) {
-            if (!destination.enabled) {
-                continue;
-            }
-
-            try {
-                await this.writeAuditEvents(destination, events);
-            } catch (error) {
-                // Log audit write failure but don't throw to avoid affecting main application
-                console.error(`Failed to write audit events to ${destination.type}:`, error);
-            }
-        }
-    }
-
-    /**
-     * Write audit events to a specific destination
-     */
-    private async writeAuditEvents(destination: any, events: AuditEvent[]): Promise<void> {
-        switch (destination.type) {
-            case 'local':
-                await this.writeLocalAuditLog(events);
-                break;
-            case 'webhook':
-                if (destination.endpoint) {
-                    await this.sendWebhookAuditEvents(destination, events);
-                }
-                break;
-            // Additional destinations (SIEM, cloud) would be implemented here
-            default:
-                console.warn(`Unsupported audit destination: ${destination.type}`);
-        }
-    }
-
-    /**
-     * Write audit events to local file
-     */
-    private async writeLocalAuditLog(events: AuditEvent[]): Promise<void> {
-        const logDir = path.join(this.context.globalStorageUri.fsPath, 'audit');
-        const logFile = path.join(logDir, `audit-${new Date().toISOString().split('T')[0]}.json`);
-
-        // Ensure directory exists
-        if (!fs.existsSync(logDir)) {
-            fs.mkdirSync(logDir, { recursive: true });
-        }
-
-        // Append events to daily log file
-        for (const event of events) {
-            fs.appendFileSync(logFile, JSON.stringify(event) + '\n');
-        }
-    }
-
-    /**
-     * Send audit events via webhook
-     */
-    private async sendWebhookAuditEvents(destination: any, events: AuditEvent[]): Promise<void> {
-        const payload = {
-            events,
-            source: 'aidm-vscode-extension',
-            timestamp: new Date().toISOString()
-        };
-
-        const response = await fetch(destination.endpoint, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                ...destination.headers
-            },
-            body: JSON.stringify(payload)
-        });
-
-        if (!response.ok) {
-            throw new Error(`Webhook request failed: ${response.status} ${response.statusText}`);
-        }
-    }
 
     /**
      * Generate a unique session ID
@@ -588,16 +432,13 @@ export class EnterpriseManager {
             clearInterval(this.sessionCleanupInterval);
         }
 
-        if (this.auditFlushInterval) {
-            clearInterval(this.auditFlushInterval);
-        }
-
         if (this.configService) {
             this.configService.dispose();
         }
 
-        // Flush remaining audit events before shutdown
-        this.flushAuditEvents().catch(console.error);
+        if (this.auditService) {
+            this.auditService.dispose();
+        }
     }
 }
 
