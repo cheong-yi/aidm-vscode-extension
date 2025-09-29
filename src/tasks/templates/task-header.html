@@ -1,0 +1,9 @@
+<div class="task-header{{executableClass}}">
+  <svg class="task-expand-icon" viewBox="0 0 16 16" fill="currentColor" onclick="toggleTask(this.closest('.task-item'))">
+    <path d="m12.14 8.753-5.482 4.796c-.646.566-1.658.106-1.658-.753V3.204a1 1 0 0 1 1.659-.753l5.48 4.796a1 1 0 0 1 0 1.506z"/>
+  </svg>
+  <span class="task-id">{{id}}</span>
+  <span class="task-title" data-task-field="title"></span>
+  <span class="task-status {{statusClass}}">{{statusDisplay}}</span>
+  {{executableIcon}}
+</div>

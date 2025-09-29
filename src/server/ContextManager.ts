@@ -205,7 +205,7 @@ export class ContextManager implements IContextManager {
     endLine: number,
     context: BusinessContext
   ): void {
-    if (!this.mockCache || process.env.DEMO_MODE) return;
+    if (!this.mockCache || process.env.DEMO_MODE) {return;}
     this.mockCache.upsert(filePath, startLine, endLine, context);
   }
 
@@ -213,7 +213,7 @@ export class ContextManager implements IContextManager {
    * Admin: clear mock cache (optionally by path substring)
    */
   clearMockCache(pattern?: string): void {
-    if (!this.mockCache || process.env.DEMO_MODE) return;
+    if (!this.mockCache || process.env.DEMO_MODE) {return;}
     this.mockCache.clear(pattern);
   }
 

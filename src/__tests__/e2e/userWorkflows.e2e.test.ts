@@ -306,8 +306,8 @@ export class PricingEngine {
       //   .update(
       //     "enterpriseAiContext.demo.industryVertical",
       //     "healthcare",
-          vscode.ConfigurationTarget.Workspace
-        );
+      //     vscode.ConfigurationTarget.Workspace
+      //   );
 
       // Test that healthcare-specific context is provided
       const healthcareQuery = {

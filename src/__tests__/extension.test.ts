@@ -197,7 +197,7 @@ describe("Extension UI Event Synchronization", () => {
       // Mock configuration
       const mockConfig = {
         get: jest.fn((key: string, defaultValue: any) => {
-          if (key === "tasks.filePath") return "custom-tasks.md";
+          if (key === "tasks.filePath") {return "custom-tasks.md";}
           return defaultValue;
         }),
       };

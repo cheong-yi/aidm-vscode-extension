@@ -1739,8 +1739,8 @@
           "failingTestsList": []
         },
         "implementation": {
-          "commitHash": "[pending - will be updated after commit]",
-          "summary": "Removed portFinder utility, using fixed port 3000",
+          "commitHash": "1af61a0507085bb437a3468939dfe30308412f0f",
+          "summary": "Removed portFinder utility, default port 3005 to avoid Cursor conflicts",
           "filesChanged": ["src/extension.ts", "src/utils/index.ts", "src/utils/portFinder.ts"],
           "completedDate": "2025-09-10T00:00:00.000Z",
           "diffAvailable": true

@@ -11,7 +11,7 @@
 
 import { jest } from "@jest/globals";
 import { TasksDataService } from "../../../services/TasksDataService";
-import { TaskStatusManager } from "../../../services/TaskStatusManager";
+// TaskStatusManager removed - not implemented
 import { JSONTaskParser } from "../../../services/JSONTaskParser";
 import { MockDataProvider } from "../../../mock";
 import {
@@ -24,12 +24,10 @@ import {
 } from "../../../types/tasks";
 import { AxiosInstance } from "axios";
 
-// Mock TaskStatusManager
-jest.mock("../../../services/TaskStatusManager");
+// TaskStatusManager removed - not implemented
 
 describe("TasksDataService", () => {
   let service: TasksDataService;
-  let mockTaskStatusManager: jest.Mocked<TaskStatusManager>;
   let mockJSONTaskParser: jest.Mocked<JSONTaskParser>;
   let mockMockDataProvider: jest.Mocked<MockDataProvider>;
 
@@ -89,15 +87,7 @@ describe("TasksDataService", () => {
     vscode.workspace.fs = { stat: jest.fn() };
     vscode.Uri.file = jest.fn();
 
-    // Create mock TaskStatusManager instance
-    mockTaskStatusManager = {
-      getTasks: jest.fn(),
-      getTaskById: jest.fn(),
-      updateTaskStatus: jest.fn(),
-      refreshTasksFromFile: jest.fn(),
-      getTaskDependencies: jest.fn(),
-      validateStatusTransition: jest.fn(),
-    } as unknown as jest.Mocked<TaskStatusManager>;
+    // TaskStatusManager removed - not implemented
 
     // Create mock JSONTaskParser instance
     mockJSONTaskParser = {
@@ -113,11 +103,7 @@ describe("TasksDataService", () => {
       getRequirementById: jest.fn(),
     } as unknown as jest.Mocked<MockDataProvider>;
 
-    service = new TasksDataService(
-      mockTaskStatusManager,
-      mockJSONTaskParser,
-      mockMockDataProvider
-    );
+    service = new TasksDataService(mockJSONTaskParser, mockMockDataProvider);
 
     // Set up default mock HTTP client with safe default response
     // This prevents "Cannot read properties of undefined (reading 'data')" errors

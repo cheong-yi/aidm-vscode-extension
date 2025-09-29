@@ -18,7 +18,7 @@ export class TaskFileWatcher {
    * Start watching the configured file for changes
    */
   startWatching(onFileChanged: () => void): void {
-    if (this.watcher) return;
+    if (this.watcher) {return;}
 
     this.refreshCallback = onFileChanged;
 

@@ -1,33 +1,14 @@
 {
-  "lastRunDate": "2025-09-09T03:17:18Z",
-  "totalTests": 4,
-  "passedTests": 2,
-  "failedTests": 2,
-  "executionTime": 1250,
-  "failingTestsList": [
-    {
-      "name": "Enhanced Test Runner Validation should demonstrate assertion failure",
-      "file": "/mnt/c/Users/yi.a.cheong/[logs]/[workspace]/[repos]/[manual shelf]/aidm-vscode-extension/src/__tests__/enhanced-test-runner.test.ts",
-      "line": 12,
-      "error": "AssertionError: Expected 'python' but got 'unknown'",
-      "errorType": "AssertionError",
-      "duration": 12,
-      "stackTrace": "AssertionError: Expected 'python' but got 'unknown'\n    at Object.<anonymous> (/test/enhanced-test-runner.test.ts:12:5)\n    at processTicksAndRejections (node:internal/process/task_queues:95:5)\n    at /src/enhanced-test-runner.test.ts:12:5 in testProjectType\n    at Object.testProjectType (/src/services/ProjectAnalyzer.ts:45:10)"
-    },
-    {
-      "name": "Enhanced Test Runner Validation should demonstrate type error",
-      "file": "/mnt/c/Users/yi.a.cheong/[logs]/[workspace]/[repos]/[manual shelf]/aidm-vscode-extension/src/__tests__/enhanced-test-runner.test.ts",
-      "line": 18,
-      "error": "TypeError: Cannot read property 'anotherProperty' of null",
-      "errorType": "TypeError",
-      "duration": 8,
-      "stackTrace": "TypeError: Cannot read property 'anotherProperty' of null\n    at Object.<anonymous> (/test/enhanced-test-runner.test.ts:18:7)\n    at processTicksAndRejections (node:internal/process/task_queues:95:5)\n    at /src/enhanced-test-runner.test.ts:18:7 in processData\n    at Object.processData (/src/utils/DataProcessor.ts:23:12)"
-    }
-  ],
+  "lastRunDate": "2025-09-11T09:15:52Z",
+  "totalTests": 0,
+  "passedTests": 0,
+  "failedTests": 0,
+  "executionTime": 86536,
+  "failingTestsList": [],
   "framework": "jest",
   "language": "typescript",
   "summary": {
-    "quickFix": "2 test failures, primarily TypeError",
-    "actionRequired": "Review 2 failing tests across multiple files"
+    "quickFix": "All tests passed",
+    "actionRequired": "No action needed"
   }
 }

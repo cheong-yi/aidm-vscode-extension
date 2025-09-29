@@ -8,7 +8,7 @@ export class CacheManager {
 
   async get<T>(key: string): Promise<T | null> {
     const item = this.cache.get(key);
-    if (!item) return null;
+    if (!item) {return null;}
 
     if (Date.now() > item.expiry) {
       this.cache.delete(key);

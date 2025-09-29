@@ -6,12 +6,11 @@
  */
 
 import { TasksDataService } from "../../../services/TasksDataService";
-import { TaskStatusManager } from "../../../services/TaskStatusManager";
+// TaskStatusManager removed - not implemented
 import { JSONTaskParser } from "../../../services/JSONTaskParser";
 import { MockDataProvider } from "../../../mock";
 
-// Mock TaskStatusManager for simple tests
-jest.mock("../../../services/TaskStatusManager");
+// TaskStatusManager removed - not implemented
 
 describe("TasksDataService Simple Import", () => {
   it("should be importable directly from file", () => {
@@ -21,12 +20,10 @@ describe("TasksDataService Simple Import", () => {
 
   it("should create instance when imported directly with all required dependencies", () => {
     // Create mock instances for all required dependencies
-    const mockTaskStatusManager = {} as TaskStatusManager;
     const mockJSONTaskParser = {} as JSONTaskParser;
     const mockMockDataProvider = {} as MockDataProvider;
 
     const service = new TasksDataService(
-      mockTaskStatusManager,
       mockJSONTaskParser,
       mockMockDataProvider
     );

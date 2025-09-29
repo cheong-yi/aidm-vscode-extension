@@ -167,7 +167,9 @@
     "compile-tsc": "tsc -p ./",
     "pretest": "npm run compile && npm run lint",
     "validate-manifest": "node scripts/validate-manifest.js",
-    "test:packaging": "node scripts/test-packaging.js"
+    "test:packaging": "node scripts/test-packaging.js",
+    "compile-templates": "node scripts/compile-templates.js",
+    "prebuild": "npm run compile-templates"
   },
   "devDependencies": {
     "@types/jest": "^29.5.14",

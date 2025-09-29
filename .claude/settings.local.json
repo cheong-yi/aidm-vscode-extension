@@ -1,0 +1,36 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//home/**)",
+      "Read(//mnt/c/Users/yi.a.cheong/**)",
+      "Bash(cd:*)",
+      "Bash(git config:*)",
+      "Bash(npm test -- --testPathPattern=\"TaskHTMLGenerator\")",
+      "Bash(npm run compile:*)",
+      "Bash(npx tsc:*)",
+      "Bash(node:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git rev-parse:*)",
+      "Bash(npm test:*)",
+      "Bash(timeout 30s npm test)",
+      "Bash(find:*)",
+      "Bash(sed:*)",
+      "Bash(npm run validate-manifest:*)",
+      "Bash(npx jest:*)",
+      "Bash(npm run lint)",
+      "Bash(npx eslint:*)",
+      "Bash(chmod:*)",
+      "Bash(./scripts/run-tests.sh:*)",
+      "Bash(timeout 240s npm test -- --testPathPattern=\"TasksDataService.simple\" --json)",
+      "Bash(timeout 60s npx jest:*)",
+      "Bash(jq:*)",
+      "Bash(./node_modules/.bin/jest:*)",
+      "Bash(timeout:*)",
+      "WebSearch",
+      "WebFetch(domain:code.visualstudio.com)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

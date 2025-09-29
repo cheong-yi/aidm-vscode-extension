@@ -434,12 +434,12 @@ export class TaskValidator {
     const month = parseInt(parts[1], 10);
     const day = parseInt(parts[2], 10);
     
-    if (month < 1 || month > 12) return false;
-    if (day < 1 || day > 31) return false;
+    if (month < 1 || month > 12) {return false;}
+    if (day < 1 || day > 31) {return false;}
     
     // Basic month/day validation (simplified)
-    if (month === 2 && day > 29) return false;
-    if ([4, 6, 9, 11].includes(month) && day > 30) return false;
+    if (month === 2 && day > 29) {return false;}
+    if ([4, 6, 9, 11].includes(month) && day > 30) {return false;}
 
     // Try to create a Date object to validate it's actually a valid date
     try {

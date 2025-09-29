@@ -212,7 +212,7 @@ export class MarkdownTaskParser {
       const trimmedLine = line.trim();
 
       // Skip empty lines
-      if (!trimmedLine) continue;
+      if (!trimmedLine) {continue;}
 
       // Check for task lines (- [x] or - [ ] format)
       if (trimmedLine.startsWith("- [")) {
@@ -409,7 +409,7 @@ export class MarkdownTaskParser {
    * @returns string - Status icon emoji or empty string
    */
   private getStatusIcon(status?: TaskStatus): string {
-    if (!status) return "";
+    if (!status) {return "";}
 
     const iconMap = {
       [TaskStatus.COMPLETED]: "✅",
