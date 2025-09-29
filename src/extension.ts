@@ -23,7 +23,8 @@ import { TaskStatus, Task } from "./types/tasks";
 import { TaskDetailCardProvider } from "./tasks/providers/TaskDetailCardProvider";
 import { TaskWebviewProvider } from "./tasks/providers";
 import { TaskErrorResponse } from "./types/tasks";
-import { TaskApiIntegration } from "./integrations/TaskApiIntegration";
+import { TaskApiIntegrationSimple } from "./integrations/TaskApiIntegrationSimple";
+import { AuthService } from "./auth/authService";
 
 
 
@@ -195,7 +196,8 @@ let processManager: ProcessManager;
 let tasksDataService: TasksDataService;
 let taskDetailProvider: TaskDetailCardProvider;
 let taskWebviewProvider: TaskWebviewProvider;
-let taskApiIntegration: TaskApiIntegration;
+let taskApiIntegration: TaskApiIntegrationSimple;
+let authService: AuthService;
 
 /**
  * Setup comprehensive UI event synchronization between tree view and detail panel
@@ -449,11 +451,20 @@ export async function activate(
       throw error;
     }
 
-    console.log("=== ACTIVATION STEP 8.6: Initializing Task API Integration ===");
+    console.log("=== ACTIVATION STEP 8.5: Initializing Authentication Service ===");
     try {
-      taskApiIntegration = new TaskApiIntegration(tasksDataService, context);
+      authService = new AuthService(context);
+      console.log("✅ Authentication service initialized");
+    } catch (error) {
+      console.warn("⚠️ Authentication service initialization failed (non-critical):", error);
+      // Don't throw - allow extension to continue without auth
+    }
+
+    console.log("=== ACTIVATION STEP 8.6: Initializing Simple Task API Integration ===");
+    try {
+      taskApiIntegration = new TaskApiIntegrationSimple(tasksDataService, authService, context);
       await taskApiIntegration.initialize();
-      console.log("✅ Task API integration initialized");
+      console.log("✅ Simple Task API integration initialized");
     } catch (error) {
       console.warn("⚠️ Task API integration initialization failed (non-critical):", error);
       // Don't throw - allow extension to continue without API integration

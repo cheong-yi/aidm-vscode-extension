@@ -143,19 +143,9 @@
         "aidmVscodeExtension.taskApi.baseUrl": {
           "type": "string",
           "default": "",
-          "description": "Task API base URL (e.g., https://api.yourcompany.com)",
+          "description": "Task API base URL (e.g., https://api.yourorganization.com) - Authentication handled automatically via SSO",
           "pattern": "^https://.*",
           "patternErrorMessage": "Must be a valid HTTPS URL (HTTP not allowed for production APIs)"
-        },
-        "aidmVscodeExtension.taskApi.userId": {
-          "type": "string",
-          "default": "",
-          "description": "Your user identifier for API task filtering"
-        },
-        "aidmVscodeExtension.taskApi.authToken": {
-          "type": "string",
-          "default": "",
-          "description": "Bearer token or API key for authentication"
         },
         "aidmVscodeExtension.taskApi.enableStreaming": {
           "type": "boolean",
