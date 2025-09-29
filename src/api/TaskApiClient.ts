@@ -5,6 +5,7 @@
 
 import { Task } from '../types/tasks';
 import { TaskApiTokenProvider } from './TaskApiTokenProvider';
+import { UserIdentityService } from '../auth/userIdentityService';
 
 export interface TaskApiResponse<T> {
   success: boolean;
@@ -13,10 +14,17 @@ export interface TaskApiResponse<T> {
 }
 
 export class TaskApiClient {
+  private userIdentityService: UserIdentityService;
+
   constructor(
     private baseUrl: string,
     private tokenProvider: TaskApiTokenProvider
-  ) {}
+  ) {
+    this.userIdentityService = new UserIdentityService(
+      this.baseUrl,
+      () => this.getHeaders()
+    );
+  }
 
   /**
    * Fetch tasks for the authenticated user
@@ -31,7 +39,21 @@ export class TaskApiClient {
     }
 
     try {
-      const url = `${this.baseUrl}/API/v1/tasks/user/${encodeURIComponent(userContext.email)}`;
+      // Resolve stable user ID
+      const identityResult = await this.userIdentityService.resolveStableUserId(
+        userContext.email,
+        userContext.agencyId,
+        userContext.projectId
+      );
+
+      if (!identityResult.success || !identityResult.stableUserId) {
+        return {
+          success: false,
+          error: identityResult.error || 'Failed to resolve user identity',
+        };
+      }
+
+      const url = `${this.baseUrl}/API/v1/tasks/user/${encodeURIComponent(identityResult.stableUserId)}`;
 
       const response = await fetch(url, {
         method: 'GET',

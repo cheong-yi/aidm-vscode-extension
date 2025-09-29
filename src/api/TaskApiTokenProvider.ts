@@ -28,5 +28,6 @@ export interface TaskApiTokenProvider {
     email: string;
     agencyId: number;
     projectId: number;
+    stableUserId?: string;
   } | null;
 }
