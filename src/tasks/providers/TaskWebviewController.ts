@@ -14,6 +14,8 @@ import { TaskHTMLGenerator } from "./TaskHTMLGenerator";
 import { TaskMessageHandler } from "./TaskMessageHandler";
 import { TaskViewState } from "./TaskViewState";
 import { TaskEventManager, EventCallbacks } from "./TaskEventManager";
+import { AuthService } from "../../auth/authService";
+import { CONFIG, AuthPromptStrategy } from "../../common/config";
 
 /**
  * Controller interface for managing webview operations
@@ -31,20 +33,21 @@ export interface WebviewController {
  */
 export class TaskWebviewController implements WebviewController {
   private view?: vscode.WebviewView;
-  
+
   // Orchestrated components
   private readonly htmlGenerator: TaskHTMLGenerator;
   private readonly viewState: TaskViewState;
   private readonly eventManager: TaskEventManager;
   private messageHandler?: TaskMessageHandler;
-  
+
   // State management
   private isInitialized: boolean = false;
   private refreshInProgress: boolean = false;
 
   constructor(
     private readonly tasksDataService: TasksDataService,
-    private readonly context: vscode.ExtensionContext
+    private readonly context: vscode.ExtensionContext,
+    private readonly authService?: AuthService
   ) {
     // Initialize orchestrated components
     this.htmlGenerator = new TaskHTMLGenerator(context.extensionUri);
@@ -56,9 +59,9 @@ export class TaskWebviewController implements WebviewController {
       onServiceError: (error: TaskErrorResponse) => this.orchestrateErrorHandling(error),
       onMessageReceived: async (message: any) => this.orchestrateMessageProcessing(message)
     };
-    
+
     this.eventManager = new TaskEventManager(this.tasksDataService, orchestrationCallbacks);
-    
+
     // Load logo on initialization
     this.loadLogo();
   }
@@ -130,7 +133,7 @@ export class TaskWebviewController implements WebviewController {
       view,
       (taskId: string) => this.orchestrateAccordionToggle(taskId)
     );
-    
+
     // Setup message handling through event manager
     this.eventManager.setupMessageHandling(view.webview);
   }
@@ -191,10 +194,17 @@ export class TaskWebviewController implements WebviewController {
    * @private orchestration method
    */
   private async orchestrateMessageProcessing(message: any): Promise<void> {
+    // Handle authentication-related messages first
+    const authMessageTypes = ['authLogin', 'offlineMode', 'refreshAuth'];
+    if (authMessageTypes.includes(message.type)) {
+      await this.handleAuthMessage(message);
+      return;
+    }
+
     if (this.messageHandler) {
       try {
         await this.messageHandler.handleMessage(message);
-        
+
         // Orchestrate post-message processing if needed
         if (this.requiresContentRefresh(message)) {
           await this.orchestrateContentRefresh();
@@ -226,10 +236,13 @@ export class TaskWebviewController implements WebviewController {
       // Coordinate data retrieval
       const tasks = await this.tasksDataService.getTasks();
       const expandedId = this.viewState.getExpandedTask();
-      
-      // Coordinate HTML generation
-      const html = await this.htmlGenerator.generateFullHTML(tasks, expandedId);
-      
+
+      // Generate authentication status banner
+      const authStatusBanner = this.generateAuthStatusBanner();
+
+      // Coordinate HTML generation with auth status
+      const html = await this.htmlGenerator.generateFullHTML(tasks, expandedId, authStatusBanner);
+
       // Coordinate view update
       this.view.webview.html = html;
       
@@ -314,9 +327,12 @@ export class TaskWebviewController implements WebviewController {
   private requiresContentRefresh(message: any): boolean {
     const refreshRequiredTypes = [
       'updateTaskStatus',
-      'refresh'
+      'refresh',
+      'authLogin',
+      'offlineMode',
+      'refreshAuth'
     ];
-    
+
     return refreshRequiredTypes.includes(message.type);
   }
 
@@ -325,6 +341,129 @@ export class TaskWebviewController implements WebviewController {
    */
   public isControllerInitialized(): boolean {
     return this.isInitialized;
+  }
+
+  /**
+   * Check if user is authenticated based on current configuration
+   * @private utility method for authentication status
+   */
+  private isUserAuthenticated(): boolean {
+    if (!CONFIG.authentication.enabled || !this.authService) {
+      return true; // No auth required or no auth service available
+    }
+
+    return this.authService.authState.isLoggedIn && this.authService.isCurrentTokenValid();
+  }
+
+  /**
+   * Check if contextual auth prompt should be shown
+   * @private utility method for prompt strategy
+   */
+  private shouldShowContextualPrompt(): boolean {
+    if (!CONFIG.authentication.enabled || !this.authService) {
+      return false;
+    }
+
+    return (
+      CONFIG.authentication.promptStrategy === AuthPromptStrategy.CONTEXTUAL &&
+      !this.isUserAuthenticated()
+    );
+  }
+
+  /**
+   * Generate authentication status banner HTML
+   * @private utility method for auth UI
+   */
+  private generateAuthStatusBanner(): string {
+    if (!this.authService || !CONFIG.authentication.enabled) {
+      return '';
+    }
+
+    const isAuthenticated = this.isUserAuthenticated();
+    const promptStrategy = CONFIG.authentication.promptStrategy;
+
+    if (isAuthenticated) {
+      // User is authenticated - show minimal status
+      return `
+        <div class="auth-status authenticated">
+          <span class="auth-indicator">✓</span>
+          <span class="auth-text">Signed in as ${this.authService.authState.username || 'User'}</span>
+        </div>
+      `;
+    }
+
+    // User is not authenticated - show contextual prompt based on strategy
+    if (promptStrategy === AuthPromptStrategy.CONTEXTUAL) {
+      return `
+        <div class="auth-status contextual-prompt">
+          <div class="auth-prompt-content">
+            <span class="auth-prompt-icon">🔐</span>
+            <span class="auth-prompt-text">${CONFIG.authentication.contextualPromptText}</span>
+            <button class="auth-login-btn" onclick="handleAuthLogin()">Sign In</button>
+            <button class="auth-offline-btn" onclick="handleOfflineMode()">Continue Offline</button>
+          </div>
+        </div>
+      `;
+    }
+
+    if (promptStrategy === AuthPromptStrategy.PERSISTENT && !isAuthenticated) {
+      return `
+        <div class="auth-status persistent-prompt">
+          <div class="auth-prompt-content">
+            <span class="auth-prompt-icon">⚠️</span>
+            <span class="auth-prompt-text">Authentication required to access full features</span>
+            <button class="auth-login-btn" onclick="handleAuthLogin()">Sign In Now</button>
+          </div>
+        </div>
+      `;
+    }
+
+    // No auth prompt or NEVER strategy
+    if (!isAuthenticated && CONFIG.authentication.allowOfflineMode) {
+      return `
+        <div class="auth-status offline-mode">
+          <span class="auth-indicator">📱</span>
+          <span class="auth-text">${CONFIG.authentication.offlineModeText}</span>
+        </div>
+      `;
+    }
+
+    return '';
+  }
+
+  /**
+   * Handle authentication-related messages from webview
+   * @private utility method for auth message handling
+   */
+  private async handleAuthMessage(message: any): Promise<void> {
+    if (!this.authService) {
+      return;
+    }
+
+    switch (message.type) {
+      case 'authLogin':
+        try {
+          // Trigger authentication flow
+          vscode.commands.executeCommand('aidm-vscode-extension.login');
+
+          // Refresh content after authentication attempt
+          setTimeout(() => this.orchestrateContentRefresh(), 1000);
+        } catch (error) {
+          console.error('TaskWebviewController: Auth login failed:', error);
+        }
+        break;
+
+      case 'offlineMode':
+        // User chose to continue offline - refresh to show offline state
+        await this.orchestrateContentRefresh();
+        vscode.window.showInformationMessage('Working in offline mode with cached/mock data');
+        break;
+
+      case 'refreshAuth':
+        // Check auth status and refresh
+        await this.orchestrateContentRefresh();
+        break;
+    }
   }
 
   /**

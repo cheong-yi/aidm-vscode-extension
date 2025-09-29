@@ -75,8 +75,8 @@ export class TaskHTMLGenerator {
   /**
    * Generate the complete HTML content for the webview
    */
-  async generateFullHTML(tasks: Task[], expandedId: string | null = null): Promise<string> {
-    return await this.generateTaskmasterHTML(tasks);
+  async generateFullHTML(tasks: Task[], expandedId: string | null = null, authStatusBanner: string = ''): Promise<string> {
+    return await this.generateTaskmasterHTML(tasks, authStatusBanner);
   }
 
   /**
@@ -147,7 +147,7 @@ export class TaskHTMLGenerator {
   /**
    * Generate complete Taskmaster dashboard HTML with CSS and JavaScript
    */
-  private async generateTaskmasterHTML(tasks: Task[]): Promise<string> {
+  private async generateTaskmasterHTML(tasks: Task[], authStatusBanner: string = ''): Promise<string> {
     const taskListHTML =
       tasks.length > 0
         ? (await Promise.all(tasks.map((task) => this.generateTaskItem(task)))).join("")
@@ -158,11 +158,12 @@ export class TaskHTMLGenerator {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Content-Security-Policy" 
+    <meta http-equiv="Content-Security-Policy"
           content="default-src 'none'; style-src vscode-resource: 'unsafe-inline' 'self'; script-src vscode-resource: 'unsafe-inline' 'self'; img-src vscode-resource: https: data: 'self'; font-src vscode-resource: https: 'self'; connect-src 'self';">
     <title>Taskmaster Dashboard</title>
     <style>
 ${this.getInlineCSS()}
+${this.getAuthStatusCSS()}
     </style>
 </head>
 <body>
@@ -172,13 +173,14 @@ ${this.getInlineCSS()}
             <img src="${this.logoDataUri}" alt="AiDM" class="aidm-logo" />
         </div>
     </div>
-    
+
     <!-- MODIFIED: Sidebar with Taskmaster header -->
     <div class="sidebar">
         <div class="sidebar-header">
             TASKMASTER DASHBOARD
         </div>
         <div class="sidebar-content">
+            ${authStatusBanner}
             ${this.generateWebviewHeader()}
             <div class="task-list">
                 ${taskListHTML}
@@ -187,6 +189,7 @@ ${this.getInlineCSS()}
     </div>
     <script>
 ${this.getInlineJavaScript()}
+${this.getAuthJavaScript()}
     </script>
 </body>
 </html>`;
@@ -440,5 +443,132 @@ ${this.getInlineJavaScript()}
   private getInlineJavaScript(): string {
     // JavaScript is now bundled at build time via webpack raw-loader
     return jsContent;
+  }
+
+  /**
+   * Get authentication status CSS
+   * @private method for auth UI styling
+   */
+  private getAuthStatusCSS(): string {
+    return `
+      /* Authentication Status Styles */
+      .auth-status {
+        margin: 8px 0;
+        padding: 8px 12px;
+        border-radius: 4px;
+        display: flex;
+        align-items: center;
+        font-size: 12px;
+        border: 1px solid transparent;
+      }
+
+      .auth-status.authenticated {
+        background-color: var(--vscode-editorGutter-addedBackground, rgba(129, 184, 139, 0.1));
+        border-color: var(--vscode-editorGutter-addedBackground, rgba(129, 184, 139, 0.3));
+        color: var(--vscode-editor-foreground);
+      }
+
+      .auth-status.contextual-prompt {
+        background-color: var(--vscode-editorWarning-background, rgba(255, 193, 7, 0.1));
+        border-color: var(--vscode-editorWarning-foreground, rgba(255, 193, 7, 0.3));
+        color: var(--vscode-editor-foreground);
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .auth-status.persistent-prompt {
+        background-color: var(--vscode-editorError-background, rgba(255, 86, 86, 0.1));
+        border-color: var(--vscode-editorError-foreground, rgba(255, 86, 86, 0.3));
+        color: var(--vscode-editor-foreground);
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .auth-status.offline-mode {
+        background-color: var(--vscode-editorInfo-background, rgba(54, 162, 235, 0.1));
+        border-color: var(--vscode-editorInfo-foreground, rgba(54, 162, 235, 0.3));
+        color: var(--vscode-editor-foreground);
+      }
+
+      .auth-indicator {
+        margin-right: 6px;
+        font-size: 14px;
+      }
+
+      .auth-text {
+        flex: 1;
+      }
+
+      .auth-prompt-content {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .auth-prompt-content > :first-child {
+        display: flex;
+        align-items: center;
+        margin-bottom: 4px;
+      }
+
+      .auth-prompt-icon {
+        margin-right: 6px;
+        font-size: 14px;
+      }
+
+      .auth-prompt-text {
+        flex: 1;
+        font-size: 11px;
+        color: var(--vscode-descriptionForeground);
+      }
+
+      .auth-login-btn, .auth-offline-btn {
+        background: var(--vscode-button-background);
+        color: var(--vscode-button-foreground);
+        border: none;
+        border-radius: 2px;
+        padding: 4px 8px;
+        font-size: 11px;
+        cursor: pointer;
+        margin-right: 6px;
+      }
+
+      .auth-login-btn:hover, .auth-offline-btn:hover {
+        background: var(--vscode-button-hoverBackground);
+      }
+
+      .auth-offline-btn {
+        background: var(--vscode-button-secondaryBackground, rgba(255, 255, 255, 0.1));
+        color: var(--vscode-button-secondaryForeground, var(--vscode-editor-foreground));
+      }
+
+      .auth-offline-btn:hover {
+        background: var(--vscode-button-secondaryHoverBackground, rgba(255, 255, 255, 0.15));
+      }
+    `;
+  }
+
+  /**
+   * Get authentication JavaScript handlers
+   * @private method for auth interaction handlers
+   */
+  private getAuthJavaScript(): string {
+    return `
+      // Authentication interaction handlers
+      function handleAuthLogin() {
+        const vscode = acquireVsCodeApi();
+        vscode.postMessage({ type: 'authLogin' });
+      }
+
+      function handleOfflineMode() {
+        const vscode = acquireVsCodeApi();
+        vscode.postMessage({ type: 'offlineMode' });
+      }
+
+      function handleRefreshAuth() {
+        const vscode = acquireVsCodeApi();
+        vscode.postMessage({ type: 'refreshAuth' });
+      }
+    `;
   }
 }

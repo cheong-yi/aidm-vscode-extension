@@ -1,7 +1,13 @@
 /**
- * Stub config file - Replace with actual OAuth configuration
- * This was referenced by the copied auth system
+ * Central configuration for the AIDM VSCode Extension
+ * Includes OAuth configuration and authentication behavior settings
  */
+
+export enum AuthPromptStrategy {
+  CONTEXTUAL = 'contextual',    // Show prompt when API needed
+  PERSISTENT = 'persistent',    // Always show if not authenticated
+  NEVER = 'never'               // Never show prompts (enterprise override)
+}
 
 export const CONFIG = {
   auth: {
@@ -12,8 +18,17 @@ export const CONFIG = {
   },
   api: {
     baseUrl: 'https://aidm-dev.accenture.com/dev'
+  },
+  authentication: {
+    enabled: true,
+    promptStrategy: AuthPromptStrategy.CONTEXTUAL,
+    persistentPrompt: false,
+    autoLogin: false,
+    allowOfflineMode: true,
+    contextualPromptText: 'Sign in to access live task data and API features',
+    offlineModeText: 'Working offline - using cached/mock data'
   }
 };
 
 // TODO: Replace with actual OAuth configuration for your organization
-// This is just a stub to make the imports work
+// Extended with progressive authentication configuration - PROGRESSIVE-002

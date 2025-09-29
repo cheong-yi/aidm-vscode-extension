@@ -451,13 +451,14 @@ export async function activate(
       throw error;
     }
 
-    console.log("=== ACTIVATION STEP 8.5: Initializing Authentication Service ===");
+    console.log("=== ACTIVATION STEP 8.5: Initializing Authentication Service (non-blocking) ===");
     try {
       authService = new AuthService(context);
-      console.log("✅ Authentication service initialized");
+      console.log("✅ Authentication service initialized (progressive auth enabled)");
     } catch (error) {
-      console.warn("⚠️ Authentication service initialization failed (non-critical):", error);
-      // Don't throw - allow extension to continue without auth
+      console.warn("⚠️ Authentication service initialization failed (continuing with offline mode):", error);
+      // Don't throw - allow extension to continue without auth - PROGRESSIVE-002
+      authService = undefined; // Explicitly set to undefined for clear state
     }
 
     console.log("=== ACTIVATION STEP 8.6: Initializing Simple Task API Integration ===");
@@ -765,8 +766,8 @@ export async function activate(
       "=== ACTIVATION STEP 8.10: Initializing TaskWebviewProvider ==="
     );
     try {
-      // Create TaskWebviewProvider with TasksDataService and context
-      taskWebviewProvider = new TaskWebviewProvider(tasksDataService, context);
+      // Create TaskWebviewProvider with TasksDataService, context, and optional authService
+      taskWebviewProvider = new TaskWebviewProvider(tasksDataService, context, authService);
 
       // Register webview view provider with VSCode
       const webviewProviderDisposable =
@@ -903,6 +904,108 @@ export async function activate(
     }
 
     // REF-021: Removed excessive commands - kept only essential commands
+
+    // Register progressive authentication login command - PROGRESSIVE-002
+    try {
+      const loginCommand = vscode.commands.registerCommand(
+        getCommandId("login"),
+        async () => {
+          if (!authService) {
+            vscode.window.showWarningMessage("Authentication service not available");
+            return;
+          }
+
+          try {
+            // Show input box for credentials or OAuth flow
+            const authMethod = await vscode.window.showQuickPick(
+              ['Username/Password', 'Single Sign-On (OAuth)'],
+              {
+                placeHolder: 'Select authentication method',
+                title: 'Sign in to AiDM Extension'
+              }
+            );
+
+            if (!authMethod) {
+              return; // User cancelled
+            }
+
+            let result;
+            if (authMethod === 'Username/Password') {
+              const username = await vscode.window.showInputBox({
+                prompt: 'Enter your username',
+                placeHolder: 'username'
+              });
+
+              if (!username) {
+                return;
+              }
+
+              const password = await vscode.window.showInputBox({
+                prompt: 'Enter your password',
+                password: true,
+                placeHolder: 'password'
+              });
+
+              if (!password) {
+                return;
+              }
+
+              result = await authService.loginWithCredentials(username, password, false);
+            } else {
+              result = await authService.performOAuthLogin();
+            }
+
+            if (result.success) {
+              vscode.window.showInformationMessage('Successfully signed in!');
+              // Refresh webview to show authenticated state
+              if (taskWebviewProvider) {
+                await taskWebviewProvider.refreshContent();
+              }
+            } else {
+              vscode.window.showErrorMessage(`Login failed: ${result.message}`);
+            }
+          } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+            vscode.window.showErrorMessage(`Authentication failed: ${errorMessage}`);
+            console.error("Login command error:", error);
+          }
+        }
+      );
+      context.subscriptions.push(loginCommand);
+      console.log("✅ login command registered");
+    } catch (error) {
+      console.error("❌ login command failed:", error);
+    }
+
+    // Register logout command for completeness - PROGRESSIVE-002
+    try {
+      const logoutCommand = vscode.commands.registerCommand(
+        getCommandId("logout"),
+        async () => {
+          if (!authService) {
+            vscode.window.showWarningMessage("Authentication service not available");
+            return;
+          }
+
+          try {
+            await authService.logout();
+            vscode.window.showInformationMessage('Successfully signed out');
+            // Refresh webview to show unauthenticated state
+            if (taskWebviewProvider) {
+              await taskWebviewProvider.refreshContent();
+            }
+          } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+            vscode.window.showErrorMessage(`Logout failed: ${errorMessage}`);
+            console.error("Logout command error:", error);
+          }
+        }
+      );
+      context.subscriptions.push(logoutCommand);
+      console.log("✅ logout command registered");
+    } catch (error) {
+      console.error("❌ logout command failed:", error);
+    }
 
     // Register openDiff command for git diff functionality
     try {

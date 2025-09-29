@@ -7,6 +7,7 @@
 import * as vscode from "vscode";
 import { TasksDataService } from "../../services";
 import { TaskWebviewController } from "./TaskWebviewController";
+import { AuthService } from "../../auth/authService";
 
 /**
  * TaskWebviewProvider - Pure View Layer implementing vscode.WebviewViewProvider
@@ -17,10 +18,11 @@ export class TaskWebviewProvider implements vscode.WebviewViewProvider {
   
   constructor(
     private readonly tasksDataService: TasksDataService,
-    private readonly context: vscode.ExtensionContext
+    private readonly context: vscode.ExtensionContext,
+    private readonly authService?: AuthService
   ) {
-    // Initialize controller for orchestration
-    this.controller = new TaskWebviewController(tasksDataService, context);
+    // Initialize controller for orchestration with optional auth service
+    this.controller = new TaskWebviewController(tasksDataService, context, authService);
   }
 
 
