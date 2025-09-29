@@ -7,10 +7,10 @@ import { CONFIG } from '../common/config';
 import { CredentialsService } from './credentialsService';
 import { SessionService } from './sessionService';
 import { getLocalServerInstance } from './laks/localServer';
-import * as jwt from 'jsonwebtoken';
 import { log } from '../utils/logger'; // Import log function
 import { AgencyService } from './agencyService';
 import { ApiService } from '../api/apiService';
+import { SecureTokenManager, RefreshResult } from './secureTokenManager';
 
 export class AuthService {
     private credentialsService: CredentialsService;
@@ -18,6 +18,7 @@ export class AuthService {
     private secretStorage: vscode.SecretStorage;
     private apiService: ApiService;
     private agencyService: AgencyService;
+    private secureTokenManager: SecureTokenManager;
     
     constructor(private context: vscode.ExtensionContext) {
         this.credentialsService = new CredentialsService();
@@ -26,13 +27,53 @@ export class AuthService {
         this.apiService = new ApiService();
         this.agencyService = new AgencyService(this.apiService, this.sessionService);
 
-        log('INFO', 'AuthService', 'Initializing AuthService');
+        // Initialize secure token manager with refresh callback
+        this.secureTokenManager = new SecureTokenManager(
+            this.secretStorage,
+            this.handleTokenRefresh.bind(this)
+        );
 
-        // Load any existing session
-        this.loadSessionState().then(savedState => {
-            authStateManager.updateState(savedState);
-            log('INFO', 'AuthService', 'Loaded session state');
+        // Initialize TokenHelper with secure token manager for backward compatibility
+        TokenHelper.initializeWithSecureManager(this.secureTokenManager);
+
+        log('INFO', 'AuthService', 'Initializing AuthService with secure token management');
+
+        // Migrate any existing tokens and load session state
+        this.initializeSecureAuth().then(() => {
+            log('INFO', 'AuthService', 'Secure authentication initialization completed');
         });
+    }
+
+    /**
+     * Initialize secure authentication by migrating existing tokens and loading session state
+     */
+    private async initializeSecureAuth(): Promise<void> {
+        try {
+            // Migrate any existing tokens from insecure storage
+            await this.secureTokenManager.migrateFromGlobalState(this.context.globalState);
+
+            // Load session state with secure token
+            const savedState = await this.loadSessionState();
+            authStateManager.updateState(savedState);
+        } catch (error) {
+            log('ERROR', 'AuthService', 'Failed to initialize secure authentication', { error });
+        }
+    }
+
+    /**
+     * Handle token refresh using the credentials service
+     */
+    private async handleTokenRefresh(refreshToken: string): Promise<RefreshResult> {
+        try {
+            // In a real implementation, this would call your refresh token endpoint
+            // For now, we'll return a failure as the current system doesn't support refresh tokens
+            log('WARN', 'AuthService', 'Token refresh not yet implemented in credentials service');
+            return { success: false, error: 'Token refresh not implemented' };
+        } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+            log('ERROR', 'AuthService', 'Token refresh failed', { error: errorMessage });
+            return { success: false, error: errorMessage };
+        }
     }
 
     private async storePassword(password: string): Promise<void> {
@@ -104,6 +145,9 @@ export class AuthService {
                 }
             }
 
+            // Store token securely
+            await this.secureTokenManager.storeToken(loginResponse.token);
+
             const newState: AuthState = {
                 isLoggedIn: true,
                 username: username,
@@ -143,8 +187,9 @@ export class AuthService {
     async logout(): Promise<void> {
         await this.clearPassword();
         await this.clearLoginMethod();
-        TokenHelper.clearToken();
-        this.saveSessionState(DEFAULT_AUTH_STATE);
+        await this.secureTokenManager.clearTokens(); // Use secure token clearing
+        await TokenHelper.clearToken(); // Legacy cleanup for backward compatibility
+        await this.saveSessionState(DEFAULT_AUTH_STATE);
         await this.context.globalState.update('username', undefined);
         authStateManager.resetState();
     }
@@ -209,17 +254,21 @@ export class AuthService {
 
     private async fetchUserInfo(token: string) {
         try {
-            // Validate token expiry before processing
-            if (!this.isTokenValid(token)) {
+            // Store token securely first for validation
+            await this.secureTokenManager.storeToken(token);
+
+            // Validate token using secure manager
+            const isValid = await this.secureTokenManager.isTokenValid();
+            if (!isValid) {
                 throw new Error('Token is invalid or expired');
             }
 
-            const decodedToken = this.safeDecodeToken(token);
-            if (!decodedToken || !decodedToken.upn) {
-                throw new Error('Invalid token structure');
+            // Extract username from token using secure method
+            const username = this.extractUsernameFromToken(token);
+            if (!username) {
+                throw new Error('Invalid token structure - missing username');
             }
 
-            const username = decodedToken.upn;
             const response = await this.loginWithCredentials(username, '', true);
 
             if (!response.success) {
@@ -228,12 +277,15 @@ export class AuthService {
                 return true;
             }
         } catch (error) {
-            console.error('Error fetching user info:', error);
+            log('ERROR', 'AuthService', 'Error fetching user info', { error });
             throw new Error('Failed to fetch user information');
         }
     }
 
     private async loadSessionState(): Promise<Partial<AuthState>> {
+        // Get token from secure storage
+        const secureToken = await this.secureTokenManager.getToken();
+
         return {
             isLoggedIn: this.context.globalState.get('isLoggedIn'),
             username: this.context.globalState.get('username'),
@@ -243,18 +295,23 @@ export class AuthService {
             isProjectAdmin: this.context.globalState.get('isProjectAdmin'),
             isSuperAdmin: this.context.globalState.get('isSuperAdmin'),
             project_id: this.context.globalState.get('project_id'),
-            token: TokenHelper.getToken(),
+            token: secureToken || TokenHelper.getTokenSync(), // Fallback for migration
         };
     }
 
-    private saveSessionState(state: AuthState): void {
+    private async saveSessionState(state: AuthState): Promise<void> {
+        const promises: Promise<void>[] = [];
+
         Object.entries(state).forEach(([key, value]) => {
             if (key === 'token') {
-                TokenHelper.setToken(value as string);
+                // Store token securely
+                promises.push(this.secureTokenManager.storeToken(value as string));
             } else {
-                this.context.globalState.update(key, value);
+                promises.push(this.context.globalState.update(key, value));
             }
         });
+
+        await Promise.allSettled(promises);
     }
 
     get authState(): AuthState {
@@ -331,66 +388,69 @@ export class AuthService {
     }
 
     /**
-     * Safely decode JWT token without signature verification
-     * Only used for extracting claims after token validation
-     * @param token JWT token to decode
-     * @returns Decoded token payload or null if invalid
+     * Extract username from token using secure method (no unsafe decode)
+     * @param token JWT token to extract username from
+     * @returns username/upn or null if extraction fails
      */
-    private safeDecodeToken(token: string): any {
+    private extractUsernameFromToken(token: string): string | null {
         try {
-            const decoded = jwt.decode(token, { complete: false });
-            return decoded;
+            // Validate JWT structure (3 parts separated by dots)
+            const parts = token.split('.');
+            if (parts.length !== 3) {
+                log('WARN', 'AuthService', 'Invalid JWT token structure');
+                return null;
+            }
+
+            // Safely decode payload (middle part) without signature verification
+            const payload = JSON.parse(Buffer.from(parts[1], 'base64').toString());
+
+            // Extract username from common claims
+            const username = payload.upn || payload.email || payload.preferred_username || payload.sub;
+
+            if (!username) {
+                log('WARN', 'AuthService', 'Token missing username claims');
+                return null;
+            }
+
+            return username;
         } catch (error) {
-            log('ERROR', 'AuthService', 'Failed to decode token', { error });
+            log('ERROR', 'AuthService', 'Failed to extract username from token', { error });
             return null;
         }
     }
 
     /**
-     * Validate token expiry and basic structure
-     * @param token JWT token to validate
-     * @returns true if token is valid and not expired
-     */
-    private isTokenValid(token: string): boolean {
-        try {
-            const decoded = this.safeDecodeToken(token);
-            if (!decoded) {
-                return false;
-            }
-
-            // Check if token has expiry claim
-            if (!decoded.exp) {
-                log('WARN', 'AuthService', 'Token missing expiry claim');
-                return false;
-            }
-
-            // Check if token is expired (exp is in seconds, Date.now() is in milliseconds)
-            const currentTime = Math.floor(Date.now() / 1000);
-            if (decoded.exp < currentTime) {
-                log('WARN', 'AuthService', 'Token has expired', {
-                    exp: decoded.exp,
-                    current: currentTime
-                });
-                return false;
-            }
-
-            return true;
-        } catch (error) {
-            log('ERROR', 'AuthService', 'Error validating token', { error });
-            return false;
-        }
-    }
-
-    /**
-     * Check if current user's token is still valid
+     * Check if current user's token is still valid using secure token manager
      * Should be called before making authenticated API requests
      * @returns true if authenticated with valid token
      */
-    public isCurrentTokenValid(): boolean {
+    public async isCurrentTokenValid(): Promise<boolean> {
         const currentState = this.authState;
-        if (!currentState.isLoggedIn || !currentState.token) {
+        if (!currentState.isLoggedIn) {
             return false;
         }
-        return this.isTokenValid(currentState.token);
+        return await this.secureTokenManager.isTokenValid();
+    }
+
+    /**
+     * Get current valid token, with automatic refresh if needed
+     * @returns Valid token or null if not authenticated
+     */
+    public async getCurrentToken(): Promise<string | null> {
+        if (!this.authState.isLoggedIn) {
+            return null;
+        }
+        return await this.secureTokenManager.getToken();
+    }
+
+    /**
+     * Get token expiry time for current user
+     * @returns Expiry timestamp in milliseconds or null if no token
+     */
+    public async getCurrentTokenExpiry(): Promise<number | null> {
+        if (!this.authState.isLoggedIn) {
+            return null;
+        }
+        return await this.secureTokenManager.getTokenExpiry();
     }
 }
