@@ -22,18 +22,7 @@ import {
 } from '../common/enterpriseConfig';
 import { ConfigService } from './configService';
 import { AuditService } from './auditService';
-
-
-export interface UserSession {
-    sessionId: string;
-    userId: string;
-    tenantId: string;
-    startTime: string;
-    lastActivity: string;
-    ipAddress?: string;
-    userAgent?: string;
-    isActive: boolean;
-}
+import { SessionService, UserSession } from './sessionService';
 
 export interface EnterpriseContext {
     tenantId: string;
@@ -47,17 +36,20 @@ export interface EnterpriseContext {
 
 export class EnterpriseManager {
     private config: EnterpriseConfiguration;
-    private activeSessions: Map<string, UserSession> = new Map();
-    private sessionCleanupInterval?: NodeJS.Timeout;
     private configService: ConfigService;
     private auditService: AuditService;
+    private sessionService: SessionService;
 
     constructor(private context: vscode.ExtensionContext) {
         this.config = DEFAULT_ENTERPRISE_CONFIG;
         this.configService = new ConfigService(context);
         this.auditService = new AuditService(this.configService, context);
+        this.sessionService = new SessionService(context, {
+            sessionTimeoutMinutes: 30,
+            maxConcurrentSessions: 3,
+            cleanupIntervalMinutes: 1
+        });
         this.initializeConfiguration();
-        this.startSessionCleanup();
     }
 
     /**
@@ -316,30 +308,7 @@ export class EnterpriseManager {
      * Create a new user session
      */
     public async createSession(tenantId: string, userId: string, ipAddress?: string, userAgent?: string): Promise<string> {
-        const sessionId = this.generateSessionId();
-        const session: UserSession = {
-            sessionId,
-            userId,
-            tenantId,
-            startTime: new Date().toISOString(),
-            lastActivity: new Date().toISOString(),
-            ipAddress,
-            userAgent,
-            isActive: true
-        };
-
-        // Check concurrent session limits
-        const existingSessions = Array.from(this.activeSessions.values())
-            .filter(s => s.userId === userId && s.tenantId === tenantId && s.isActive);
-
-        if (existingSessions.length >= this.config.compliance.accessControl.maxConcurrentSessions) {
-            // Terminate oldest session
-            const oldestSession = existingSessions.sort((a, b) =>
-                new Date(a.startTime).getTime() - new Date(b.startTime).getTime())[0];
-            await this.terminateSession(oldestSession.sessionId);
-        }
-
-        this.activeSessions.set(sessionId, session);
+        const sessionId = await this.sessionService.createSession(tenantId, userId, ipAddress, userAgent);
 
         await this.auditService.auditEvent({
             eventType: 'auth',
@@ -361,21 +330,16 @@ export class EnterpriseManager {
      * Update session activity
      */
     public async updateSessionActivity(sessionId: string): Promise<void> {
-        const session = this.activeSessions.get(sessionId);
-        if (session && session.isActive) {
-            session.lastActivity = new Date().toISOString();
-            this.activeSessions.set(sessionId, session);
-        }
+        await this.sessionService.updateSessionActivity(sessionId);
     }
 
     /**
      * Terminate a user session
      */
     public async terminateSession(sessionId: string): Promise<void> {
-        const session = this.activeSessions.get(sessionId);
+        const session = this.sessionService.getSession(sessionId);
         if (session) {
-            session.isActive = false;
-            this.activeSessions.set(sessionId, session);
+            await this.sessionService.terminateSession(sessionId);
 
             await this.auditService.auditEvent({
                 eventType: 'auth',
@@ -393,43 +357,16 @@ export class EnterpriseManager {
      * Get active session by ID
      */
     public getSession(sessionId: string): UserSession | null {
-        const session = this.activeSessions.get(sessionId);
-        return session && session.isActive ? session : null;
+        return this.sessionService.getSession(sessionId);
     }
 
-    /**
-     * Clean up expired sessions
-     */
-    private startSessionCleanup(): void {
-        this.sessionCleanupInterval = setInterval(async () => {
-            const now = new Date();
-            const timeoutMs = this.config.compliance.accessControl.sessionTimeout * 60 * 1000;
-
-            for (const [sessionId, session] of this.activeSessions) {
-                if (session.isActive) {
-                    const lastActivity = new Date(session.lastActivity);
-                    if (now.getTime() - lastActivity.getTime() > timeoutMs) {
-                        await this.terminateSession(sessionId);
-                    }
-                }
-            }
-        }, 60000); // Check every minute
-    }
-
-
-    /**
-     * Generate a unique session ID
-     */
-    private generateSessionId(): string {
-        return `sess_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    }
 
     /**
      * Clean up resources
      */
     public dispose(): void {
-        if (this.sessionCleanupInterval) {
-            clearInterval(this.sessionCleanupInterval);
+        if (this.sessionService) {
+            this.sessionService.dispose();
         }
 
         if (this.configService) {
