@@ -1,526 +1,197 @@
 /**
- * Enterprise Configuration System
- * Provides comprehensive multi-tenant, audit logging, compliance, and feature flag support
- * for enterprise deployments of the AiDM VSCode Extension
+ * Enterprise Configuration Interfaces
+ * Simple interfaces that map directly to VSCode settings schema from package.json
+ * Supports static bundling and VSCode extension best practices
  */
 
-export interface TenantConfig {
-    tenantId: string;
-    displayName: string;
-    ssoProvider: 'microsoft' | 'okta' | 'ping' | 'custom';
-    customAuthority?: string;
-    clientId: string;
-    scopes: string[];
-    branding: BrandingConfig;
-    complianceProfile: ComplianceProfile;
-}
+import * as vscode from 'vscode';
 
-export interface BrandingConfig {
-    companyName: string;
-    logoUrl?: string;
-    logoBase64?: string; // For offline deployments
-    primaryColor: string;
-    secondaryColor: string;
-    accentColor?: string;
-    customCSS?: string;
-    faviconUrl?: string;
-    headerBackgroundColor?: string;
-    textColor?: string;
-}
-
-export interface AuditConfig {
+// Simple configuration that maps directly to package.json settings
+export interface EnterpriseSettings {
     enabled: boolean;
-    level: 'minimal' | 'standard' | 'comprehensive';
-    destinations: AuditDestination[];
-    retention: number; // days
-    sensitiveDataMasking: boolean;
-    includeUserActions: boolean;
-    includeSystemEvents: boolean;
-    includePerformanceMetrics: boolean;
-    batchSize: number;
-    flushInterval: number; // milliseconds
-    encryptLogs: boolean;
-}
-
-export interface AuditDestination {
-    type: 'local' | 'siem' | 'cloud' | 'webhook';
-    endpoint?: string;
-    apiKey?: string;
-    headers?: Record<string, string>;
-    enabled: boolean;
-}
-
-export interface ComplianceProfile {
-    dataRetention: {
-        userDataDays: number;
-        auditLogsDays: number;
-        taskDataDays: number;
-        autoDelete: boolean;
-    };
-    encryption: {
-        atRest: boolean;
-        inTransit: boolean;
-        keyRotation: boolean;
-        keyRotationDays: number;
-    };
-    accessControl: {
-        requireMFA: boolean;
-        sessionTimeout: number; // minutes
-        maxConcurrentSessions: number;
-        ipWhitelisting: string[]; // CIDR blocks
-        geographicRestrictions: string[]; // country codes
-    };
-    dataExport: {
-        enabled: boolean;
-        requireApproval: boolean;
-        approverRoles: string[];
-        maxExportSize: number; // MB
-        allowedFormats: ('json' | 'csv' | 'xml')[];
-    };
-}
-
-export interface EnterpriseFeatureFlags {
-    // Authentication & Security
-    ssoRequired: boolean;
-    ssoEnforcement: 'optional' | 'required' | 'strict';
-    offlineMode: boolean;
-    localAuthentication: boolean;
-
-    // API & Integration Features
-    apiIntegration: boolean;
-    taskStreaming: boolean;
-    webhookIntegration: boolean;
-    thirdPartyConnectors: boolean;
-    customApiEndpoints: boolean;
-
-    // Advanced Features
-    advancedReporting: boolean;
-    analyticsCollection: boolean;
-    performanceMonitoring: boolean;
-    errorReporting: boolean;
-
-    // Data & Export
-    dataExport: boolean;
-    bulkOperations: boolean;
-    dataImport: boolean;
-    backupRestore: boolean;
-
-    // UI & UX
-    customBranding: boolean;
-    darkModeForced: boolean;
-    compactView: boolean;
-    advancedFiltering: boolean;
-
-    // Admin & Management
-    multiTenant: boolean;
-    userManagement: boolean;
-    roleBasedAccess: boolean;
-    auditLogging: boolean;
-    complianceMode: boolean;
-
-    // Development & Debugging
-    debugMode: boolean;
-    telemetry: boolean;
-    betaFeatures: boolean;
-
-    // Administrative overrides (can override user preferences)
-    adminOverrides: Record<string, boolean>;
-}
-
-export interface SecurityPolicies {
-    passwordPolicy: {
-        minLength: number;
-        requireUppercase: boolean;
-        requireLowercase: boolean;
-        requireNumbers: boolean;
-        requireSpecialChars: boolean;
-        expirationDays: number;
-    };
-    networkSecurity: {
-        allowedDomains: string[];
-        blockedDomains: string[];
-        requireHttps: boolean;
-        certificateValidation: boolean;
-    };
-    contentSecurity: {
-        allowScriptExecution: boolean;
-        allowExternalResources: boolean;
-        sanitizeInputs: boolean;
-        validateFileUploads: boolean;
-    };
-}
-
-export interface EnterpriseEnvironment {
-    environmentType: 'development' | 'staging' | 'production';
-    deploymentMode: 'cloud' | 'on-premise' | 'hybrid';
-    region: string;
-    availabilityZone?: string;
-    loadBalancing: boolean;
-    clustering: boolean;
-}
-
-export interface EnterpriseConfiguration {
-    // Core Configuration
-    version: string;
-    lastUpdated: string;
-    environment: EnterpriseEnvironment;
-
-    // Multi-Tenant Configuration
+    ssoProvider: 'microsoft' | 'okta' | 'custom';
+    auditEnabled: boolean;
     multiTenant: boolean;
     defaultTenant: string;
-    tenants: Record<string, TenantConfig>;
+    features: EnterpriseFeatures;
+}
 
-    // Feature Flags
-    features: EnterpriseFeatureFlags;
+export interface EnterpriseFeatures {
+    offlineMode: boolean;
+    apiIntegration: boolean;
+    taskStreaming: boolean;
+    advancedReporting: boolean;
+    dataExport: boolean;
+    bulkOperations: boolean;
+    customBranding: boolean;
+    userManagement: boolean;
+    webhookIntegration: boolean;
+    performanceMonitoring: boolean;
+}
 
-    // Audit & Compliance
-    audit: AuditConfig;
-    compliance: ComplianceProfile;
-    security: SecurityPolicies;
+// Simple SSO configuration
+export interface SSOSettings {
+    provider: 'microsoft' | 'okta' | 'custom';
+    enforcement: 'optional' | 'required' | 'strict';
+    clientId: string;
+    authority: string;
+    scopes: string[];
+}
 
-    // Global Branding (fallback)
-    globalBranding: BrandingConfig;
+// Simple audit configuration (no SIEM/webhook overengineering)
+export interface AuditSettings {
+    enabled: boolean;
+    level: 'minimal' | 'standard' | 'comprehensive';
+    retention: number; // days
+    sensitiveDataMasking: boolean;
+}
 
-    // System Configuration
-    system: {
-        maxUsers: number;
-        maxTenantsPerInstance: number;
-        apiRateLimit: number; // requests per minute
-        concurrentConnections: number;
-        memoryLimit: number; // MB
-        diskUsageLimit: number; // MB
-    };
+// Simple compliance settings
+export interface ComplianceSettings {
+    dataRetentionDays: number;
+    encryptionAtRest: boolean;
+    encryptionInTransit: boolean;
+    requireMFA: boolean;
+    sessionTimeout: number; // minutes
+    maxConcurrentSessions: number;
+    ipWhitelist: string[];
+}
 
-    // Integration Configuration
-    integrations: {
-        microsoft: {
-            enabled: boolean;
-            defaultScopes: string[];
-            customEndpoints?: Record<string, string>;
-        };
-        okta: {
-            enabled: boolean;
-            defaultDomain?: string;
-            customScopes?: string[];
-        };
-        slack: {
-            enabled: boolean;
-            webhookUrl?: string;
-            channels?: string[];
-        };
-        teams: {
-            enabled: boolean;
-            webhookUrl?: string;
-            channels?: string[];
-        };
-    };
+// Simple branding configuration
+export interface BrandingSettings {
+    companyName: string;
+    logoUrl: string;
+    primaryColor: string;
+    secondaryColor: string;
+    customCSS: string;
+}
 
-    // Monitoring & Alerts
-    monitoring: {
-        enabled: boolean;
-        metricsCollection: boolean;
-        alerting: {
-            enabled: boolean;
-            emailRecipients: string[];
-            webhookUrl?: string;
-            thresholds: {
-                errorRate: number; // percentage
-                responseTime: number; // milliseconds
-                memoryUsage: number; // percentage
-                diskUsage: number; // percentage
-            };
-        };
+// Simple system limits
+export interface SystemSettings {
+    maxUsers: number;
+    apiRateLimit: number; // requests per minute
+    memoryLimit: number; // MB
+}
+
+// Simple monitoring settings
+export interface MonitoringSettings {
+    enabled: boolean;
+    alertEmail: string[];
+    errorRateThreshold: number; // percentage
+    responseTimeThreshold: number; // milliseconds
+}
+
+// Utility functions for VSCode configuration integration
+export function getEnterpriseSettings(config: vscode.WorkspaceConfiguration): EnterpriseSettings {
+    return {
+        enabled: config.get('enabled', false),
+        ssoProvider: config.get('sso.provider', 'microsoft') as 'microsoft' | 'okta' | 'custom',
+        auditEnabled: config.get('audit.enabled', false),
+        multiTenant: config.get('multiTenant', false),
+        defaultTenant: config.get('defaultTenant', 'default'),
+        features: {
+            offlineMode: config.get('features.offlineMode', true),
+            apiIntegration: config.get('features.apiIntegration', true),
+            taskStreaming: config.get('features.taskStreaming', false),
+            advancedReporting: config.get('features.advancedReporting', false),
+            dataExport: config.get('features.dataExport', true),
+            bulkOperations: config.get('features.bulkOperations', false),
+            customBranding: config.get('features.customBranding', false),
+            userManagement: config.get('features.userManagement', false),
+            webhookIntegration: config.get('features.webhookIntegration', false),
+            performanceMonitoring: config.get('features.performanceMonitoring', false)
+        }
     };
 }
 
-// Default Enterprise Configuration
-export const DEFAULT_ENTERPRISE_CONFIG: EnterpriseConfiguration = {
-    version: '1.0.0',
-    lastUpdated: new Date().toISOString(),
-    environment: {
-        environmentType: 'production',
-        deploymentMode: 'cloud',
-        region: 'us-east-1',
-        loadBalancing: false,
-        clustering: false
-    },
-    multiTenant: false,
-    defaultTenant: 'default',
-    tenants: {
-        default: {
-            tenantId: 'default',
-            displayName: 'Default Organization',
-            ssoProvider: 'microsoft',
-            clientId: '',
-            scopes: ['openid', 'profile', 'email'],
-            branding: {
-                companyName: 'Your Company',
-                primaryColor: '#0078d4',
-                secondaryColor: '#106ebe',
-                textColor: '#323130'
-            },
-            complianceProfile: {
-                dataRetention: {
-                    userDataDays: 365,
-                    auditLogsDays: 2555, // 7 years
-                    taskDataDays: 1095, // 3 years
-                    autoDelete: false
-                },
-                encryption: {
-                    atRest: true,
-                    inTransit: true,
-                    keyRotation: true,
-                    keyRotationDays: 90
-                },
-                accessControl: {
-                    requireMFA: false,
-                    sessionTimeout: 480, // 8 hours
-                    maxConcurrentSessions: 3,
-                    ipWhitelisting: [],
-                    geographicRestrictions: []
-                },
-                dataExport: {
-                    enabled: true,
-                    requireApproval: false,
-                    approverRoles: ['admin'],
-                    maxExportSize: 100, // MB
-                    allowedFormats: ['json', 'csv']
-                }
-            }
-        }
-    },
-    features: {
-        ssoRequired: false,
-        ssoEnforcement: 'optional',
-        offlineMode: true,
-        localAuthentication: true,
-        apiIntegration: true,
-        taskStreaming: false,
-        webhookIntegration: false,
-        thirdPartyConnectors: false,
-        customApiEndpoints: false,
-        advancedReporting: false,
-        analyticsCollection: false,
-        performanceMonitoring: false,
-        errorReporting: true,
-        dataExport: true,
-        bulkOperations: false,
-        dataImport: false,
-        backupRestore: false,
-        customBranding: false,
-        darkModeForced: false,
-        compactView: false,
-        advancedFiltering: true,
-        multiTenant: false,
-        userManagement: false,
-        roleBasedAccess: false,
-        auditLogging: false,
-        complianceMode: false,
-        debugMode: false,
-        telemetry: false,
-        betaFeatures: false,
-        adminOverrides: {}
-    },
-    audit: {
-        enabled: false,
-        level: 'standard',
-        destinations: [
-            {
-                type: 'local',
-                enabled: true
-            }
-        ],
-        retention: 365,
-        sensitiveDataMasking: true,
-        includeUserActions: true,
-        includeSystemEvents: false,
-        includePerformanceMetrics: false,
-        batchSize: 100,
-        flushInterval: 60000, // 1 minute
-        encryptLogs: false
-    },
-    compliance: {
-        dataRetention: {
-            userDataDays: 365,
-            auditLogsDays: 2555,
-            taskDataDays: 1095,
-            autoDelete: false
-        },
-        encryption: {
-            atRest: false,
-            inTransit: true,
-            keyRotation: false,
-            keyRotationDays: 90
-        },
-        accessControl: {
-            requireMFA: false,
-            sessionTimeout: 480,
-            maxConcurrentSessions: 5,
-            ipWhitelisting: [],
-            geographicRestrictions: []
-        },
-        dataExport: {
-            enabled: true,
-            requireApproval: false,
-            approverRoles: ['admin'],
-            maxExportSize: 100,
-            allowedFormats: ['json', 'csv']
-        }
-    },
-    security: {
-        passwordPolicy: {
-            minLength: 8,
-            requireUppercase: true,
-            requireLowercase: true,
-            requireNumbers: true,
-            requireSpecialChars: false,
-            expirationDays: 90
-        },
-        networkSecurity: {
-            allowedDomains: [],
-            blockedDomains: [],
-            requireHttps: true,
-            certificateValidation: true
-        },
-        contentSecurity: {
-            allowScriptExecution: false,
-            allowExternalResources: true,
-            sanitizeInputs: true,
-            validateFileUploads: true
-        }
-    },
-    globalBranding: {
-        companyName: 'AiDM',
-        primaryColor: '#0078d4',
-        secondaryColor: '#106ebe',
-        textColor: '#323130'
-    },
-    system: {
-        maxUsers: 1000,
-        maxTenantsPerInstance: 10,
-        apiRateLimit: 1000,
-        concurrentConnections: 100,
-        memoryLimit: 512,
-        diskUsageLimit: 1024
-    },
-    integrations: {
-        microsoft: {
-            enabled: true,
-            defaultScopes: ['openid', 'profile', 'email', 'User.Read']
-        },
-        okta: {
-            enabled: false
-        },
-        slack: {
-            enabled: false
-        },
-        teams: {
-            enabled: false
-        }
-    },
-    monitoring: {
-        enabled: false,
-        metricsCollection: false,
-        alerting: {
-            enabled: false,
-            emailRecipients: [],
-            thresholds: {
-                errorRate: 5,
-                responseTime: 5000,
-                memoryUsage: 80,
-                diskUsage: 85
-            }
-        }
-    }
-};
+export function getSSOSettings(config: vscode.WorkspaceConfiguration): SSOSettings {
+    return {
+        provider: config.get('sso.provider', 'microsoft') as 'microsoft' | 'okta' | 'custom',
+        enforcement: config.get('sso.enforcement', 'optional') as 'optional' | 'required' | 'strict',
+        clientId: config.get('sso.clientId', ''),
+        authority: config.get('sso.authority', ''),
+        scopes: config.get('sso.scopes', ['openid', 'profile', 'email'])
+    };
+}
 
-// Configuration validation functions
-export function validateEnterpriseConfig(config: Partial<EnterpriseConfiguration>): { valid: boolean; errors: string[] } {
-    const errors: string[] = [];
+export function getAuditSettings(config: vscode.WorkspaceConfiguration): AuditSettings {
+    return {
+        enabled: config.get('audit.enabled', false),
+        level: config.get('audit.level', 'standard') as 'minimal' | 'standard' | 'comprehensive',
+        retention: config.get('audit.retention', 365),
+        sensitiveDataMasking: config.get('audit.sensitiveDataMasking', true)
+    };
+}
 
-    // Validate version
-    if (!config.version) {
-        errors.push('Configuration version is required');
-    }
+export function getComplianceSettings(config: vscode.WorkspaceConfiguration): ComplianceSettings {
+    return {
+        dataRetentionDays: config.get('compliance.dataRetentionDays', 365),
+        encryptionAtRest: config.get('compliance.encryptionAtRest', false),
+        encryptionInTransit: config.get('compliance.encryptionInTransit', true),
+        requireMFA: config.get('compliance.requireMFA', false),
+        sessionTimeout: config.get('compliance.sessionTimeout', 480),
+        maxConcurrentSessions: config.get('compliance.maxConcurrentSessions', 3),
+        ipWhitelist: config.get('compliance.ipWhitelist', [])
+    };
+}
 
-    // Validate tenants if multi-tenant is enabled
-    if (config.multiTenant && (!config.tenants || Object.keys(config.tenants).length === 0)) {
-        errors.push('Multi-tenant mode requires at least one tenant configuration');
-    }
+export function getBrandingSettings(config: vscode.WorkspaceConfiguration): BrandingSettings {
+    return {
+        companyName: config.get('branding.companyName', ''),
+        logoUrl: config.get('branding.logoUrl', ''),
+        primaryColor: config.get('branding.primaryColor', '#0078d4'),
+        secondaryColor: config.get('branding.secondaryColor', '#106ebe'),
+        customCSS: config.get('branding.customCSS', '')
+    };
+}
 
-    // Validate default tenant exists
-    if (config.defaultTenant && config.tenants && !config.tenants[config.defaultTenant]) {
-        errors.push(`Default tenant '${config.defaultTenant}' not found in tenant configurations`);
-    }
+export function getSystemSettings(config: vscode.WorkspaceConfiguration): SystemSettings {
+    return {
+        maxUsers: config.get('system.maxUsers', 1000),
+        apiRateLimit: config.get('system.apiRateLimit', 1000),
+        memoryLimit: config.get('system.memoryLimit', 512)
+    };
+}
 
-    // Validate audit destinations
-    if (config.audit?.enabled && (!config.audit.destinations || config.audit.destinations.length === 0)) {
-        errors.push('Audit logging enabled but no destinations configured');
-    }
+export function getMonitoringSettings(config: vscode.WorkspaceConfiguration): MonitoringSettings {
+    return {
+        enabled: config.get('monitoring.enabled', false),
+        alertEmail: config.get('monitoring.alertEmail', []),
+        errorRateThreshold: config.get('monitoring.errorRateThreshold', 5),
+        responseTimeThreshold: config.get('monitoring.responseTimeThreshold', 5000)
+    };
+}
 
-    // Validate compliance settings
-    if (config.compliance?.accessControl?.sessionTimeout && config.compliance.accessControl.sessionTimeout < 5) {
-        errors.push('Session timeout must be at least 5 minutes');
-    }
+// Simple feature flag evaluation
+export function isFeatureEnabled(settings: EnterpriseSettings, feature: keyof EnterpriseFeatures): boolean {
+    return settings.features[feature] || false;
+}
 
-    // Validate system limits
-    if (config.system?.maxUsers && config.system.maxUsers < 1) {
-        errors.push('Maximum users must be at least 1');
-    }
+// Helper function to get all enterprise configuration from VSCode settings
+export function getFullEnterpriseConfig(): {
+    settings: EnterpriseSettings;
+    sso: SSOSettings;
+    audit: AuditSettings;
+    compliance: ComplianceSettings;
+    branding: BrandingSettings;
+    system: SystemSettings;
+    monitoring: MonitoringSettings;
+} {
+    const config = vscode.workspace.getConfiguration('aidmVscodeExtension.enterprise');
 
     return {
-        valid: errors.length === 0,
-        errors
+        settings: getEnterpriseSettings(config),
+        sso: getSSOSettings(config),
+        audit: getAuditSettings(config),
+        compliance: getComplianceSettings(config),
+        branding: getBrandingSettings(config),
+        system: getSystemSettings(config),
+        monitoring: getMonitoringSettings(config)
     };
 }
 
-export function mergeEnterpriseConfig(base: EnterpriseConfiguration, override: Partial<EnterpriseConfiguration>): EnterpriseConfiguration {
-    return {
-        ...base,
-        ...override,
-        features: { ...base.features, ...override.features },
-        audit: { ...base.audit, ...override.audit },
-        compliance: { ...base.compliance, ...override.compliance },
-        security: { ...base.security, ...override.security },
-        globalBranding: { ...base.globalBranding, ...override.globalBranding },
-        system: { ...base.system, ...override.system },
-        integrations: { ...base.integrations, ...override.integrations },
-        monitoring: { ...base.monitoring, ...override.monitoring },
-        tenants: { ...base.tenants, ...override.tenants }
-    };
-}
-
-// Feature flag evaluation
-export function isFeatureEnabled(config: EnterpriseConfiguration, feature: keyof EnterpriseFeatureFlags): boolean {
-    // Check admin overrides first
-    if (config.features.adminOverrides[feature] !== undefined) {
-        return config.features.adminOverrides[feature];
-    }
-
-    // Check feature flag
-    return config.features[feature] || false;
-}
-
-// Tenant-specific feature evaluation
-export function isFeatureEnabledForTenant(config: EnterpriseConfiguration, tenantId: string, feature: keyof EnterpriseFeatureFlags): boolean {
-    // Global feature check first
-    if (!isFeatureEnabled(config, feature)) {
-        return false;
-    }
-
-    // Tenant-specific overrides could be added here in the future
-    return true;
-}
-
-// Configuration type guards
-export function isMultiTenant(config: EnterpriseConfiguration): boolean {
-    return config.multiTenant && Object.keys(config.tenants).length > 1;
-}
-
-export function isComplianceModeEnabled(config: EnterpriseConfiguration): boolean {
-    return isFeatureEnabled(config, 'complianceMode');
-}
-
-export function isAuditingEnabled(config: EnterpriseConfiguration): boolean {
-    return config.audit.enabled && isFeatureEnabled(config, 'auditLogging');
+// Simple validation helper
+export function isEnterpriseEnabled(): boolean {
+    const config = vscode.workspace.getConfiguration('aidmVscodeExtension.enterprise');
+    return config.get('enabled', false);
 }
