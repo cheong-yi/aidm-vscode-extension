@@ -1,14 +1,25 @@
 {
-  "lastRunDate": "2025-09-11T09:15:52Z",
+  "lastRunDate": "2025-09-29T10:46:07Z",
   "totalTests": 0,
   "passedTests": 0,
   "failedTests": 0,
-  "executionTime": 86536,
-  "failingTestsList": [],
+  "executionTime": 2264,
+  "failingTestsList": [
+    {
+      "name": "Test execution failed",
+      "file": "unknown",
+      "line": null,
+      "error": "Unable to parse test output - check console for details",
+      "errorType": "ExecutionError",
+      "duration": 0,
+      "stackTrace": "Raw output was not in expected JSON format"
+    }
+  ],
   "framework": "jest",
   "language": "typescript",
   "summary": {
-    "quickFix": "All tests passed",
-    "actionRequired": "No action needed"
-  }
+    "quickFix": "Test execution failed - check configuration",
+    "actionRequired": "Review test setup and ensure framework is properly configured"
+  },
+  "rawOutput": "node:internal/modules/cjs/loader:1383\n  const err = new Error(message);\n              ^\n\nError: Cannot find module 'jest-util'\nRequire stack:\n- /mnt/c/repos/aidm-vscode-extension/node_modules/jest-cli/build/run.js\n- /mnt/c/repos/aidm-vscode-extension/node_modules/jest-cli/build/index.js\n- /mnt/c/repos/aidm-vscode-extension/node_modules/jest-cli/bin/jest.js\n- /mnt/c/repos/aidm-vscode-extension/node_modules/jest/bin/jest.js\n    at Function._resolveFilename (node:internal/modules/cjs/loader:1383:15)\n    at defaultResolveImpl (node:internal/modules/cjs/loader:1025:19)\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1030:22)\n    at Function._load (node:internal/modules/cjs/loader:1192:37)\n    at TracingChannel.traceSync (node:diagnostics_channel:322:14)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:237:24)\n    at Module.require (node:internal/modules/cjs/loader:1463:12)\n    at require (node:internal/modules/helpers:147:16)\n    at _jestUtil (/mnt/c/repos/aidm-vscode-extension/node_modules/jest-cli/build/run.js:58:16)\n    at Object.run (/mnt/c/repos/aidm-vscode-extension/node_modules/jest-cli/build/run.js:133:9) {\n  code: 'MODULE_NOT_FOUND',\n  requireStack: [\n    '/mnt/c/repos/aidm-vscode-extension/node_modules/jest-cli/build/run.js',\n    '/mnt/c/repos/aidm-vscode-extension/node_modules/jest-cli/build/index.js',\n    '/mnt/c/repos/aidm-vscode-extension/node_modules/jest-cli/bin/jest.js',\n    '/mnt/c/repos/aidm-vscode-extension/node_modules/jest/bin/jest.js'\n  ]\n}\n\nNode.js v22.19.0\n"
 }
