@@ -93,18 +93,14 @@ export class AuthService {
             }
             await this.storeLoginMethod(is_ad_login_successful);
 
-            // check if the user is a super admin
+            // Super admin validation - no hardcoded defaults
             if (loginResponse.isSuperAdmin) {
-                
-                // check if superadmin has project or and agency
-                if (loginResponse.project_id === null && loginResponse.agency_id === null) {
-                    log('INFO', 'AuthService', 'Super admin has no project or agency', { username });
-                    
-                    // set project_id to 2 for super admins ( which is seasol for java )
-                    loginResponse.project_id = 2;
-                    loginResponse.agency_id = 9;
-                    loginResponse.agency_name = 'SWAT TESTING';
+                log('INFO', 'AuthService', 'Super admin login detected', { username });
 
+                // Super admins must have valid project/agency from backend
+                if (loginResponse.project_id === null || loginResponse.agency_id === null) {
+                    log('WARN', 'AuthService', 'Super admin missing required project/agency assignment', { username });
+                    throw new Error('Super admin account requires project and agency assignment. Please contact administrator.');
                 }
             }
 
@@ -213,14 +209,19 @@ export class AuthService {
 
     private async fetchUserInfo(token: string) {
         try {
-            const decodedToken:any = jwt.decode(token);
-            if (!decodedToken) {
-                throw new Error('Invalid token');
+            // Validate token expiry before processing
+            if (!this.isTokenValid(token)) {
+                throw new Error('Token is invalid or expired');
+            }
+
+            const decodedToken = this.safeDecodeToken(token);
+            if (!decodedToken || !decodedToken.upn) {
+                throw new Error('Invalid token structure');
             }
 
             const username = decodedToken.upn;
             const response = await this.loginWithCredentials(username, '', true);
-            
+
             if (!response.success) {
                 throw new Error('Failed to login with OAuth token');
             } else {
@@ -327,5 +328,69 @@ export class AuthService {
      */
     public getAvailableAgencies() {
         return this.agencyService.getAgencies();
+    }
+
+    /**
+     * Safely decode JWT token without signature verification
+     * Only used for extracting claims after token validation
+     * @param token JWT token to decode
+     * @returns Decoded token payload or null if invalid
+     */
+    private safeDecodeToken(token: string): any {
+        try {
+            const decoded = jwt.decode(token, { complete: false });
+            return decoded;
+        } catch (error) {
+            log('ERROR', 'AuthService', 'Failed to decode token', { error });
+            return null;
+        }
+    }
+
+    /**
+     * Validate token expiry and basic structure
+     * @param token JWT token to validate
+     * @returns true if token is valid and not expired
+     */
+    private isTokenValid(token: string): boolean {
+        try {
+            const decoded = this.safeDecodeToken(token);
+            if (!decoded) {
+                return false;
+            }
+
+            // Check if token has expiry claim
+            if (!decoded.exp) {
+                log('WARN', 'AuthService', 'Token missing expiry claim');
+                return false;
+            }
+
+            // Check if token is expired (exp is in seconds, Date.now() is in milliseconds)
+            const currentTime = Math.floor(Date.now() / 1000);
+            if (decoded.exp < currentTime) {
+                log('WARN', 'AuthService', 'Token has expired', {
+                    exp: decoded.exp,
+                    current: currentTime
+                });
+                return false;
+            }
+
+            return true;
+        } catch (error) {
+            log('ERROR', 'AuthService', 'Error validating token', { error });
+            return false;
+        }
+    }
+
+    /**
+     * Check if current user's token is still valid
+     * Should be called before making authenticated API requests
+     * @returns true if authenticated with valid token
+     */
+    public isCurrentTokenValid(): boolean {
+        const currentState = this.authState;
+        if (!currentState.isLoggedIn || !currentState.token) {
+            return false;
+        }
+        return this.isTokenValid(currentState.token);
     }
 }
