@@ -22,6 +22,7 @@ import {
     isComplianceModeEnabled,
     isAuditingEnabled
 } from '../common/enterpriseConfig';
+import { ConfigService } from './configService';
 
 export interface AuditEvent {
     timestamp: string;
@@ -66,37 +67,28 @@ export class EnterpriseManager {
     private auditEventQueue: AuditEvent[] = [];
     private sessionCleanupInterval?: NodeJS.Timeout;
     private auditFlushInterval?: NodeJS.Timeout;
-    private configWatcher?: vscode.FileSystemWatcher;
+    private configService: ConfigService;
 
     constructor(private context: vscode.ExtensionContext) {
         this.config = DEFAULT_ENTERPRISE_CONFIG;
+        this.configService = new ConfigService(context);
         this.initializeConfiguration();
         this.startSessionCleanup();
         this.startAuditFlushing();
     }
 
     /**
-     * Initialize enterprise configuration from VSCode settings and external config file
+     * Initialize enterprise configuration using ConfigService
      */
     private async initializeConfiguration(): Promise<void> {
         try {
-            // Load from VSCode settings
-            const vscodeConfig = this.loadVSCodeConfiguration();
+            // Load from VSCode settings via ConfigService
+            const vscodeConfig = this.configService.getFullEnterpriseConfiguration();
 
-            // Load from external config file if specified
-            let fileConfig: Partial<EnterpriseConfiguration> = {};
-            const configPath = vscodeConfig.configPath;
-            if (configPath) {
-                fileConfig = await this.loadConfigurationFile(configPath);
-            }
+            // Convert ConfigService format to full EnterpriseConfiguration
+            this.config = this.convertToEnterpriseConfiguration(vscodeConfig);
 
-            // Merge configurations (file overrides VSCode settings, VSCode settings override defaults)
-            this.config = mergeEnterpriseConfig(
-                mergeEnterpriseConfig(DEFAULT_ENTERPRISE_CONFIG, vscodeConfig),
-                fileConfig
-            );
-
-            // Validate merged configuration
+            // Validate configuration
             const validation = validateEnterpriseConfig(this.config);
             if (!validation.valid) {
                 await this.auditEvent({
@@ -120,10 +112,10 @@ export class EnterpriseManager {
                 });
             }
 
-            // Watch for configuration file changes
-            if (configPath) {
-                this.watchConfigurationFile(configPath);
-            }
+            // Watch for configuration changes
+            this.configService.onConfigChanged(() => {
+                this.initializeConfiguration();
+            });
 
         } catch (error) {
             await this.auditEvent({
@@ -141,42 +133,41 @@ export class EnterpriseManager {
     }
 
     /**
-     * Load configuration from VSCode settings
+     * Convert ConfigService format to full EnterpriseConfiguration
      */
-    private loadVSCodeConfiguration(): Partial<EnterpriseConfiguration> {
-        const config = vscode.workspace.getConfiguration('aidmVscodeExtension.enterprise');
-
-        const vscodeConfig: Partial<EnterpriseConfiguration> = {
-            multiTenant: config.get('multiTenant', false),
-            defaultTenant: config.get('defaultTenant', 'default'),
+    private convertToEnterpriseConfiguration(config: any): EnterpriseConfiguration {
+        const enterpriseConfig: EnterpriseConfiguration = {
+            ...DEFAULT_ENTERPRISE_CONFIG,
+            multiTenant: config.multiTenant,
+            defaultTenant: config.defaultTenant,
 
             features: {
-                ssoRequired: config.get('sso.enforcement', 'optional') !== 'optional',
-                ssoEnforcement: config.get('sso.enforcement', 'optional') as any,
-                offlineMode: config.get('features.offlineMode', true),
-                localAuthentication: config.get('sso.enforcement', 'optional') === 'optional',
-                apiIntegration: config.get('features.apiIntegration', true),
-                taskStreaming: config.get('features.taskStreaming', false),
-                webhookIntegration: config.get('features.webhookIntegration', false),
+                ssoRequired: config.sso.enforcement !== 'optional',
+                ssoEnforcement: config.sso.enforcement,
+                offlineMode: config.features.offlineMode,
+                localAuthentication: config.sso.enforcement === 'optional',
+                apiIntegration: config.features.apiIntegration,
+                taskStreaming: config.features.taskStreaming,
+                webhookIntegration: config.features.webhookIntegration,
                 thirdPartyConnectors: false,
                 customApiEndpoints: false,
-                advancedReporting: config.get('features.advancedReporting', false),
-                analyticsCollection: config.get('monitoring.enabled', false),
-                performanceMonitoring: config.get('features.performanceMonitoring', false),
+                advancedReporting: config.features.advancedReporting,
+                analyticsCollection: config.monitoring.enabled,
+                performanceMonitoring: config.features.performanceMonitoring,
                 errorReporting: true,
-                dataExport: config.get('features.dataExport', true),
-                bulkOperations: config.get('features.bulkOperations', false),
+                dataExport: config.features.dataExport,
+                bulkOperations: config.features.bulkOperations,
                 dataImport: false,
                 backupRestore: false,
-                customBranding: config.get('features.customBranding', false),
+                customBranding: config.features.customBranding,
                 darkModeForced: false,
                 compactView: false,
                 advancedFiltering: true,
-                multiTenant: config.get('multiTenant', false),
-                userManagement: config.get('features.userManagement', false),
+                multiTenant: config.multiTenant,
+                userManagement: config.features.userManagement,
                 roleBasedAccess: false,
-                auditLogging: config.get('audit.enabled', false),
-                complianceMode: config.get('compliance.dataRetentionDays', 365) > 365,
+                auditLogging: config.audit.enabled,
+                complianceMode: config.compliance.dataRetentionDays > 365,
                 debugMode: false,
                 telemetry: false,
                 betaFeatures: false,
@@ -184,14 +175,14 @@ export class EnterpriseManager {
             },
 
             audit: {
-                enabled: config.get('audit.enabled', false),
-                level: config.get('audit.level', 'standard') as any,
-                destinations: (config.get('audit.destinations', ['local']) as string[]).map(dest => ({
+                enabled: config.audit.enabled,
+                level: config.audit.level,
+                destinations: config.audit.destinations.map((dest: string) => ({
                     type: dest as any,
                     enabled: true
                 })),
-                retention: config.get('audit.retention', 365),
-                sensitiveDataMasking: config.get('audit.sensitiveDataMasking', true),
+                retention: config.audit.retention,
+                sensitiveDataMasking: config.audit.sensitiveDataMasking,
                 includeUserActions: true,
                 includeSystemEvents: false,
                 includePerformanceMetrics: false,
@@ -202,26 +193,26 @@ export class EnterpriseManager {
 
             compliance: {
                 dataRetention: {
-                    userDataDays: config.get('compliance.dataRetentionDays', 365),
-                    auditLogsDays: config.get('audit.retention', 365),
-                    taskDataDays: config.get('compliance.dataRetentionDays', 365),
+                    userDataDays: config.compliance.dataRetentionDays,
+                    auditLogsDays: config.audit.retention,
+                    taskDataDays: config.compliance.dataRetentionDays,
                     autoDelete: false
                 },
                 encryption: {
-                    atRest: config.get('compliance.encryptionAtRest', false),
-                    inTransit: config.get('compliance.encryptionInTransit', true),
+                    atRest: config.compliance.encryptionAtRest,
+                    inTransit: config.compliance.encryptionInTransit,
                     keyRotation: false,
                     keyRotationDays: 90
                 },
                 accessControl: {
-                    requireMFA: config.get('compliance.requireMFA', false),
-                    sessionTimeout: config.get('compliance.sessionTimeout', 480),
-                    maxConcurrentSessions: config.get('compliance.maxConcurrentSessions', 3),
-                    ipWhitelisting: config.get('compliance.ipWhitelist', []),
+                    requireMFA: config.compliance.requireMFA,
+                    sessionTimeout: config.compliance.sessionTimeout,
+                    maxConcurrentSessions: config.compliance.maxConcurrentSessions,
+                    ipWhitelisting: config.compliance.ipWhitelist,
                     geographicRestrictions: []
                 },
                 dataExport: {
-                    enabled: config.get('features.dataExport', true),
+                    enabled: config.features.dataExport,
                     requireApproval: false,
                     approverRoles: ['admin'],
                     maxExportSize: 100,
@@ -230,103 +221,61 @@ export class EnterpriseManager {
             },
 
             globalBranding: {
-                companyName: config.get('branding.companyName', ''),
-                logoUrl: config.get('branding.logoUrl', ''),
-                primaryColor: config.get('branding.primaryColor', '#0078d4'),
-                secondaryColor: config.get('branding.secondaryColor', '#106ebe'),
-                customCSS: config.get('branding.customCSS', '')
+                companyName: config.branding.companyName,
+                logoUrl: config.branding.logoUrl,
+                primaryColor: config.branding.primaryColor,
+                secondaryColor: config.branding.secondaryColor,
+                customCSS: config.branding.customCSS
             },
 
             system: {
-                maxUsers: config.get('system.maxUsers', 1000),
+                maxUsers: config.system.maxUsers,
                 maxTenantsPerInstance: 10,
-                apiRateLimit: config.get('system.apiRateLimit', 1000),
+                apiRateLimit: config.system.apiRateLimit,
                 concurrentConnections: 100,
-                memoryLimit: config.get('system.memoryLimit', 512),
+                memoryLimit: config.system.memoryLimit,
                 diskUsageLimit: 1024
             },
 
             monitoring: {
-                enabled: config.get('monitoring.enabled', false),
-                metricsCollection: config.get('monitoring.enabled', false),
+                enabled: config.monitoring.enabled,
+                metricsCollection: config.monitoring.enabled,
                 alerting: {
-                    enabled: config.get('monitoring.enabled', false),
-                    emailRecipients: config.get('monitoring.alertEmail', []),
+                    enabled: config.monitoring.enabled,
+                    emailRecipients: config.monitoring.alertEmail,
                     thresholds: {
-                        errorRate: config.get('monitoring.errorRateThreshold', 5),
-                        responseTime: config.get('monitoring.responseTimeThreshold', 5000),
+                        errorRate: config.monitoring.errorRateThreshold,
+                        responseTime: config.monitoring.responseTimeThreshold,
                         memoryUsage: 80,
                         diskUsage: 85
                     }
                 }
-            }
+            },
+
+            tenants: {}
         };
 
         // Add tenant configuration if enabled
-        if (vscodeConfig.multiTenant) {
-            const defaultTenantId = vscodeConfig.defaultTenant || 'default';
-            vscodeConfig.tenants = {
+        if (config.multiTenant) {
+            const defaultTenantId = config.defaultTenant || 'default';
+            enterpriseConfig.tenants = {
                 [defaultTenantId]: {
                     tenantId: defaultTenantId,
-                    displayName: config.get('branding.companyName', 'Default Organization'),
-                    ssoProvider: config.get('sso.provider', 'microsoft') as any,
-                    customAuthority: config.get('sso.authority', ''),
-                    clientId: config.get('sso.clientId', ''),
-                    scopes: config.get('sso.scopes', ['openid', 'profile', 'email']),
-                    branding: vscodeConfig.globalBranding!,
-                    complianceProfile: vscodeConfig.compliance!
+                    displayName: config.branding.companyName || 'Default Organization',
+                    ssoProvider: config.sso.provider,
+                    customAuthority: config.sso.authority,
+                    clientId: config.sso.clientId,
+                    scopes: config.sso.scopes,
+                    branding: enterpriseConfig.globalBranding,
+                    complianceProfile: enterpriseConfig.compliance
                 }
             };
         }
 
-        return vscodeConfig;
+        return enterpriseConfig;
     }
 
-    /**
-     * Load configuration from external JSON file
-     */
-    private async loadConfigurationFile(configPath: string): Promise<Partial<EnterpriseConfiguration>> {
-        try {
-            const absolutePath = path.isAbsolute(configPath)
-                ? configPath
-                : path.join(vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || '', configPath);
 
-            if (!fs.existsSync(absolutePath)) {
-                throw new Error(`Configuration file not found: ${absolutePath}`);
-            }
-
-            const configContent = fs.readFileSync(absolutePath, 'utf8');
-            const config = JSON.parse(configContent) as Partial<EnterpriseConfiguration>;
-
-            return config;
-        } catch (error) {
-            throw new Error(`Failed to load configuration file: ${error}`);
-        }
-    }
-
-    /**
-     * Watch configuration file for changes
-     */
-    private watchConfigurationFile(configPath: string): void {
-        const absolutePath = path.isAbsolute(configPath)
-            ? configPath
-            : path.join(vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || '', configPath);
-
-        this.configWatcher = vscode.workspace.createFileSystemWatcher(absolutePath);
-
-        this.configWatcher.onDidChange(async () => {
-            await this.auditEvent({
-                eventType: 'configuration_change',
-                action: 'configuration_file_changed',
-                details: { configPath },
-                severity: 'medium',
-                success: true
-            });
-
-            // Reload configuration
-            await this.initializeConfiguration();
-        });
-    }
 
     /**
      * Get current enterprise configuration
@@ -363,7 +312,7 @@ export class EnterpriseManager {
      * Check if a feature is enabled globally
      */
     public isFeatureEnabled(feature: keyof EnterpriseFeatureFlags): boolean {
-        return isFeatureEnabled(this.config, feature);
+        return this.configService.isFeatureEnabled(feature as string) || isFeatureEnabled(this.config, feature);
     }
 
     /**
@@ -643,8 +592,8 @@ export class EnterpriseManager {
             clearInterval(this.auditFlushInterval);
         }
 
-        if (this.configWatcher) {
-            this.configWatcher.dispose();
+        if (this.configService) {
+            this.configService.dispose();
         }
 
         // Flush remaining audit events before shutdown
