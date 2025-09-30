@@ -352,7 +352,7 @@ export class TaskWebviewController implements WebviewController {
       return true; // No auth required or no auth service available
     }
 
-    return this.authService.authState.isLoggedIn && this.authService.isCurrentTokenValid();
+    return this.authService.authState.isLoggedIn;
   }
 
   /**

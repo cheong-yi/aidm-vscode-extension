@@ -179,7 +179,9 @@ export interface TaskErrorResponse {
     | "status_update"
     | "dependency_resolution"
     | "test_results"
-    | "file_validation";
+    | "file_validation"
+    | "api_fetch"
+    | "stream_connection";
   suggestedAction?:
     | "retry"
     | "manual_update"

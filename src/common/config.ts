@@ -38,7 +38,8 @@ export const CONFIG = {
       return config.clientId;
     },
     scopes: 'openid profile email',
-    redirectUri: 'http://localhost:3000/callback'
+    redirectUri: 'http://localhost:3000/callback',
+    timeoutSeconds: 30
   },
   api: {
     get baseUrl() {
