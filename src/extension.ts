@@ -190,7 +190,7 @@ let tasksDataService: TasksDataService;
 let taskDetailProvider: TaskDetailCardProvider;
 let taskWebviewProvider: TaskWebviewProvider;
 let taskApiIntegration: TaskApiIntegrationSimple;
-let authService: AuthService;
+let authService: AuthService | undefined;
 
 /**
  * Setup comprehensive UI event synchronization between tree view and detail panel
@@ -963,7 +963,7 @@ export async function activate(
     // Register configuration change listener
     try {
       const configChangeDisposable = vscode.workspace.onDidChangeConfiguration(
-        async (event) => {
+        async (event: vscode.ConfigurationChangeEvent) => {
           if (event.affectsConfiguration(EXTENSION_CONFIG.configNamespace)) {
 
             const config = vscode.workspace.getConfiguration();

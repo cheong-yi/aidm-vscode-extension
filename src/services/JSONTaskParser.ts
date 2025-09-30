@@ -175,7 +175,7 @@ export class JSONTaskParser {
         } else {
         }
       } catch (error) {
-        console.error(`Error parsing task object:`, error);
+        console.error(`Error parsing task object:`, error instanceof Error ? error.message : String(error));
       }
     }
 
@@ -282,7 +282,7 @@ export class JSONTaskParser {
 
       return task;
     } catch (error) {
-      console.error("Error parsing task:", error);
+      console.error("Error parsing task:", error instanceof Error ? error.message : String(error));
       return null;
     }
   }

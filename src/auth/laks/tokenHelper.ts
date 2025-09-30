@@ -33,7 +33,9 @@ export class TokenHelper {
                 log('DEBUG', 'TokenHelper', 'Token stored securely');
                 return;
             } catch (error) {
-                log('ERROR', 'TokenHelper', 'Failed to store token securely, falling back to legacy', { error });
+                log('ERROR', 'TokenHelper', 'Failed to store token securely, falling back to legacy', {
+                    error: error instanceof Error ? error.message : String(error)
+                });
             }
         }
 
@@ -55,7 +57,9 @@ export class TokenHelper {
                     return secureToken;
                 }
             } catch (error) {
-                log('ERROR', 'TokenHelper', 'Failed to retrieve secure token, falling back to legacy', { error });
+                log('ERROR', 'TokenHelper', 'Failed to retrieve secure token, falling back to legacy', {
+                    error: error instanceof Error ? error.message : String(error)
+                });
             }
         }
 
@@ -89,13 +93,15 @@ export class TokenHelper {
                 promises.push(this.secureTokenManager.clearTokens());
                 log('DEBUG', 'TokenHelper', 'Cleared secure tokens');
             } catch (error) {
-                log('ERROR', 'TokenHelper', 'Failed to clear secure tokens', { error });
+                log('ERROR', 'TokenHelper', 'Failed to clear secure tokens', {
+                    error: error instanceof Error ? error.message : String(error)
+                });
             }
         }
 
         // Clear from legacy storage
         promises.push(
-            vscode.workspace.getConfiguration().update('tdlc-code-assist.auth.token', undefined, true)
+            Promise.resolve(vscode.workspace.getConfiguration().update('tdlc-code-assist.auth.token', undefined, true))
         );
 
         await Promise.allSettled(promises);
@@ -120,7 +126,9 @@ export class TokenHelper {
             try {
                 return await this.secureTokenManager.isTokenValid();
             } catch (error) {
-                log('ERROR', 'TokenHelper', 'Failed to validate token securely', { error });
+                log('ERROR', 'TokenHelper', 'Failed to validate token securely', {
+                    error: error instanceof Error ? error.message : String(error)
+                });
                 return false;
             }
         }
@@ -139,7 +147,9 @@ export class TokenHelper {
             try {
                 return await this.secureTokenManager.getTokenExpiry();
             } catch (error) {
-                log('ERROR', 'TokenHelper', 'Failed to get token expiry securely', { error });
+                log('ERROR', 'TokenHelper', 'Failed to get token expiry securely', {
+                    error: error instanceof Error ? error.message : String(error)
+                });
                 return null;
             }
         }

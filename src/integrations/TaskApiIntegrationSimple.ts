@@ -108,13 +108,13 @@ export class TaskApiIntegrationSimple {
       this.apiService = new TaskApiServiceSimple(serviceConfig, this.tokenProvider);
 
       // Connect events
-      this.apiService.onTasksUpdated.event((tasks) => {
+      this.apiService.onTasksUpdated.event((tasks: any[]) => {
         // Forward to existing TasksDataService
         this.tasksDataService.onTasksUpdated.fire(tasks);
         this.updateStatusIndicator();
       });
 
-      this.apiService.onError.event((error) => {
+      this.apiService.onError.event((error: Error) => {
         // Forward to existing TasksDataService
         this.tasksDataService.onError.fire(error);
         this.updateStatusIndicator();
@@ -158,7 +158,7 @@ export class TaskApiIntegrationSimple {
       const currentConfig = this.getApiConfig();
       const baseUrl = await vscode.window.showInputBox({
         prompt: 'Enter your organization\'s task API base URL',
-        placeholder: 'https://api.yourorganization.com',
+        placeHolder: 'https://api.yourorganization.com',
         value: currentConfig.baseUrl || '',
         validateInput: (value) => {
           if (!value?.trim()) return 'Base URL is required';

@@ -39,7 +39,7 @@ export class TaskApiConfigHelper {
       // Step 2: Get base URL
       const baseUrl = await vscode.window.showInputBox({
         prompt: 'Enter your task API base URL',
-        placeholder: 'https://api.yourcompany.com',
+        placeHolder: 'https://api.yourcompany.com',
         validateInput: (value) => {
           if (!value?.trim()) {
             return 'Base URL is required';
@@ -66,7 +66,7 @@ export class TaskApiConfigHelper {
       // Step 3: Get user ID
       const userId = await vscode.window.showInputBox({
         prompt: 'Enter your user ID for task filtering',
-        placeholder: 'your.email@company.com or user123',
+        placeHolder: 'your.email@company.com or user123',
         validateInput: (value) => {
           if (!value?.trim()) {
             return 'User ID is required for API task filtering';
@@ -85,7 +85,7 @@ export class TaskApiConfigHelper {
       // Step 4: Get auth token
       const authToken = await vscode.window.showInputBox({
         prompt: 'Enter your API authentication token',
-        placeholder: 'Bearer token or API key',
+        placeHolder: 'Bearer token or API key',
         password: true,
         validateInput: (value) => {
           if (!value?.trim()) {
@@ -298,16 +298,6 @@ export class TaskApiConfigHelper {
       // });
 
       throw new Error('TaskApiService test functionality has been removed');
-
-      const result = await service.testConnection();
-
-      if (result.success) {
-        vscode.window.showInformationMessage(
-          `✅ API connection successful! (${result.data.latency}ms latency)`
-        );
-      } else {
-        vscode.window.showErrorMessage(`❌ API connection failed: ${result.error}`);
-      }
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       vscode.window.showErrorMessage(`❌ Connection test error: ${message}`);

@@ -962,8 +962,6 @@ describe("Error Recovery Integration", () => {
 
       // Validate performance tracking
       const stats = errorHandler.getErrorStats();
-        component: "PerformanceMetricsTest",
-      });
 
       // Performance should be within acceptable bounds
       expect(executionTime).toBeLessThan(2000); // Should complete within 2 seconds

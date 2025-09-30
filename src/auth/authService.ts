@@ -86,8 +86,7 @@ export class AuthService {
 
                 return {
                     success: true,
-                    accessToken: refreshResult.accessToken,
-                    refreshToken: refreshResult.refreshToken
+                    token: refreshResult.accessToken
                 };
             } else {
                 log('WARN', 'AuthService', 'Token refresh failed - invalid response from credentials service');
@@ -228,13 +227,13 @@ export class AuthService {
 
             // Create a promise to handle success or error events
             const authPromise = new Promise<void>((resolve, reject) => {
-                localServer.events.once('success', (token) => {
+                localServer.events.once('success', (token: string) => {
                     log('INFO', 'AuthService', 'OAuth token received successfully');
                     received_token = token;
                     resolve(); // Resolve on success
                 });
 
-                localServer.events.once('error', (error) => {
+                localServer.events.once('error', (error: Error) => {
                     console.error('Authentication error:', error);
                     reject(error); // Reject on error
                 });
@@ -331,7 +330,7 @@ export class AuthService {
                 // Store token securely
                 promises.push(this.secureTokenManager.storeToken(value as string));
             } else {
-                promises.push(this.context.globalState.update(key, value));
+                promises.push(Promise.resolve(this.context.globalState.update(key, value)));
             }
         });
 
