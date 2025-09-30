@@ -1,6 +1,7 @@
 import axios, { AxiosRequestConfig } from 'axios';
 import { CONFIG } from '../../common/config';
 import { TokenHelper } from './tokenHelper';
+import { log } from '../../utils/logger';
 
 export async function exchangeCodeForToken(code: string): Promise<string> {
 
@@ -27,14 +28,14 @@ export async function exchangeCodeForToken(code: string): Promise<string> {
         
         if (accessToken) {
             TokenHelper.setToken(accessToken);
-            console.log('Access token successfully retrieved');
+            log('INFO', 'TokenService', 'Access token successfully retrieved');
             return accessToken;
         } else {
-            console.log('Access token is returned as empty');
+            log('WARN', 'TokenService', 'Access token response was empty');
             return '';
         }
     } catch (error) {
-        console.error('Token exchange error:', error);
+        log('ERROR', 'TokenService', 'Token exchange failed', { error: error instanceof Error ? error.message : 'Unknown error' });
         throw error;
     }
 }

@@ -49,11 +49,8 @@
   "activationEvents": [
     "onLanguage:typescript",
     "onCommand:aidm-vscode-extension.showStatus",
-    "onCommand:aidm-vscode-extension.runRooCodeDemo",
     "onCommand:aidm-vscode-extension.restartServer",
     "onCommand:aidm-vscode-extension.connectRemoteMCP",
-    "onCommand:aidm-vscode-extension.showDemoPanel",
-    "onCommand:aidm-vscode-extension.testActivation",
     "onCommand:aidm-vscode-extension.openConfiguration",
     "onCommand:aidm-vscode-extension.hello",
     "onCommand:aidm-vscode-extension.seedHoverContext",
@@ -127,6 +124,23 @@
           "type": "number",
           "default": 3005,
           "description": "Port for MCP server"
+        },
+        "aidmVscodeExtension.auth.tenantId": {
+          "type": "string",
+          "default": "common",
+          "description": "Azure AD tenant ID for authentication (use 'common' for multi-tenant applications)"
+        },
+        "aidmVscodeExtension.auth.clientId": {
+          "type": "string",
+          "default": "",
+          "description": "Azure AD application client ID for OAuth authentication"
+        },
+        "aidmVscodeExtension.api.baseUrl": {
+          "type": "string",
+          "default": "https://aidm-dev.accenture.com/dev",
+          "description": "Base URL for the AIDM API service",
+          "pattern": "^https://.*",
+          "patternErrorMessage": "Must be a valid HTTPS URL"
         },
         "aidmVscodeExtension.tasks.filePath": {
           "type": "string",

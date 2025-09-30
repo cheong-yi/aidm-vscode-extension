@@ -65,10 +65,34 @@ export class AuthService {
      */
     private async handleTokenRefresh(refreshToken: string): Promise<RefreshResult> {
         try {
-            // In a real implementation, this would call your refresh token endpoint
-            // For now, we'll return a failure as the current system doesn't support refresh tokens
-            log('WARN', 'AuthService', 'Token refresh not yet implemented in credentials service');
-            return { success: false, error: 'Token refresh not implemented' };
+            log('INFO', 'AuthService', 'Attempting token refresh');
+
+            // Call the credentials service to refresh the token
+            const refreshResult = await this.credentialsService.refreshToken(refreshToken);
+
+            if (refreshResult.success && refreshResult.accessToken) {
+                log('INFO', 'AuthService', 'Token refresh successful');
+
+                // Update the current auth state with the new token
+                const currentState = this.authState;
+                const updatedState: AuthState = {
+                    ...currentState,
+                    token: refreshResult.accessToken
+                };
+
+                // Save the updated state
+                await this.saveSessionState(updatedState);
+                authStateManager.updateState({ token: refreshResult.accessToken });
+
+                return {
+                    success: true,
+                    accessToken: refreshResult.accessToken,
+                    refreshToken: refreshResult.refreshToken
+                };
+            } else {
+                log('WARN', 'AuthService', 'Token refresh failed - invalid response from credentials service');
+                return { success: false, error: refreshResult.error || 'Invalid refresh response' };
+            }
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : 'Unknown error';
             log('ERROR', 'AuthService', 'Token refresh failed', { error: errorMessage });
@@ -205,7 +229,7 @@ export class AuthService {
             // Create a promise to handle success or error events
             const authPromise = new Promise<void>((resolve, reject) => {
                 localServer.events.once('success', (token) => {
-                    console.log('Received token:', token);
+                    log('INFO', 'AuthService', 'OAuth token received successfully');
                     received_token = token;
                     resolve(); // Resolve on success
                 });

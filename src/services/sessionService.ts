@@ -5,7 +5,7 @@
  */
 
 import * as vscode from 'vscode';
-import { log } from '../utils/logger';
+import { LoggerFactory } from '../utils/logger';
 
 export interface UserSession {
     sessionId: string;
@@ -29,6 +29,7 @@ export class SessionService {
     private cleanupInterval?: NodeJS.Timeout;
     private readonly sessionConfig: SessionConfig;
     private isDisposed = false;
+    private logger = LoggerFactory.getLogger('SessionService');
 
     constructor(
         private context: vscode.ExtensionContext,
@@ -42,7 +43,7 @@ export class SessionService {
             ...config
         };
 
-        log('INFO', 'SessionService', 'Initialized with session management', {
+        this.logger.info('Initialized with session management', {
             timeout: this.sessionConfig.sessionTimeoutMinutes + ' minutes',
             maxSessions: this.sessionConfig.maxConcurrentSessions
         });
@@ -86,7 +87,7 @@ export class SessionService {
                     new Date(a.startTime).getTime() - new Date(b.startTime).getTime())[0];
                 await this.terminateSession(oldestSession.sessionId);
 
-                log('INFO', 'SessionService', 'Terminated oldest session due to concurrent limit', {
+                this.logger.info('Terminated oldest session due to concurrent limit', {
                     userId,
                     tenantId,
                     terminatedSessionId: oldestSession.sessionId
@@ -95,7 +96,7 @@ export class SessionService {
 
             this.activeSessions.set(sessionId, session);
 
-            log('INFO', 'SessionService', 'Session created successfully', {
+            this.logger.info('Session created successfully', {
                 sessionId,
                 userId,
                 tenantId,
@@ -105,7 +106,7 @@ export class SessionService {
             return sessionId;
 
         } catch (error) {
-            log('ERROR', 'SessionService', 'Failed to create session', {
+            this.logger.error('Failed to create session', error, {
                 tenantId,
                 userId,
                 error: error instanceof Error ? error.message : 'Unknown error'
@@ -128,17 +129,17 @@ export class SessionService {
                 session.lastActivity = new Date().toISOString();
                 this.activeSessions.set(sessionId, session);
 
-                log('DEBUG', 'SessionService', 'Session activity updated', {
+                this.logger.debug('Session activity updated', {
                     sessionId,
                     userId: session.userId
                 });
             } else {
-                log('WARN', 'SessionService', 'Attempted to update inactive or missing session', {
+                this.logger.warn('Attempted to update inactive or missing session', {
                     sessionId
                 });
             }
         } catch (error) {
-            log('ERROR', 'SessionService', 'Failed to update session activity', {
+            this.logger.error('Failed to update session activity', error, {
                 sessionId,
                 error: error instanceof Error ? error.message : 'Unknown error'
             });
@@ -159,19 +160,19 @@ export class SessionService {
                 session.isActive = false;
                 this.activeSessions.set(sessionId, session);
 
-                log('INFO', 'SessionService', 'Session terminated', {
+                this.logger.info('Session terminated', {
                     sessionId,
                     userId: session.userId,
                     tenantId: session.tenantId,
                     duration: Math.floor((Date.now() - new Date(session.startTime).getTime()) / 1000 / 60) + ' minutes'
                 });
             } else {
-                log('WARN', 'SessionService', 'Attempted to terminate non-existent session', {
+                this.logger.warn('Attempted to terminate non-existent session', {
                     sessionId
                 });
             }
         } catch (error) {
-            log('ERROR', 'SessionService', 'Failed to terminate session', {
+            this.logger.error('Failed to terminate session', error, {
                 sessionId,
                 error: error instanceof Error ? error.message : 'Unknown error'
             });
@@ -254,7 +255,7 @@ export class SessionService {
                 }
 
                 if (expiredCount > 0) {
-                    log('INFO', 'SessionService', 'Session cleanup completed', {
+                    this.logger.info('Session cleanup completed', {
                         expiredSessions: expiredCount,
                         activeSessions: this.getSessionStats().active
                     });
@@ -269,13 +270,13 @@ export class SessionService {
                 }
 
             } catch (error) {
-                log('ERROR', 'SessionService', 'Session cleanup failed', {
+                this.logger.error('Session cleanup failed', error, {
                     error: error instanceof Error ? error.message : 'Unknown error'
                 });
             }
         }, this.sessionConfig.cleanupIntervalMinutes * 60 * 1000);
 
-        log('DEBUG', 'SessionService', 'Session cleanup started', {
+        this.logger.debug('Session cleanup started', {
             intervalMinutes: this.sessionConfig.cleanupIntervalMinutes
         });
     }
@@ -314,7 +315,7 @@ export class SessionService {
             this.activeSessions.set(session.sessionId, session);
         }
 
-        log('INFO', 'SessionService', 'SessionService disposed', {
+        this.logger.info('SessionService disposed', {
             terminatedSessions: activeSessions.length
         });
 

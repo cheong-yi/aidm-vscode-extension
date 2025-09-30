@@ -6,7 +6,6 @@ import { BusinessContextHover } from "./providers/hoverProvider";
 import { StatusBarManagerImpl } from "./ui/statusBar";
 import { ProcessManager, ProcessManagerConfig } from "./server/ProcessManager";
 import { ConnectionStatus } from "./types/extension";
-import { DemoPanel } from "./ui/demoPanel";
 import { ConfigurationPanel } from "./ui/configurationPanel";
 import {
   EXTENSION_CONFIG,
@@ -130,9 +129,6 @@ export function validateTasksFilePath(filePath: string): {
 
   // If it looks like an absolute path, warn but allow
   if (path.isAbsolute(trimmedPath)) {
-    console.warn(
-      `[Extension] Absolute path configured for tasks file: ${trimmedPath}`
-    );
     // Allow absolute paths but log warning
   }
 
@@ -151,9 +147,6 @@ async function handleConfigurationValidation(
 
   if (!filePath) {
     // Use default value
-    console.log(
-      "[Extension] No tasks file path configured, using default: tasks.json"
-    );
     return true;
   }
 
@@ -223,9 +216,7 @@ function setupUIEventSynchronization(
         try {
           // Note: TaskWebviewProvider doesn't have refresh method yet
           // Webview will update automatically when data changes
-          console.debug(
-            `UI Sync: Status change for task ${event.taskId} - webview will update automatically`
-          );
+          // Webview will update automatically
         } catch (error) {
           console.error("UI Sync: Error handling status change:", error);
         }
@@ -251,9 +242,7 @@ function setupUIEventSynchronization(
             }
           }
 
-          console.debug(
-            `UI Sync: Data update for ${tasks.length} tasks - webview will update automatically`
-          );
+          // Webview will update automatically
         } catch (error) {
           console.error("UI Sync: Error handling data update:", error);
         }
@@ -322,7 +311,7 @@ function setupUIEventSynchronization(
             vscode.window.showErrorMessage(errorMessage);
           }
 
-          console.warn("UI Sync: Service error handled:", error);
+          // Service error handled
         } catch (displayError) {
           console.error(
             "UI Sync: Error displaying error notification:",
@@ -342,12 +331,12 @@ function setupUIEventSynchronization(
       errorSubscription,
     ];
 
-    console.log("✅ UI event synchronization setup completed");
+    // UI event synchronization setup completed
 
     // Return subscriptions for cleanup in the calling function
     return subscriptions;
   } catch (error) {
-    console.error("❌ UI event synchronization setup failed:", error);
+    // UI event synchronization setup failed
     // Continue without full synchronization - basic functionality still works
     return [];
   }
@@ -356,24 +345,14 @@ function setupUIEventSynchronization(
 export async function activate(
   context: vscode.ExtensionContext
 ): Promise<void> {
-  console.log("=== ACTIVATION STEP 1: Starting ===");
-
   try {
-    console.log("=== ACTIVATION STEP 2: Basic setup ===");
-    console.log(`🚀 ${EXTENSION_CONFIG.displayName} activation started!`);
-    vscode.window.showInformationMessage(EXTENSION_CONFIG.activationMessage);
-
-    console.log("=== ACTIVATION STEP 3: Registering essential commands ===");
 
     // Essential commands only - REF-021
 
-    console.log("=== ACTIVATION STEP 4: Getting configuration ===");
     // Get configuration
     const config = vscode.workspace.getConfiguration();
-    console.log("✅ Configuration loaded");
+    vscode.window.showInformationMessage(EXTENSION_CONFIG.activationMessage);
 
-
-    console.log("=== ACTIVATION STEP 5: Building process config ===");
     // Get configured port or use smart port selection
     const configuredPort = config.get<number>(
       getConfigKey("mcpServer.port"),
@@ -404,36 +383,28 @@ export async function activate(
         ),
       },
     };
-    console.log("✅ Process config built:", processConfig);
 
-    console.log("=== ACTIVATION STEP 6: Initializing ProcessManager ===");
     try {
       processManager = new ProcessManager(processConfig);
-      console.log("✅ ProcessManager initialized");
     } catch (error) {
-      console.error("❌ ProcessManager initialization failed:", error);
+      console.error("ProcessManager initialization failed:", error);
       throw error;
     }
 
-    console.log("=== ACTIVATION STEP 7: Initializing MCPClient ===");
     try {
       mcpClient = new MCPClient(processConfig.port, processConfig.timeout);
-      console.log("✅ MCPClient initialized");
     } catch (error) {
-      console.error("❌ MCPClient initialization failed:", error);
+      console.error("MCPClient initialization failed:", error);
       throw error;
     }
 
-    console.log("=== ACTIVATION STEP 8: Initializing StatusBarManager ===");
     try {
       statusBarManager = new StatusBarManagerImpl(mcpClient);
-      console.log("✅ StatusBarManager initialized");
     } catch (error) {
-      console.error("❌ StatusBarManager initialization failed:", error);
+      console.error("StatusBarManager initialization failed:", error);
       throw error;
     }
 
-    console.log("=== ACTIVATION STEP 8.5: Initializing TasksDataService ===");
     try {
       const jsonParser = new JSONTaskParser();
       const mockDataProvider = new MockDataProvider();
@@ -444,36 +415,27 @@ export async function activate(
 
       // Task 6.1.2: Initialize TasksDataService after workspace is ready
       await tasksDataService.initialize();
-
-      console.log("✅ TasksDataService initialized");
     } catch (error) {
-      console.error("❌ TasksDataService initialization failed:", error);
+      console.error("TasksDataService initialization failed:", error);
       throw error;
     }
 
-    console.log("=== ACTIVATION STEP 8.5: Initializing Authentication Service (non-blocking) ===");
     try {
       authService = new AuthService(context);
-      console.log("✅ Authentication service initialized (progressive auth enabled)");
     } catch (error) {
-      console.warn("⚠️ Authentication service initialization failed (continuing with offline mode):", error);
+      console.warn("Authentication service initialization failed (continuing with offline mode):", error);
       // Don't throw - allow extension to continue without auth - PROGRESSIVE-002
       authService = undefined; // Explicitly set to undefined for clear state
     }
 
-    console.log("=== ACTIVATION STEP 8.6: Initializing Simple Task API Integration ===");
     try {
       taskApiIntegration = new TaskApiIntegrationSimple(tasksDataService, authService, context);
       await taskApiIntegration.initialize();
-      console.log("✅ Simple Task API integration initialized");
     } catch (error) {
-      console.warn("⚠️ Task API integration initialization failed (non-critical):", error);
+      console.warn("Task API integration initialization failed (non-critical):", error);
       // Don't throw - allow extension to continue without API integration
     }
 
-    console.log(
-      "=== ACTIVATION STEP 8.5.5: Setting up file validation error handling ==="
-    );
     try {
       // Task 4: Enhanced file validation error handling with user feedback
       const handleFileValidationError = async (
@@ -544,27 +506,19 @@ export async function activate(
       // Store the error handler for use in other parts of the extension
       (global as any).handleFileValidationError = handleFileValidationError;
 
-      console.log("✅ File validation error handling setup completed");
     } catch (error) {
-      console.error("❌ File validation error handling setup failed:", error);
+      console.error("File validation error handling setup failed:", error);
       // Continue without enhanced error handling
     }
 
 
-    console.log(
-      "=== ACTIVATION STEP 8.6: Initializing TaskDetailCardProvider ==="
-    );
     try {
       taskDetailProvider = new TaskDetailCardProvider();
-      console.log("✅ TaskDetailCardProvider initialized");
     } catch (error) {
-      console.error("❌ TaskDetailCardProvider initialization failed:", error);
+      console.error("TaskDetailCardProvider initialization failed:", error);
       throw error;
     }
 
-    console.log(
-      "=== ACTIVATION STEP 8.7: Initializing VSCode FileSystemWatcher ==="
-    );
     try {
       // Get configured tasks file path
       const config = vscode.workspace.getConfiguration("aidmVscodeExtension");
@@ -576,9 +530,6 @@ export async function activate(
       // Validate path format using existing validation
       const pathValidation = validateTasksFilePath(configuredTasksPath);
       if (!pathValidation.isValid) {
-        console.warn(
-          `[Extension] Invalid tasks file path: ${pathValidation.error}`
-        );
 
         const action = await vscode.window.showErrorMessage(
           `Invalid tasks file path: ${pathValidation.error}`,
@@ -602,9 +553,6 @@ export async function activate(
           );
         }
 
-        console.log(
-          "[Extension] Continuing without file watching due to invalid path"
-        );
         return; // Skip file watching setup
       }
 
@@ -622,7 +570,6 @@ export async function activate(
         // Setup change handlers
         const handleFileChange = async () => {
           try {
-            console.log("📁 Tasks file changed, refreshing data...");
             await tasksDataService.refreshTasks();
 
             if (taskDetailProvider) {
@@ -630,8 +577,6 @@ export async function activate(
                 console.error("Failed to refresh detail panel times:", error);
               });
             }
-
-            console.log("✅ Data refresh completed after file change");
           } catch (error) {
             console.error("❌ Error refreshing data after file change:", error);
           }
@@ -640,20 +585,13 @@ export async function activate(
         fileWatcher.onDidChange(handleFileChange);
         fileWatcher.onDidCreate(handleFileChange);
         fileWatcher.onDidDelete(() => {
-          console.log("⚠️ Tasks file deleted, using fallback data");
           // TasksDataService will handle fallback automatically
         });
 
         // Add to subscriptions for proper cleanup
         context.subscriptions.push(fileWatcher);
 
-        console.log(
-          `✅ VSCode FileSystemWatcher initialized for: ${configuredTasksPath}`
-        );
       } else {
-        console.log(
-          "[Extension] No workspace folders available for file watching"
-        );
       }
     } catch (error) {
       console.error(
@@ -740,12 +678,11 @@ export async function activate(
       context.subscriptions.push({
         dispose: () => {
           clearInterval(timeRefreshInterval);
-          console.log("Time refresh interval cleared");
+          // Time refresh interval cleared
         },
       });
-      console.log("✅ Periodic time refresh timer initialized");
     } catch (error) {
-      console.error("❌ Periodic time refresh setup failed:", error);
+      console.error("Periodic time refresh setup failed:", error);
       // Continue without periodic refresh
     }
 
@@ -762,9 +699,6 @@ export async function activate(
       },
     });
 
-    console.log(
-      "=== ACTIVATION STEP 8.10: Initializing TaskWebviewProvider ==="
-    );
     try {
       // Create TaskWebviewProvider with TasksDataService, context, and optional authService
       taskWebviewProvider = new TaskWebviewProvider(tasksDataService, context, authService);
@@ -777,18 +711,12 @@ export async function activate(
         );
       context.subscriptions.push(webviewProviderDisposable);
 
-      console.log("✅ TaskWebviewProvider registered successfully");
-
       // FIXED: Removed setTimeout and initializeData() call - webview now initializes itself
       // when VSCode calls resolveWebviewView() method, preventing race conditions
-      console.log(
-        "=== ACTIVATION STEP 8.10.5: Webview self-initialization enabled ==="
-      );
-
       // TaskWebviewProvider now handles its own initialization in resolveWebviewView()
       // This follows VSCode API best practices and prevents race conditions
     } catch (error) {
-      console.error("❌ TaskWebviewProvider registration failed:", error);
+      console.error("TaskWebviewProvider registration failed:", error);
       throw error;
     }
 
@@ -799,9 +727,6 @@ export async function activate(
       "✅ TaskWebviewProvider is now registered and will display in sidebar"
     );
 
-    console.log(
-      "=== ACTIVATION STEP 8.11: Wiring UI synchronization events ==="
-    );
     try {
       // Setup comprehensive UI event synchronization between components
       // Note: This is called after TaskWebviewProvider is initialized
@@ -812,30 +737,23 @@ export async function activate(
       uiSyncSubscriptions.forEach((subscription: vscode.Disposable) => {
         context.subscriptions.push(subscription);
       });
-
-      console.log("✅ UI synchronization events wired successfully");
     } catch (error) {
-      console.error("❌ UI synchronization event wiring failed:", error);
+      console.error("UI synchronization event wiring failed:", error);
       // Continue without event synchronization
     }
 
-    console.log("=== ACTIVATION STEP 9: Connecting status listeners ===");
     // Connect process manager status to status bar
     processManager.onStatusChange((status: ConnectionStatus) => {
       statusBarManager.updateConnectionStatus(status);
     });
-    console.log("✅ Status listeners connected");
 
-    console.log("=== ACTIVATION STEP 10: Starting MCP Server ===");
     try {
       await startMCPServer();
-      console.log("✅ MCP Server started");
     } catch (error) {
-      console.error("❌ MCP Server start failed:", error);
+      console.error("MCP Server start failed:", error);
       // Don't throw here - let extension continue without MCP server
     }
 
-    console.log("=== ACTIVATION STEP 11: Registering hover provider ===");
     try {
       const hoverProvider = new BusinessContextHover(mcpClient);
       const hoverDisposable = vscode.languages.registerHoverProvider(
@@ -843,13 +761,11 @@ export async function activate(
         hoverProvider
       );
       context.subscriptions.push(hoverDisposable);
-      console.log("✅ Hover provider registered");
     } catch (error) {
-      console.error("❌ Hover provider registration failed:", error);
+      console.error("Hover provider registration failed:", error);
       // Continue without hover provider
     }
 
-    console.log("=== ACTIVATION STEP 12: Registering essential commands ===");
 
     // Register show tasks command
     try {
@@ -872,9 +788,8 @@ export async function activate(
         }
       );
       context.subscriptions.push(showTasksCommand);
-      console.log("✅ showTasks command registered");
     } catch (error) {
-      console.error("❌ showTasks command failed:", error);
+      console.error("showTasks command failed:", error);
     }
 
     // Register refresh tasks command - Task 4.4.1a
@@ -898,9 +813,8 @@ export async function activate(
         }
       );
       context.subscriptions.push(refreshTasksCommand);
-      console.log("✅ refreshTasks command registered");
     } catch (error) {
-      console.error("❌ refreshTasks command failed:", error);
+      console.error("refreshTasks command failed:", error);
     }
 
     // REF-021: Removed excessive commands - kept only essential commands
@@ -972,9 +886,8 @@ export async function activate(
         }
       );
       context.subscriptions.push(loginCommand);
-      console.log("✅ login command registered");
     } catch (error) {
-      console.error("❌ login command failed:", error);
+      console.error("login command failed:", error);
     }
 
     // Register logout command for completeness - PROGRESSIVE-002
@@ -1002,9 +915,8 @@ export async function activate(
         }
       );
       context.subscriptions.push(logoutCommand);
-      console.log("✅ logout command registered");
     } catch (error) {
-      console.error("❌ logout command failed:", error);
+      console.error("logout command failed:", error);
     }
 
     // Register openDiff command for git diff functionality
@@ -1034,7 +946,7 @@ export async function activate(
           } catch (error) {
             const errorMessage =
               error instanceof Error ? error.message : "Unknown error occurred";
-            console.error("❌ openDiff command failed:", error);
+            console.error("openDiff command failed:", error);
             vscode.window.showErrorMessage(
               `Failed to open diff view: ${errorMessage}`
             );
@@ -1043,20 +955,16 @@ export async function activate(
       );
       context.subscriptions.push(openDiffCommand);
     } catch (error) {
-      console.error("❌ openDiff command failed:", error);
+      console.error("openDiff command failed:", error);
     }
 
     // Expansion diagnostics command removed - replaced by webview-based diagnostics
-    console.log(
-      "ℹ️ expansionDiagnostics command removed - webview handles expansion state"
-    );
 
     // Register configuration change listener
     try {
       const configChangeDisposable = vscode.workspace.onDidChangeConfiguration(
         async (event) => {
           if (event.affectsConfiguration(EXTENSION_CONFIG.configNamespace)) {
-            console.log("Configuration changed, validating and updating...");
 
             const config = vscode.workspace.getConfiguration();
 
@@ -1067,9 +975,6 @@ export async function activate(
             );
 
             if (!tasksPathValid) {
-              console.warn(
-                "[Extension] Tasks file path validation failed, skipping update"
-              );
               return;
             }
 
@@ -1113,9 +1018,6 @@ export async function activate(
 
               // PATH-003: If tasks path changed, reinitialize file watcher
               if (event.affectsConfiguration(getConfigKey("tasks.filePath"))) {
-                console.log(
-                  "[Extension] Tasks file path changed, reinitializing file watcher..."
-                );
 
                 // Get new tasks path
                 const newTasksPath = config.get<string>(
@@ -1156,12 +1058,9 @@ export async function activate(
                             });
                         }
 
-                        console.log(
-                          "✅ Data refresh completed after file change"
-                        );
                       } catch (error) {
                         console.error(
-                          "❌ Error refreshing data after file change:",
+                          "Error refreshing data after file change:",
                           error
                         );
                       }
@@ -1170,25 +1069,17 @@ export async function activate(
                     fileWatcher.onDidChange(handleFileChange);
                     fileWatcher.onDidCreate(handleFileChange);
                     fileWatcher.onDidDelete(() => {
-                      console.log("⚠️ Tasks file deleted, using fallback data");
                       // TasksDataService will handle fallback automatically
                     });
 
                     // Add to subscriptions for proper cleanup
                     context.subscriptions.push(fileWatcher);
 
-                    console.log(
-                      `[Extension] VSCode FileSystemWatcher reinitialized for: ${newTasksPath}`
-                    );
                   }
                 } else {
-                  console.warn(
-                    `[Extension] Cannot watch new tasks file: ${pathValidation.error}`
-                  );
                 }
               }
 
-              console.log("Configuration updated successfully");
             } catch (error) {
               console.error("Failed to update configuration:", error);
               vscode.window.showErrorMessage(
@@ -1201,14 +1092,10 @@ export async function activate(
         }
       );
       context.subscriptions.push(configChangeDisposable);
-      console.log(
-        "✅ Configuration change listener registered with PATH-003 validation"
-      );
     } catch (error) {
-      console.error("❌ Configuration change listener failed:", error);
+      console.error("Configuration change listener failed:", error);
     }
 
-    console.log("=== ACTIVATION STEP 13: Final setup ===");
     // Add disposables to context
     context.subscriptions.push(statusBarManager, {
       dispose: () => {
@@ -1221,21 +1108,10 @@ export async function activate(
       },
     });
 
-    console.log("=== ACTIVATION COMPLETE ===");
-    console.log(`✅ ${EXTENSION_CONFIG.displayName} activated successfully!`);
-
-    // MEDIUM-5A: Confirm diagnostic logging is in place
-    console.log("🔍 MEDIUM-5A: Tree view selection event diagnostics enabled");
-    console.log(
-      "🔍 MEDIUM-5A: Use 'aidm-vscode-extension.expansionDiagnostics' command to verify expansion state"
-    );
-    console.log(
-      "🔍 MEDIUM-5A: Check console logs for detailed selection and expansion event flow"
-    );
 
     vscode.window.showInformationMessage(EXTENSION_CONFIG.successMessage);
   } catch (error) {
-    console.error(`❌ ACTIVATION FAILED at step:`, error);
+    console.error(`ACTIVATION FAILED:`, error);
     vscode.window.showErrorMessage(
       `Failed to activate ${EXTENSION_CONFIG.displayName}: ${
         error instanceof Error ? error.message : "Unknown error"
@@ -1249,17 +1125,11 @@ async function startMCPServer(): Promise<void> {
   try {
     // Use configured port from settings (no dynamic port finding)
     const port = processManager.getPort();
-    console.log(`🔍 Using configured port ${port}`);
-
     mcpClient.updateConfig(port, processManager.getTimeout());
-
-    console.log(`🔍 Final port before start: ${port}`);
-
     await processManager.start();
 
     // Get the actual port the server is running on
     const actualPort = processManager.getActualPort();
-    console.log(`✅ MCP server started successfully on port ${actualPort}`);
 
     // Show notification with port info
     vscode.window.showInformationMessage(
@@ -1276,50 +1146,39 @@ async function startMCPServer(): Promise<void> {
 }
 
 export async function deactivate() {
-  console.log("AIDM VSCode Extension: Starting deactivation...");
 
   try {
     // Commands and providers are automatically disposed via context.subscriptions
     // This includes all registered commands, tree data providers, and webview providers
-    console.log(
-      "AIDM VSCode Extension: All registered commands and providers disposed via context.subscriptions"
-    );
 
     // Graceful shutdown of process manager
     if (processManager) {
       await processManager.shutdown();
-      console.log("AIDM VSCode Extension: Process manager shutdown completed");
     }
 
     // Dispose status bar manager
     if (statusBarManager) {
       statusBarManager.dispose();
-      console.log("AIDM VSCode Extension: Status bar manager disposed");
     }
 
     // Dispose tasks data service if it exists
     if (tasksDataService) {
       tasksDataService.dispose();
-      console.log("AIDM VSCode Extension: Tasks data service disposed");
     }
 
     // Dispose task webview provider if it exists
     if (taskWebviewProvider) {
       taskWebviewProvider.dispose?.();
-      console.log("AIDM VSCode Extension: Task webview provider disposed");
     }
 
     // Dispose MCP client if it exists
     if (mcpClient) {
       // Note: MCPClient doesn't have a dispose method, but we can clean up any resources
-      console.log("AIDM VSCode Extension: MCP client cleanup completed");
     }
 
     // Additional cleanup for any global state or timers
-    console.log("AIDM VSCode Extension: All resources cleaned up successfully");
   } catch (error) {
     console.error("AIDM VSCode Extension: Error during deactivation:", error);
   } finally {
-    console.log("AIDM VSCode Extension deactivated");
   }
 }

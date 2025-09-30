@@ -87,12 +87,7 @@ export class JSONTaskParser {
    * @returns Promise<Task[]> - Array of parsed Task objects from file content
    */
   async parseTasksFromFile(fileUri: vscode.Uri): Promise<Task[]> {
-    // PATH-FIX-002: Enhanced debug logging to trace URI handling
-    console.log(`[JSONTaskParser] Processing URI: ${fileUri.toString()}`);
-    console.log(`[JSONTaskParser] FSPath: ${fileUri.fsPath}`);
-    console.log(`[JSONTaskParser] Path segments:`, fileUri.path.split("/"));
-    console.log(`[JSONTaskParser] Scheme: ${fileUri.scheme}`);
-    console.log(`[JSONTaskParser] Authority: ${fileUri.authority}`);
+    // PATH-FIX-002: Enhanced URI handling
 
     // PATH-FIX-002: Validate URI is not corrupted
     if (
@@ -111,58 +106,24 @@ export class JSONTaskParser {
     // Validate file before attempting to parse
     const validation = await this.validateTasksFile(fileUri);
     if (!validation.isValid) {
-      console.error(
-        `[JSONTaskParser] File validation failed: ${validation.error}`
-      );
       throw new Error(`Tasks file validation failed: ${validation.error}`);
     }
 
-    console.log(
-      `[JSONTaskParser] File validation passed, proceeding with parsing`
-    );
-    console.log(
-      `[JSONTaskParser] File exists and is accessible: ${fileUri.fsPath}`
-    );
 
     try {
       // Use VS Code filesystem API instead of Node.js fs
-      console.log(
-        `[JSONTaskParser] Reading file content from: ${fileUri.fsPath}`
-      );
       const fileContent = await vscode.workspace.fs.readFile(fileUri);
       const contentString = Buffer.from(fileContent).toString("utf8");
 
-      console.log(
-        `[JSONTaskParser] Successfully read file, content length: ${contentString.length} characters`
-      );
-
       const jsonData = JSON.parse(contentString);
       const parsedTasks = this.parseTasksFromJSONContent(jsonData);
-      console.log(
-        `[JSONTaskParser] Parsed ${parsedTasks.length} tasks from file content`
-      );
 
       return parsedTasks;
     } catch (error) {
       console.error(
-        `[JSONTaskParser] Failed to parse ${fileUri.toString()}:`,
+        `Failed to parse ${fileUri.toString()}:`,
         error
       );
-
-      // Enhanced error logging for debugging
-      console.log(
-        `[JSONTaskParser] Error type: ${
-          error instanceof Error ? error.constructor.name : typeof error
-        }`
-      );
-      if (error instanceof vscode.FileSystemError) {
-        console.log(
-          `[JSONTaskParser] VS Code FileSystemError detected with code: ${error.code}`
-        );
-        console.log(
-          `[JSONTaskParser] File system error details: ${error.message}`
-        );
-      }
 
       // Handle VS Code filesystem errors specifically
       if (error instanceof vscode.FileSystemError) {
@@ -197,21 +158,12 @@ export class JSONTaskParser {
    */
   parseTasksFromJSONContent(jsonData: any): Task[] {
     if (!jsonData || typeof jsonData !== "object") {
-      console.log("[JSONTaskParser] No valid JSON data to parse");
       return [];
     }
 
-    console.log(
-      `[JSONTaskParser] Processing JSON data with ${
-        Object.keys(jsonData).length
-      } contexts`
-    );
 
     // Flatten nested contexts into single task array
     const allTasks = this.flattenContexts(jsonData);
-    console.log(
-      `[JSONTaskParser] Flattened ${allTasks.length} total tasks from all contexts`
-    );
 
     const tasks: Task[] = [];
 
@@ -220,24 +172,13 @@ export class JSONTaskParser {
         const task = this.parseTaskFromJSON(taskObj);
         if (task) {
           tasks.push(task);
-          console.log(
-            `[JSONTaskParser] Successfully parsed task: ${task.id} - ${task.title}`
-          );
         } else {
-          console.log(
-            `[JSONTaskParser] Failed to parse task object: ${JSON.stringify(
-              taskObj
-            ).substring(0, 50)}...`
-          );
         }
       } catch (error) {
-        console.error(`[JSONTaskParser] Error parsing task object:`, error);
+        console.error(`Error parsing task object:`, error);
       }
     }
 
-    console.log(
-      `[JSONTaskParser] Completed parsing, found ${tasks.length} valid tasks`
-    );
     return tasks;
   }
 
@@ -257,9 +198,6 @@ export class JSONTaskParser {
         "tasks" in contextData
       ) {
         const contextTasks = (contextData as any).tasks || [];
-        console.log(
-          `[JSONTaskParser] Processing context '${contextName}' with ${contextTasks.length} tasks`
-        );
 
         // Add context information to each task
         for (const task of contextTasks) {
@@ -292,7 +230,6 @@ export class JSONTaskParser {
       // Ensure required fields exist
       const id = this.convertToString(taskObj.id);
       if (!id) {
-        console.log("[JSONTaskParser] Task missing required id field");
         return null;
       }
 
@@ -345,7 +282,7 @@ export class JSONTaskParser {
 
       return task;
     } catch (error) {
-      console.error("[JSONTaskParser] Error parsing task:", error);
+      console.error("Error parsing task:", error);
       return null;
     }
   }
@@ -502,36 +439,27 @@ export class JSONTaskParser {
 
   private mapStatus(status: any): TaskStatus {
     if (!status) {
-      console.debug(`[JSONTaskParser] Empty status, defaulting to NOT_STARTED`);
       return TaskStatus.NOT_STARTED;
     }
 
     const statusStr = String(status).toLowerCase();
-    console.debug(
-      `[JSONTaskParser] Mapping status: "${status}" -> "${statusStr}"`
-    );
 
     switch (statusStr) {
       case "done":
       case "completed":
-        console.debug(`[JSONTaskParser] Status mapped to COMPLETED`);
         return TaskStatus.COMPLETED;
       case "in_progress":
       case "in progress":
       case "in-progress":
-        console.debug(`[JSONTaskParser] Status mapped to IN_PROGRESS`);
         return TaskStatus.IN_PROGRESS;
       case "review":
       case "ready_for_review":
       case "ready for review":
       case "ready-for-review":
-        console.debug(`[JSONTaskParser] Status mapped to REVIEW`);
         return TaskStatus.REVIEW;
       case "blocked":
-        console.debug(`[JSONTaskParser] Status mapped to BLOCKED`);
         return TaskStatus.BLOCKED;
       case "deprecated":
-        console.debug(`[JSONTaskParser] Status mapped to DEPRECATED`);
         return TaskStatus.DEPRECATED;
       case "not_started":
       case "not started":
@@ -540,9 +468,6 @@ export class JSONTaskParser {
       case "to do":
       case "todo":
       default:
-        console.debug(
-          `[JSONTaskParser] Status "${statusStr}" mapped to NOT_STARTED (default)`
-        );
         return TaskStatus.NOT_STARTED;
     }
   }
