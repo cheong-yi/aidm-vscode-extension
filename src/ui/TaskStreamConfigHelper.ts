@@ -39,7 +39,7 @@ export class TaskStreamConfigHelper {
       // Step 2: Get server URL
       const serverUrl = await vscode.window.showInputBox({
         prompt: 'Enter your task stream server URL',
-        placeholder: 'https://api.yourcompany.com',
+        placeHolder: 'https://api.yourcompany.com',
         validateInput: (value) => {
           if (!value?.trim()) {
             return 'Server URL is required';
@@ -63,7 +63,7 @@ export class TaskStreamConfigHelper {
       // Step 3: Get user ID
       const userId = await vscode.window.showInputBox({
         prompt: 'Enter your user ID for task assignments',
-        placeholder: 'your.email@company.com or user123',
+        placeHolder: 'your.email@company.com or user123',
         validateInput: (value) => {
           if (!value?.trim()) {
             return 'User ID is required';
@@ -82,7 +82,7 @@ export class TaskStreamConfigHelper {
       // Step 4: Get auth token
       const authToken = await vscode.window.showInputBox({
         prompt: 'Enter your authentication token',
-        placeholder: 'Enter your API token or access key',
+        placeHolder: 'Enter your API token or access key',
         password: true,
         validateInput: (value) => {
           if (!value?.trim()) {

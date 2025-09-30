@@ -66,7 +66,7 @@ export class TaskApiConfigHelperSSO {
       // Step 2: Get base URL
       const baseUrl = await vscode.window.showInputBox({
         prompt: 'Enter your organization\'s task API base URL',
-        placeholder: 'https://api.yourorg.com',
+        placeHolder: 'https://api.yourorg.com',
         value: await this.getSuggestedBaseUrl(authState.agency_name),
         validateInput: (value) => {
           if (!value?.trim()) {

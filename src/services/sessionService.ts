@@ -106,7 +106,7 @@ export class SessionService {
             return sessionId;
 
         } catch (error) {
-            this.logger.error('Failed to create session', error, {
+            this.logger.error('Failed to create session', error instanceof Error ? error : new Error(String(error)), {
                 tenantId,
                 userId,
                 error: error instanceof Error ? error.message : 'Unknown error'
@@ -139,7 +139,7 @@ export class SessionService {
                 });
             }
         } catch (error) {
-            this.logger.error('Failed to update session activity', error, {
+            this.logger.error('Failed to update session activity', error instanceof Error ? error : new Error(String(error)), {
                 sessionId,
                 error: error instanceof Error ? error.message : 'Unknown error'
             });
@@ -172,7 +172,7 @@ export class SessionService {
                 });
             }
         } catch (error) {
-            this.logger.error('Failed to terminate session', error, {
+            this.logger.error('Failed to terminate session', error instanceof Error ? error : new Error(String(error)), {
                 sessionId,
                 error: error instanceof Error ? error.message : 'Unknown error'
             });
@@ -270,7 +270,7 @@ export class SessionService {
                 }
 
             } catch (error) {
-                this.logger.error('Session cleanup failed', error, {
+                this.logger.error('Session cleanup failed', error instanceof Error ? error : new Error(String(error)), {
                     error: error instanceof Error ? error.message : 'Unknown error'
                 });
             }
