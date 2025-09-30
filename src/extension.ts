@@ -429,8 +429,12 @@ export async function activate(
     }
 
     try {
-      taskApiIntegration = new TaskApiIntegrationSimple(tasksDataService, authService, context);
-      await taskApiIntegration.initialize();
+      if (authService) {
+        taskApiIntegration = new TaskApiIntegrationSimple(tasksDataService, authService, context);
+        await taskApiIntegration.initialize();
+      } else {
+        console.log('TaskApiIntegrationSimple skipped: AuthService is not available');
+      }
     } catch (error) {
       console.warn("Task API integration initialization failed (non-critical):", error);
       // Don't throw - allow extension to continue without API integration

@@ -9,6 +9,7 @@ import { TaskApiServiceSimple, TaskApiServiceConfig } from '../services/TaskApiS
 import { AuthServiceTokenProvider } from '../api/AuthServiceTokenProvider';
 import { TaskStatusIndicator, TaskDataSource, TaskStatusInfo } from '../ui/TaskStatusIndicator';
 import { AuthService } from '../auth/authService';
+import { TaskErrorResponse } from '../types/tasks';
 
 export class TaskApiIntegrationSimple {
   private apiService?: TaskApiServiceSimple;
@@ -114,9 +115,9 @@ export class TaskApiIntegrationSimple {
         this.updateStatusIndicator();
       });
 
-      this.apiService.onError.event((error: Error) => {
+      this.apiService.onError.event((errorResponse: TaskErrorResponse) => {
         // Forward to existing TasksDataService
-        this.tasksDataService.onError.fire(error);
+        this.tasksDataService.onError.fire(errorResponse);
         this.updateStatusIndicator();
       });
 

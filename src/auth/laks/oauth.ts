@@ -25,7 +25,7 @@ export function isTokenExpired(token: string): boolean {
 }
 
 export function validateCurrentToken(): boolean {
-    const token = TokenHelper.getToken();
+    const token = TokenHelper.getTokenSync(); // Use sync version for backward compatibility
     if (!token) {
         log("No token found.");
         vscode.window.showErrorMessage("No token found. Please authenticate.");

@@ -238,11 +238,11 @@ export class TaskApiManager {
     // this.apiService = new TaskApiService(apiConfig); // REMOVED: TaskApiService deleted - stubbed for compilation
 
     // Set up event handlers to integrate with existing TasksDataService
-    this.apiService.onTasksUpdated.event((tasks) => {
+    this.apiService.onTasksUpdated.event((tasks: any[]) => {
       this.handleTasksUpdated(tasks);
     });
 
-    this.apiService.onError.event((error) => {
+    this.apiService.onError.event((error: any) => {
       // Forward API errors to the main data service
       this.tasksDataService.onError.fire(error);
     });
