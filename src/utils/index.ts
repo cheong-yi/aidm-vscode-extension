@@ -8,6 +8,6 @@
  * - TaskValidator: Task data validation and sanitization
  */
 export { ErrorHandler } from "./errorHandler";
-export { Logger, LogLevel } from "./logger";
+export { Logger, LogLevel, LoggerFactory, log } from "./logger";
 export { ConfigLoader } from "./configLoader";
 export { TaskValidator } from "./TaskValidator";

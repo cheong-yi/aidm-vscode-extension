@@ -70,3 +70,34 @@ export class LoggerFactory {
     this.defaultConfig = { ...this.defaultConfig, ...config };
   }
 }
+
+// Default logger instance for simple log function
+const defaultLogger = new Logger('Global', { level: LogLevel.INFO });
+
+/**
+ * Simple log function for compatibility with existing code
+ * @param level - Log level ('DEBUG', 'INFO', 'WARN', 'ERROR')
+ * @param component - Component name
+ * @param message - Log message
+ * @param metadata - Optional metadata object
+ */
+export function log(level: string, component: string, message: string, metadata?: Record<string, any>): void {
+  const formattedMessage = `[${component}] ${message}`;
+
+  switch (level.toUpperCase()) {
+    case 'DEBUG':
+      defaultLogger.debug(formattedMessage, metadata);
+      break;
+    case 'INFO':
+      defaultLogger.info(formattedMessage, metadata);
+      break;
+    case 'WARN':
+      defaultLogger.warn(formattedMessage, metadata);
+      break;
+    case 'ERROR':
+      defaultLogger.error(formattedMessage, metadata?.error || undefined, metadata);
+      break;
+    default:
+      defaultLogger.info(formattedMessage, metadata);
+  }
+}
