@@ -65,7 +65,7 @@
     "color": "#1e1e1e",
     "theme": "dark"
   },
-  "main": "./dist/extension.js",
+  "main": "./out/extension.js",
   "contributes": {
     "commands": [
       {
@@ -195,13 +195,22 @@
         },
         "aidmVscodeExtension.enterprise.sso.provider": {
           "type": "string",
-          "enum": ["microsoft", "okta", "ping", "custom"],
+          "enum": [
+            "microsoft",
+            "okta",
+            "ping",
+            "custom"
+          ],
           "default": "microsoft",
           "description": "SSO provider for authentication (Microsoft, Okta, Ping Identity, or custom)"
         },
         "aidmVscodeExtension.enterprise.sso.enforcement": {
           "type": "string",
-          "enum": ["optional", "required", "strict"],
+          "enum": [
+            "optional",
+            "required",
+            "strict"
+          ],
           "default": "optional",
           "description": "SSO enforcement level: optional (local auth allowed), required (SSO preferred), strict (SSO only)"
         },
@@ -220,7 +229,11 @@
           "items": {
             "type": "string"
           },
-          "default": ["openid", "profile", "email"],
+          "default": [
+            "openid",
+            "profile",
+            "email"
+          ],
           "description": "OAuth scopes requested during SSO authentication"
         },
         "aidmVscodeExtension.enterprise.audit.enabled": {
@@ -230,7 +243,11 @@
         },
         "aidmVscodeExtension.enterprise.audit.level": {
           "type": "string",
-          "enum": ["minimal", "standard", "comprehensive"],
+          "enum": [
+            "minimal",
+            "standard",
+            "comprehensive"
+          ],
           "default": "standard",
           "description": "Audit logging level: minimal (auth only), standard (actions), comprehensive (all events)"
         },
@@ -238,9 +255,16 @@
           "type": "array",
           "items": {
             "type": "string",
-            "enum": ["local", "siem", "cloud", "webhook"]
+            "enum": [
+              "local",
+              "siem",
+              "cloud",
+              "webhook"
+            ]
           },
-          "default": ["local"],
+          "default": [
+            "local"
+          ],
           "description": "Audit log destinations: local file, SIEM integration, cloud service, or webhook"
         },
         "aidmVscodeExtension.enterprise.audit.retention": {
@@ -484,7 +508,7 @@
     "test": "jest",
     "lint": "eslint src --ext ts",
     "package": "node package-extension.js",
-    "compile-tsc": "tsc -p ./",
+    "compile-tsc": "npx tsc -p ./",
     "pretest": "npm run compile && npm run lint",
     "validate-manifest": "node scripts/validate-manifest.js",
     "test:packaging": "node scripts/test-packaging.js",
@@ -492,8 +516,10 @@
     "prebuild": "npm run compile-templates"
   },
   "devDependencies": {
+    "@types/express": "^4.17.21",
     "@types/jest": "^29.5.14",
-    "@types/node": "20.x",
+    "@types/jsonwebtoken": "^9.0.6",
+    "@types/node": "^22.0.0",
     "@types/vscode": "^1.80.0",
     "@typescript-eslint/eslint-plugin": "^6.4.1",
     "@typescript-eslint/parser": "^6.4.1",
@@ -504,11 +530,14 @@
     "rimraf": "^5.0.0",
     "ts-jest": "^29.1.0",
     "ts-loader": "^9.5.2",
-    "typescript": "^5.1.6",
+    "typescript": "^5.9.2",
+    "undici-types": "^6.0.1",
     "webpack": "^5.101.3",
     "webpack-cli": "^6.0.1"
   },
   "dependencies": {
-    "axios": "^1.11.0"
+    "axios": "^1.11.0",
+    "express": "^4.18.2",
+    "jsonwebtoken": "^9.0.2"
   }
 }
