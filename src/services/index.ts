@@ -9,6 +9,7 @@ export { JSONTaskParser } from "./JSONTaskParser";
 export { CacheManager } from "./CacheManager";
 export { GitUtilities } from "./GitUtilities";
 export { TaskFilterService } from "./TaskFilterService";
+export { TaskPersistenceService } from "./TaskPersistenceService";
 export { EnterpriseCoordinator } from "./enterpriseCoordinator";
 export { ConfigService } from "./configService";
 export { AuditService } from "./auditService";

@@ -22,7 +22,7 @@ import { TaskStatus, Task } from "./types/tasks";
 import { TaskDetailCardProvider } from "./tasks/providers/TaskDetailCardProvider";
 import { TaskWebviewProvider } from "./tasks/providers";
 import { TaskErrorResponse } from "./types/tasks";
-import { TaskApiIntegrationSimple } from "./integrations/TaskApiIntegrationSimple";
+import { TaskApiIntegrationSSO } from "./integrations/TaskApiIntegrationSSO";
 import { AuthService } from "./auth/authService";
 
 
@@ -189,7 +189,7 @@ let processManager: ProcessManager;
 let tasksDataService: TasksDataService;
 let taskDetailProvider: TaskDetailCardProvider;
 let taskWebviewProvider: TaskWebviewProvider;
-let taskApiIntegration: TaskApiIntegrationSimple;
+let taskApiIntegration: TaskApiIntegrationSSO;
 let authService: AuthService | undefined;
 
 /**
@@ -430,10 +430,11 @@ export async function activate(
 
     try {
       if (authService) {
-        taskApiIntegration = new TaskApiIntegrationSimple(tasksDataService, authService, context);
+        taskApiIntegration = new TaskApiIntegrationSSO(tasksDataService, authService, context);
         await taskApiIntegration.initialize();
+        console.log('✅ TaskApiIntegrationSSO initialized - SSO auth will auto-sync tasks');
       } else {
-        console.log('TaskApiIntegrationSimple skipped: AuthService is not available');
+        console.log('TaskApiIntegrationSSO skipped: AuthService is not available');
       }
     } catch (error) {
       console.warn("Task API integration initialization failed (non-critical):", error);
