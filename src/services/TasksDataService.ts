@@ -197,10 +197,62 @@ export class TasksDataService implements ITasksDataService {
     }
   }
 
-  // Recovery Task 2.4.2: Replace with real JSON-RPC call to MCP server
+  // UPDATED: Prioritize .aidm/.tasks → File → MCP → Mock fallback chain
   async getTasks(): Promise<Task[]> {
     console.log("[TasksDataService] getTasks() called");
 
+    // Priority 1: Load from .aidm/.tasks (synced from API)
+    try {
+      const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+      if (workspaceFolder) {
+        const { TaskPersistenceService } = await import('./TaskPersistenceService');
+        const persistenceService = new TaskPersistenceService();
+
+        const tasksFromPersistence = await persistenceService.loadTasks(workspaceFolder);
+        if (tasksFromPersistence.length > 0) {
+          console.log(
+            `[TasksDataService] Loaded ${tasksFromPersistence.length} tasks from .aidm/.tasks`
+          );
+          return tasksFromPersistence;
+        }
+      }
+    } catch (error) {
+      console.warn('[TasksDataService] Could not load from .aidm/.tasks:', error);
+    }
+
+    // Priority 2: Load from configured task file (legacy support)
+    try {
+      console.log(
+        "[TasksDataService] Attempting file parsing fallback from configured path"
+      );
+
+      const configuredUri = this.getConfiguredFileUri();
+      const fallbackUri = await this.getTasksFileUri("tasks.json");
+      const fileUri = configuredUri || fallbackUri;
+
+      if (fileUri) {
+        try {
+          const parsedTasks = await this.jsonTaskParser.parseTasksFromFile(
+            fileUri
+          );
+          console.log(
+            `[TasksDataService] Retrieved ${parsedTasks.length} tasks from file parser`
+          );
+          return parsedTasks;
+        } catch (parseError) {
+          const taskError = this.handleFileLoadingError(
+            parseError as Error,
+            fileUri.fsPath,
+            "file_validation"
+          );
+          this.onError.fire(taskError);
+        }
+      }
+    } catch (fileError) {
+      console.error("TasksDataService.getTasks File Loading Error:", fileError);
+    }
+
+    // Priority 3: Try MCP server
     try {
       console.log(
         "[TasksDataService] Attempting MCP server call for tasks/list"
@@ -211,8 +263,6 @@ export class TasksDataService implements ITasksDataService {
         throw new Error(`MCP server error: ${response.error.message}`);
       }
 
-      // Extract tasks from the MCP response format
-      // The response.result.content[0].text contains JSON string with tasks
       if (response.result?.content?.[0]?.text) {
         try {
           const parsedContent = JSON.parse(response.result.content[0].text);
@@ -222,22 +272,51 @@ export class TasksDataService implements ITasksDataService {
           );
           return mcpTasks;
         } catch (parseError) {
-          // PATH-FIX-004: Enhanced error logging with path context for debugging
-          console.error(
-            "TasksDataService.getTasks MCP Response Parse Error Details:"
-          );
-          console.error(
-            "- Workspace folders:",
-            vscode.workspace.workspaceFolders?.map((f) => f.uri.toString())
-          );
-          console.error(
-            "- Configured path:",
-            vscode.workspace
-              .getConfiguration("aidmVscodeExtension")
-              .get("tasks.filePath")
-          );
-          console.error("- Parse Error:", parseError);
+          console.warn("Failed to parse MCP response content:", parseError);
+        }
+      }
+    } catch (error) {
+      console.warn(
+        "MCP server unavailable:",
+        error instanceof Error ? error.message : String(error)
+      );
+    }
 
+    // Priority 4: Final fallback to mock data
+    try {
+      console.log("[TasksDataService] Falling back to mock data provider");
+      const mockTasks = await this.mockDataProvider.getTasks();
+      console.log(
+        `[TasksDataService] Retrieved ${mockTasks.length} tasks from mock data provider`
+      );
+      return mockTasks;
+    } catch (mockError) {
+      console.error("[TasksDataService] All task loading methods failed:", mockError);
+      return [];
+    }
+  }
+
+  // Legacy method - kept for backward compatibility
+  private async legacyGetTasks(): Promise<Task[]> {
+    try {
+      console.log(
+        "[TasksDataService] Attempting MCP server call for tasks/list"
+      );
+      const response = await this.makeJSONRPCCall("tasks/list");
+
+      if (response.error) {
+        throw new Error(`MCP server error: ${response.error.message}`);
+      }
+
+      if (response.result?.content?.[0]?.text) {
+        try {
+          const parsedContent = JSON.parse(response.result.content[0].text);
+          const mcpTasks = parsedContent.tasks || [];
+          console.log(
+            `[TasksDataService] Retrieved ${mcpTasks.length} tasks from MCP server`
+          );
+          return mcpTasks;
+        } catch (parseError) {
           console.warn("Failed to parse MCP response content:", parseError);
           return [];
         }
@@ -248,7 +327,6 @@ export class TasksDataService implements ITasksDataService {
       );
       return [];
     } catch (error) {
-      // DATA-002: Fallback to file reading when HTTP fails, then to mock data if file reading fails
       console.warn(
         "MCP server unavailable, falling back to file reading:",
         error instanceof Error ? error.message : String(error)
