@@ -24,6 +24,7 @@ import { TaskWebviewProvider } from "./tasks/providers";
 import { TaskErrorResponse } from "./types/tasks";
 import { TaskApiIntegrationSSO } from "./integrations/TaskApiIntegrationSSO";
 import { AuthService } from "./auth/authService";
+import { CONFIG } from "./common/config";
 
 
 
@@ -835,9 +836,18 @@ export async function activate(
           }
 
           try {
+            // Check if SSO is configured
+            const isSSOConfigured = CONFIG.auth.clientId && CONFIG.auth.clientId.trim() !== '';
+
+            // Build auth method options based on SSO configuration
+            const authOptions = ['Username/Password'];
+            if (isSSOConfigured) {
+              authOptions.push('Single Sign-On (OAuth)');
+            }
+
             // Show input box for credentials or OAuth flow
             const authMethod = await vscode.window.showQuickPick(
-              ['Username/Password', 'Single Sign-On (OAuth)'],
+              authOptions,
               {
                 placeHolder: 'Select authentication method',
                 title: 'Sign in to AiDM Extension'

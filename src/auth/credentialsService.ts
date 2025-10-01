@@ -11,26 +11,38 @@ interface RefreshTokenResponse {
 }
 
 export class CredentialsService {
+    private readonly MOCK_USERS = [
+        'cheong.yi@accenture.com',
+        'muthu.b.ramalingam@accenture.com',
+        'l.aravamudhan@accenture.com'
+    ];
+    private readonly MOCK_PASSWORD = 'password';
+
+    private generateMockLoginResponse(username: string): LoginResponse {
+        return {
+            status: "Success",
+            token: `mock_token_${username}_${Date.now()}`,
+            agency_id: 1,
+            agency_name: "Mock Agency",
+            isProjectAdmin: false,
+            isSuperAdmin: false,
+            project_id: 1
+        };
+    }
+
     public async login(username: string, password: string, is_ad_login_successful: boolean): Promise<LoginResponse> {
         log("INFO", "CredentialsService", "Attempting credentials login");
-        const base_url = `${CONFIG.api.baseUrl}/authorize_login_with_username_password`;
-        
-        try {
-            const response = await axios.post<LoginResponse>(base_url, {
-                username,
-                password,
-                is_successful_AD_logged_in: is_ad_login_successful
-            });
 
-            if (response.data.status !== "Success") {
-                throw new Error(response.statusText || "Login failed");
-            }
-
-            return response.data;
-        } catch (error) {
-            console.error('[CredentialsService] Error during login:', error);
-            throw error;
+        // Check for mock users (development only)
+        if (this.MOCK_USERS.includes(username) && password === this.MOCK_PASSWORD) {
+            log("INFO", "CredentialsService", "Mock user login successful", { username });
+            return this.generateMockLoginResponse(username);
         }
+
+        // API endpoint for real authentication not yet implemented
+        // TODO: Implement real authentication endpoint when API is ready
+        log("ERROR", "CredentialsService", "Login API endpoint not configured", { username });
+        throw new Error("Only mock users are supported at this time. Use: cheong.yi@accenture.com, muthu.b.ramalingam@accenture.com, or l.aravamudhan@accenture.com with password 'password'");
     }
 
     /**
