@@ -27,9 +27,10 @@ export class TaskApiClient {
   }
 
   /**
-   * Fetch tasks for the authenticated user
+   * Fetch tasks for the authenticated user filtered by repository
+   * @param repoId - Repository identifier (optional, for filtering)
    */
-  async fetchUserTasks(): Promise<TaskApiResponse<Task[]>> {
+  async fetchUserTasks(repoId?: string): Promise<TaskApiResponse<Task[]>> {
     const userContext = this.tokenProvider.getUserContext();
     if (!userContext) {
       return {
@@ -53,11 +54,15 @@ export class TaskApiClient {
         };
       }
 
-      const url = `${this.baseUrl}/API/v1/tasks/user/${encodeURIComponent(identityResult.stableUserId)}`;
+      // Build URL with optional repo filter
+      let url = `${this.baseUrl}/API/v1/tasks/user/${encodeURIComponent(identityResult.stableUserId)}`;
+      if (repoId) {
+        url += `?repo=${encodeURIComponent(repoId)}`;
+      }
 
       const response = await fetch(url, {
         method: 'GET',
-        headers: this.getHeaders(),
+        headers: this.getHeaders(repoId),
         signal: AbortSignal.timeout(10000),
       });
 
@@ -199,7 +204,7 @@ export class TaskApiClient {
     }
   }
 
-  private getHeaders(): Record<string, string> {
+  private getHeaders(repoId?: string): Record<string, string> {
     const token = this.tokenProvider.getToken();
     const userContext = this.tokenProvider.getUserContext();
 
@@ -207,7 +212,7 @@ export class TaskApiClient {
       throw new Error('Authentication required');
     }
 
-    return {
+    const headers: Record<string, string> = {
       'Authorization': `Bearer ${token}`,
       'Accept': 'application/json',
       'Content-Type': 'application/json',
@@ -215,5 +220,12 @@ export class TaskApiClient {
       'X-Project-ID': userContext.projectId.toString(),
       'X-User-Email': userContext.email,
     };
+
+    // Add repository context if provided
+    if (repoId) {
+      headers['X-Repository-ID'] = repoId;
+    }
+
+    return headers;
   }
 }
