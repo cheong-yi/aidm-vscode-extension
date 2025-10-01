@@ -234,30 +234,11 @@ export class MCPClientFactory {
   }
 
   /**
-   * Create a remote MCP client
-   * @param config - Client configuration
-   * @returns Remote MCP client instance
-   */
-  static createRemoteClient(config: MCPClientConfig): MCPClientInterface {
-    const { RemoteMCPAdapter } = require("./RemoteMCPAdapter");
-    
-    if (!config.endpoint) {
-      throw new Error("Remote endpoint is required for remote MCP client");
-    }
-    
-    return new RemoteMCPAdapter(
-      config.endpoint,
-      config.port,
-      config.timeout,
-      config.apiKey
-    );
-  }
-
-  /**
    * Create a hybrid MCP client (local + remote)
+   * NOTE: Remote MCP functionality removed - this now creates a local-only client
    * @param localConfig - Local client configuration
-   * @param remoteConfig - Remote client configuration
-   * @returns Hybrid MCP client instance
+   * @param remoteConfig - Ignored (kept for backward compatibility)
+   * @returns Local MCP client instance
    */
   static createHybridClient(
     localConfig: MCPClientConfig,

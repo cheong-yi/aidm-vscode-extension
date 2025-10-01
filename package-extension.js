@@ -16,13 +16,13 @@ const version = packageJson.version;
 
 console.log(`📦 Packaging version: ${version}`);
 
-// Compile with TypeScript
-console.log("\n🔨 Compiling...");
+// Bundle with webpack (production mode)
+console.log("\n🔨 Bundling...");
 try {
-  execSync("npx tsc -p ./", { stdio: "inherit" });
-  console.log("✅ Compilation successful");
+  execSync("NODE_ENV=production npx webpack", { stdio: "inherit", env: {...process.env, NODE_ENV: 'production'} });
+  console.log("✅ Bundling successful");
 } catch (error) {
-  console.error("❌ Compilation failed");
+  console.error("❌ Bundling failed");
   process.exit(1);
 }
 

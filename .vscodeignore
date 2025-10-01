@@ -7,6 +7,8 @@ src/**
 tsconfig.json
 tsconfig.tsbuildinfo
 out/**
+!out/extension.js
+!out/extension.js.map
 
 # Test files
 **/__tests__/**
