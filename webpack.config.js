@@ -38,6 +38,11 @@ module.exports = {
         test: /\.js$/,
         include: path.resolve(__dirname, 'src/tasks/providers'),
         use: 'raw-loader'
+      },
+      {
+        test: /\.html$/,
+        include: path.resolve(__dirname, 'src/tasks/providers/templates'),
+        use: 'raw-loader'
       }
     ]
   },

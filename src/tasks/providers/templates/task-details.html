@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Task Details - {{TASK_ID}}</title>
+  <style>
+    {{STYLES}}
+  </style>
+</head>
+<body>
+  <div class="task-details">
+    <!-- Task Header Section -->
+    <div class="task-header">
+      <div class="task-title" data-task-field="title">{{TASK_TITLE}}</div>
+      <div>
+        <span class="task-id" data-task-field="id">{{TASK_ID}}</span>
+        <span class="status-badge {{STATUS_CLASS}}">{{STATUS_DISPLAY}}</span>
+        {{EXECUTABLE_INDICATOR}}
+      </div>
+    </div>
+
+    <!-- Task Description Section -->
+    <div class="task-description">
+      <p data-task-field="description">{{TASK_DESCRIPTION}}</p>
+    </div>
+
+    <!-- Metadata Grid Section -->
+    <div class="task-meta">
+      <div class="meta-item">
+        <div class="meta-label">Complexity</div>
+        <div class="meta-value {{COMPLEXITY_CLASS}}">{{COMPLEXITY_DISPLAY}}</div>
+      </div>
+      <div class="meta-item">
+        <div class="meta-label">Estimated</div>
+        <div class="meta-value">{{ESTIMATED_DURATION}}</div>
+      </div>
+    </div>
+
+    <!-- Dependencies Section -->
+    <div class="dependencies">
+      <div class="dependencies-title">Dependencies</div>
+      <div class="dependency-list">
+        {{DEPENDENCIES}}
+      </div>
+    </div>
+
+    <!-- Test Results Section -->
+    {{TEST_RESULTS_SECTION}}
+
+    <!-- Action Buttons Section -->
+    <div class="actions">
+      {{ACTION_BUTTONS}}
+    </div>
+  </div>
+
+  <script>
+    {{SCRIPT}}
+
+    // Handle task detail data updates via postMessage
+    window.addEventListener('message', function(event) {
+      const message = event.data;
+      if (message.type === 'updateTaskDetailData') {
+        updateTaskDetailContent(message.task);
+      }
+    });
+
+    function updateTaskDetailContent(task) {
+      // Update basic task fields
+      const taskFields = ['id', 'title', 'description'];
+      taskFields.forEach(field => {
+        const elements = document.querySelectorAll('[data-task-field="' + field + '"]');
+        elements.forEach(element => {
+          element.textContent = task[field] || '';
+        });
+      });
+
+      // Update dependencies
+      const depElements = document.querySelectorAll('[data-dependency-index]');
+      depElements.forEach((element, index) => {
+        if (task.dependencies && task.dependencies[index]) {
+          element.textContent = task.dependencies[index];
+        }
+      });
+
+      // Update failure information
+      const failureElements = document.querySelectorAll('.failure-item');
+      failureElements.forEach((failureElement, index) => {
+        if (task.failures && task.failures[index]) {
+          const failure = task.failures[index];
+
+          const nameElement = failureElement.querySelector('[data-failure-field="name"]');
+          if (nameElement) nameElement.textContent = failure.name || '';
+
+          const messageElement = failureElement.querySelector('[data-failure-field="message"]');
+          if (messageElement) messageElement.textContent = failure.message || '';
+
+          const stackTraceElement = failureElement.querySelector('[data-failure-field="stackTrace"]');
+          if (stackTraceElement && failure.stackTrace) {
+            stackTraceElement.textContent = failure.stackTrace;
+            stackTraceElement.style.display = 'block';
+          }
+        }
+      });
+    }
+  </script>
+</body>
+</html>

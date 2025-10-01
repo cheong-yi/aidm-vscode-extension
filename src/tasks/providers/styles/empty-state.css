@@ -1,0 +1,227 @@
+/* Empty State Styling */
+.no-task-selected {
+  text-align: center;
+  padding: 40px 20px;
+  background: var(--vscode-panel-background, #2d2d30);
+  border-top: 1px solid var(--vscode-panel-border, #3e3e42);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.empty-state-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+  opacity: 0.8;
+  animation: fadeInUp 0.6s ease-out;
+}
+
+.empty-state-title {
+  color: var(--vscode-foreground, #ffffff);
+  margin-bottom: 16px;
+  font-size: 18px;
+  font-weight: 600;
+  animation: fadeInUp 0.6s ease-out 0.1s both;
+}
+
+.empty-instructions {
+  color: var(--vscode-descriptionForeground, #d4d4d4);
+  margin-bottom: 24px;
+  font-size: 14px;
+  line-height: 1.5;
+  max-width: 400px;
+  animation: fadeInUp 0.6s ease-out 0.2s both;
+}
+
+/* Helpful Tips Section */
+.helpful-tips {
+  text-align: left;
+  margin: 24px 0;
+  padding: 20px;
+  background: var(--vscode-textBlockQuote-background, #2d2d30);
+  border: 1px solid var(--vscode-panel-border, #3e3e42);
+  border-radius: 6px;
+  max-width: 450px;
+  width: 100%;
+  animation: fadeInUp 0.6s ease-out 0.3s both;
+}
+
+.tips-title {
+  color: var(--vscode-foreground, #ffffff);
+  margin-bottom: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.tips-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.tips-list li {
+  color: var(--vscode-descriptionForeground, #d4d4d4);
+  margin-bottom: 8px;
+  font-size: 13px;
+  line-height: 1.4;
+  padding-left: 20px;
+  position: relative;
+}
+
+.tips-list li:before {
+  content: "•";
+  color: var(--vscode-button-background, #569cd6);
+  font-weight: bold;
+  position: absolute;
+  left: 0;
+}
+
+.tips-list li:last-child {
+  margin-bottom: 0;
+}
+
+/* Quick Actions Section */
+.quick-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin: 24px 0;
+  animation: fadeInUp 0.6s ease-out 0.4s both;
+}
+
+.quick-actions .action-btn {
+  min-width: 120px;
+  padding: 10px 16px;
+  font-size: 12px;
+  font-weight: 500;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  border: 1px solid transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.quick-actions .action-btn.primary {
+  background: var(--vscode-button-background, #569cd6);
+  color: var(--vscode-button-foreground, #ffffff);
+  border-color: var(--vscode-button-background, #569cd6);
+}
+
+.quick-actions .action-btn.primary:hover {
+  background: var(--vscode-button-hoverBackground, #4a86c7);
+  border-color: var(--vscode-button-hoverBackground, #4a86c7);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(86, 156, 214, 0.3);
+}
+
+.quick-actions .action-btn.secondary {
+  background: var(--vscode-panel-border, #3e3e42);
+  color: var(--vscode-foreground, #cccccc);
+  border-color: var(--vscode-panel-border, #3e3e42);
+}
+
+.quick-actions .action-btn.secondary:hover {
+  background: var(--vscode-panel-border, #4a4a4a);
+  border-color: var(--vscode-focusBorder, #007acc);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 122, 204, 0.2);
+}
+
+.quick-actions .action-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+/* Additional Information Section */
+.empty-state-info {
+  margin-top: 24px;
+  padding: 16px;
+  background: var(--vscode-editor-background, #1e1e1e);
+  border: 1px solid var(--vscode-panel-border, #3e3e42);
+  border-radius: 6px;
+  max-width: 450px;
+  width: 100%;
+  animation: fadeInUp 0.6s ease-out 0.5s both;
+}
+
+.info-text {
+  color: var(--vscode-descriptionForeground, #969696);
+  font-size: 12px;
+  line-height: 1.4;
+  text-align: center;
+  margin: 0;
+  font-style: italic;
+}
+
+/* Animations */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Responsive Design */
+@media (max-width: 400px) {
+  .no-task-selected {
+    padding: 24px 16px;
+  }
+
+  .empty-state-icon {
+    font-size: 36px;
+  }
+
+  .empty-state-title {
+    font-size: 16px;
+  }
+
+  .empty-instructions {
+    font-size: 13px;
+  }
+
+  .helpful-tips {
+    padding: 16px;
+    margin: 16px 0;
+  }
+
+  .quick-actions {
+    gap: 8px;
+  }
+
+  .quick-actions .action-btn {
+    min-width: 100px;
+    padding: 8px 12px;
+    font-size: 11px;
+  }
+}
+
+/* Focus Management for Accessibility */
+.quick-actions .action-btn:focus {
+  outline: 2px solid var(--vscode-focusBorder, #007acc);
+  outline-offset: 2px;
+}
+
+/* Print Styles */
+@media print {
+  .quick-actions {
+    display: none;
+  }
+
+  .no-task-selected {
+    background: white;
+    color: black;
+    border: none;
+  }
+}

@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>No Task Selected - Taskmaster Dashboard</title>
+  <style>
+    {{TASK_DETAILS_STYLES}}
+    {{EMPTY_STATE_STYLES}}
+  </style>
+</head>
+<body>
+  <div class="no-task-selected">
+    <!-- Visual Icon for Empty State -->
+    <div class="empty-state-icon">📋</div>
+
+    <!-- Main Title -->
+    <h2 class="empty-state-title">No Task Selected</h2>
+
+    <!-- Primary Instructions -->
+    <p class="empty-instructions">
+      Select a task from the tree view above to see detailed information and available actions.
+    </p>
+
+    <!-- Helpful Tips Section -->
+    <div class="helpful-tips">
+      <h3 class="tips-title">Getting Started:</h3>
+      <ul class="tips-list">
+        <li>Click on any task in the tree view to see its details</li>
+        <li>Look for tasks marked with 🤖 that can be executed with AI assistance</li>
+        <li>Use the refresh button if tasks don't appear</li>
+        <li>Check task dependencies and requirements before starting</li>
+      </ul>
+    </div>
+
+    <!-- Quick Actions Section -->
+    <div class="quick-actions">
+      <button class="action-btn primary" onclick="handleQuickAction('refresh')">
+        🔄 Refresh Tasks
+      </button>
+      <button class="action-btn secondary" onclick="handleQuickAction('viewAll')">
+        📋 View All Tasks
+      </button>
+      <button class="action-btn secondary" onclick="handleQuickAction('help')">
+        ❓ Show Help
+      </button>
+      <button class="action-btn secondary" onclick="handleQuickAction('settings')">
+        ⚙️ Settings
+      </button>
+    </div>
+
+    <!-- Additional Information -->
+    <div class="empty-state-info">
+      <p class="info-text">
+        The Taskmaster Dashboard helps you manage development tasks with AI assistance.
+        Select a task to get started with implementation, testing, or review.
+      </p>
+    </div>
+  </div>
+
+  <script>
+    {{SCRIPT}}
+  </script>
+</body>
+</html>
