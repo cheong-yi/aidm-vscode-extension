@@ -10,13 +10,9 @@
  */
 
 import * as vscode from "vscode";
-import { Task, TaskStatus, STATUS_ACTIONS } from "../types";
-import taskDetailsTemplate from './templates/task-details.html';
-import emptyStateTemplate from './templates/empty-state.html';
-import taskDetailsStyles from './styles/task-details.css';
-import emptyStateStyles from './styles/empty-state.css';
-import taskDetailsScript from './scripts/task-details.js';
-import emptyStateScript from './scripts/empty-state.js';
+import { Task, TaskStatus } from "../types";
+import { TaskDetailFormatters } from './TaskDetailFormatters';
+import { TaskDetailHTMLGenerator } from './TaskDetailHTMLGenerator';
 
 /**
  * TaskDetailCardProvider implements vscode.WebviewViewProvider to display
@@ -103,6 +99,12 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
    * Task 3.3.9: Periodic refresh mechanism for dynamic time updates
    */
   private timeRefreshInterval: NodeJS.Timeout | null = null;
+
+  /**
+   * HTML generator instance for generating webview content
+   * Handles all HTML template processing and content generation
+   */
+  private htmlGenerator = new TaskDetailHTMLGenerator();
 
   /**
    * Constructor for TaskDetailCardProvider
@@ -272,15 +274,7 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
    * @returns Complete HTML string for empty state with helpful content
    */
   public generateEmptyStateHTML(): string {
-    try {
-      return emptyStateTemplate
-        .replace(/{{TASK_DETAILS_STYLES}}/g, taskDetailsStyles)
-        .replace(/{{EMPTY_STATE_STYLES}}/g, emptyStateStyles)
-        .replace(/{{SCRIPT}}/g, emptyStateScript);
-    } catch (error) {
-      console.error("Failed to generate empty state HTML:", error);
-      return this.generateFallbackEmptyStateHTML();
-    }
+    return this.htmlGenerator.generateEmptyStateHTML();
   }
 
   /**
@@ -347,55 +341,7 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
    * @returns Fallback HTML string for empty state
    */
   private generateFallbackEmptyStateHTML(): string {
-    return `
-      <!DOCTYPE html>
-      <html lang="en">
-      <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>No Task Selected</title>
-        <style>
-          ${taskDetailsStyles}
-          .fallback-empty { 
-            text-align: center; 
-            padding: 40px 20px; 
-            color: var(--vscode-descriptionForeground, #969696);
-          }
-          .fallback-icon { 
-            font-size: 48px; 
-            margin-bottom: 16px;
-            opacity: 0.7;
-          }
-          .fallback-title { 
-            color: var(--vscode-foreground, #ffffff); 
-            margin-bottom: 16px;
-            font-size: 16px;
-          }
-          .fallback-text { 
-            color: var(--vscode-descriptionForeground, #d4d4d4); 
-            margin-bottom: 8px;
-            font-size: 13px;
-            line-height: 1.4;
-          }
-        </style>
-      </head>
-      <body>
-        <div class="fallback-empty">
-          <div class="fallback-icon">Clipboard</div>
-          <h3 class="fallback-title">No Task Selected</h3>
-          <p class="fallback-text">Select a task from the tree view above to see detailed information.</p>
-          <p class="fallback-text">Please try refreshing the view or contact support if the problem persists.</p>
-        </div>
-        
-        <script>
-          const vscode = acquireVsCodeApi();
-          document.addEventListener('DOMContentLoaded', function() {
-            console.log('TaskDetailCardProvider fallback empty state initialized');
-          });
-        </script>
-      </body>
-      </html>
-    `;
+    return this.htmlGenerator.generateFallbackEmptyStateHTML();
   }
 
   /**
@@ -432,13 +378,6 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
    * @param failures - Array of failing test information
    * @returns HTML string for test failures display
    */
-  public renderTestFailures(failures: any[]): string {
-    if (!failures || failures.length === 0) {
-      return '<div class="no-failures">No test failures</div>';
-    }
-
-    return this.renderCollapsibleFailures(failures);
-  }
 
   /**
    * Renders collapsible failures section with enhanced error categorization
@@ -447,29 +386,6 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
    * @param failures - Array of FailingTest objects
    * @returns HTML string for collapsible failures section
    */
-  public renderCollapsibleFailures(failures: any[]): string {
-    if (!failures || failures.length === 0) {
-      return "";
-    }
-
-    const failureItems = failures
-      .map((failure) => this.renderFailureItem(failure))
-      .join("");
-
-    return `
-      <div class="failures-section" onclick="toggleFailures(this, event)">
-        <div class="failures-header">
-          <svg class="task-expand-icon" viewBox="0 0 16 16" fill="currentColor" width="12" height="12">
-            <path d="m12.14 8.753-5.482 4.796c-.646.566-1.658.106-1.658-.753V3.204a1 1 0 0 1 1.659-.753l5.48 4.796a1 1 0 0 1 0 1.506z"/>
-          </svg>
-          Failed Tests (${failures.length})
-        </div>
-        <div class="failures-list">
-          ${failureItems}
-        </div>
-      </div>
-    `;
-  }
 
   /**
    * Renders individual failure item with error categorization
@@ -478,63 +394,7 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
    * @param failure - FailingTest object to render
    * @returns HTML string for individual failure item
    */
-  public renderFailureItem(failure: any): string {
-    const category = failure.category || "unknown";
-    const categoryIcon = this.getCategoryIcon(category);
-    const categoryColor = this.getCategoryColor(category);
 
-    return `
-      <div class="failure-item ${category}" style="border-left-color: ${categoryColor}">
-        <div class="failure-header">
-          <span class="failure-category-icon">${categoryIcon}</span>
-          <span class="failure-category-badge">${category}</span>
-        </div>
-        <div class="failure-name" data-failure-field="name"></div>
-        <div class="failure-message" data-failure-field="message"></div>
-        <div class="failure-stacktrace" data-failure-field="stackTrace" style="display: none;"></div>
-      </div>
-    `;
-  }
-
-  /**
-   * Gets appropriate icon for error category
-   * Called when displaying error category visual indicators
-   *
-   * @param category - Error category string
-   * @returns Icon string for the category
-   */
-  public getCategoryIcon(category: string): string {
-    const iconMap: Record<string, string> = {
-      assertion: "Failed",
-      type: "Search",
-      filesystem: "Save",
-      timeout: "Timer",
-      network: "Network",
-      unknown: "Question",
-    };
-
-    return iconMap[category] || iconMap.unknown;
-  }
-
-  /**
-   * Gets appropriate color for error category
-   * Called when styling error category visual indicators
-   *
-   * @param category - Error category string
-   * @returns CSS color value for the category
-   */
-  public getCategoryColor(category: string): string {
-    const colorMap: Record<string, string> = {
-      assertion: "#f48771", // Red for assertion failures
-      type: "#dcdcaa", // Yellow for type errors
-      filesystem: "#569cd6", // Blue for filesystem issues
-      timeout: "#d7ba7d", // Orange for timeouts
-      network: "#c586c0", // Purple for network issues
-      unknown: "#6a6a6a", // Gray for unknown categories
-    };
-
-    return colorMap[category] || colorMap.unknown;
-  }
 
   /**
    * Renders executable actions for a task
@@ -574,91 +434,7 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
     return this.renderActionButtons(task);
   }
 
-  /**
-   * Formats relative time from ISO date string
-   * Called when displaying timestamps in relative format
-   *
-   * @param isoDate - ISO date string to format
-   * @returns Formatted relative time string
-   */
-  public formatRelativeTime(isoDate: string): string {
-    if (!isoDate) {
-      return "Never";
-    }
 
-    try {
-      const date = new Date(isoDate);
-      const now = new Date();
-      const diffMs = now.getTime() - date.getTime();
-      const diffMinutes = Math.floor(diffMs / (1000 * 60));
-      const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-      const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-
-      if (diffMinutes < 1) {
-        return "Just now";
-      } else if (diffMinutes < 60) {
-        return `${diffMinutes} minute${diffMinutes === 1 ? "" : "s"} ago`;
-      } else if (diffHours < 24) {
-        return `${diffHours} hour${diffHours === 1 ? "" : "s"} ago`;
-      } else if (diffDays < 7) {
-        return `${diffDays} day${diffDays === 1 ? "" : "s"} ago`;
-      } else {
-        return date.toLocaleDateString();
-      }
-    } catch (error) {
-      // Fallback to original ISO string if parsing fails
-      return isoDate;
-    }
-  }
-
-  /**
-   * Parse estimated duration string to numeric value
-   * Simple inline duration parsing implementation
-   * @param duration - Duration string like "15-30 min" or "45 min"
-   * @returns Numeric average in minutes, or 0 on error
-   */
-  private parseEstimatedDuration(duration: string): number {
-    if (!duration || typeof duration !== "string") {
-      return 0;
-    }
-
-    try {
-      const trimmed = duration.trim().toLowerCase();
-      
-      // Handle range format (e.g., "15-30 min")
-      const rangeMatch = trimmed.match(/^(\d+(?:\.\d+)?)\s*-\s*(\d+(?:\.\d+)?)\s*(min|minute|minutes|hour|hours|h|m)$/);
-      if (rangeMatch) {
-        const [, minStr, maxStr, unit] = rangeMatch;
-        const min = parseFloat(minStr);
-        const max = parseFloat(maxStr);
-        
-        if (isNaN(min) || isNaN(max) || min > max) {
-          return 0;
-        }
-        
-        const multiplier = (unit.startsWith('h') || unit === 'hour' || unit === 'hours') ? 60 : 1;
-        return ((min + max) / 2) * multiplier;
-      }
-      
-      // Handle single value format (e.g., "45 min")
-      const singleMatch = trimmed.match(/^(\d+(?:\.\d+)?)\s*(min|minute|minutes|hour|hours|h|m)$/);
-      if (singleMatch) {
-        const [, valueStr, unit] = singleMatch;
-        const value = parseFloat(valueStr);
-        
-        if (isNaN(value)) {
-          return 0;
-        }
-        
-        const multiplier = (unit.startsWith('h') || unit === 'hour' || unit === 'hours') ? 60 : 1;
-        return value * multiplier;
-      }
-      
-      return 0;
-    } catch (error) {
-      return 0;
-    }
-  }
 
   /**
    * Generates HTML content for task details display
@@ -668,30 +444,7 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
    * @returns HTML string for task details
    */
   private generateTaskDetailsHTML(task: Task): string {
-    try {
-      const executableIndicator = task.isExecutable
-        ? '<span class="executable-indicator">🤖</span>'
-        : "";
-
-      return taskDetailsTemplate
-        .replace(/{{TASK_ID}}/g, task.id)
-        .replace(/{{TASK_TITLE}}/g, task.title)
-        .replace(/{{TASK_DESCRIPTION}}/g, task.description || '')
-        .replace(/{{STATUS_CLASS}}/g, this.getStatusClass(task.status))
-        .replace(/{{STATUS_DISPLAY}}/g, this.getStatusDisplayName(task.status))
-        .replace(/{{COMPLEXITY_CLASS}}/g, `complexity-${this.formatComplexity(task.complexity)}`)
-        .replace(/{{COMPLEXITY_DISPLAY}}/g, this.getComplexityDisplayName(task.complexity))
-        .replace(/{{ESTIMATED_DURATION}}/g, this.formatEstimatedDuration(task.estimatedDuration))
-        .replace(/{{EXECUTABLE_INDICATOR}}/g, executableIndicator)
-        .replace(/{{DEPENDENCIES}}/g, this.renderDependencies(task.dependencies))
-        .replace(/{{TEST_RESULTS_SECTION}}/g, this.renderTestResultsSection(task))
-        .replace(/{{ACTION_BUTTONS}}/g, this.renderActionButtons(task))
-        .replace(/{{STYLES}}/g, taskDetailsStyles)
-        .replace(/{{SCRIPT}}/g, taskDetailsScript);
-    } catch (error) {
-      console.error("Failed to generate task details HTML:", error);
-      return this.generateFallbackHTML(task);
-    }
+    return this.htmlGenerator.generateTaskDetailsHTML(task);
   }
 
 
@@ -703,40 +456,7 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
    * @returns Fallback HTML string
    */
   private generateFallbackHTML(task: Task): string {
-    return `
-      <!DOCTYPE html>
-      <html lang="en">
-      <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Task Details - ${task.id}</title>
-        <style>
-          ${taskDetailsStyles}
-          .fallback { text-align: center; padding: 20px; }
-          .error { color: #f48771; margin-bottom: 10px; }
-        </style>
-      </head>
-      <body>
-        <div class="fallback">
-          <div class="error">Warning Error loading task details</div>
-          <h3>Task <span data-task-field="id"></span>: <span data-task-field="title"></span></h3>
-          <p>Status: ${task.status}</p>
-          <p>Description: <span data-task-field="description"></span></p>
-          <p>Please try refreshing the view or contact support if the problem persists.</p>
-        </div>
-        
-        <script>
-          // Acquire VSCode API for webview communication (fallback state)
-          const vscode = acquireVsCodeApi();
-          
-          // Initialize webview with message handling capability
-          document.addEventListener('DOMContentLoaded', function() {
-            console.log('TaskDetailCardProvider webview initialized (fallback state)');
-          });
-        </script>
-      </body>
-      </html>
-    `;
+    return this.htmlGenerator.generateFallbackHTML(task);
   }
 
   /**
@@ -747,15 +467,7 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
    * @returns HTML string for dependency tags
    */
   private renderDependencies(dependencies: string[]): string {
-    if (!dependencies || dependencies.length === 0) {
-      return '<span class="dependency-tag">None</span>';
-    }
-
-    return dependencies
-      .map(
-        (dep, index) => `<span class="dependency-tag" data-dependency-index="${index}"></span>`
-      )
-      .join("");
+    return this.htmlGenerator['renderDependencies'](dependencies);
   }
 
   /**
@@ -766,47 +478,7 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
    * @returns HTML string for test results section
    */
   private renderTestResultsSection(task: Task): string {
-    if (!task.testStatus) {
-      return '<div class="no-tests">No tests available yet</div>';
-    }
-
-    const { testStatus } = task;
-    const hasFailures =
-      testStatus.failingTestsList && testStatus.failingTestsList.length > 0;
-
-    return `
-      <div class="test-results">
-        <div class="test-header">
-          <div class="test-title">Test Results</div>
-          <div class="test-date">Last run: {{LAST_RUN_DATE}}</div>
-        </div>
-        <div class="test-stats">
-          <div class="test-stat">
-            <div class="test-stat-value test-total">${
-              testStatus.totalTests
-            }</div>
-            <div class="test-stat-label">Total</div>
-          </div>
-          <div class="test-stat">
-            <div class="test-stat-value test-passed">${
-              testStatus.passedTests
-            }</div>
-            <div class="test-stat-label">Passed</div>
-          </div>
-          <div class="test-stat">
-            <div class="test-stat-value test-failed">${
-              testStatus.failedTests
-            }</div>
-            <div class="test-stat-label">Failed</div>
-          </div>
-        </div>
-        ${
-          hasFailures
-            ? this.renderFailuresSection(testStatus.failingTestsList!)
-            : ""
-        }
-      </div>
-    `;
+    return this.htmlGenerator['renderTestResultsSection'](task);
   }
 
   /**
@@ -874,14 +546,6 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
    * @param failures - Array of failing test information
    * @returns HTML string for failures section
    */
-  private renderFailuresSection(failures: any[]): string {
-    if (!failures || failures.length === 0) {
-      return "";
-    }
-
-    // Use the enhanced collapsible failures rendering
-    return this.renderCollapsibleFailures(failures);
-  }
 
   /**
    * Gets actions for a specific task status using STATUS_ACTIONS mapping
@@ -890,9 +554,6 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
    * @param status - The task status to get actions for
    * @returns Array of action strings for the given status
    */
-  public getActionsForStatus(status: TaskStatus): string[] {
-    return STATUS_ACTIONS[status] || [];
-  }
 
   /**
    * Renders individual action button with proper data attributes and styling
@@ -902,29 +563,6 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
    * @param taskId - The task ID for the button data attribute
    * @returns HTML string for the action button
    */
-  public renderButton(action: string, taskId: string): string {
-    // Create a mock task context to check if this is an executable action
-    const mockTask: Task = {
-      id: taskId,
-      title: "",
-      description: "",
-      status: "not_started" as TaskStatus,
-      complexity: "low" as any,
-      dependencies: [],
-      requirements: [],
-      createdDate: "",
-      lastModified: "",
-      isExecutable: true, // Assume executable for NOT_STARTED tasks
-    };
-
-    const isExecutableAction = this.isExecutableAction(action, mockTask);
-    const buttonClass = isExecutableAction
-      ? "action-btn cursor-btn"
-      : "action-btn";
-    const actionKey = this.getActionKey(action);
-
-    return `<button class="${buttonClass}" data-action="${actionKey}" data-task-id="${taskId}">${action}</button>`;
-  }
 
   /**
    * Determines if an action is executable (Cursor integration related)
@@ -934,15 +572,6 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
    * @param task - The task context for the action
    * @returns True if the action is executable (Cursor integration)
    */
-  public isExecutableAction(action: string, task: Task): boolean {
-    // Only "Robot Execute with Cursor" action is executable
-    // Task must be NOT_STARTED and have isExecutable = true
-    return (
-      action.includes("Robot") &&
-      task.status === "not_started" &&
-      task.isExecutable === true
-    );
-  }
 
   /**
    * Converts action display text to action key for data attributes
@@ -951,32 +580,6 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
    * @param action - The action display text
    * @returns Action key string for data attributes
    */
-  private getActionKey(action: string): string {
-    const actionKeyMap: Record<string, string> = {
-      "Robot Execute with Cursor": "robot-execute-with-cursor",
-      "Generate Prompt": "generate-prompt",
-      "View Requirements": "view-requirements",
-      "Continue Work": "continue-work",
-      "Mark Complete": "mark-complete",
-      "View Dependencies": "view-dependencies",
-      "Approve & Complete": "approve-complete",
-      "Request Changes": "request-changes",
-      "View Implementation": "view-implementation",
-      "View Code": "view-code",
-      "View Tests": "view-tests",
-      History: "history",
-      "Fix Failing Tests": "fix-failing-tests",
-      "View Full Report": "view-full-report",
-      "Rerun Tests": "rerun-tests",
-      "View Blockers": "view-blockers",
-      "Update Dependencies": "update-dependencies",
-      "Report Issue": "report-issue",
-      Archive: "archive",
-      "View History": "view-history",
-    };
-
-    return actionKeyMap[action] || action.toLowerCase().replace(/\s+/g, "-");
-  }
 
   /**
    * Renders action buttons based on task status and properties
@@ -986,45 +589,7 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
    * @returns HTML string for action buttons
    */
   private renderActionButtons(task: Task): string {
-    try {
-      // Get actions for the task status from STATUS_ACTIONS mapping
-      let actions = this.getActionsForStatus(task.status);
-
-      if (actions.length === 0) {
-        return '<div class="no-tests">No actions available for this task status</div>';
-      }
-
-      // Filter out Cursor action for non-executable tasks
-      if (task.status === "not_started" && !task.isExecutable) {
-        actions = actions.filter((action) => !action.includes("Robot"));
-      }
-
-      // Special handling for completed tasks with test failures
-      if (
-        task.status === "completed" &&
-        task.testStatus &&
-        task.testStatus.failedTests > 0
-      ) {
-        return this.renderCompletedTaskWithFailures(task);
-      }
-
-      // Render buttons using STATUS_ACTIONS mapping with proper task context
-      const buttons = actions.map((action) => {
-        // Check if this action should be executable for the current task
-        const isExecutableAction = this.isExecutableAction(action, task);
-        const buttonClass = isExecutableAction
-          ? "action-btn primary"
-          : "action-btn";
-        const actionKey = this.getActionKey(action);
-
-        return `<button class="${buttonClass}" data-action="${actionKey}" data-task-id="${task.id}">${action}</button>`;
-      });
-
-      return `<div class="actions">${buttons.join("")}</div>`;
-    } catch (error) {
-      console.error("Failed to render action buttons:", error);
-      return '<div class="no-tests">Error loading actions</div>';
-    }
+    return this.htmlGenerator['renderActionButtons'](task);
   }
 
   /**
@@ -1034,20 +599,6 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
    * @param task - The completed task with test failures
    * @returns HTML string for test failure action buttons
    */
-  private renderCompletedTaskWithFailures(task: Task): string {
-    const testFailureActions = [
-      "Fix Failing Tests",
-      "View Full Report",
-      "Rerun Tests",
-    ];
-
-    const buttons = testFailureActions.map((action) => {
-      const actionKey = this.getActionKey(action);
-      return `<button class="action-btn" data-action="${actionKey}" data-task-id="${task.id}">${action}</button>`;
-    });
-
-    return `<div class="actions">${buttons.join("")}</div>`;
-  }
 
   /**
    * Gets CSS class for task status styling
@@ -1056,9 +607,6 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
    * @param status - The task status
    * @returns CSS class name for status styling
    */
-  private getStatusClass(status: string): string {
-    return status.replace("_", "-");
-  }
 
   /**
    * Gets display name for task status
@@ -1204,7 +752,7 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
   private handleWebviewMessage(message: any): void {
     try {
       // Validate message structure before processing
-      if (!this.isValidMessage(message)) {
+      if (!TaskDetailFormatters.isValidMessage(message)) {
         console.warn(
           "[TaskDetailCard] Invalid webview message received:",
           message
@@ -1740,37 +1288,37 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
         <div class="task-meta">
           <div class="meta-item">
             <div class="meta-label">Complexity</div>
-            <div class="meta-value complexity-${this.formatComplexity(
+            <div class="meta-value complexity-${TaskDetailFormatters.formatComplexity(
               task.complexity
-            )}">${this.getComplexityDisplayName(task.complexity)}</div>
+            )}">${TaskDetailFormatters.getComplexityDisplayName(task.complexity)}</div>
           </div>
           <div class="meta-item">
             <div class="meta-label">Duration</div>
-            <div class="meta-value duration">${this.formatEstimatedDuration(
+            <div class="meta-value duration">${TaskDetailFormatters.formatEstimatedDuration(
               task.estimatedDuration
             )}</div>
           </div>
           <div class="meta-item">
             <div class="meta-label">Dependencies</div>
-            <div class="meta-value dependencies">${this.formatDependencies(
+            <div class="meta-value dependencies">${TaskDetailFormatters.formatDependencies(
               task.dependencies
             )}</div>
           </div>
           <div class="meta-item">
             <div class="meta-label">Requirements</div>
-            <div class="meta-value requirements">${this.formatRequirements(
+            <div class="meta-value requirements">${TaskDetailFormatters.formatRequirements(
               task.requirements
             )}</div>
           </div>
           <div class="meta-item">
             <div class="meta-label">Created</div>
-            <div class="meta-value created-date">${this.formatRelativeTime(
+            <div class="meta-value created-date">${TaskDetailFormatters.formatRelativeTime(
               task.createdDate
             )}</div>
           </div>
           <div class="meta-item">
             <div class="meta-label">Modified</div>
-            <div class="meta-value modified-date">${this.formatRelativeTime(
+            <div class="meta-value modified-date">${TaskDetailFormatters.formatRelativeTime(
               task.lastModified
             )}</div>
           </div>
@@ -1797,7 +1345,7 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
     try {
       // Use inline method to parse and format duration if needed
       const parsedDuration =
-        this.parseEstimatedDuration(duration);
+        TaskDetailFormatters.parseEstimatedDuration(duration);
       if (parsedDuration > 0) {
         // Return original format for now, could be enhanced with parsed formatting
         return duration.trim();
@@ -1997,7 +1545,7 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
       if (task.createdDate) {
         try {
           const formattedCreated =
-            this.formatRelativeTime(task.createdDate);
+            TaskDetailFormatters.formatRelativeTime(task.createdDate);
           formattedHtml = formattedHtml.replace(
             /{{CREATED_DATE}}/g,
             formattedCreated
@@ -2024,7 +1572,7 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
       if (task.lastModified) {
         try {
           const formattedModified =
-            this.formatRelativeTime(task.lastModified);
+            TaskDetailFormatters.formatRelativeTime(task.lastModified);
           formattedHtml = formattedHtml.replace(
             /{{LAST_MODIFIED}}/g,
             formattedModified
@@ -2051,7 +1599,7 @@ export class TaskDetailCardProvider implements vscode.WebviewViewProvider {
       if (task.testStatus?.lastRunDate) {
         try {
           const formattedLastRun =
-            this.formatRelativeTime(
+            TaskDetailFormatters.formatRelativeTime(
               task.testStatus.lastRunDate
             );
           formattedHtml = formattedHtml.replace(
