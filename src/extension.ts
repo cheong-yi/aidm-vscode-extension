@@ -192,6 +192,7 @@ let taskDetailProvider: TaskDetailCardProvider;
 let taskWebviewProvider: TaskWebviewProvider;
 let taskApiIntegration: TaskApiIntegrationSSO;
 let authService: AuthService | undefined;
+let debugChannel: vscode.OutputChannel;
 
 /**
  * Setup comprehensive UI event synchronization between tree view and detail panel
@@ -404,6 +405,9 @@ export async function activate(
       console.error("StatusBarManager initialization failed:", error);
       throw error;
     }
+
+    // Initialize debug output channel
+    debugChannel = vscode.window.createOutputChannel('AiDM Extension Debug');
 
     try {
       const jsonParser = new JSONTaskParser();
@@ -1129,7 +1133,7 @@ export async function activate(
     }
 
     // Add disposables to context
-    context.subscriptions.push(statusBarManager, {
+    context.subscriptions.push(statusBarManager, debugChannel, {
       dispose: () => {
         // Cleanup process manager
         if (processManager) {
@@ -1163,10 +1167,8 @@ async function startMCPServer(): Promise<void> {
     // Get the actual port the server is running on
     const actualPort = processManager.getActualPort();
 
-    // Show notification with port info
-    vscode.window.showInformationMessage(
-      `AiDM MCP Server started on port ${actualPort}`
-    );
+    // Log server status to debug channel instead of user notification
+    debugChannel.appendLine(`MCP Server started on port ${actualPort}`);
   } catch (error) {
     console.error("Failed to start MCP server:", error);
     vscode.window.showErrorMessage(
