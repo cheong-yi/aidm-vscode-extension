@@ -352,7 +352,6 @@ export async function activate(
 
     // Get configuration
     const config = vscode.workspace.getConfiguration();
-    vscode.window.showInformationMessage(EXTENSION_CONFIG.activationMessage);
 
     // Get configured port or use smart port selection
     const configuredPort = config.get<number>(
