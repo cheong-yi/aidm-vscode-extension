@@ -429,6 +429,24 @@ export async function activate(
       authService = undefined; // Explicitly set to undefined for clear state
     }
 
+    // Set VSCode context for panel visibility based on auth state
+    const { authStateManager } = await import('./auth/authStateManager');
+    const updateAuthContext = (authState: any) => {
+      vscode.commands.executeCommand('setContext', 'aidm.isAuthenticated', authState.isLoggedIn);
+    };
+
+    if (authService) {
+      // Subscribe to auth state changes
+      const authSubscription = authStateManager.subscribe(updateAuthContext);
+      context.subscriptions.push({ dispose: authSubscription });
+
+      // Set initial context based on current auth state
+      updateAuthContext(authService.authState);
+    } else {
+      // No auth service - allow panel for offline mode
+      vscode.commands.executeCommand('setContext', 'aidm.isAuthenticated', true);
+    }
+
     try {
       if (authService) {
         taskApiIntegration = new TaskApiIntegrationSSO(tasksDataService, authService, context);

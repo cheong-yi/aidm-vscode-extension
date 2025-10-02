@@ -466,7 +466,7 @@
           "id": "aidm-vscode-extension.tasks-list",
           "name": "Tasks",
           "type": "webview",
-          "when": "workspaceFolderCount > 0"
+          "when": "workspaceFolderCount > 0 && aidm.isAuthenticated"
         }
       ]
     },
