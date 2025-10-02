@@ -199,19 +199,7 @@ ${this.getAuthJavaScript()}
    * Generate webview header with filter controls
    */
   private generateWebviewHeader(): string {
-    return `<div class="webview-header">
-      <div class="filter-controls">
-        <label class="filter-toggle">
-          <input type="checkbox" id="my-tasks-filter" />
-          <span class="filter-checkbox">
-            <svg class="filter-icon" viewBox="0 0 16 16" width="12" height="12" fill="currentColor">
-              <path d="M6 12a1 1 0 01-.707-.293l-3-3a1 1 0 111.414-1.414L6 9.586l6.293-6.293a1 1 0 111.414 1.414l-7 7A1 1 0 016 12z"/>
-            </svg>
-          </span>
-          <span class="filter-label">View My Tasks</span>
-        </label>
-      </div>
-    </div>`;
+    return `<div class="webview-header"></div>`;
   }
 
   /**

@@ -282,18 +282,9 @@ export class TasksDataService implements ITasksDataService {
       );
     }
 
-    // Priority 4: Final fallback to mock data
-    try {
-      console.log("[TasksDataService] Falling back to mock data provider");
-      const mockTasks = await this.mockDataProvider.getTasks();
-      console.log(
-        `[TasksDataService] Retrieved ${mockTasks.length} tasks from mock data provider`
-      );
-      return mockTasks;
-    } catch (mockError) {
-      console.error("[TasksDataService] All task loading methods failed:", mockError);
-      return [];
-    }
+    // All task loading methods failed - return empty array
+    console.warn("[TasksDataService] All task loading methods failed - no tasks available");
+    return [];
   }
 
   // Legacy method - kept for backward compatibility

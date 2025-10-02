@@ -32,42 +32,7 @@ export class MockDataProvider {
       throw new Error("Mock data provider error");
     }
 
-    return [
-      {
-        id: "test-1",
-        title: "Test Task 1",
-        description: "A test task for unit testing",
-        status: TaskStatus.NOT_STARTED,
-        complexity: TaskComplexity.LOW,
-        dependencies: [],
-        requirements: ["test-req-1"],
-        createdDate: new Date().toISOString(),
-        lastModified: new Date().toISOString(),
-        estimatedDuration: "15 min",
-        isExecutable: true,
-      },
-      {
-        id: "test-2",
-        title: "Test Task 2",
-        description: "Another test task for unit testing",
-        status: TaskStatus.COMPLETED,
-        complexity: TaskComplexity.MEDIUM,
-        dependencies: ["test-1"],
-        requirements: ["test-req-2"],
-        createdDate: new Date().toISOString(),
-        lastModified: new Date().toISOString(),
-        estimatedDuration: "20 min",
-        isExecutable: false,
-        testStatus: {
-          lastRunDate: new Date().toISOString(),
-          totalTests: 5,
-          passedTests: 5,
-          failedTests: 0,
-          failingTestsList: [],
-          coverage: 100,
-        },
-      },
-    ];
+    return [];
   }
 
   /**

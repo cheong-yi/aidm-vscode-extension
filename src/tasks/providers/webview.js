@@ -63,34 +63,6 @@ function sendMessage(type, payload) {
 }
 
 /**
- * Filter functionality
- */
-document.addEventListener('DOMContentLoaded', function() {
-  const filterToggle = document.getElementById('my-tasks-filter');
-  if (filterToggle) {
-    filterToggle.addEventListener('change', function() {
-      const isChecked = this.checked;
-      const taskItems = document.querySelectorAll('.task-item');
-      
-      taskItems.forEach(item => {
-        const assignee = item.dataset.assignee;
-        if (isChecked) {
-          // Show only tasks assigned to current user or dev-team
-          if (assignee === 'dev-team' || assignee === 'current-user') {
-            item.style.display = 'block';
-          } else {
-            item.style.display = 'none';
-          }
-        } else {
-          // Show all tasks
-          item.style.display = 'block';
-        }
-      });
-    });
-  }
-});
-
-/**
  * Task data handling via postMessage
  */
 window.addEventListener('message', function(event) {
