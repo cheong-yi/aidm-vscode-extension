@@ -24,6 +24,7 @@ import {
 import { JSONTaskParser } from "./JSONTaskParser";
 import { MockDataProvider } from "../mock";
 import * as vscode from "vscode";
+import { AuthService } from '../auth/authService';
 
 interface ITasksDataService {
   getTasks(): Promise<Task[]>;
@@ -44,10 +45,12 @@ export class TasksDataService implements ITasksDataService {
   protected httpClient!: AxiosInstance;
   private serverUrl: string; // Changed from readonly to mutable for initialization
   private isInitialized: boolean = false;
+  private extensionActivationTime: number = Date.now();
 
   constructor(
     private jsonTaskParser: JSONTaskParser,
-    private mockDataProvider: MockDataProvider
+    private mockDataProvider: MockDataProvider,
+    private authService?: AuthService  // NEW: Optional AuthService injection
   ) {
     // Configuration will be set in initialize() method to avoid timing race condition
     this.serverUrl = ""; // Will be set by initialize()

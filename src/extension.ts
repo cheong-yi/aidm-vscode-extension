@@ -410,11 +410,20 @@ export async function activate(
     debugChannel = vscode.window.createOutputChannel('AiDM Extension Debug');
 
     try {
+      authService = new AuthService(context);
+    } catch (error) {
+      console.warn("Authentication service initialization failed (continuing with offline mode):", error);
+      // Don't throw - allow extension to continue without auth - PROGRESSIVE-002
+      authService = undefined; // Explicitly set to undefined for clear state
+    }
+
+    try {
       const jsonParser = new JSONTaskParser();
       const mockDataProvider = new MockDataProvider();
       tasksDataService = new TasksDataService(
         jsonParser,
-        mockDataProvider
+        mockDataProvider,
+        authService  // Pass authService (could be undefined - that's ok)
       );
 
       // Task 6.1.2: Initialize TasksDataService after workspace is ready
@@ -422,14 +431,6 @@ export async function activate(
     } catch (error) {
       console.error("TasksDataService initialization failed:", error);
       throw error;
-    }
-
-    try {
-      authService = new AuthService(context);
-    } catch (error) {
-      console.warn("Authentication service initialization failed (continuing with offline mode):", error);
-      // Don't throw - allow extension to continue without auth - PROGRESSIVE-002
-      authService = undefined; // Explicitly set to undefined for clear state
     }
 
     // Set VSCode context for panel visibility based on auth state
