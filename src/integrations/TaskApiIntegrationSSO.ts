@@ -106,7 +106,7 @@ export class TaskApiIntegrationSSO {
   /**
    * Fetch tasks from API and persist to .aidm/.tasks
    */
-  async fetchAndPersistTasks(): Promise<void> {
+  async fetchAndPersistTasks(userInitiated = false): Promise<void> {
     if (!this.apiClient) {
       log('WARN', 'TaskApiIntegrationSSO', 'API client not initialized');
       return;
@@ -130,9 +130,15 @@ export class TaskApiIntegrationSSO {
         log('ERROR', 'TaskApiIntegrationSSO', 'Failed to fetch tasks', {
           error: result.error
         });
-        vscode.window.showWarningMessage(
-          `Failed to fetch tasks: ${result.error}`
-        );
+        // Only show warning notification for user-initiated actions
+        if (userInitiated) {
+          vscode.window.showWarningMessage(
+            `Failed to fetch tasks: ${result.error}`
+          );
+        }
+
+        // Always log for debugging
+        log('WARN', 'TaskApiIntegrationSSO', 'Failed to fetch tasks', { error: result.error });
         return;
       }
 
@@ -146,14 +152,26 @@ export class TaskApiIntegrationSSO {
       // Trigger TasksDataService to reload
       await this.tasksDataService.refreshTasks();
 
-      vscode.window.showInformationMessage(
-        `✓ Synced ${result.data.length} tasks from API`
-      );
+      // Only show success notification for user-initiated actions
+      if (userInitiated) {
+        vscode.window.showInformationMessage(
+          `✓ Synced ${result.data.length} tasks from API`
+        );
+      }
+
+      // Always log for debugging
+      log('INFO', 'TaskApiIntegrationSSO', `Synced ${result.data.length} tasks from API`);
     } catch (error) {
       log('ERROR', 'TaskApiIntegrationSSO', 'Failed to fetch and persist tasks', { error });
-      vscode.window.showErrorMessage(
-        `Failed to sync tasks: ${error instanceof Error ? error.message : String(error)}`
-      );
+      // Only show error notification for user-initiated actions
+      if (userInitiated) {
+        vscode.window.showErrorMessage(
+          `Failed to sync tasks: ${error instanceof Error ? error.message : String(error)}`
+        );
+      }
+
+      // Always log for debugging
+      log('ERROR', 'TaskApiIntegrationSSO', 'Failed to fetch and persist tasks', { error });
     }
   }
 
