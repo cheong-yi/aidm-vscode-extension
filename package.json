@@ -127,7 +127,7 @@
         },
         "aidmVscodeExtension.api.baseUrl": {
           "type": "string",
-          "default": "https://aidm-dev.accenture.com/dev",
+          "default": "https://aidm-dev.accenture.com",
           "description": "Base URL for the AIDM API service",
           "pattern": "^https://.*",
           "patternErrorMessage": "Must be a valid HTTPS URL"
