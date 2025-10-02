@@ -48,16 +48,6 @@
   ],
   "activationEvents": [
     "onLanguage:typescript",
-    "onCommand:aidm-vscode-extension.showStatus",
-    "onCommand:aidm-vscode-extension.restartServer",
-    "onCommand:aidm-vscode-extension.connectRemoteMCP",
-    "onCommand:aidm-vscode-extension.openConfiguration",
-    "onCommand:aidm-vscode-extension.hello",
-    "onCommand:aidm-vscode-extension.seedHoverContext",
-    "onCommand:aidm-vscode-extension.forceTest",
-    "onCommand:aidm-vscode-extension.startup",
-    "onCommand:aidm-vscode-extension.debug",
-    "onCommand:aidm-vscode-extension.version",
     "onStartupFinished"
   ],
   "icon": "resources/images/icon.png",
@@ -471,28 +461,7 @@
       ]
     },
     "menus": {
-      "view/item/context": [
-        {
-          "command": "aidm-vscode-extension.executeTaskWithCursor",
-          "when": "view == aidm-vscode-extension.tasks-list && viewItem == executable-task",
-          "group": "taskmaster@1"
-        },
-        {
-          "command": "aidm-vscode-extension.updateTaskStatus",
-          "when": "view == aidm-vscode-extension.tasks-list",
-          "group": "taskmaster@2"
-        },
-        {
-          "command": "aidm-vscode-extension.generateTaskPrompt",
-          "when": "view == aidm-vscode-extension.tasks-list && viewItem == executable-task",
-          "group": "taskmaster@1"
-        },
-        {
-          "command": "aidm-vscode-extension.viewTestResults",
-          "when": "view == aidm-vscode-extension.tasks-list && viewItem =~ /.*-with-tests$/",
-          "group": "taskmaster@3"
-        }
-      ],
+      "view/item/context": [],
       "view/title": [
         {
           "command": "aidm-vscode-extension.refreshTasks",
