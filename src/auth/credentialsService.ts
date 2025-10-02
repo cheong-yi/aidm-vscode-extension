@@ -19,9 +19,21 @@ export class CredentialsService {
     private readonly MOCK_PASSWORD = 'password';
 
     private generateMockLoginResponse(username: string): LoginResponse {
+        // Generate a valid JWT structure for mock token
+        // JWT format: header.payload.signature (all base64 encoded)
+        const header = Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT' })).toString('base64');
+        const payload = Buffer.from(JSON.stringify({
+            upn: username,
+            email: username,
+            exp: Math.floor(Date.now() / 1000) + (24 * 60 * 60), // 24 hours from now
+            iat: Math.floor(Date.now() / 1000)
+        })).toString('base64');
+        const signature = Buffer.from(`mock_signature_${Date.now()}`).toString('base64');
+        const mockToken = `${header}.${payload}.${signature}`;
+
         return {
             status: "Success",
-            token: `mock_token_${username}_${Date.now()}`,
+            token: mockToken,
             agency_id: 1,
             agency_name: "Mock Agency",
             isProjectAdmin: false,
