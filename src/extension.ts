@@ -995,6 +995,22 @@ export async function activate(
       console.error("openDiff command failed:", error);
     }
 
+    // Register configure API URL command - quick access to settings
+    try {
+      const configureApiUrlCommand = vscode.commands.registerCommand(
+        "aidm.configureApiUrl",
+        () => {
+          vscode.commands.executeCommand(
+            "workbench.action.openSettings",
+            "aidmVscodeExtension.api.baseUrl"
+          );
+        }
+      );
+      context.subscriptions.push(configureApiUrlCommand);
+    } catch (error) {
+      console.error("configureApiUrl command failed:", error);
+    }
+
     // Expansion diagnostics command removed - replaced by webview-based diagnostics
 
     // Register configuration change listener
