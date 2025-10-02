@@ -5,8 +5,8 @@
   ],
   "displayName": "AiDM VSCode Extension",
   "description": "Bridge business requirements and code implementation with AI-powered context for enterprise development",
-  "version": "0.82.1",
-  "_versionNotes": "Auto-packaged version 0.82.1 - 2025-08-29",
+  "version": "0.82.2",
+  "_versionNotes": "Bug fixes: notification system improvements - 2025-10-02",
   "publisher": "aidm-team",
   "author": {
     "name": "AiDM Team"
@@ -105,6 +105,12 @@
         "title": "Test API Connection",
         "category": "AiDM",
         "icon": "$(debug-connect)"
+      },
+      {
+        "command": "aidm.configureApiUrl",
+        "title": "Configure API URL",
+        "category": "AiDM",
+        "icon": "$(gear)"
       }
     ],
     "configuration": {
