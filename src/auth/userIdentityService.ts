@@ -93,7 +93,7 @@ export class UserIdentityService {
     projectId: number
   ): Promise<IdentityResolutionResult> {
     try {
-      const url = `${this.baseUrl}/API/v1/identity/resolve`;
+      const url = `${this.baseUrl}/sdlc/api/v1/identity/resolve`;
       const response = await fetch(url, {
         method: 'POST',
         headers: {

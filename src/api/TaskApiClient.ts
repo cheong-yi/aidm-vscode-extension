@@ -6,6 +6,7 @@
 import { Task } from '../types/tasks';
 import { TaskApiTokenProvider } from './TaskApiTokenProvider';
 import { UserIdentityService } from '../auth/userIdentityService';
+import { log } from '../utils/logger';
 
 export interface TaskApiResponse<T> {
   success: boolean;
@@ -55,16 +56,20 @@ export class TaskApiClient {
       }
 
       // Build URL with optional repo filter
-      let url = `${this.baseUrl}/API/v1/tasks/user/${encodeURIComponent(identityResult.stableUserId)}`;
+      let url = `${this.baseUrl}/sdlc/api/v1/tasks/user/${encodeURIComponent(identityResult.stableUserId)}`;
       if (repoId) {
         url += `?repo=${encodeURIComponent(repoId)}`;
       }
+
+      log('info', 'TaskApiClient', 'API Request', { url, baseUrl: this.baseUrl, endpoint: `/sdlc/api/v1/tasks/user/${identityResult.stableUserId}` });
 
       const response = await fetch(url, {
         method: 'GET',
         headers: this.getHeaders(repoId),
         signal: AbortSignal.timeout(10000),
       });
+
+      log('info', 'TaskApiClient', 'API Response', { status: response.status, ok: response.ok, statusText: response.statusText });
 
       if (response.status === 401) {
         return {
@@ -75,6 +80,7 @@ export class TaskApiClient {
 
       if (!response.ok) {
         const errorText = await response.text().catch(() => 'Unknown error');
+        log('error', 'TaskApiClient', 'API Error Response', { status: response.status, statusText: response.statusText, errorText });
         return {
           success: false,
           error: `HTTP ${response.status}: ${response.statusText}. ${errorText}`,
@@ -115,7 +121,7 @@ export class TaskApiClient {
     }
 
     try {
-      const url = `${this.baseUrl}/API/v1/tasks/${encodeURIComponent(taskId)}/status`;
+      const url = `${this.baseUrl}/sdlc/api/v1/tasks/${encodeURIComponent(taskId)}/status`;
 
       const response = await fetch(url, {
         method: 'PUT',
@@ -166,7 +172,7 @@ export class TaskApiClient {
     }
 
     try {
-      const url = `${this.baseUrl}/API/v1/health`;
+      const url = `${this.baseUrl}/sdlc/api/v1/health`;
 
       const response = await fetch(url, {
         method: 'GET',
