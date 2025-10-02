@@ -438,7 +438,7 @@ export async function activate(
     if (authService) {
       // Subscribe to auth state changes
       const authSubscription = authStateManager.subscribe(updateAuthContext);
-      context.subscriptions.push({ dispose: authSubscription });
+      context.subscriptions.push({ dispose: () => authSubscription() });
 
       // Set initial context based on current auth state
       updateAuthContext(authService.authState);
