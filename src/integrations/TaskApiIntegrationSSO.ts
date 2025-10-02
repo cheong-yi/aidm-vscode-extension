@@ -188,7 +188,8 @@ export class TaskApiIntegrationSSO {
       await this.setupApiClient();
     }
 
-    await this.fetchAndPersistTasks();
+    // Pass userInitiated=true for manual refresh
+    await this.fetchAndPersistTasks(true);
   }
 
   dispose(): void {
