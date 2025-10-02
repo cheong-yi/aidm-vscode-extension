@@ -248,7 +248,13 @@ export class TasksDataService implements ITasksDataService {
             fileUri.fsPath,
             "file_validation"
           );
-          this.onError.fire(taskError);
+
+          // Only fire error if not suppressed during auth flow
+          if (!this.shouldSuppressFileWarnings()) {
+            this.onError.fire(taskError);
+          } else {
+            console.log('[TasksDataService] Suppressing file warning during auth initialization');
+          }
         }
       }
     } catch (fileError) {
@@ -423,7 +429,13 @@ export class TasksDataService implements ITasksDataService {
             fileUri.fsPath,
             "file_validation"
           );
-          this.onError.fire(taskError);
+
+          // Only fire error if not suppressed during auth flow
+          if (!this.shouldSuppressFileWarnings()) {
+            this.onError.fire(taskError);
+          } else {
+            console.log('[TasksDataService] Suppressing file warning during auth initialization (legacy path)');
+          }
 
           // Re-throw to trigger mock data fallback
           throw parseError;
@@ -717,6 +729,28 @@ export class TasksDataService implements ITasksDataService {
     });
 
     return taskError;
+  }
+
+  /**
+   * Check if we should suppress file warnings during auth initialization
+   * Prevents showing "file not found" errors before API has a chance to fetch tasks
+   */
+  private shouldSuppressFileWarnings(): boolean {
+    if (!this.authService) {
+      return false; // No auth service - don't suppress
+    }
+
+    // Check if user is authenticated
+    const isAuthenticated = this.authService.authState.isLoggedIn;
+
+    // Calculate time since extension activation
+    const timeSinceActivation = Date.now() - this.extensionActivationTime;
+
+    // Suppress warnings during first 10 seconds after activation if user is logged in
+    // This gives the API integration time to fetch and persist tasks
+    const isWithinGracePeriod = timeSinceActivation < 10000; // 10 seconds
+
+    return isAuthenticated && isWithinGracePeriod;
   }
 
   private validateJsonStructure(data: any): {
