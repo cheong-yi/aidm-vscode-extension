@@ -1011,6 +1011,68 @@ export async function activate(
       console.error("configureApiUrl command failed:", error);
     }
 
+    // Register Task API commands - ICON-001
+    try {
+      const taskApiConfigureCommand = vscode.commands.registerCommand(
+        "aidm.taskApi.configure",
+        () => {
+          vscode.commands.executeCommand(
+            "workbench.action.openSettings",
+            "aidmVscodeExtension.api.baseUrl"
+          );
+        }
+      );
+      context.subscriptions.push(taskApiConfigureCommand);
+
+      const taskApiConnectCommand = vscode.commands.registerCommand(
+        "aidm.taskApi.connect",
+        async () => {
+          if (taskApiIntegration) {
+            await taskApiIntegration.manualRefresh();
+            vscode.window.showInformationMessage("Connected to Task API");
+          } else {
+            vscode.window.showWarningMessage("Task API integration not available");
+          }
+        }
+      );
+      context.subscriptions.push(taskApiConnectCommand);
+
+      const taskApiDisconnectCommand = vscode.commands.registerCommand(
+        "aidm.taskApi.disconnect",
+        () => {
+          vscode.window.showInformationMessage("Disconnected from Task API");
+        }
+      );
+      context.subscriptions.push(taskApiDisconnectCommand);
+
+      const taskApiStatusCommand = vscode.commands.registerCommand(
+        "aidm.taskApi.status",
+        () => {
+          const authState = authService?.authState;
+          const message = authState?.isLoggedIn
+            ? `✅ Connected as ${authState.email}`
+            : "❌ Not authenticated";
+          vscode.window.showInformationMessage(message);
+        }
+      );
+      context.subscriptions.push(taskApiStatusCommand);
+
+      const taskApiTestCommand = vscode.commands.registerCommand(
+        "aidm.taskApi.testConnection",
+        async () => {
+          if (taskApiIntegration) {
+            await taskApiIntegration.manualRefresh();
+            vscode.window.showInformationMessage("✅ Task API connection test successful");
+          } else {
+            vscode.window.showErrorMessage("❌ Task API not configured");
+          }
+        }
+      );
+      context.subscriptions.push(taskApiTestCommand);
+    } catch (error) {
+      console.error("Task API commands registration failed:", error);
+    }
+
     // Expansion diagnostics command removed - replaced by webview-based diagnostics
 
     // Register configuration change listener
